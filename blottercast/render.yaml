@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: blottercast
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn wsgi:app"
+    startCommand: "startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -28,7 +28,7 @@ services:
     plan: free
     rootDir: blottercast
     buildCommand: "pip install -r ml/requirements.txt"
-    startCommand: "gunicorn service:app --chdir ml"
+    startCommand: "startCommand: "gunicorn service:app --chdir ml --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
