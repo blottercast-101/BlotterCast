@@ -5,3 +5,4 @@ pandas>=2.1
 scikit-learn>=1.4
 SQLAlchemy>=2.0
 psycopg2-binary>=2.9
+gunicorn>=22.0
