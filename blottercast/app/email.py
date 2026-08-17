@@ -1,39 +1,33 @@
 """
 Outgoing email for BlotterCast — currently used only for MFA login OTP codes.
 
-If SMTP_HOST isn't configured (see app/config.py), the email is written to
-instance/otp_outbox.log instead of being sent. That keeps local dev and
-automated tests working end-to-end without real mail credentials, the same
+Sends via Brevo's transactional email HTTP API (https://api.brevo.com) over
+HTTPS/443 rather than SMTP. This matters because many hosts block outbound
+SMTP ports (25/465/587) on free-tier services -- e.g. Render blocks them
+entirely as of Sept 2025 (see
+https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports).
+An HTTP API call over 443 sidesteps that since providers can't block normal
+web traffic without breaking everything else.
+
+If BREVO_API_KEY isn't configured (see app/config.py), the email is written
+to instance/otp_outbox.log instead of being sent. That keeps local dev and
+automated tests working end-to-end without real credentials, the same
 graceful-degradation approach used elsewhere in this app (see the ML
-service auto-start). For a real deployment, set SMTP_HOST/PORT/USER/
-PASSWORD/FROM in the environment — any standard SMTP provider works.
+service auto-start).
 """
 import os
-import smtplib
-import socket
-import ssl
 from datetime import datetime
-from email.message import EmailMessage
 
+import requests
 from flask import current_app
 
 OTP_OUTBOX_LOG = os.path.join(os.path.dirname(__file__), "..", "instance", "otp_outbox.log")
-
-# Some hosts (e.g. Render's free tier) advertise IPv6 but have no working
-# IPv6 route, which makes smtplib's socket.getaddrinfo() pick an IPv6
-# address for smtp.gmail.com and fail with "[Errno 101] Network is
-# unreachable". Forcing IPv4-only resolution for outgoing SMTP connections
-# sidesteps that without needing any host-level network configuration.
-_orig_getaddrinfo = socket.getaddrinfo
-
-
-def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-    return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str = "login") -> bool:
-    """Send the OTP email. Returns True if it went out over real SMTP,
-    False if it was written to the local outbox log instead (SMTP not
+    """Send the OTP email. Returns True if it went out over the Brevo API,
+    False if it was written to the local outbox log instead (Brevo not
     configured, or the send failed)."""
     greeting = f"Hi {full_name}," if full_name else "Hi,"
     expiry = current_app.config["MFA_CODE_EXPIRY_MINUTES"]
@@ -58,44 +52,34 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
             f"— BlotterCast"
         )
 
-    host = current_app.config.get("SMTP_HOST")
-    if not host:
+    api_key = current_app.config.get("BREVO_API_KEY")
+    sender_email = current_app.config.get("BREVO_SENDER_EMAIL")
+    if not api_key or not sender_email:
         _write_to_outbox(to_email, subject, body)
         return False
 
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = current_app.config["SMTP_FROM"]
-    msg["To"] = to_email
-    msg.set_content(body)
+    sender_name = current_app.config.get("BREVO_SENDER_NAME", "BlotterCast")
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "textContent": body,
+    }
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
-    port = current_app.config["SMTP_PORT"]
-    user = current_app.config.get("SMTP_USER")
-    password = current_app.config.get("SMTP_PASSWORD")
-    use_tls = current_app.config["SMTP_USE_TLS"]
-
-    socket.getaddrinfo = _ipv4_only_getaddrinfo
     try:
-        if port == 465:
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, port, context=context, timeout=10) as server:
-                if user and password:
-                    server.login(user, password)
-                server.send_message(msg)
-        else:
-            with smtplib.SMTP(host, port, timeout=10) as server:
-                if use_tls:
-                    server.starttls(context=ssl.create_default_context())
-                if user and password:
-                    server.login(user, password)
-                server.send_message(msg)
+        r = requests.post(BREVO_SEND_URL, json=payload, headers=headers, timeout=10)
+        if r.status_code >= 300:
+            raise RuntimeError(f"Brevo API {r.status_code}: {r.text[:300]}")
         return True
     except Exception as e:
         current_app.logger.error(f"Failed to send {purpose} OTP email to {to_email}: {e}")
         _write_to_outbox(to_email, subject, body, error=str(e))
         return False
-    finally:
-        socket.getaddrinfo = _orig_getaddrinfo
 
 
 def _write_to_outbox(to_email: str, subject: str, body: str, error: str = None):
@@ -103,7 +87,7 @@ def _write_to_outbox(to_email: str, subject: str, body: str, error: str = None):
     with open(OTP_OUTBOX_LOG, "a", encoding="utf-8") as f:
         f.write(f"\n----- {datetime.utcnow().isoformat()} -----\n")
         if error:
-            f.write(f"[SMTP send failed ({error}) -- logged instead of sent]\n")
+            f.write(f"[Brevo send failed ({error}) -- logged instead of sent]\n")
         else:
-            f.write("[SMTP not configured -- logged instead of sent]\n")
+            f.write("[BREVO_API_KEY not configured -- logged instead of sent]\n")
         f.write(f"To: {to_email}\nSubject: {subject}\n\n{body}\n")
