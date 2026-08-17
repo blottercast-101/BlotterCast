@@ -10,6 +10,7 @@ PASSWORD/FROM in the environment — any standard SMTP provider works.
 """
 import os
 import smtplib
+import socket
 import ssl
 from datetime import datetime
 from email.message import EmailMessage
@@ -17,6 +18,17 @@ from email.message import EmailMessage
 from flask import current_app
 
 OTP_OUTBOX_LOG = os.path.join(os.path.dirname(__file__), "..", "instance", "otp_outbox.log")
+
+# Some hosts (e.g. Render's free tier) advertise IPv6 but have no working
+# IPv6 route, which makes smtplib's socket.getaddrinfo() pick an IPv6
+# address for smtp.gmail.com and fail with "[Errno 101] Network is
+# unreachable". Forcing IPv4-only resolution for outgoing SMTP connections
+# sidesteps that without needing any host-level network configuration.
+_orig_getaddrinfo = socket.getaddrinfo
+
+
+def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
 
 
 def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str = "login") -> bool:
@@ -62,6 +74,7 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
     password = current_app.config.get("SMTP_PASSWORD")
     use_tls = current_app.config["SMTP_USE_TLS"]
 
+    socket.getaddrinfo = _ipv4_only_getaddrinfo
     try:
         if port == 465:
             context = ssl.create_default_context()
@@ -81,6 +94,8 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
         current_app.logger.error(f"Failed to send {purpose} OTP email to {to_email}: {e}")
         _write_to_outbox(to_email, subject, body, error=str(e))
         return False
+    finally:
+        socket.getaddrinfo = _orig_getaddrinfo
 
 
 def _write_to_outbox(to_email: str, subject: str, body: str, error: str = None):
