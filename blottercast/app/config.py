@@ -35,18 +35,16 @@ class Config:
     )
 
     # ---- Email OTP (multi-factor authentication) ----
-    # If SMTP_HOST is unset, outgoing OTP emails are written to
+    # Uses Brevo's transactional email HTTP API (https://api.brevo.com) so it
+    # works on hosts that block outbound SMTP ports (e.g. Render's free
+    # tier blocks 25/465/587 entirely -- see
+    # https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports).
+    # If BREVO_API_KEY is unset, outgoing OTP emails are written to
     # instance/otp_outbox.log instead of actually being sent -- lets the app
-    # run end-to-end in local dev/testing without real mail credentials.
-    # Set these for real delivery (any standard SMTP provider works: Gmail
-    # app password, SendGrid, Mailgun, Amazon SES SMTP, your host's mail
-    # relay, etc).
-    SMTP_HOST = os.environ.get("SMTP_HOST")
-    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-    SMTP_USER = os.environ.get("SMTP_USER")
-    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-    SMTP_FROM = os.environ.get("SMTP_FROM", "BlotterCast <no-reply@blottercast.local>")
-    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "1") == "1"
+    # run end-to-end in local dev/testing without real credentials.
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+    BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL")
+    BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "BlotterCast")
 
     MFA_CODE_LENGTH = 6
     MFA_CODE_EXPIRY_MINUTES = int(os.environ.get("MFA_CODE_EXPIRY_MINUTES", "5"))
