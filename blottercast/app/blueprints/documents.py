@@ -1,0 +1,411 @@
+from datetime import datetime
+
+from flask import Blueprint, jsonify, request, session
+from sqlalchemy import func, or_
+
+from ..extensions import db
+from ..helpers import compute_age, full_name_of, next_ctrl_no, next_or_no, parse_date
+from ..models import (
+    BarangayClearance,
+    BarangayNonResidency,
+    BarangayResidency,
+    BlotterRecord,
+    CensusRecord,
+    IndigencyCertificate,
+)
+from ..permissions import json_error, log_audit, login_required, permission_required, role_can
+
+bp = Blueprint("documents", __name__)
+
+
+@bp.route("/api/documents.php", methods=["GET", "POST", "PUT", "DELETE"])
+@login_required
+def documents_router():
+    method = request.method
+    dtype = request.args.get("type", "")
+
+    if method == "PUT" and not role_can(session.get("role", ""), "edit_records"):
+        return json_error("You do not have permission to perform this action.", 403)
+    if method == "DELETE" and not role_can(session.get("role", ""), "delete_records"):
+        return json_error("You do not have permission to perform this action.", 403)
+
+    if dtype == "or_peek" and method == "GET":
+        return jsonify({"orNo": next_or_no()})
+    if dtype == "blotter_check" and method == "GET":
+        return _blotter_check()
+    if dtype == "census":
+        return _census()
+    if dtype == "clearance":
+        return _clearance()
+    if dtype == "residency":
+        return _residency()
+    if dtype == "non_residency":
+        return _non_residency()
+    if dtype == "indigency":
+        return _indigency()
+
+    return json_error("Unknown type or method", 404)
+
+
+# ---------------- BLOTTER CHECK ----------------
+def _blotter_check():
+    last_name = (request.args.get("lastName") or "").strip()
+    first_name = (request.args.get("firstName") or "").strip()
+    resident_id = int(request.args["residentId"]) if request.args.get("residentId") else None
+    has_name = bool(last_name and first_name)
+    if not has_name and not resident_id:
+        return jsonify([])
+
+    id_matches = []
+    if resident_id:
+        rows = BlotterRecord.query.filter(
+            or_(BlotterRecord.complainant_id == resident_id, BlotterRecord.respondent_id == resident_id)
+        ).order_by(BlotterRecord.date_filed.desc()).all()
+        for r in rows:
+            id_matches.append({
+                "id": r.id, "docket_no": r.docket_no,
+                "date_filed": r.date_filed.isoformat() if r.date_filed else None,
+                "complainant": r.complainant, "respondent": r.respondent, "nature": r.nature,
+                "case_type": r.case_type, "status": r.status,
+                "role": "Complainant" if r.complainant_id == resident_id else "Respondent",
+            })
+
+    name_matches = []
+    if has_name:
+        last_like, first_like = f"%{last_name}%", f"%{first_name}%"
+        rows = BlotterRecord.query.filter(
+            BlotterRecord.complainant_id.is_(None), BlotterRecord.respondent_id.is_(None),
+            or_(
+                (BlotterRecord.complainant.ilike(last_like)) & (BlotterRecord.complainant.ilike(first_like)),
+                (BlotterRecord.respondent.ilike(last_like)) & (BlotterRecord.respondent.ilike(first_like)),
+            ),
+        ).all()
+        for r in rows:
+            is_complainant = last_name.lower() in (r.complainant or "").lower() and first_name.lower() in (r.complainant or "").lower()
+            name_matches.append({
+                "id": r.id, "docket_no": r.docket_no,
+                "date_filed": r.date_filed.isoformat() if r.date_filed else None,
+                "complainant": r.complainant, "respondent": r.respondent, "nature": r.nature,
+                "case_type": r.case_type, "status": r.status,
+                "role": "Complainant" if is_complainant else "Respondent",
+            })
+
+    return jsonify(id_matches + name_matches)
+
+
+# ---------------- CENSUS ----------------
+def _duplicate_resident(last_name, first_name, middle_name, address, household, sex, age, exclude_id=None):
+    if age is None:
+        return None
+    norm = lambda v: func.lower(func.trim(func.coalesce(v, "")))
+    q = CensusRecord.query.filter(
+        norm(CensusRecord.last_name) == (last_name or "").strip().lower(),
+        norm(CensusRecord.first_name) == (first_name or "").strip().lower(),
+        norm(CensusRecord.middle_name) == (middle_name or "").strip().lower(),
+        norm(CensusRecord.address) == (address or "").strip().lower(),
+        norm(CensusRecord.household_no) == (household or "").strip().lower(),
+        CensusRecord.sex == sex,
+        CensusRecord.date_of_birth.isnot(None),
+    )
+    if exclude_id:
+        q = q.filter(CensusRecord.id != exclude_id)
+    for r in q.all():
+        if compute_age(r.date_of_birth) == age:
+            return r
+    return None
+
+
+def _census():
+    method = request.method
+
+    if method == "GET":
+        rows = CensusRecord.query.order_by(CensusRecord.last_name, CensusRecord.first_name).all()
+        return jsonify([r.to_dict() for r in rows])
+
+    if method == "POST":
+        if request.headers.get("X-Bulk-Import") and not role_can(session.get("role", ""), "import_data"):
+            return json_error("You do not have permission to perform this action.", 403)
+
+        d = request.get_json(silent=True) or {}
+        dob = d.get("dob") or None
+        last_name, first_name, middle_name = d.get("lastName", ""), d.get("firstName", ""), d.get("middleName", "")
+        sex, civil_status = d.get("sex") or "Male", d.get("civilStatus") or "Single"
+        nationality = d.get("nationality") or "Filipino"
+        zone = d.get("zone")
+        address, household, contact = d.get("address", ""), d.get("householdNo", ""), d.get("contactNo", "")
+        voter = d.get("voterStatus") or "Not Registered"
+        occupation, status = d.get("occupation", ""), d.get("status") or "Active"
+        if status == "Deceased":
+            voter = "Deactivated"
+
+        dob = parse_date(dob)
+        age = compute_age(dob)
+        if _duplicate_resident(last_name, first_name, middle_name, address, household, sex, age):
+            return json_error(
+                "A resident with the same name, address, household number, age, and sex is already in Census.", 409
+            )
+
+        max_no = db.session.query(
+            func.max(func.cast(func.substr(CensusRecord.resident_no, 5), db.Integer))
+        ).filter(CensusRecord.resident_no.like("RES-%")).scalar()
+        resident_no = d.get("residentNo") or f"RES-{(max_no or 0) + 1:04d}"
+
+        record = CensusRecord(
+            resident_no=resident_no, last_name=last_name, first_name=first_name, middle_name=middle_name,
+            date_of_birth=dob, sex=sex, civil_status=civil_status, nationality=nationality, zone_id=zone,
+            address=address, household_no=household, contact_no=contact, voter_status=voter,
+            occupation=occupation, status=status,
+        )
+        db.session.add(record)
+        db.session.commit()
+        log_audit(session.get("username"), "Created", "Census", f"New resident recorded: {first_name} {last_name}")
+        return jsonify({"ok": True, "id": record.id}), 201
+
+    if method == "PUT":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = CensusRecord.query.get(rid)
+        if not record:
+            return json_error("Resident not found.", 404)
+        d = request.get_json(silent=True) or {}
+        dob = d.get("dob") or None
+        last_name, first_name, middle_name = d.get("lastName", ""), d.get("firstName", ""), d.get("middleName", "")
+        sex, civil_status = d.get("sex") or "Male", d.get("civilStatus") or "Single"
+        nationality = d.get("nationality") or "Filipino"
+        zone = d.get("zone")
+        address, household, contact = d.get("address", ""), d.get("householdNo", ""), d.get("contactNo", "")
+        voter = d.get("voterStatus") or "Not Registered"
+        occupation, status = d.get("occupation", ""), d.get("status") or "Active"
+
+        # Desk Officer can only change Status — every other field snaps back to
+        # the existing DB value regardless of what the request body contains.
+        if session.get("role") == "Desk Officer":
+            last_name, first_name, middle_name = record.last_name, record.first_name, record.middle_name
+            dob, sex, civil_status = record.date_of_birth, record.sex, record.civil_status
+            nationality, zone, address = record.nationality, record.zone_id, record.address
+            household, contact, voter = record.household_no, record.contact_no, record.voter_status
+            occupation = record.occupation
+
+        if status == "Deceased":
+            voter = "Deactivated"
+
+        dob = parse_date(dob)
+        age = compute_age(dob)
+        if _duplicate_resident(last_name, first_name, middle_name, address, household, sex, age, exclude_id=rid):
+            return json_error(
+                "Another resident with the same name, address, household number, age, and sex is already in Census.",
+                409,
+            )
+
+        record.last_name, record.first_name, record.middle_name = last_name, first_name, middle_name
+        record.date_of_birth, record.sex, record.civil_status = dob, sex, civil_status
+        record.nationality, record.zone_id, record.address = nationality, zone, address
+        record.household_no, record.contact_no, record.voter_status = household, contact, voter
+        record.occupation, record.status = occupation, status
+        db.session.commit()
+        log_audit(session.get("username"), "Updated", "Census", f"Resident record #{rid} updated")
+        return jsonify({"ok": True})
+
+    if method == "DELETE":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = CensusRecord.query.get(rid)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+        log_audit(session.get("username"), "Deleted", "Census", f"Resident record #{rid} deleted")
+        return jsonify({"ok": True})
+
+
+def _get_resident_or_404(resident_id, not_found_msg):
+    if not resident_id:
+        return None, json_error(not_found_msg[0])
+    resident = CensusRecord.query.get(resident_id)
+    if not resident:
+        return None, json_error(not_found_msg[1], 404)
+    return resident, None
+
+
+# ---------------- BARANGAY CLEARANCE ----------------
+def _clearance():
+    method = request.method
+    if method == "GET":
+        rows = BarangayClearance.query.order_by(BarangayClearance.date_issued.desc(), BarangayClearance.id.desc()).all()
+        return jsonify([r.to_dict() for r in rows])
+
+    if method == "POST":
+        d = request.get_json(silent=True) or {}
+        resident_id = int(d.get("residentId") or 0)
+        resident, err = _get_resident_or_404(
+            resident_id, ("A clearance must be issued to an existing census resident.", "That resident does not exist in Census.")
+        )
+        if err:
+            return err
+
+        ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayClearance, "BC")
+        or_no = d.get("orNo") or next_or_no()
+        record = BarangayClearance(
+            resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
+            age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
+            address=resident.address, voter_status=resident.voter_status, purpose=d.get("purpose", ""),
+            or_no=or_no, fee=d.get("fee") or 20.00,
+            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            issued_by=session.get("full_name", "System"),
+        )
+        db.session.add(record)
+        db.session.commit()
+        log_audit(session.get("username"), "Created", "Clearance", f"Clearance issued: {ctrl_no} for {record.full_name}")
+        return jsonify({"ok": True, "id": record.id, "ctrlNo": ctrl_no, "orNo": or_no}), 201
+
+    if method == "DELETE":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = BarangayClearance.query.get(rid)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+        log_audit(session.get("username"), "Deleted", "Clearance", f"Clearance record #{rid} deleted")
+        return jsonify({"ok": True})
+
+    return json_error("Unknown type or method", 404)
+
+
+# ---------------- CERTIFICATE OF RESIDENCY ----------------
+def _residency():
+    method = request.method
+    if method == "GET":
+        rows = BarangayResidency.query.order_by(BarangayResidency.date_issued.desc(), BarangayResidency.id.desc()).all()
+        return jsonify([r.to_dict() for r in rows])
+
+    if method == "POST":
+        d = request.get_json(silent=True) or {}
+        resident_id = int(d.get("residentId") or 0)
+        resident, err = _get_resident_or_404(
+            resident_id,
+            ("A certificate of residency must be issued to an existing census resident.", "That resident does not exist in Census."),
+        )
+        if err:
+            return err
+
+        years_residency = int(d["yearsResidency"]) if d.get("yearsResidency") not in (None, "") else None
+        duration_unit = "months" if d.get("durationUnit") == "months" else "years"
+        if duration_unit == "months" and years_residency is not None and not (2 <= years_residency <= 11):
+            return json_error("Months of residency must be between 2 and 11 (11 months and up should be issued in years).")
+
+        ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayResidency, "BR")
+        or_no = d.get("orNo") or next_or_no()
+        record = BarangayResidency(
+            resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
+            age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
+            address=resident.address, years_residency=years_residency, duration_unit=duration_unit,
+            purpose=d.get("purpose", ""), or_no=or_no, fee=d.get("fee") or 20.00,
+            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            issued_by=session.get("full_name", "System"),
+        )
+        db.session.add(record)
+        db.session.commit()
+        log_audit(session.get("username"), "Created", "Residency", f"Certificate of Residency issued: {ctrl_no} for {record.full_name}")
+        return jsonify({"ok": True, "id": record.id, "ctrlNo": ctrl_no, "orNo": or_no}), 201
+
+    if method == "DELETE":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = BarangayResidency.query.get(rid)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+        log_audit(session.get("username"), "Deleted", "Residency", f"Certificate of Residency record #{rid} deleted")
+        return jsonify({"ok": True})
+
+    return json_error("Unknown type or method", 404)
+
+
+# ---------------- CERTIFICATE OF NON-RESIDENCY ----------------
+def _non_residency():
+    method = request.method
+    if method == "GET":
+        rows = BarangayNonResidency.query.order_by(BarangayNonResidency.date_issued.desc(), BarangayNonResidency.id.desc()).all()
+        return jsonify([r.to_dict() for r in rows])
+
+    if method == "POST":
+        d = request.get_json(silent=True) or {}
+        resident_id = int(d.get("residentId") or 0)
+        resident, err = _get_resident_or_404(
+            resident_id,
+            ("A certificate of non-residency must reference an existing Census record.", "That person does not exist in Census."),
+        )
+        if err:
+            return err
+
+        ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayNonResidency, "NR")
+        or_no = d.get("orNo") or next_or_no()
+        record = BarangayNonResidency(
+            resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
+            previous_address=d.get("previousAddress", ""), purpose=d.get("purpose", ""), or_no=or_no,
+            fee=d.get("fee") or 20.00, date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            issued_by=session.get("full_name", "System"),
+        )
+        db.session.add(record)
+        db.session.commit()
+        log_audit(session.get("username"), "Created", "NonResidency", f"Certificate of Non-Residency issued: {ctrl_no} for {record.full_name}")
+        return jsonify({"ok": True, "id": record.id, "ctrlNo": ctrl_no, "orNo": or_no}), 201
+
+    if method == "DELETE":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = BarangayNonResidency.query.get(rid)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+        log_audit(session.get("username"), "Deleted", "NonResidency", f"Certificate of Non-Residency record #{rid} deleted")
+        return jsonify({"ok": True})
+
+    return json_error("Unknown type or method", 404)
+
+
+# ---------------- INDIGENCY ----------------
+def _indigency():
+    method = request.method
+    if method == "GET":
+        rows = IndigencyCertificate.query.order_by(IndigencyCertificate.date_issued.desc(), IndigencyCertificate.id.desc()).all()
+        return jsonify([r.to_dict() for r in rows])
+
+    if method == "POST":
+        d = request.get_json(silent=True) or {}
+        resident_id = int(d.get("residentId") or 0)
+        resident, err = _get_resident_or_404(
+            resident_id, ("A certificate must be issued to an existing census resident.", "That resident does not exist in Census.")
+        )
+        if err:
+            return err
+
+        ctrl_no = d.get("ctrlNo") or next_ctrl_no(IndigencyCertificate, "CI")
+        record = IndigencyCertificate(
+            resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
+            age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
+            address=resident.address, purpose=d.get("purpose", ""),
+            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            issued_by=session.get("full_name", "System"),
+        )
+        db.session.add(record)
+        db.session.commit()
+        log_audit(session.get("username"), "Created", "Indigency", f"Certificate issued: {ctrl_no} for {record.full_name}")
+        return jsonify({"ok": True, "id": record.id, "ctrlNo": ctrl_no}), 201
+
+    if method == "DELETE":
+        rid = int(request.args.get("id", 0))
+        if not rid:
+            return json_error("id required")
+        record = IndigencyCertificate.query.get(rid)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
+        log_audit(session.get("username"), "Deleted", "Indigency", f"Certificate record #{rid} deleted")
+        return jsonify({"ok": True})
+
+    return json_error("Unknown type or method", 404)
