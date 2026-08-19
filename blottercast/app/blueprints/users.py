@@ -5,6 +5,7 @@ from datetime import datetime
 
 import bcrypt
 from flask import Blueprint, current_app, jsonify, request, session
+from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 from ..extensions import db
@@ -67,7 +68,10 @@ def _list():
         "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
         "contact_no": u.contact_no, "role": u.role, "status": u.status,
         "signature_path": u.signature_path,
-        "last_login": u.last_login.isoformat() if u.last_login else None,
+        # Naive datetimes from utcnow() have no offset — appending "Z" makes
+        # the value unambiguous UTC so the browser doesn't guess it's local
+        # time (which silently shifts it by the browser's own UTC offset).
+        "last_login": (u.last_login.isoformat() + "Z") if u.last_login else None,
         "created_at": u.created_at.isoformat() if u.created_at else None,
     } for u in rows])
 
@@ -89,11 +93,17 @@ def _create():
 
     if User.query.filter_by(username=username).first():
         return json_error("That username is already taken", 409)
+    if User.query.filter(func.lower(User.email) == email.lower()).first():
+        return json_error("That email address is already in use by another account", 409)
 
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
         email=email, contact_no=d.get("contact"), role=d.get("role") or "Desk Officer",
-        status=d.get("status") or "Active", password_changed_at=datetime.utcnow(),
+        # New accounts always start Active — the system's default initial
+        # status. Status only becomes choosable later, via Edit; whatever
+        # the request body sends here is ignored so an Add User form can
+        # never smuggle a different starting status through the API.
+        status="Active", password_changed_at=datetime.utcnow(),
     )
     db.session.add(user)
     db.session.commit()
@@ -116,6 +126,8 @@ def _update():
         return json_error("Name is required")
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
+    if User.query.filter(User.id != uid, func.lower(User.email) == email.lower()).first():
+        return json_error("That email address is already in use by another account", 409)
 
     user.full_name = full_name
     user.email = email

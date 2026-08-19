@@ -57,7 +57,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -161,7 +161,10 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="blotter" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Blotter Records</h2>
+        <h2 class="font-display text-lg text-forest-800" id="blTitle">Blotter Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
+          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        </button>
       </div>
 
       <!-- Filter Bar -->
@@ -226,7 +229,7 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div class="relative">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mb-1">
             <label class="form-label mb-0">Name of Complainant <span class="text-red-500">*</span></label>
             <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer" id="f_complainantOutsideLabel">
               <input type="checkbox" id="f_complainantOutside" class="rounded" onchange="toggleComplainantOutside()"/> Not a resident / outside party
@@ -242,7 +245,7 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div class="relative">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mb-1">
             <label class="form-label mb-0">Name of Respondent <span class="text-red-500">*</span></label>
             <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer" id="f_respondentOutsideLabel">
               <input type="checkbox" id="f_respondentOutside" class="rounded" onchange="toggleRespondentOutside()"/> Not a resident / outside party
@@ -336,15 +339,34 @@
       id: Number(r.id), docketNo: r.docket_no, dateFiled: (m && d) ? `${m}/${d}/${y}` : r.date_filed,
       date: r.date_filed, complainant: r.complainant, complainantId: r.complainant_id ? Number(r.complainant_id) : null, complainantAddr: r.complainant_addr,
       respondent: r.respondent, respondentId: r.respondent_id ? Number(r.respondent_id) : null, respondentAddr: r.respondent_addr, nature: r.nature,
-      type: r.case_type, status: r.status, zone: r.zone_id,
+      type: r.case_type, status: r.status, zone: r.zone_id, archived: !!r.archived,
     };
   }
 
+  let viewingArchived = false;
+
   async function loadBlotter() {
-    const raw = await BCApi.list('blotter');
+    const raw = await BCApi.list('blotter', viewingArchived ? { archived: '1' } : {});
     blotterData = raw.map(mapRow);
     renderSummaryCards();
     renderTable();
+  }
+
+  // Records are archived, never permanently deleted — this just switches
+  // the table between the active view and the read-only archive so the
+  // two stay clearly distinguished.
+  async function toggleArchivedView() {
+    viewingArchived = !viewingArchived;
+    currentPage = 1;
+    document.getElementById('blTitle').textContent = viewingArchived ? 'Archived Blotter Records' : 'Blotter Records';
+    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
+      ? '<span data-icon="blotter" data-icon-size="14"></span> Back to Active'
+      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    try {
+      await loadBlotter();
+    } catch (err) {
+      showToast('Could not load records: ' + err.message, 'error');
+    }
   }
 
   function renderSummaryCards() {
@@ -362,11 +384,27 @@
       const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
       return {
         id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
-        age, address: r.address || '', householdNo: r.household_no || '',
+        age, address: r.address || '', householdNo: r.household_no || '', status: r.status || 'Active',
       };
     });
-    bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked);
-    bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked);
+    bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked, validateBlotterParty);
+    bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked, validateBlotterParty);
+  }
+
+  const MIN_BLOTTER_PARTY_AGE = 15;
+
+  // Mirrors the server-side rule in api/records.php — a resident marked
+  // Deceased, or under the minimum age, can't be named as a blotter party.
+  // Returning a string here blocks the pick and shows it as a toast.
+  function validateBlotterParty(r) {
+    const name = `${r.firstName} ${r.lastName}`;
+    if (r.status === 'Deceased') {
+      return `${name} is recorded as deceased and cannot be used for a new blotter record.`;
+    }
+    if (r.age != null && r.age < MIN_BLOTTER_PARTY_AGE) {
+      return `${name} is ${r.age} years old. Residents must be at least ${MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record.`;
+    }
+    return null;
   }
 
   function onComplainantPicked(r) {
@@ -458,8 +496,12 @@
           <td>
             <div class="row-actions">
               <button onclick="viewRecord(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
+              ${viewingArchived ? `
+              <button onclick="restoreRecord(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+              ` : `
               <button onclick="editRecord(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="deleteRecord(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+              <button onclick="archiveRecord(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              `}
             </div>
           </td>
         </tr>`).join('');
@@ -471,7 +513,7 @@
     bcRenderPagination(document.getElementById('paginationControls'), currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
   }
 
-  async function openAdd() {
+  function resetBlotterFormFields() {
     editingId = null;
     document.getElementById('modalTitle').textContent = 'New Blotter Entry';
     document.getElementById('blotterForm').reset();
@@ -485,7 +527,12 @@
     document.getElementById('f_respondentSearch').classList.remove('hidden');
     document.getElementById('f_respondentFreeText').classList.add('hidden');
     document.getElementById('f_respondentFreeText').value = '';
+    document.getElementById('f_docketNo').value = '';
     _updateOutsideToggleAvailability();
+  }
+
+  async function openAdd() {
+    resetBlotterFormFields();
     openModal('blotterModal');
 
     // Show what the Docket No. will be, rather than leaving it blank
@@ -625,6 +672,7 @@
       } else {
         await BCApi.create('blotter', vals);
         showToast('New blotter entry added!');
+        resetBlotterFormFields();
       }
       closeModal('blotterModal');
       await loadBlotter();
@@ -633,11 +681,25 @@
     }
   }
 
-  async function deleteRecord(id) {
-    if (!(await bcConfirm('Delete this blotter entry? This cannot be undone.', { title: 'Delete Blotter Entry', okLabel: 'Delete', danger: true }))) return;
+  // Official records are never permanently deleted — this moves the entry
+  // to the archive. It's still in the database for recordkeeping/audit and
+  // can be restored from the "View Archived" list at any time.
+  async function archiveRecord(id) {
+    if (!(await bcConfirm('Archive this blotter entry? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Blotter Entry', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('blotter', id);
-      showToast('Entry deleted.');
+      showToast('Entry archived.');
+      await loadBlotter();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function restoreRecord(id) {
+    if (!(await bcConfirm('Restore this blotter entry to the active list?', { title: 'Restore Blotter Entry', okLabel: 'Restore' }))) return;
+    try {
+      await BCApi.restore('blotter', id);
+      showToast('Entry restored.');
       await loadBlotter();
     } catch (err) {
       showToast(err.message, 'error');
@@ -704,6 +766,10 @@
     await requireAuth();
     try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
     try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    if (new URLSearchParams(location.search).get('new') === '1') {
+      openAdd();
+      history.replaceState(null, '', location.pathname);
+    }
   })();
 </script>
 </body>

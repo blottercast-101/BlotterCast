@@ -65,7 +65,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -239,11 +239,11 @@
         <div class="col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
           <h2 class="font-display text-lg text-forest-800 mb-4">Quick Actions</h2>
           <div class="grid grid-cols-3 gap-4">
-            <a href="blotter.html" class="tile-action tile-plum">
+            <a href="blotter.html?new=1" class="tile-action tile-plum">
               <div class="tile-icon" data-icon="blotter" data-icon-size="18"></div>
               <div class="tile-label">New Blotter<br/>Entry</div>
             </a>
-            <a href="incident.html" class="tile-action tile-dark">
+            <a href="incident.html?new=1" class="tile-action tile-dark">
               <div class="tile-icon" data-icon="incident" data-icon-size="18"></div>
               <div class="tile-label">New Incident<br/>Report</div>
             </a>
@@ -309,7 +309,7 @@
 
         document.getElementById('statPending').textContent = stats.pendingSettlements;
 
-        document.getElementById('statResolved').textContent = Math.round(stats.incidentCount * stats.resolutionRate / 100);
+        document.getElementById('statResolved').textContent = stats.resolvedCount;
         document.getElementById('statResolvedSub').textContent = stats.resolutionRate + '% resolution rate';
 
         // Resolution rate donut (circumference = 2 * PI * r, r=52 -> 326.7)

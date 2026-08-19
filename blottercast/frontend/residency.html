@@ -48,7 +48,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -278,9 +278,19 @@ async function loadResResidentOptionsForPicker() {
     return {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
       age, civilStatus: r.civil_status, address: r.address || '', householdNo: r.household_no || '', voterStatus: r.voter_status,
+      status: r.status || 'Active',
     };
   });
-  bcInitResidentPicker('rs_residentSearch', 'rs_residentId', 'rs_residentSuggestions', resResidentOptions, onResResidentPicked);
+  bcInitResidentPicker('rs_residentSearch', 'rs_residentId', 'rs_residentSuggestions', resResidentOptions, onResResidentPicked, validateResidencyEligibility);
+}
+
+// Mirrors the server-side rule in api/documents.php — a Transferred
+// resident can't be issued a Certificate of Residency.
+function validateResidencyEligibility(r) {
+  if (r.status === 'Transferred') {
+    return `${r.firstName} ${r.lastName} is recorded as Transferred in Census. A Certificate of Residency cannot be issued for a resident with this status.`;
+  }
+  return null;
 }
 
 async function onResResidentPicked(r) {

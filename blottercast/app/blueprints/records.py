@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request, session
 
 from ..extensions import db
 from ..helpers import (
+    compute_age,
     find_census_resident_id_by_name,
     is_name_a_census_resident,
     next_seq_no,
@@ -15,6 +16,25 @@ from ..models import BlotterRecord, CensusRecord, Incident, Settlement
 from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("records", __name__)
+
+MIN_BLOTTER_PARTY_AGE = 15
+
+
+def _blotter_party_error(resident: CensusRecord, role_label: str):
+    """None if `resident` is eligible to be named as a blotter party;
+    otherwise the json_error() response describing why not."""
+    if resident.status == "Deceased":
+        return json_error(
+            f"{role_label} \"{resident.first_name} {resident.last_name}\" is recorded as deceased "
+            "and cannot be used for a new blotter record."
+        )
+    age = compute_age(resident.date_of_birth)
+    if age is not None and age < MIN_BLOTTER_PARTY_AGE:
+        return json_error(
+            f"{role_label} \"{resident.first_name} {resident.last_name}\" is {age} years old. "
+            f"Residents must be at least {MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record."
+        )
+    return None
 
 
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
@@ -139,7 +159,13 @@ def _blotter():
     if method == "GET":
         if request.args.get("peek"):
             return jsonify({"seqNo": next_seq_no(BlotterRecord, "docket_no", "BLT")})
-        rows = BlotterRecord.query.order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
+        # Archived records are kept for recordkeeping/audit but are removed
+        # from the active view by default — pass ?archived=1 to see them.
+        show_archived = request.args.get("archived") == "1"
+        rows = (
+            BlotterRecord.query.filter_by(archived=show_archived)
+            .order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
+        )
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":
@@ -162,6 +188,15 @@ def _blotter():
                 "At least one party (complainant or respondent) must be a registered "
                 "resident in Census before a blotter record can be filed."
             )
+
+        for pid, label in ((complainant_id, "Complainant"), (respondent_id, "Respondent")):
+            if not pid:
+                continue
+            resident = CensusRecord.query.get(pid)
+            if resident:
+                err = _blotter_party_error(resident, label)
+                if err:
+                    return err
 
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (
@@ -189,11 +224,29 @@ def _blotter():
         record = BlotterRecord.query.get(rid)
         if not record:
             return json_error("Not found", 404)
+
+        # Restore-from-archive only ever changes the archived flag — it must
+        # not touch any other field, so it's handled separately from the
+        # full-record edit below (which always expects every field).
+        if request.args.get("restore") == "1":
+            record.archived = False
+            db.session.commit()
+            return jsonify({"ok": True})
+
         d = request.get_json(silent=True) or {}
         complainant = d.get("complainant", "")
         respondent = d.get("respondent", "")
         complainant_id = int(d["complainantId"]) if d.get("complainantId") else None
         respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
+
+        for pid, label in ((complainant_id, "Complainant"), (respondent_id, "Respondent")):
+            if not pid:
+                continue
+            resident = CensusRecord.query.get(pid)
+            if resident:
+                err = _blotter_party_error(resident, label)
+                if err:
+                    return err
 
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (
@@ -217,14 +270,18 @@ def _blotter():
         return jsonify({"ok": True})
 
     if method == "DELETE":
+        # Official records are never permanently deleted — this archives the
+        # record instead. It stays in the database for recordkeeping/audit
+        # but drops out of the active list by default (see the GET branch).
         rid = int(request.args.get("id", 0))
         if not rid:
             return json_error("id required")
         record = BlotterRecord.query.get(rid)
-        if record:
-            db.session.delete(record)
-            db.session.commit()
-        return jsonify({"ok": True})
+        if not record:
+            return json_error("Not found", 404)
+        record.archived = True
+        db.session.commit()
+        return jsonify({"ok": True, "archived": True})
 
 
 # ---------------- SETTLEMENTS ----------------

@@ -14,14 +14,17 @@ from app.extensions import db
 from app.models import SystemSetting, User, Zone
 
 ZONES = [
-    ("Zone 1", "Zone 1 – Barangay Hall Area", 14.8836, 120.9655, 0.20),
-    ("Zone 2", "Zone 2 – South Central", 14.8824, 120.9648, 0.11),
-    ("Zone 3", "Zone 3 – Market Area", 14.8845, 120.9663, 0.18),
-    ("Zone 4", "Zone 4 – Southeast Residential", 14.8818, 120.9660, 0.06),
-    ("Zone 5", "Zone 5 – Northern Cluster", 14.8852, 120.9650, 0.10),
-    ("Zone 6", "Zone 6 – West Interior", 14.8830, 120.9636, 0.05),
-    ("Zone 7", "Zone 7 – Basketball Court Area", 14.8842, 120.9641, 0.16),
-    ("Zone 8", "Zone 8 – East Road Junction", 14.8826, 120.9670, 0.14),
+    # Repositioned + relabeled to match the actual named subdivisions/
+    # landmarks inside the barangay boundary (was generic "Zone N –
+    # <generic area>" placeholders on a much tighter cluster of points).
+    ("Zone 1", "Zone 1 – Mapulang Lupa Proper (Barangay Hall Area)", 14.8836, 120.9655, 0.20),
+    ("Zone 2", "Zone 2 – Mapulang Lupa Elementary School Area", 14.8800, 120.9634, 0.11),
+    ("Zone 3", "Zone 3 – Sitio Bata", 14.8863, 120.9679, 0.18),
+    ("Zone 4", "Zone 4 – Pandi Village 2", 14.8782, 120.9670, 0.06),
+    ("Zone 5", "Zone 5 – Silangan Corridor (Pandi–Angat Road)", 14.8884, 120.9640, 0.10),
+    ("Zone 6", "Zone 6 – Pandi Residences 1", 14.8818, 120.9598, 0.05),
+    ("Zone 7", "Zone 7 – Pandi Encampment One", 14.8854, 120.9613, 0.16),
+    ("Zone 8", "Zone 8 – Pandi Residences 3", 14.8806, 120.9700, 0.14),
 ]
 
 SETTINGS = {
@@ -68,8 +71,19 @@ def run():
         db.create_all()
 
         for zone_id, label, lat, lng, weight in ZONES:
-            if not Zone.query.get(zone_id):
+            existing = Zone.query.get(zone_id)
+            if not existing:
                 db.session.add(Zone(zone_id=zone_id, label=label, lat=lat, lng=lng, weight=weight))
+            elif existing.label != label or float(existing.lat) != lat or float(existing.lng) != lng:
+                # Zones are otherwise insert-if-missing (safe to re-run), but
+                # label/position specifically get kept in sync on re-run so
+                # a landmark rename/reposition like this one actually takes
+                # effect on a database that was already seeded, not just on
+                # a fresh install. weight is left alone if already set —
+                # that's tuned ML data, not identity/position.
+                existing.label = label
+                existing.lat = lat
+                existing.lng = lng
 
         for key, value in SETTINGS.items():
             if not SystemSetting.query.get(key):

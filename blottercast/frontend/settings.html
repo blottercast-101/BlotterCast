@@ -48,7 +48,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -177,6 +177,16 @@
     <!-- SECURITY -->
     <div id="tab-security" class="space-y-5 hidden">
       <div class="settings-section">
+        <h3>Two-Factor Authentication</h3>
+        <div class="space-y-0">
+          <div class="toggle-row">
+            <div><div class="toggle-label">Require a code by email at sign-in</div><div class="toggle-desc" id="mfaToggleDesc">Applies only to your own account, from your next login onward.</div></div>
+            <button id="mfaToggleBtn" class="toggle-switch off" onclick="toggleMyMfa()"><span class="sr-only">Toggle two-factor authentication</span></button>
+          </div>
+        </div>
+      </div>
+      <div id="tab-security-admin-only" data-perm="system_settings">
+      <div class="settings-section">
         <h3>Authentication Settings</h3>
         <div class="space-y-0">
           <div class="toggle-row">
@@ -215,6 +225,7 @@
             <button class="toggle-switch on" data-setting="data_subject_rights" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -411,8 +422,42 @@ async function downloadData() {
   }
 }
 
+async function loadMySecurity() {
+  try {
+    const { mfaEnabled } = await BCApi.mySecurity();
+    const btn = document.getElementById('mfaToggleBtn');
+    btn.classList.toggle('on', mfaEnabled);
+    btn.classList.toggle('off', !mfaEnabled);
+  } catch (err) {
+    showToast('Could not load your security setting: ' + err.message, 'error');
+  }
+}
+async function toggleMyMfa() {
+  const btn = document.getElementById('mfaToggleBtn');
+  const enabling = btn.classList.contains('off'); // about to turn on
+  btn.disabled = true;
+  try {
+    await BCApi.toggleMyMfa(enabling);
+    btn.classList.toggle('on', enabling);
+    btn.classList.toggle('off', !enabling);
+    showToast(enabling
+      ? 'Two-factor authentication turned on for your account. You\'ll get a code by email starting with your next login.'
+      : 'Two-factor authentication turned off for your account. You can sign in with just your password from now on.');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 (async function () {
-  await requireAuth();
+  const user = await requireAuth();
+  // Personal 2FA preference — available to every role, independent of the
+  // system-wide settings below (which only System Admin can load/save).
+  await loadMySecurity();
+
+  if (!user || !roleCan(user.role, 'system_settings')) return; // rest of this tab/page is admin-only
+
   try {
     const values = await BCApi.settingsList();
     applySettings(values);

@@ -48,7 +48,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -436,6 +436,10 @@ async function saveResident(){
   if (vals.firstName && !bcIsValidName(vals.firstName)) formatErrors.push('First Name should only contain letters (no numbers).');
   if (vals.middleName && !bcIsValidName(vals.middleName)) formatErrors.push('Middle Name should only contain letters (no numbers).');
   if (vals.dob && bcIsFutureDate(vals.dob)) formatErrors.push('Date of Birth cannot be in the future.');
+  if (vals.dob) {
+    const age = Math.floor((new Date() - new Date(vals.dob)) / 31557600000);
+    if (age < 3) formatErrors.push(`This resident is ${age} year(s) old. Residents must be at least 3 years old to be registered in Census.`);
+  }
   if (vals.contactNo && !bcIsValidContact(vals.contactNo)) formatErrors.push('Contact Number should be a valid PH mobile number (e.g. 09171234567).');
   if (vals.occupation && /[0-9]/.test(vals.occupation)) formatErrors.push('Occupation should not contain numbers.');
   if (formatErrors.length) {

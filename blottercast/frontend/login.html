@@ -137,9 +137,10 @@
     }
     .sc-label { font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
     .sc-value { font-weight: 600; font-size: 0.9rem; color: white; display: flex; align-items: center; gap: 6px; }
-    .sc-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .sc-dot { width: 6px; height: 6px; border-radius: 50%; background: #d1d5db; }
     .sc-dot.green { background: var(--green-light); box-shadow: 0 0 6px var(--green-light); animation: blink 1.5s infinite; }
     .sc-dot.amber { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+    .sc-dot.red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     /* ── RIGHT PANEL (LOGIN FORM) ── */
@@ -339,15 +340,15 @@
       <p>Turning every blotter entry into a data point. Every incident into a pattern. Every pattern into a prediction that keeps your community safer.</p>
       <div class="left-stats">
         <div class="left-stat">
-          <div class="left-stat-num">91%</div>
+          <div class="left-stat-num" id="loginStatAccuracy">—</div>
           <div class="left-stat-label">ML Accuracy</div>
         </div>
         <div class="left-stat">
-          <div class="left-stat-num">336+</div>
-          <div class="left-stat-label">Records 2025</div>
+          <div class="left-stat-num" id="loginStatRecords">—</div>
+          <div class="left-stat-label">Overall Records</div>
         </div>
         <div class="left-stat">
-          <div class="left-stat-num">8</div>
+          <div class="left-stat-num" id="loginStatZones">—</div>
           <div class="left-stat-label">Zones</div>
         </div>
       </div>
@@ -358,15 +359,15 @@
   <div class="status-cards">
     <div class="status-card">
       <div class="sc-label">System Status</div>
-      <div class="sc-value"><span class="sc-dot green"></span> Online</div>
+      <div class="sc-value" id="loginSysStatus"><span class="sc-dot green"></span> Checking…</div>
     </div>
     <div class="status-card">
-      <div class="sc-label">Risk Alert – Zone 1</div>
-      <div class="sc-value"><span class="sc-dot amber"></span> High Risk</div>
+      <div class="sc-label" id="loginRiskLabel">Risk Alert</div>
+      <div class="sc-value" id="loginRiskValue"><span class="sc-dot amber"></span> —</div>
     </div>
     <div class="status-card">
       <div class="sc-label">Last Model Train</div>
-      <div class="sc-value">Jan 20, 2025</div>
+      <div class="sc-value" id="loginLastTrain">—</div>
     </div>
   </div>
 </div>
@@ -484,10 +485,10 @@
     </div>
   </form>
 
-  <!-- Forgot Password Step 2: enter code + new password -->
-  <form id="resetForm" onsubmit="handleResetPassword(event)" class="animate-in delay-2" style="display:none;">
+  <!-- Forgot Password Step 2: verify code -->
+  <form id="resetForm" onsubmit="handleVerifyResetOtp(event)" class="animate-in delay-2" style="display:none;">
     <div class="form-header" style="margin-bottom:1.5rem;">
-      <h1 style="font-size:1.5rem;">Enter code &amp; new password</h1>
+      <h1 style="font-size:1.5rem;">Enter verification code</h1>
       <p>If that account exists, a 6-digit code was sent to the email on file.</p>
     </div>
 
@@ -505,11 +506,37 @@
       </div>
     </div>
 
+    <button type="submit" class="btn-login" id="resetBtn">
+      <div class="spinner" id="resetSpinner"></div>
+      <span class="btn-text">Verify Code</span>
+    </button>
+
+    <div style="text-align:center;margin-top:1.25rem;font-size:0.82rem;color:#6b7280;">
+      Didn't get a code?
+      <a href="#" id="resendResetLink" onclick="handleResendResetOtp(event)" style="color:var(--green-main);font-weight:500;text-decoration:none;">Resend code</a>
+      <a href="#" onclick="backToLogin(event)" style="display:block;margin-top:0.6rem;color:#9ca3af;">← Back to sign in</a>
+    </div>
+  </form>
+
+  <!-- Forgot Password Step 3: new password — only reachable after the code
+       above has actually been verified; never shown alongside it. -->
+  <form id="newPasswordForm" onsubmit="handleResetPassword(event)" class="animate-in delay-2" style="display:none;">
+    <div class="form-header" style="margin-bottom:1.5rem;">
+      <h1 style="font-size:1.5rem;">Set a new password</h1>
+      <p>Your code has been verified. Choose a new password for your account.</p>
+    </div>
+
+    <div class="alert-error" id="newPasswordAlert">
+      <span data-icon="warning" data-icon-size="16"></span>
+      <span id="newPasswordAlertMsg">Something went wrong.</span>
+    </div>
+
     <div class="input-group">
       <label class="input-label">New password</label>
       <div class="input-wrap">
         <span class="input-icon" data-icon="lock" data-icon-size="16"></span>
         <input type="password" id="resetNewPassword" class="form-input" placeholder="Enter a new password" autocomplete="new-password"/>
+        <button type="button" class="toggle-pw" id="toggleResetNewPw" onclick="toggleFieldPassword('resetNewPassword','toggleResetNewPw')"><span data-icon="view" data-icon-size="18"></span></button>
       </div>
     </div>
 
@@ -518,19 +545,18 @@
       <div class="input-wrap">
         <span class="input-icon" data-icon="lock" data-icon-size="16"></span>
         <input type="password" id="resetConfirmPassword" class="form-input" placeholder="Re-enter the new password" autocomplete="new-password"/>
+        <button type="button" class="toggle-pw" id="toggleResetConfirmPw" onclick="toggleFieldPassword('resetConfirmPassword','toggleResetConfirmPw')"><span data-icon="view" data-icon-size="18"></span></button>
       </div>
       <div class="error-msg" id="resetConfirmError">Passwords do not match.</div>
     </div>
 
-    <button type="submit" class="btn-login" id="resetBtn">
-      <div class="spinner" id="resetSpinner"></div>
+    <button type="submit" class="btn-login" id="newPasswordBtn">
+      <div class="spinner" id="newPasswordSpinner"></div>
       <span class="btn-text">Reset Password</span>
     </button>
 
-    <div style="text-align:center;margin-top:1.25rem;font-size:0.82rem;color:#6b7280;">
-      Didn't get a code?
-      <a href="#" id="resendResetLink" onclick="handleResendResetOtp(event)" style="color:var(--green-main);font-weight:500;text-decoration:none;">Resend code</a>
-      <a href="#" onclick="backToLogin(event)" style="display:block;margin-top:0.6rem;color:#9ca3af;">← Back to sign in</a>
+    <div style="text-align:center;margin-top:1.25rem;font-size:0.82rem;">
+      <a href="#" onclick="backToLogin(event)" style="color:#9ca3af;text-decoration:none;">← Back to sign in</a>
     </div>
   </form>
 
@@ -546,8 +572,11 @@
   <script src="icons.js"></script>
 <script>
   function togglePassword() {
-    const pw = document.getElementById('password');
-    const btn = document.getElementById('togglePw');
+    toggleFieldPassword('password', 'togglePw');
+  }
+  function toggleFieldPassword(inputId, btnId) {
+    const pw = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
     if (pw.type === 'password') { pw.type = 'text'; btn.innerHTML = iconSvg('viewOff', 18); }
     else { pw.type = 'password'; btn.innerHTML = iconSvg('view', 18); }
   }
@@ -580,6 +609,14 @@
       btn.classList.remove('loading');
       if (result.mfaRequired) {
         showOtpStep(result);
+      } else {
+        // 2FA is off for this account — password verification alone was
+        // enough, so skip straight to the same success/redirect the OTP
+        // step ends with.
+        if (resendTimer) clearInterval(resendTimer);
+        document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
+        document.getElementById('successOverlay').classList.add('show');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
       }
     } catch (err) {
       btn.classList.remove('loading');
@@ -607,7 +644,7 @@
 
   function backToLogin(e) {
     e.preventDefault();
-    ['otpForm', 'forgotForm', 'resetForm'].forEach(id => document.getElementById(id).style.display = 'none');
+    ['otpForm', 'forgotForm', 'resetForm', 'newPasswordForm'].forEach(id => document.getElementById(id).style.display = 'none');
     document.getElementById('loginForm').style.display = '';
     document.getElementById('password').value = '';
     if (resendTimer) clearInterval(resendTimer);
@@ -681,9 +718,6 @@
     document.getElementById('resetForm').style.display = '';
     document.getElementById('resetAlert').classList.remove('show');
     document.getElementById('resetCode').value = '';
-    document.getElementById('resetNewPassword').value = '';
-    document.getElementById('resetConfirmPassword').value = '';
-    document.getElementById('resetConfirmError').classList.remove('show');
     document.getElementById('resetCode').focus();
     startCooldown('resendResetLink', 30, () => resetResendTimer, (t) => resetResendTimer = t);
   }
@@ -704,22 +738,61 @@
     }
   }
 
-  async function handleResetPassword(e) {
+  // Step 2: verify the code by itself. The New Password step only becomes
+  // reachable after this succeeds — it's never shown at the same time as
+  // the code field, and can't be reached by guessing/skipping ahead since
+  // the server enforces the same sequencing (see verify_reset_otp /
+  // reset_password in api/auth.php).
+  async function handleVerifyResetOtp(e) {
     e.preventDefault();
     const codeEl = document.getElementById('resetCode');
-    const npEl = document.getElementById('resetNewPassword');
-    const cpEl = document.getElementById('resetConfirmPassword');
-    const cpErr = document.getElementById('resetConfirmError');
     const alertEl = document.getElementById('resetAlert');
     const alertMsg = document.getElementById('resetAlertMsg');
     const btn = document.getElementById('resetBtn');
-    alertEl.classList.remove('show'); cpErr.classList.remove('show'); cpEl.classList.remove('error');
+    alertEl.classList.remove('show');
 
     const code = codeEl.value.trim();
+    if (!code) { alertMsg.textContent = 'Enter the verification code sent to your email.'; alertEl.classList.add('show'); return; }
+
+    btn.classList.add('loading');
+    try {
+      await BCApi.verifyResetOtp(code);
+      btn.classList.remove('loading');
+      if (resetResendTimer) clearInterval(resetResendTimer);
+      showNewPasswordStep();
+    } catch (err) {
+      btn.classList.remove('loading');
+      alertMsg.textContent = err.message || 'Incorrect code. Please try again.';
+      alertEl.classList.add('show');
+      codeEl.focus();
+    }
+  }
+
+  function showNewPasswordStep() {
+    document.getElementById('resetForm').style.display = 'none';
+    document.getElementById('newPasswordForm').style.display = '';
+    document.getElementById('newPasswordAlert').classList.remove('show');
+    document.getElementById('resetNewPassword').value = '';
+    document.getElementById('resetConfirmPassword').value = '';
+    document.getElementById('resetConfirmError').classList.remove('show');
+    document.getElementById('resetNewPassword').focus();
+  }
+
+  // Step 3: set the new password. No code is sent here — the server ties
+  // this to the already-verified reset session instead.
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    const npEl = document.getElementById('resetNewPassword');
+    const cpEl = document.getElementById('resetConfirmPassword');
+    const cpErr = document.getElementById('resetConfirmError');
+    const alertEl = document.getElementById('newPasswordAlert');
+    const alertMsg = document.getElementById('newPasswordAlertMsg');
+    const btn = document.getElementById('newPasswordBtn');
+    alertEl.classList.remove('show'); cpErr.classList.remove('show'); cpEl.classList.remove('error');
+
     const newPassword = npEl.value;
     const confirmPassword = cpEl.value;
 
-    if (!code) { alertMsg.textContent = 'Enter the verification code sent to your email.'; alertEl.classList.add('show'); return; }
     if (!newPassword) { alertMsg.textContent = 'Enter a new password.'; alertEl.classList.add('show'); return; }
     if (newPassword !== confirmPassword) {
       cpEl.classList.add('error'); cpErr.classList.add('show'); return;
@@ -727,14 +800,13 @@
 
     btn.classList.add('loading');
     try {
-      await BCApi.resetPassword(code, newPassword);
+      await BCApi.resetPassword(newPassword);
       btn.classList.remove('loading');
-      if (resetResendTimer) clearInterval(resetResendTimer);
       document.getElementById('successMsg').textContent = 'Password reset! Redirecting to sign in…';
       document.getElementById('successOverlay').classList.add('show');
       setTimeout(() => {
         document.getElementById('successOverlay').classList.remove('show');
-        document.getElementById('resetForm').style.display = 'none';
+        document.getElementById('newPasswordForm').style.display = 'none';
         document.getElementById('loginForm').style.display = '';
         document.getElementById('password').value = '';
         document.getElementById('username').value = document.getElementById('forgotUsername').value || '';
@@ -743,7 +815,7 @@
       btn.classList.remove('loading');
       alertMsg.textContent = err.message || 'Could not reset your password. Please try again.';
       alertEl.classList.add('show');
-      codeEl.focus();
+      npEl.focus();
     }
   }
 
@@ -810,6 +882,37 @@
       document.getElementById('loginAlert').classList.remove('show');
     });
   });
+
+  // Live stats + status — same endpoint/calculation as the landing page.
+  (async function () {
+    try {
+      const s = await BCApi.publicStats();
+      document.getElementById('loginStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
+      document.getElementById('loginStatRecords').textContent = s.overallRecords + '+';
+      document.getElementById('loginStatZones').textContent = s.zonesMonitored;
+
+      const sysUp = s.systemStatus && s.systemStatus.database && s.systemStatus.core;
+      document.getElementById('loginSysStatus').innerHTML =
+        `<span class="sc-dot ${sysUp ? 'green' : 'amber'}"></span> ${sysUp ? 'Online' : 'Degraded'}`;
+
+      const riskLabelEl = document.getElementById('loginRiskLabel');
+      const riskValueEl = document.getElementById('loginRiskValue');
+      if (s.riskAlert) {
+        riskLabelEl.textContent = 'Risk Alert – ' + s.riskAlert.zone;
+        const dot = s.riskAlert.level === 'High' ? 'red' : s.riskAlert.level === 'Moderate' ? 'amber' : 'green';
+        riskValueEl.innerHTML = `<span class="sc-dot ${dot}"></span> ${s.riskAlert.level} Risk`;
+      } else {
+        riskLabelEl.textContent = 'Risk Alert';
+        riskValueEl.innerHTML = `<span class="sc-dot"></span> No data yet`;
+      }
+
+      document.getElementById('loginLastTrain').textContent = s.lastModelTrain
+        ? new Date(s.lastModelTrain).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'Not trained yet';
+    } catch (err) {
+      document.getElementById('loginSysStatus').innerHTML = `<span class="sc-dot amber"></span> Unknown`;
+    }
+  })();
 </script>
 </body>
 </html>

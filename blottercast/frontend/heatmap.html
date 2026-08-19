@@ -179,7 +179,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -384,7 +384,7 @@
           return {
             id: r.id, date: r.incident_date,
             period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
-            category: r.category, location: r.location,
+            category: r.category, location: bcFormatIncidentLocation(r.zone_id, r.location),
             lat: parseFloat(r.lat), lng: parseFloat(r.lng),
             weight: WEIGHTS[r.priority] || 0.6,
           };

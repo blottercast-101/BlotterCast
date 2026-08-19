@@ -57,7 +57,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -229,8 +229,6 @@
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required>
             <option value="" selected disabled hidden>Select…</option>
-            <option>Zone 1</option><option>Zone 2</option><option>Zone 3</option><option>Zone 4</option>
-            <option>Zone 5</option><option>Zone 6</option><option>Zone 7</option><option>Zone 8</option>
           </select>
         </div>
         <div class="col-span-2"><label class="form-label">Location Detail</label><input type="text" id="if_location" class="form-input" placeholder="Street, landmark, purok…"/></div>
@@ -304,7 +302,7 @@
     return {
       id: Number(r.id), reportNo: r.report_no, date: r.incident_date,
       dateReported: (m && d) ? `${m}/${d}/${y}` : r.incident_date,
-      timeReported: time5, hour: r.hour, zone: r.zone_id, location: r.location,
+      timeReported: time5, hour: r.hour, zone: r.zone_id, location: bcStripZonePrefix(r.location),
       lat: r.lat, lng: r.lng, category: r.category, description: r.description,
       reporter: r.reporter, officer: r.officer, priority: r.priority, status: r.status,
     };
@@ -359,7 +357,7 @@
           <td class="font-semibold text-forest-700">${r.reportNo}</td>
           <td>${r.dateReported}</td>
           <td>${r.timeReported}</td>
-          <td class="text-xs">${r.location}</td>
+          <td class="text-xs">${bcFormatIncidentLocation(r.zone, r.location)}</td>
           <td><span class="text-xs font-medium text-forest-700">${r.category}</span></td>
           <td class="text-xs text-gray-500 max-w-xs truncate" title="${r.description}">${r.description}</td>
           <td class="text-xs">${r.reporter}</td>
@@ -380,10 +378,15 @@
     bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
   }
 
-  async function openAddIncident() {
+  function resetIncidentFormFields() {
     incEditId = null;
     document.getElementById('incModalTitle').textContent = 'New Incident Report';
     document.getElementById('incidentForm').reset();
+    document.getElementById('if_reportNo').value = '';
+  }
+
+  async function openAddIncident() {
+    resetIncidentFormFields();
     openModal('incidentModal');
 
     // Look-ahead preview only, same reasoning as Blotter's Docket No.
@@ -444,7 +447,10 @@
     if (!vals.status) { await bcAlert('Please select the Status.'); return; }
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
-    if (!vals.location.toLowerCase().startsWith('zone')) vals.location = vals.zone + ', ' + vals.location;
+    // Zone lives in its own column (zone_id) — never baked into the
+    // location text, so changing the zone dropdown always takes effect
+    // everywhere it's displayed, with no stale prefix left behind.
+    vals.location = bcStripZonePrefix(vals.location);
     try {
       if (incEditId) {
         const prev = incidentData.find(x => x.id === incEditId);
@@ -454,6 +460,7 @@
       } else {
         await BCApi.create('incidents', vals);
         showToast('Incident report added! It now feeds the heat map, trends, and predictions.');
+        resetIncidentFormFields();
       }
       closeModal('incidentModal');
       await loadIncidents();
@@ -477,7 +484,7 @@
     const r = incidentData.find(x => x.id === id);
     const rows = [
       ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', r.timeReported],
-      ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
+      ['Zone', r.zone], ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
       ['Description', r.description], ['Reporter', r.reporter], ['Officer', r.officer], ['Status', r.status],
     ];
     document.getElementById('incViewContent').innerHTML = rows.map(([k,v]) => `
@@ -488,9 +495,24 @@
     openModal('incViewModal');
   }
 
+  async function loadZoneOptions() {
+    try {
+      const zones = await BCApi.zones();
+      const sel = document.getElementById('if_zone');
+      const placeholder = sel.firstElementChild.outerHTML; // keep the "Select…" option
+      sel.innerHTML = placeholder + zones.map(z =>
+        `<option value="${z.zone_id}">${z.label}</option>`
+      ).join('');
+    } catch (err) { /* dropdown just stays on the placeholder if this fails */ }
+  }
+
   (async function () {
     await requireAuth();
-    try { await loadIncidents(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    try { await Promise.all([loadIncidents(), loadZoneOptions()]); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    if (new URLSearchParams(location.search).get('new') === '1') {
+      openAddIncident();
+      history.replaceState(null, '', location.pathname);
+    }
   })();
 </script>
 </body>

@@ -26,6 +26,7 @@ class User(db.Model):
     contact_no = db.Column(db.String(30))
     role = db.Column(db.String(30), nullable=False, default="Desk Officer")
     status = db.Column(db.String(20), nullable=False, default="Active")
+    mfa_enabled = db.Column(db.Boolean, nullable=False, default=True)
     signature_path = db.Column(db.String(255))
     last_login = db.Column(db.DateTime)
     failed_attempts = db.Column(db.Integer, nullable=False, default=0)
@@ -112,6 +113,7 @@ class BlotterRecord(db.Model):
     case_type = db.Column(db.String(10), nullable=False, default="CRIM")
     status = db.Column(db.String(20), nullable=False, default="Pending")
     zone_id = db.Column(db.String(10), db.ForeignKey("zones.zone_id"))
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
@@ -124,6 +126,7 @@ class BlotterRecord(db.Model):
             "respondent": self.respondent, "respondent_id": self.respondent_id,
             "respondent_addr": self.respondent_addr, "nature": self.nature,
             "case_type": self.case_type, "status": self.status, "zone_id": self.zone_id,
+            "archived": self.archived,
         }
 
 

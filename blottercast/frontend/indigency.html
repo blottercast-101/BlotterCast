@@ -48,7 +48,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link active" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -216,6 +216,16 @@
           <option>Other</option>
         </select>
       </div>
+      <div id="if_blotter_block" class="hidden bg-red-50 border border-red-300 rounded-xl p-4">
+        <div class="flex items-start gap-2 mb-2">
+          <span class="text-red-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
+          <div>
+            <div class="font-semibold text-red-800 text-sm">Not eligible for a Certificate of Indigency</div>
+            <div class="text-xs text-red-700 mt-0.5">This resident is listed as a <strong>Respondent</strong> in the blotter case(s) below. Only the respondent role is restricted — being named as a complainant does not affect eligibility.</div>
+          </div>
+        </div>
+        <div id="if_blotter_block_list" class="space-y-2"></div>
+      </div>
       <div id="if_blotter_warning" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4">
         <div class="flex items-start gap-2 mb-2">
           <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
@@ -269,16 +279,33 @@ async function loadIndResidentOptionsForPicker() {
     return {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
       age, civilStatus: r.civil_status, address: r.address || '', householdNo: r.household_no || '',
+      status: r.status || 'Active',
     };
   });
-  bcInitResidentPicker('if_residentSearch', 'if_residentId', 'if_residentSuggestions', indResidentOptions, onIndResidentPicked);
+  bcInitResidentPicker('if_residentSearch', 'if_residentId', 'if_residentSuggestions', indResidentOptions, onIndResidentPicked, validateIndigencyEligibility);
 }
 
+// Mirrors the server-side rule in api/documents.php — a Transferred
+// resident can't be issued a Certificate of Indigency.
+function validateIndigencyEligibility(r) {
+  if (r.status === 'Transferred') {
+    return `${r.firstName} ${r.lastName} is recorded as Transferred in Census. A Certificate of Indigency cannot be issued for a resident with this status.`;
+  }
+  return null;
+}
+
+let ifRespondentBlocked = false;
+
 async function onIndResidentPicked(r) {
+  const blockBox = document.getElementById('if_blotter_block');
+  const blockListEl = document.getElementById('if_blotter_block_list');
   const warningBox = document.getElementById('if_blotter_warning');
   const listEl = document.getElementById('if_blotter_list');
+  ifRespondentBlocked = false;
   if (!r) {
     ['if_name_display','if_age_display','if_civil_display','if_addr_display'].forEach(f => document.getElementById(f).value = '');
+    blockBox.classList.add('hidden');
+    blockListEl.innerHTML = '';
     warningBox.classList.add('hidden');
     listEl.innerHTML = '';
     document.getElementById('if_blotter_ack').checked = false;
@@ -290,12 +317,15 @@ async function onIndResidentPicked(r) {
   document.getElementById('if_addr_display').value = r.address;
 
   document.getElementById('if_blotter_ack').checked = false;
+  blockBox.classList.add('hidden');
+  blockListEl.innerHTML = '';
   warningBox.classList.add('hidden');
   listEl.innerHTML = '';
   try {
     const records = await BCApi.checkBlotterRecords(r.lastName, r.firstName, r.id);
-    if (records.length > 0) {
-      listEl.innerHTML = records.map(b => `
+    const asRespondent = records.filter(b => b.role === 'Respondent');
+    const asComplainant = records.filter(b => b.role !== 'Respondent');
+    const renderCard = (b) => `
         <div class="bg-white border border-amber-200 rounded-lg p-3 text-xs">
           <div class="flex justify-between items-center mb-1">
             <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
@@ -303,7 +333,19 @@ async function onIndResidentPicked(r) {
           </div>
           <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
           <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: ${b.status}</div>
-        </div>`).join('');
+        </div>`;
+
+    // Only the Respondent role is restricted — a Complainant stays eligible
+    // even in the exact same case, so the two are never merged into one
+    // check. Respondent records hard-block issuance (no override); any
+    // remaining Complainant-only records are shown as information only.
+    if (asRespondent.length > 0) {
+      ifRespondentBlocked = true;
+      blockListEl.innerHTML = asRespondent.map(renderCard).join('');
+      blockBox.classList.remove('hidden');
+    }
+    if (asComplainant.length > 0) {
+      listEl.innerHTML = asComplainant.map(renderCard).join('');
       warningBox.classList.remove('hidden');
     }
   } catch (e) { /* if the check fails, don't block issuance on it */ }
@@ -385,6 +427,10 @@ async function issueIndigency(){
   const purpose=document.getElementById('if_purpose').value;
   if(!residentId){await bcAlert('Please select the resident this certificate is for.');return;}
   if(!purpose){await bcAlert('Please select the purpose of this certificate.');return;}
+  if (ifRespondentBlocked) {
+    await bcAlert('This resident is listed as a Respondent in a blotter case and is not eligible for a Certificate of Indigency.');
+    return;
+  }
   const warningVisible = !document.getElementById('if_blotter_warning').classList.contains('hidden');
   if (warningVisible && !document.getElementById('if_blotter_ack').checked) {
     await bcAlert('This resident has blotter record(s) on file. Please review them and check the acknowledgment box before issuing this certificate.');

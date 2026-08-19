@@ -121,6 +121,67 @@ function bcIsValidName(str) {
   return BC_NAME_RE.test((str || '').trim());
 }
 
+// The system's one canonical timezone — this is a single-barangay-office
+// app, so every timestamp is shown in the same timezone the office
+// actually operates in, regardless of which timezone the viewing browser
+// happens to be set to. Pairs with the "Z"-suffixed UTC timestamps the
+// server sends for exactly this reason (see api/users.php's Last Login).
+const BC_SYSTEM_TIMEZONE = 'Asia/Manila';
+function bcFormatTimestamp(iso, emptyLabel = 'Never') {
+  if (!iso) return emptyLabel;
+  return new Date(iso).toLocaleString('en-PH', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    timeZone: BC_SYSTEM_TIMEZONE,
+  });
+}
+
+// Zone is its own field (Incident.zone_id) — it must never be baked into
+// the free-text Location detail, or changing the zone dropdown later has
+// no way to update text that was already saved into the old zone's
+// sentence. bcStripZonePrefix() cleans up rows saved before this was
+// fixed; bcFormatIncidentLocation() is the single place "Zone X, detail"
+// gets composed for display, always from the record's *current* zone.
+function bcStripZonePrefix(location) {
+  return (location || '').replace(/^\s*Zone\s*\d+\s*,\s*/i, '').trim();
+}
+function bcFormatIncidentLocation(zone, location) {
+  const detail = bcStripZonePrefix(location);
+  return zone ? (detail ? `${zone}, ${detail}` : zone) : detail;
+}
+
+// Every password field in the app gets a Show/Hide eye icon — call this
+// once per field, right after the input exists in the DOM. The toggle
+// only flips the input's type; it never touches or clears the value, and
+// stays put no matter what else on the page the user clicks.
+function bcAddPasswordToggle(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || input.dataset.pwToggleAdded) return;
+  input.dataset.pwToggleAdded = '1';
+  input.classList.add('pw-input');
+
+  let wrap = input.parentElement;
+  if (!wrap.classList.contains('relative')) {
+    wrap = document.createElement('div');
+    wrap.className = 'relative';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+  }
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pw-toggle';
+  btn.setAttribute('aria-label', 'Show password');
+  btn.tabIndex = -1;
+  btn.innerHTML = '<span data-icon="view" data-icon-size="16"></span>';
+  btn.onclick = () => {
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.innerHTML = `<span data-icon="${showing ? 'view' : 'viewOff'}" data-icon-size="16"></span>`;
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  };
+  wrap.appendChild(btn);
+}
+
 // Philippine mobile numbers: 09XXXXXXXXX (11 digits starting with 09).
 // Paired with data-digits-only above, which strips letters/symbols as
 // they're typed, so by the time this runs the only way to fail is
@@ -586,8 +647,8 @@ document.addEventListener('click', (e) => {
 // after residentOptions has been loaded.
 const _bcResidentPickers = {}; // keyed by input id, holds { options, hiddenId, onPick }
 
-function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick) {
-  _bcResidentPickers[inputId] = { options, hiddenId, listId, onPick };
+function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, validate) {
+  _bcResidentPickers[inputId] = { options, hiddenId, listId, onPick, validate };
   const input = document.getElementById(inputId);
   if (!input || input.dataset.bcPickerBound) return;
   input.dataset.bcPickerBound = '1';
@@ -634,6 +695,14 @@ function bcResidentPickerChoose(inputId, residentId) {
   if (!picker) return;
   const r = picker.options.find(x => x.id === residentId);
   if (!r) return;
+  if (picker.validate) {
+    const reason = picker.validate(r);
+    if (reason) {
+      showToast(reason, 'error');
+      document.getElementById(picker.listId).classList.add('hidden');
+      return;
+    }
+  }
   document.getElementById(inputId).value = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
   document.getElementById(picker.hiddenId).value = String(residentId);
   document.getElementById(picker.listId).classList.add('hidden');

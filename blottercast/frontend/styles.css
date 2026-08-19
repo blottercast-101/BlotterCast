@@ -306,6 +306,16 @@ body { font-family: 'DM Sans', sans-serif; }
 .icon-btn.danger { background: var(--red-100); color: var(--red-600); }
 .icon-btn.danger:hover { background: #fecaca; }
 
+/* Show/Hide toggle sitting inside a password field */
+.pw-toggle {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 6px; border: none; background: transparent;
+  color: var(--forest-400); cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.pw-toggle:hover { color: var(--forest-600); background: var(--forest-50); }
+input.pw-input { padding-right: 38px; }
+
 /* ---------------- Modal ---------------- */
 .modal-overlay {
   position: fixed; inset: 0;

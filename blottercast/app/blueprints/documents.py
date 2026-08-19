@@ -17,6 +17,8 @@ from ..permissions import json_error, log_audit, login_required, permission_requ
 
 bp = Blueprint("documents", __name__)
 
+MIN_RESIDENT_REGISTRATION_AGE = 3
+
 
 @bp.route("/api/documents.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
@@ -140,6 +142,11 @@ def _census():
 
         dob = parse_date(dob)
         age = compute_age(dob)
+        if age is not None and age < MIN_RESIDENT_REGISTRATION_AGE:
+            return json_error(
+                f"This resident is {age} year(s) old. Residents must be at least "
+                f"{MIN_RESIDENT_REGISTRATION_AGE} years old to be registered in Census."
+            )
         if _duplicate_resident(last_name, first_name, middle_name, address, household, sex, age):
             return json_error(
                 "A resident with the same name, address, household number, age, and sex is already in Census.", 409
@@ -192,6 +199,11 @@ def _census():
 
         dob = parse_date(dob)
         age = compute_age(dob)
+        if age is not None and age < MIN_RESIDENT_REGISTRATION_AGE:
+            return json_error(
+                f"This resident is {age} year(s) old. Residents must be at least "
+                f"{MIN_RESIDENT_REGISTRATION_AGE} years old to be registered in Census."
+            )
         if _duplicate_resident(last_name, first_name, middle_name, address, household, sex, age, exclude_id=rid):
             return json_error(
                 "Another resident with the same name, address, household number, age, and sex is already in Census.",
@@ -228,6 +240,34 @@ def _get_resident_or_404(resident_id, not_found_msg):
     return resident, None
 
 
+def _resident_status_block(resident, cert_label, blocked_statuses):
+    """None if `resident` is eligible for this certificate; otherwise the
+    json_error() response explaining why not, based on their Census status."""
+    if resident.status in blocked_statuses:
+        return json_error(
+            f"{full_name_of(resident)} is recorded as {resident.status} in Census. "
+            f"A {cert_label} cannot be issued for a resident with this status."
+        )
+    return None
+
+
+def _is_blotter_respondent(resident):
+    """True if `resident` is named as the Respondent in any blotter case —
+    matched by Census link first, then by name for cases filed before the
+    party was linked to a Census record. Being a Complainant never counts
+    here; only the Respondent role restricts indigency eligibility."""
+    if BlotterRecord.query.filter_by(respondent_id=resident.id).first():
+        return True
+    last, first = (resident.last_name or "").strip(), (resident.first_name or "").strip()
+    if not last or not first:
+        return False
+    return BlotterRecord.query.filter(
+        BlotterRecord.respondent_id.is_(None),
+        BlotterRecord.respondent.ilike(f"%{last}%"),
+        BlotterRecord.respondent.ilike(f"%{first}%"),
+    ).first() is not None
+
+
 # ---------------- BARANGAY CLEARANCE ----------------
 def _clearance():
     method = request.method
@@ -241,6 +281,9 @@ def _clearance():
         resident, err = _get_resident_or_404(
             resident_id, ("A clearance must be issued to an existing census resident.", "That resident does not exist in Census.")
         )
+        if err:
+            return err
+        err = _resident_status_block(resident, "Certificate of Clearance", {"Deceased", "Transferred"})
         if err:
             return err
 
@@ -287,6 +330,9 @@ def _residency():
             resident_id,
             ("A certificate of residency must be issued to an existing census resident.", "That resident does not exist in Census."),
         )
+        if err:
+            return err
+        err = _resident_status_block(resident, "Certificate of Residency", {"Transferred"})
         if err:
             return err
 
@@ -383,6 +429,15 @@ def _indigency():
         )
         if err:
             return err
+        err = _resident_status_block(resident, "Certificate of Indigency", {"Transferred"})
+        if err:
+            return err
+        if _is_blotter_respondent(resident):
+            return json_error(
+                f"{full_name_of(resident)} is listed as a Respondent in a blotter case and is not "
+                "eligible for a Certificate of Indigency. Being named as a Complainant does not "
+                "affect eligibility."
+            )
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(IndigencyCertificate, "CI")
         record = IndigencyCertificate(

@@ -93,8 +93,44 @@ def auth_router():
         return _resend_reset_otp()
     if action == "reset_password" and request.method == "POST":
         return _reset_password()
+    if action == "verify_reset_otp" and request.method == "POST":
+        return _verify_reset_otp()
+    if action == "my_security" and request.method == "GET":
+        return _my_security()
+    if action == "toggle_my_mfa" and request.method == "POST":
+        return _toggle_my_mfa()
 
     return json_error("Unknown action", 404)
+
+
+def _complete_login(user, audit_note):
+    """Finishes a successful sign-in — used both when MFA verification just
+    passed, and when MFA is disabled for this account and password
+    verification alone is enough. Sets last_login, starts the session, and
+    returns the same response shape either way."""
+    settings = get_security_settings()
+    must_change_password = False
+    if settings["password_expiry_days"] > 0 and user.password_changed_at:
+        age_days = (datetime.utcnow() - user.password_changed_at).total_seconds() / 86400
+        must_change_password = age_days > settings["password_expiry_days"]
+
+    user.last_login = datetime.utcnow()
+    db.session.commit()
+
+    session.clear()
+    session["user_id"] = user.id
+    session["full_name"] = user.full_name
+    session["role"] = user.role
+    session["username"] = user.username
+    session["must_change_password"] = must_change_password
+    session["last_activity"] = datetime.utcnow().timestamp()
+
+    log_audit(user.username, "Login", "System", audit_note)
+
+    return jsonify({"ok": True, "mfaRequired": False, "user": {
+        "username": user.username, "full_name": user.full_name, "role": user.role,
+        "mustChangePassword": must_change_password,
+    }})
 
 
 def _login():
@@ -129,14 +165,23 @@ def _login():
     if user.status != "Active":
         return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
 
+    user.failed_attempts = 0
+    user.locked_until = None
+
+    # 2FA is optional, per-account (Settings → Security → Two-Factor
+    # Authentication). Only send/require a code when the account actually
+    # has it turned on — otherwise password verification alone completes
+    # the login, same as before 2FA existed.
+    if not user.mfa_enabled:
+        db.session.commit()
+        return _complete_login(user, "Successful login (2FA disabled for this account)")
+
     if not user.email:
         return json_error(
             "This account has no email on file, so a sign-in code can't be sent. "
             "Contact an administrator to add one.", 403
         )
 
-    user.failed_attempts = 0
-    user.locked_until = None
     db.session.commit()
 
     _issue_and_send_otp(user)
@@ -203,30 +248,9 @@ def _verify_otp():
         return json_error(f"Incorrect code. {remaining} attempt(s) remaining.", 400)
 
     otp.consumed_at = datetime.utcnow()
-
-    settings = get_security_settings()
-    must_change_password = False
-    if settings["password_expiry_days"] > 0 and user.password_changed_at:
-        age_days = (datetime.utcnow() - user.password_changed_at).total_seconds() / 86400
-        must_change_password = age_days > settings["password_expiry_days"]
-
-    user.last_login = datetime.utcnow()
     db.session.commit()
 
-    session.clear()
-    session["user_id"] = user.id
-    session["full_name"] = user.full_name
-    session["role"] = user.role
-    session["username"] = user.username
-    session["must_change_password"] = must_change_password
-    session["last_activity"] = datetime.utcnow().timestamp()
-
-    log_audit(user.username, "Login", "System", "Successful login (MFA verified)")
-
-    return jsonify({"ok": True, "user": {
-        "username": user.username, "full_name": user.full_name, "role": user.role,
-        "mustChangePassword": must_change_password,
-    }})
+    return _complete_login(user, "Successful login (MFA verified)")
 
 
 def _resend_otp():
@@ -313,18 +337,20 @@ def _resend_reset_otp():
     return jsonify({"ok": True, "maskedEmail": _mask_email(user.email)})
 
 
-def _reset_password():
+def _verify_reset_otp():
+    """Step 2 of forgot-password: verify the code by itself. Only once this
+    succeeds does the New Password step become reachable (see
+    _reset_password, which now requires reset_verified rather than the raw
+    code) — the two steps stay genuinely sequential instead of one combined
+    form."""
     user = _pending_reset_user()
     if not user:
         return json_error("Your password reset request has expired. Please start again.", 401)
 
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
-    new_password = data.get("newPassword") or ""
     if not code:
         return json_error("Enter the verification code sent to your email")
-    if not new_password:
-        return json_error("Enter a new password")
 
     otp = (
         OtpCode.query.filter_by(user_id=user.id, purpose="reset", consumed_at=None)
@@ -345,11 +371,35 @@ def _reset_password():
             return json_error("Too many incorrect attempts. Request a new code.", 400)
         return json_error(f"Incorrect code. {remaining} attempt(s) remaining.", 400)
 
+    otp.consumed_at = datetime.utcnow()
+    db.session.commit()
+
+    session["reset_verified"] = True
+    log_audit(user.username, "Requested", "System", "Password reset code verified")
+
+    return jsonify({"ok": True})
+
+
+def _reset_password():
+    """Step 3 of forgot-password: set the new password. Only reachable
+    after _verify_reset_otp() has already succeeded for this session — no
+    code is accepted here, so the New Password step can't be skipped to
+    directly and can't be combined with code entry into one submission."""
+    user = _pending_reset_user()
+    if not user:
+        return json_error("Your password reset request has expired. Please start again.", 401)
+    if not session.get("reset_verified"):
+        return json_error("Please verify your code before setting a new password.", 401)
+
+    data = request.get_json(silent=True) or {}
+    new_password = data.get("newPassword") or ""
+    if not new_password:
+        return json_error("Enter a new password")
+
     settings = get_security_settings()
     if len(new_password) < settings["min_password_length"]:
         return json_error(f"New password must be at least {settings['min_password_length']} characters long")
 
-    otp.consumed_at = datetime.utcnow()
     user.password = _hash_password(new_password)
     user.password_changed_at = datetime.utcnow()
     user.failed_attempts = 0
@@ -417,3 +467,34 @@ def _change_password_impl():
 
 def _change_password():
     return _change_password_impl()
+
+
+def _my_security():
+    """Self-service: any logged-in user can see their own 2FA state. Not
+    gated by manage_users/system_settings — this is a personal preference,
+    not an admin action."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+    return jsonify({"mfaEnabled": user.mfa_enabled})
+
+
+def _toggle_my_mfa():
+    """Self-service: any logged-in user can turn their own 2FA on/off, at
+    Settings → Security. Persists to the account, so it applies from the
+    very next login onward and survives logout in between."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+    data = request.get_json(silent=True) or {}
+    if "enabled" not in data:
+        return json_error("enabled is required")
+    user.mfa_enabled = bool(data["enabled"])
+    db.session.commit()
+    log_audit(user.username, "Updated", "System",
+              f"Two-factor authentication turned {'on' if user.mfa_enabled else 'off'} for their own account")
+    return jsonify({"ok": True, "mfaEnabled": user.mfa_enabled})

@@ -55,7 +55,7 @@
         <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="indigency"></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
@@ -219,6 +219,23 @@ const TASKS = {
 };
 const MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
 let RESULT = null;
+// zone_id -> short landmark name (e.g. "Zone 6" -> "Pandi Residences 1"),
+// loaded from the Zones table so risk output can show *where* a zone
+// actually is, not just its bare id. Falls back to the id itself if the
+// lookup hasn't loaded yet (or a zone has no landmark name on record).
+let ZONE_LABELS = {};
+function zoneDisplay(zoneId) {
+  const label = ZONE_LABELS[zoneId];
+  if (!label) return zoneId;
+  const parts = label.split(' – ');
+  return parts.length > 1 ? `${zoneId} · ${parts[1]}` : label;
+}
+async function loadZoneLabels() {
+  try {
+    const zones = await BCApi.zones();
+    ZONE_LABELS = Object.fromEntries(zones.map(z => [z.zone_id, z.label]));
+  } catch (err) { /* falls back to bare zone ids if this fails */ }
+}
 // Fixed per-task model — no user selection anymore.
 const ACTIVE = { occurrence: 'random_forest', type: 'gradient_boosting', hotspot: 'gradient_boosting' };
 let CAN_RETRAIN = false; // set from the signed-in user's role before first render
@@ -274,7 +291,7 @@ function renderOutputs() {
     data: {
       labels,
       datasets: top4.map((z, i) => ({
-        label: z.zone,
+        label: zoneDisplay(z.zone),
         data: (z.dailyProbs || []).slice(0, horizon).map(p => +p.toFixed(3)),
         borderColor: zoneColors[i], backgroundColor: 'transparent',
         tension: 0.4, pointRadius: 3, borderWidth: 2.5,
@@ -291,7 +308,7 @@ function renderOutputs() {
     const risk = riskLevel(h.meanDailyProb);
     const expected = h.expectedCount7d * scale;
     return `<tr>
-      <td class="font-semibold text-forest-700">${h.zone}</td>
+      <td class="font-semibold text-forest-700">${zoneDisplay(h.zone)}</td>
       <td>
         <div class="flex items-center gap-2">
           <div class="risk-bar w-20"><div class="risk-bar-fill" style="width:${Math.min(100, h.meanDailyProb * 300)}%;background:${risk === 'High' ? '#ef4444' : risk === 'Moderate' ? '#fbbf24' : '#23703c'}"></div></div>
@@ -311,7 +328,7 @@ function renderOutputs() {
   document.getElementById('patrolRecs').innerHTML = top4.map((h, i) => `
     <div class="bg-forest-50 rounded-xl p-3 border border-forest-100">
       <div class="flex items-center justify-between mb-1">
-        <span class="font-bold text-forest-800 text-sm">${h.zone}</span>
+        <span class="font-bold text-forest-800 text-sm">${zoneDisplay(h.zone)}</span>
         <span class="badge ${prios[i] === 'Critical' ? 'badge-not-complied' : prios[i] === 'High' ? 'badge-ongoing' : 'badge-resolved'} text-xs">${prios[i]}</span>
       </div>
       <div class="text-xs text-forest-500">⏰ ${h.peakWindow}</div>
@@ -343,7 +360,7 @@ function populateCategoryZoneSelect() {
   if (!RESULT || !RESULT.zoneRisk) return;
   if (sel.options.length) return; // keep the user's current selection across re-renders
   const ranked = [...RESULT.zoneRisk].sort((a, b) => b.meanDailyProb - a.meanDailyProb);
-  sel.innerHTML = ranked.map(z => `<option value="${z.zone}">${z.zone}</option>`).join('');
+  sel.innerHTML = ranked.map(z => `<option value="${z.zone}">${zoneDisplay(z.zone)}</option>`).join('');
 }
 
 function renderCategoryChart() {
@@ -438,6 +455,7 @@ function retrain() { trainAll(true); }
     if (btn) btn.style.display = 'none';
   }
 
+  await loadZoneLabels();
   renderModelCards();
   await trainAll(false);
 })();

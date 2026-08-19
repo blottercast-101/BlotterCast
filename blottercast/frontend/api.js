@@ -46,6 +46,13 @@ const BCApi = {
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
+  mySecurity() { return this._fetch(`${BC_API}/api/auth.php?action=my_security`); },
+  toggleMyMfa(enabled) {
+    return this._fetch(`${BC_API}/api/auth.php?action=toggle_my_mfa`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+  },
   forgotPassword(username) {
     return this._fetch(`${BC_API}/api/auth.php?action=forgot_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -55,10 +62,16 @@ const BCApi = {
   resendResetOtp() {
     return this._fetch(`${BC_API}/api/auth.php?action=resend_reset_otp`, { method: 'POST' });
   },
-  resetPassword(code, newPassword) {
+  verifyResetOtp(code) {
+    return this._fetch(`${BC_API}/api/auth.php?action=verify_reset_otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+  },
+  resetPassword(newPassword) {
     return this._fetch(`${BC_API}/api/auth.php?action=reset_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, newPassword }),
+      body: JSON.stringify({ newPassword }),
     });
   },
 
@@ -80,6 +93,13 @@ const BCApi = {
   remove(type, id) {
     return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}`, { method: 'DELETE' });
   },
+  // Restores an archived blotter record — a dedicated call so it only ever
+  // touches the archived flag, never the record's other fields.
+  restore(type, id) {
+    return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}&restore=1`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+  },
   // Preview-only look-ahead at the next Docket No. / Report No. (doesn't
   // reserve it — the real number is generated fresh again at save time).
   // Used to show what the number *will* be on the "New…" form before the
@@ -91,6 +111,7 @@ const BCApi = {
 
   // ---- analytics ----
   dashboard() { return this._fetch(`${BC_API}/api/analytics.php?action=dashboard`); },
+  publicStats() { return this._fetch(`${BC_API}/api/public_stats.php`); },
   heatmap(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return this._fetch(`${BC_API}/api/analytics.php?action=heatmap&${qs}`);

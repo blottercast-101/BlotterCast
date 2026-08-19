@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+import json
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import extract, func
 
 from ..extensions import db
-from ..models import BlotterRecord, Incident, Settlement, Zone
+from ..models import BlotterRecord, Incident, MlRun, Settlement, Zone
 from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("analytics", __name__)
@@ -25,6 +26,71 @@ def analytics_router():
     return json_error("Unknown action", 404)
 
 
+@bp.route("/api/public_stats.php", methods=["GET"])
+def public_stats_router():
+    """Unauthenticated stats for the marketing landing page (index.html) and
+    the login page (login.html). Both pages hit this single endpoint so they
+    can never drift apart — same source, same calculation, every time."""
+    return _public_stats()
+
+
+def _public_stats():
+    # Archived blotter records are kept for recordkeeping but excluded from
+    # every "active" count on these pages — same rule as the Blotter Records
+    # module itself.
+    blotter_count = BlotterRecord.query.filter_by(archived=False).count()
+    incident_count = Incident.query.count()
+    settlement_count = Settlement.query.count()
+    overall_records = blotter_count + incident_count + settlement_count
+    zones_monitored = Zone.query.count()
+
+    run = MlRun.query.order_by(MlRun.id.desc()).first()
+
+    ml_accuracy = None
+    last_model_train = None
+    risk_alert = None
+    if run:
+        last_model_train = run.trained_at.isoformat() if run.trained_at else None
+        try:
+            occ_metrics = json.loads(run.occurrence_metrics_json)
+            active = occ_metrics.get(run.active_occurrence_model) or {}
+            if "accuracy" in active:
+                ml_accuracy = round(active["accuracy"] * 100)
+        except (ValueError, TypeError, KeyError):
+            ml_accuracy = None
+
+        try:
+            zone_rows = json.loads(run.hotspots_json)
+            if zone_rows:
+                top = max(zone_rows, key=lambda r: r.get("meanDailyProb", 0))
+                p = top.get("meanDailyProb", 0)
+                level = "High" if p >= 0.20 else "Moderate" if p >= 0.13 else "Low"
+                risk_alert = {"zone": top.get("zone"), "level": level, "meanDailyProb": p}
+        except (ValueError, TypeError, KeyError):
+            risk_alert = None
+
+    # System status: this endpoint responding at all proves the core app and
+    # its DB connection are up (the query above would have raised otherwise).
+    # The ML/prediction microservice is checked separately since it's a
+    # distinct process that can be down independently.
+    from .ml_proxy import _ml_is_running
+    ml_up = _ml_is_running()
+
+    return jsonify({
+        "blotterCount": blotter_count,
+        "overallRecords": overall_records,
+        "zonesMonitored": zones_monitored,
+        "mlAccuracy": ml_accuracy,
+        "lastModelTrain": last_model_train,
+        "riskAlert": risk_alert,
+        "systemStatus": {
+            "database": True,
+            "core": True,
+            "mlService": ml_up,
+        },
+    })
+
+
 def _zones():
     rows = Zone.query.order_by(Zone.zone_id).all()
     return jsonify([{
@@ -34,18 +100,29 @@ def _zones():
 
 
 def _dashboard():
-    blotter_count = BlotterRecord.query.count()
+    # Archived blotter records stay in the database but drop out of every
+    # active-records view/stat, same as the Blotter Records module.
+    blotter_count = BlotterRecord.query.filter_by(archived=False).count()
     incident_count = Incident.query.count()
     week_ago = datetime.utcnow().date() - timedelta(days=7)
     week_count = Incident.query.filter(Incident.incident_date >= week_ago).count()
     pending_stl = Settlement.query.filter_by(status="Pending").count()
-    resolved = Incident.query.filter(Incident.status.in_(["Resolved", "Closed"])).count()
-    res_rate = round(resolved / incident_count * 100) if incident_count > 0 else 0
-    recent = BlotterRecord.query.order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).limit(8).all()
+    # Resolution rate spans every applicable case/record module, not just
+    # incidents — a blotter case can be "Resolved" independently of any
+    # linked incident report.
+    resolved_incidents = Incident.query.filter(Incident.status.in_(["Resolved", "Closed"])).count()
+    resolved_blotters = BlotterRecord.query.filter_by(status="Resolved", archived=False).count()
+    resolvable_total = incident_count + blotter_count
+    resolved_total = resolved_incidents + resolved_blotters
+    res_rate = round(resolved_total / resolvable_total * 100) if resolvable_total > 0 else 0
+    recent = (
+        BlotterRecord.query.filter_by(archived=False)
+        .order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).limit(8).all()
+    )
 
     return jsonify({
         "blotterCount": blotter_count, "incidentCount": incident_count, "weekCount": week_count,
-        "pendingSettlements": pending_stl, "resolutionRate": res_rate,
+        "pendingSettlements": pending_stl, "resolutionRate": res_rate, "resolvedCount": resolved_total,
         "recentBlotter": [r.to_dict() for r in recent],
     })
 
