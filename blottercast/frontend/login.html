@@ -489,7 +489,8 @@
   <form id="resetForm" onsubmit="handleVerifyResetOtp(event)" class="animate-in delay-2" style="display:none;">
     <div class="form-header" style="margin-bottom:1.5rem;">
       <h1 style="font-size:1.5rem;">Enter verification code</h1>
-      <p>If that account exists, a 6-digit code was sent to the email on file.</p>
+      <p>A 6-digit code was sent to the email on file.</p>
+      <p id="resetMaskedEmail" style="margin-top:2px;font-weight:500;"></p>
     </div>
 
     <div class="alert-error" id="resetAlert">
@@ -717,6 +718,7 @@
     document.getElementById('forgotForm').style.display = 'none';
     document.getElementById('resetForm').style.display = '';
     document.getElementById('resetAlert').classList.remove('show');
+    document.getElementById('resetMaskedEmail').textContent = result.maskedEmail || '';
     document.getElementById('resetCode').value = '';
     document.getElementById('resetCode').focus();
     startCooldown('resendResetLink', 30, () => resetResendTimer, (t) => resetResendTimer = t);

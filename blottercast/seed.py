@@ -8,10 +8,10 @@ Run with:  python seed.py
 Safe to re-run — it skips anything that already exists.
 """
 import bcrypt
-from sqlalchemy import inspect, text
 
 from app import create_app
 from app.extensions import db
+from app.migrate import ensure_columns
 from app.models import SystemSetting, User, Zone
 
 ZONES = [
@@ -66,59 +66,11 @@ def hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def sync_schema():
-    """
-    db.create_all() only creates tables that don't exist yet — it never
-    alters a table that's already there. On a persistent DB (like the one
-    Render gives this service), that means a column added to a model after
-    the table was first created (e.g. users.mfa_enabled) never actually
-    gets added on redeploy, and any query touching it blows up with
-    "UndefinedColumn".
-
-    This walks every model table that already exists in the live DB and
-    adds whatever columns are missing from it, so re-running this script
-    on an old database is safe the same way it already is for new rows.
-    Safe to re-run — a column already present is left untouched.
-    """
-    inspector = inspect(db.engine)
-    with db.engine.begin() as conn:
-        for table in db.metadata.sorted_tables:
-            if not inspector.has_table(table.name):
-                continue  # brand-new table — db.create_all() already handled it
-            existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
-            for column in table.columns:
-                if column.name in existing_cols:
-                    continue
-
-                col_type = column.type.compile(dialect=db.engine.dialect)
-                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type}'))
-                print(f"  schema sync: added column {table.name}.{column.name} ({col_type})")
-
-                # Backfill existing rows so a NOT NULL constraint can be
-                # applied safely. Only handles plain scalar defaults (e.g.
-                # default=True/0) — callable defaults like `default=now`
-                # can't be resolved generically at DDL time, so those
-                # columns are left nullable in the live DB even if the
-                # model says otherwise; that's a safe trade-off vs crashing.
-                default = getattr(column.default, "arg", None)
-                if default is not None and not callable(default):
-                    conn.execute(
-                        text(f'UPDATE "{table.name}" SET "{column.name}" = :default '
-                             f'WHERE "{column.name}" IS NULL'),
-                        {"default": default},
-                    )
-                    # SQLite (used for local dev) can't ALTER COLUMN at all;
-                    # the production DB is always Postgres, which can.
-                    if not column.nullable and db.engine.dialect.name != "sqlite":
-                        conn.execute(text(f'ALTER TABLE "{table.name}" '
-                                           f'ALTER COLUMN "{column.name}" SET NOT NULL'))
-
-
 def run():
     app = create_app()
     with app.app_context():
         db.create_all()
-        sync_schema()
+        ensure_columns(db)  # add any columns new model fields need on a table that already existed
 
         for zone_id, label, lat, lng, weight in ZONES:
             existing = Zone.query.get(zone_id)

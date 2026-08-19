@@ -273,12 +273,6 @@ def _resend_otp():
     return jsonify({"ok": True, "maskedEmail": _mask_email(user.email)})
 
 
-_RESET_REQUESTED_MSG = (
-    "If an account with that username exists, a verification code has been "
-    "sent to the email on file."
-)
-
-
 def _pending_reset_user():
     """Returns the User for a valid pending-password-reset session, or None
     (clearing the session) if there isn't one or the window has lapsed."""
@@ -302,19 +296,23 @@ def _forgot_password():
         return json_error("Enter your username")
 
     user = User.query.filter_by(username=username).first()
+    if not user:
+        return json_error("No account found with that username.", 404)
+    if user.status != "Active":
+        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+    if not user.email:
+        return json_error(
+            "This account has no email on file, so a reset code can't be sent. "
+            "Contact an administrator to add one.", 403
+        )
 
-    # Deliberately generic response either way, so this endpoint can't be
-    # used to enumerate valid usernames. We only actually send a code (and
-    # start a pending-reset session) when the account is real, active, and
-    # has an email on file.
-    if user and user.status == "Active" and user.email:
-        _issue_and_send_otp(user, purpose="reset")
-        session.clear()
-        session["reset_pending_user_id"] = user.id
-        session["reset_pending_at"] = datetime.utcnow().timestamp()
-        log_audit(user.username, "Requested", "System", "Password reset code requested")
+    _issue_and_send_otp(user, purpose="reset")
+    session.clear()
+    session["reset_pending_user_id"] = user.id
+    session["reset_pending_at"] = datetime.utcnow().timestamp()
+    log_audit(user.username, "Requested", "System", "Password reset code requested")
 
-    return jsonify({"ok": True, "message": _RESET_REQUESTED_MSG})
+    return jsonify({"ok": True, "maskedEmail": _mask_email(user.email)})
 
 
 def _resend_reset_otp():
