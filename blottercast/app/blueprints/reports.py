@@ -59,7 +59,9 @@ def _list():
         "period_from": r.period_from.isoformat() if r.period_from else None,
         "period_to": r.period_to.isoformat() if r.period_to else None,
         "format": r.format, "file_path": r.file_path,
-        "created_at": r.created_at.isoformat() if r.created_at else None,
+        # period_from/period_to are plain Date columns (no time-of-day, so
+        # no ambiguity); created_at is a naive-UTC DateTime and needs "Z".
+        "created_at": (r.created_at.isoformat() + "Z") if r.created_at else None,
     } for r in rows])
 
 

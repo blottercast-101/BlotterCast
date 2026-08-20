@@ -93,7 +93,7 @@
       <h1 class="font-display text-2xl text-forest-800">System Settings</h1>
       <p class="text-forest-500 text-sm">Configure barangay information, notifications, security, and backup options</p>
     </div>
-    <button onclick="saveSettings()" class="btn-primary"><span data-icon="save" data-icon-size="16"></span> Save Changes</button>
+    <button onclick="saveSettings()" class="btn-primary" data-perm="system_settings"><span data-icon="save" data-icon-size="16"></span> Save Changes</button>
   </header>
 
   <!-- Tab Bar -->
@@ -176,6 +176,33 @@
 
     <!-- SECURITY -->
     <div id="tab-security" class="space-y-5 hidden">
+      <div class="settings-section">
+        <h3>My Account</h3>
+        <p class="text-forest-400 text-xs mb-4" style="margin-top:-0.75rem;">Available to every account — update your own details, no admin needed.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="form-label">Username</label><input type="text" id="acct_username" class="form-input" disabled/></div>
+          <div><label class="form-label">Role</label><input type="text" id="acct_role" class="form-input" disabled/></div>
+          <div><label class="form-label">Full Name</label><input type="text" id="acct_fullName" class="form-input"/></div>
+          <div><label class="form-label">Contact Number</label><input type="text" id="acct_contact" class="form-input" placeholder="09XXXXXXXXX"/></div>
+          <div class="col-span-2"><label class="form-label">Email</label><input type="email" id="acct_email" class="form-input" placeholder="you@example.com"/></div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button onclick="saveMyAccount()" class="btn-primary text-sm"><span data-icon="save" data-icon-size="14"></span> Save Account Details</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Change Password</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2"><label class="form-label">Current Password</label><input type="password" id="acct_currentPw" class="form-input"/></div>
+          <div><label class="form-label">New Password</label><input type="password" id="acct_newPw" class="form-input"/></div>
+          <div><label class="form-label">Confirm New Password</label><input type="password" id="acct_confirmPw" class="form-input"/></div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
+        </div>
+      </div>
+
       <div class="settings-section">
         <h3>Two-Factor Authentication</h3>
         <div class="space-y-0">
@@ -389,7 +416,7 @@ async function loadBackupHistory() {
           <td class="text-xs">${(r.size_bytes/1024).toFixed(0)} KB</td>
           <td><span class="badge ${r.status==='Success'?'badge-resolved':'badge-not-complied'}">${r.status}</span></td>
           <td class="text-xs text-forest-400">${r.created_by||''}</td>
-          <td class="text-xs text-forest-400">${new Date(r.created_at).toLocaleString('en-PH',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</td>
+          <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
           <td>${r.status==='Success' ? `<a href="api/settings.php?action=download_backup&file=${encodeURIComponent(r.file_name)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>` : ''}</td>
         </tr>`).join('');
   } catch (err) {
@@ -417,6 +444,51 @@ async function downloadData() {
     a.href = URL.createObjectURL(blob);
     a.download = 'blottercast-records.json';
     a.click();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadMyAccount() {
+  try {
+    const acct = await BCApi.myAccount();
+    document.getElementById('acct_username').value = acct.username;
+    document.getElementById('acct_role').value = acct.role;
+    document.getElementById('acct_fullName').value = acct.fullName || '';
+    document.getElementById('acct_email').value = acct.email || '';
+    document.getElementById('acct_contact').value = acct.contact || '';
+  } catch (err) {
+    showToast('Could not load your account details: ' + err.message, 'error');
+  }
+}
+async function saveMyAccount() {
+  const fullName = document.getElementById('acct_fullName').value.trim();
+  const email = document.getElementById('acct_email').value.trim();
+  const contact = document.getElementById('acct_contact').value.trim();
+  if (!fullName) { showToast('Name is required.', 'error'); return; }
+  if (!email) { showToast('Email is required.', 'error'); return; }
+  try {
+    const result = await BCApi.updateMyAccount(fullName, email, contact);
+    showToast('Account details updated.');
+    // Keep the sidebar's name/role display in sync immediately.
+    const nameEl = document.querySelector('[data-user-name]');
+    if (nameEl) nameEl.textContent = result.user.fullName;
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+async function saveMyPassword() {
+  const current = document.getElementById('acct_currentPw').value;
+  const next = document.getElementById('acct_newPw').value;
+  const confirm = document.getElementById('acct_confirmPw').value;
+  if (!current || !next) { showToast('Fill in both your current and new password.', 'error'); return; }
+  if (next !== confirm) { showToast('New password and confirmation do not match.', 'error'); return; }
+  try {
+    await BCApi.changePassword(current, next);
+    document.getElementById('acct_currentPw').value = '';
+    document.getElementById('acct_newPw').value = '';
+    document.getElementById('acct_confirmPw').value = '';
+    showToast('Password changed.');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -452,11 +524,19 @@ async function toggleMyMfa() {
 
 (async function () {
   const user = await requireAuth();
-  // Personal 2FA preference — available to every role, independent of the
-  // system-wide settings below (which only System Admin can load/save).
-  await loadMySecurity();
+  // My Account + personal 2FA — available to every role, independent of
+  // the system-wide settings below (which only System Admin can load/save).
+  await Promise.all([loadMyAccount(), loadMySecurity()]);
 
-  if (!user || !roleCan(user.role, 'system_settings')) return; // rest of this tab/page is admin-only
+  if (!user || !roleCan(user.role, 'system_settings')) {
+    // General/Notifications/Backup are all admin-only — landing a
+    // non-admin there by default would show a tab full of controls that
+    // silently do nothing for them. Security is the tab that actually
+    // works for every role, so that's where they start instead.
+    const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');
+    if (securityTabBtn) switchTab('security', securityTabBtn);
+    return; // rest of this page is admin-only
+  }
 
   try {
     const values = await BCApi.settingsList();

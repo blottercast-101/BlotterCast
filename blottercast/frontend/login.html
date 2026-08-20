@@ -909,7 +909,7 @@
       }
 
       document.getElementById('loginLastTrain').textContent = s.lastModelTrain
-        ? new Date(s.lastModelTrain).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        ? new Date(s.lastModelTrain).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' })
         : 'Not trained yet';
     } catch (err) {
       document.getElementById('loginSysStatus').innerHTML = `<span class="sc-dot amber"></span> Unknown`;

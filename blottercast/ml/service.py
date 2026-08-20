@@ -422,7 +422,10 @@ def train():
 
     # cache to ml_runs table
     import json as _json
-    trained_at = datetime.now()
+    # utcnow() to match the convention every other timestamp in this app
+    # uses (see app/models.py's shared now() helper) — datetime.now() would
+    # depend on whatever timezone the server machine happens to be set to.
+    trained_at = datetime.utcnow()
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -448,7 +451,7 @@ def train():
         'type': {'metrics': type_results, 'active': active_type},
         'hotspot': {'metrics': hot_results, 'active': active_hotspot, 'meta': hot_meta},
         'zoneRisk': zone_rows,
-        'trainedAt': trained_at.isoformat(),
+        'trainedAt': trained_at.isoformat() + 'Z',  # naive UTC -> unambiguous for the browser
     })
 
 
@@ -469,7 +472,7 @@ def latest():
         'type': {'metrics': _json.loads(row['type_metrics_json']), 'active': row['active_type_model']},
         'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
         'zoneRisk': _json.loads(row['hotspots_json']),
-        'trainedAt': trained_at.isoformat() if hasattr(trained_at, 'isoformat') else str(trained_at),
+        'trainedAt': (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at),
     })
 
 

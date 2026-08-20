@@ -72,7 +72,7 @@ def _list():
         # the value unambiguous UTC so the browser doesn't guess it's local
         # time (which silently shifts it by the browser's own UTC offset).
         "last_login": (u.last_login.isoformat() + "Z") if u.last_login else None,
-        "created_at": u.created_at.isoformat() if u.created_at else None,
+        "created_at": (u.created_at.isoformat() + "Z") if u.created_at else None,
     } for u in rows])
 
 
@@ -241,5 +241,8 @@ def _audit():
     rows = AuditLog.query.order_by(AuditLog.id.desc()).limit(limit).all()
     return jsonify([{
         "username": r.username, "action": r.action, "module": r.module,
-        "details": r.details, "created_at": r.created_at.isoformat() if r.created_at else None,
+        # Naive UTC — "Z" so Login events (and everything else here) show
+        # the actual Philippines time they happened, not shifted by
+        # whatever timezone the viewer's own browser happens to be in.
+        "details": r.details, "created_at": (r.created_at.isoformat() + "Z") if r.created_at else None,
     } for r in rows])

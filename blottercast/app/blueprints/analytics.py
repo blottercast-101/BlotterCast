@@ -50,7 +50,9 @@ def _public_stats():
     last_model_train = None
     risk_alert = None
     if run:
-        last_model_train = run.trained_at.isoformat() if run.trained_at else None
+        # Naive UTC — append "Z" so the browser doesn't misread it as its
+        # own local time (see the same fix on Last Login in users.php).
+        last_model_train = (run.trained_at.isoformat() + "Z") if run.trained_at else None
         try:
             occ_metrics = json.loads(run.occurrence_metrics_json)
             active = occ_metrics.get(run.active_occurrence_model) or {}

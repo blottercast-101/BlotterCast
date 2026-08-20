@@ -53,6 +53,13 @@ const BCApi = {
       body: JSON.stringify({ enabled }),
     });
   },
+  myAccount() { return this._fetch(`${BC_API}/api/auth.php?action=my_account`); },
+  updateMyAccount(fullName, email, contact) {
+    return this._fetch(`${BC_API}/api/auth.php?action=update_my_account`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, contact }),
+    });
+  },
   forgotPassword(username) {
     return this._fetch(`${BC_API}/api/auth.php?action=forgot_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

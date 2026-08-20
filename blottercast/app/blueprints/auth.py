@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import bcrypt
 from flask import Blueprint, current_app, jsonify, request, session
+from sqlalchemy import func
 
 from ..email import send_otp_email
 from ..extensions import db
@@ -99,6 +100,10 @@ def auth_router():
         return _my_security()
     if action == "toggle_my_mfa" and request.method == "POST":
         return _toggle_my_mfa()
+    if action == "my_account" and request.method == "GET":
+        return _my_account()
+    if action == "update_my_account" and request.method == "POST":
+        return _update_my_account()
 
     return json_error("Unknown action", 404)
 
@@ -496,3 +501,51 @@ def _toggle_my_mfa():
     log_audit(user.username, "Updated", "System",
               f"Two-factor authentication turned {'on' if user.mfa_enabled else 'off'} for their own account")
     return jsonify({"ok": True, "mfaEnabled": user.mfa_enabled})
+
+
+def _my_account():
+    """Self-service: any logged-in user can see their own editable profile
+    fields. Not gated by manage_users — role/status stay admin-only (via
+    users.php), but a user's own name/email/contact are theirs to fix."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+    return jsonify({
+        "username": user.username, "fullName": user.full_name,
+        "email": user.email, "contact": user.contact_no, "role": user.role,
+    })
+
+
+def _update_my_account():
+    """Self-service: any logged-in user can update their own name, email,
+    and contact number at Settings → Security. Role and status are
+    deliberately not editable here — those stay an admin-only action via
+    users.php, same as before."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+
+    data = request.get_json(silent=True) or {}
+    full_name = (data.get("fullName") or "").strip()
+    email = (data.get("email") or "").strip()
+    if not full_name:
+        return json_error("Name is required")
+    if not email:
+        return json_error("Email is required — sign-in codes are sent there for MFA.")
+    if User.query.filter(User.id != user.id, func.lower(User.email) == email.lower()).first():
+        return json_error("That email address is already in use by another account", 409)
+
+    user.full_name = full_name
+    user.email = email
+    user.contact_no = (data.get("contact") or "").strip() or None
+    db.session.commit()
+    log_audit(user.username, "Updated", "System", "Updated their own account details")
+
+    return jsonify({"ok": True, "user": {
+        "username": user.username, "fullName": user.full_name,
+        "email": user.email, "contact": user.contact_no, "role": user.role,
+    }})

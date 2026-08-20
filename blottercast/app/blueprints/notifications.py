@@ -98,7 +98,9 @@ def _list():
     return jsonify([{
         "id": n.id, "type": n.type, "title": n.title, "body": n.body, "severity": n.severity,
         "link": n.link, "ref_table": n.ref_table, "ref_id": n.ref_id,
-        "created_at": n.created_at.isoformat() if n.created_at else None,
+        # Naive UTC — "Z" suffix so timeAgo()'s elapsed-time math on the
+        # frontend isn't off by the viewer's own UTC offset.
+        "created_at": (n.created_at.isoformat() + "Z") if n.created_at else None,
         "is_read": n.id in read_ids,
     } for n in rows])
 

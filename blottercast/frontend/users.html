@@ -283,7 +283,7 @@ async function loadAuditLog() {
       ? '<tr><td colspan="5" class="text-center py-6 text-forest-400">No activity recorded yet.</td></tr>'
       : rows.map(r => `
         <tr>
-          <td class="text-xs text-forest-400">${new Date(r.created_at).toLocaleString('en-PH', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' })}</td>
+          <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
           <td class="font-semibold text-forest-700 text-sm">${r.username}</td>
           <td><span class="badge ${r.action==='Created'?'badge-resolved':r.action==='Deleted'?'badge-not-complied':'badge-ongoing'}">${r.action}</span></td>
           <td class="text-sm text-forest-600">${r.module}</td>

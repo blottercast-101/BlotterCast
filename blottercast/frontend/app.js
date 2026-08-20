@@ -134,6 +134,25 @@ function bcFormatTimestamp(iso, emptyLabel = 'Never') {
     timeZone: BC_SYSTEM_TIMEZONE,
   });
 }
+// Same as bcFormatTimestamp but date-only — for places that only ever
+// showed a calendar date, not a time of day.
+function bcFormatDate(iso, emptyLabel = '') {
+  if (!iso) return emptyLabel;
+  return new Date(iso).toLocaleDateString('en-PH', {
+    month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
+  });
+}
+// Plain "HH:MM" (24-hour, what <input type="time"> and the database both
+// use) -> 12-hour clock with AM/PM for display. Never show military time
+// to the person reading a report.
+function bcFormatTime12h(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
 
 // Zone is its own field (Incident.zone_id) — it must never be baked into
 // the free-text Location detail, or changing the zone dropdown later has

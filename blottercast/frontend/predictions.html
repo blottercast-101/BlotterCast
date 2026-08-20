@@ -420,9 +420,8 @@ async function trainAll(fromButton) {
     }
 
     bar.style.width = '100%';
-    const now = new Date(RESULT.trainedAt);
     stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
-      now.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+      bcFormatTimestamp(RESULT.trainedAt) +
       '</strong> · ' + RESULT.recordCount + ' records';
     renderModelCards();
     renderOutputs();

@@ -170,7 +170,10 @@ def _settlement_monitoring():
 
 def _blotter_record():
     from_d, to_d, label = _parse_date_filter()
-    q = BlotterRecord.query
+    # Archived records are kept for recordkeeping but shouldn't appear in
+    # this export — same "active records only" rule as the Blotter Records
+    # module itself.
+    q = BlotterRecord.query.filter_by(archived=False)
     if from_d:
         q = q.filter(BlotterRecord.date_filed.between(from_d, to_d))
     blotters = q.order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
@@ -211,7 +214,9 @@ def _blotter_record():
 
 def _blotter_entry_2025():
     from_d, to_d, label = _parse_date_filter()
-    q = BlotterRecord.query
+    # Same rule as the Blotter Record export above — archived cases are
+    # excluded, not just filtered from the active list view.
+    q = BlotterRecord.query.filter_by(archived=False)
     if from_d:
         q = q.filter(BlotterRecord.date_filed.between(from_d, to_d))
     rows = q.order_by(BlotterRecord.date_filed.asc(), BlotterRecord.id.asc()).all()

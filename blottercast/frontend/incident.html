@@ -356,7 +356,7 @@
         <tr>
           <td class="font-semibold text-forest-700">${r.reportNo}</td>
           <td>${r.dateReported}</td>
-          <td>${r.timeReported}</td>
+          <td>${bcFormatTime12h(r.timeReported)}</td>
           <td class="text-xs">${bcFormatIncidentLocation(r.zone, r.location)}</td>
           <td><span class="text-xs font-medium text-forest-700">${r.category}</span></td>
           <td class="text-xs text-gray-500 max-w-xs truncate" title="${r.description}">${r.description}</td>
@@ -483,7 +483,7 @@
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
     const rows = [
-      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', r.timeReported],
+      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime12h(r.timeReported)],
       ['Zone', r.zone], ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
       ['Description', r.description], ['Reporter', r.reporter], ['Officer', r.officer], ['Status', r.status],
     ];
