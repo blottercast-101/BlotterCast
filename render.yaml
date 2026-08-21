@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: blottercast
+    env: python
+    plan: free
+    rootDir: blottercast
+    buildCommand: "pip install -r requirements.txt && python seed.py"
+    startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: blottercast-db
+          property: connectionString
+      # Set these manually in the Render dashboard (Environment tab) after
+      # the first deploy -- they aren't generated/hardcoded here:
+      #   ML_SERVICE_URL   -> the public URL Render assigns blottercast-ml
+      #                       below, e.g. https://blottercast-ml.onrender.com
+      #   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
+      #                    -> your real SMTP credentials
+
+  - type: web
+    name: blottercast-ml
+    env: python
+    plan: free
+    rootDir: blottercast
+    buildCommand: "pip install -r ml/requirements.txt"
+    startCommand: "gunicorn service:app --chdir ml --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: blottercast-db
+          property: connectionString
+
+databases:
+  - name: blottercast-db
+    plan: free
