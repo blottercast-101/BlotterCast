@@ -26,13 +26,17 @@ function roleCan(role, permission) {
 // Pages gated by a single permission. Pages not listed here are
 // accessible to every signed-in role (e.g. Dashboard, Blotter,
 // Incident, Settlement, Census, Clearance, Indigency, Heat Map, Trends).
+// Settings is NOT gated here even though most of its content is admin-only
+// — every role has a legitimate reason to be on that page (My Account,
+// Change Password, their own 2FA toggle). The admin-only cards within it
+// are hidden individually via data-perm="system_settings" instead, which
+// is the finer-grained mechanism this same permissions.js provides below.
 const PAGE_PERMISSION = {
   'heatmap.html':     'view_analytics',
   'trends.html':      'view_analytics',
   'predictions.html': 'view_analytics',
   'reports.html':      'generate_reports',
   'users.html':         'manage_users',
-  'settings.html':      'system_settings',
 };
 
 // Hide sidebar nav links the current role isn't permitted to use, and

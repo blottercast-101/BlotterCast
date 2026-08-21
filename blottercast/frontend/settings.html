@@ -98,10 +98,10 @@
 
   <!-- Tab Bar -->
   <div class="bg-white border-b border-forest-100 px-8 py-3 flex gap-2">
-    <button class="settings-tab active" onclick="switchTab('general',this)"><span data-icon="building" data-icon-size="15"></span> General</button>
-    <button class="settings-tab" onclick="switchTab('notifications',this)"><span data-icon="bell" data-icon-size="15"></span> Notifications</button>
+    <button class="settings-tab active" onclick="switchTab('general',this)" data-perm="system_settings"><span data-icon="building" data-icon-size="15"></span> General</button>
+    <button class="settings-tab" onclick="switchTab('notifications',this)" data-perm="system_settings"><span data-icon="bell" data-icon-size="15"></span> Notifications</button>
     <button class="settings-tab" onclick="switchTab('security',this)"><span data-icon="lock" data-icon-size="15"></span> Security</button>
-    <button class="settings-tab" onclick="switchTab('backup',this)"><span data-icon="archive" data-icon-size="15"></span> Backup &amp; Recovery</button>
+    <button class="settings-tab" onclick="switchTab('backup',this)" data-perm="system_settings"><span data-icon="archive" data-icon-size="15"></span> Backup &amp; Recovery</button>
   </div>
 
   <main class="flex-1 p-6 space-y-5">
