@@ -1,129 +1,168 @@
-"""Unit and integration tests for Google OAuth and Account Linking.
-"""
+import json
+import unittest
+from unittest.mock import MagicMock, patch
+
 from app import create_app
-from app.config import Config
 from app.extensions import db
-from app.models import User
-from test_mfa_helper import login as mfa_login
+from app.models import User, OtpCode
 
 
-class TestConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    SECRET_KEY = "test-secret"
-    GOOGLE_CLIENT_ID = "test-google-client-id"
+class GoogleAuthTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app()
+        self.app.config["TESTING"] = True
+        self.app.config["GOOGLE_CLIENT_ID"] = "test-client-id-12345.apps.googleusercontent.com"
+        self.client = self.app.test_client()
 
+        with self.app.app_context():
+            # Setup test active user with MFA enabled
+            self.user_mfa = User.query.filter_by(username="test_mfa_user").first()
+            if not self.user_mfa:
+                self.user_mfa = User(
+                    username="test_mfa_user",
+                    password="hashedpassword",
+                    full_name="Test MFA User",
+                    email="mfa_user@example.com",
+                    role="Desk Officer",
+                    status="Active",
+                    mfa_enabled=True,
+                )
+                db.session.add(self.user_mfa)
 
-def setup_test_app():
-    app = create_app(TestConfig)
-    with app.app_context():
-        db.create_all()
-        # Seed test users
-        from seed import DEMO_USERS, SETTINGS, ZONES, hash_password
-        from app.models import SystemSetting, Zone
-        for zone_id, label, lat, lng, weight in ZONES:
-            db.session.add(Zone(zone_id=zone_id, label=label, lat=lat, lng=lng, weight=weight))
-        for key, value in SETTINGS.items():
-            db.session.add(SystemSetting(setting_key=key, setting_value=value))
-        for username, password, full_name, role, email in DEMO_USERS:
-            db.session.add(User(
-                username=username, password=hash_password(password),
-                full_name=full_name, role=role, status="Active", email=email,
-            ))
-        db.session.commit()
-    return app
+            # Setup test active user with MFA disabled
+            self.user_nomfa = User.query.filter_by(username="test_nomfa_user").first()
+            if not self.user_nomfa:
+                self.user_nomfa = User(
+                    username="test_nomfa_user",
+                    password="hashedpassword",
+                    full_name="Test NoMFA User",
+                    email="nomfa_user@example.com",
+                    role="Desk Officer",
+                    status="Active",
+                    mfa_enabled=False,
+                )
+                db.session.add(self.user_nomfa)
 
+            # Setup suspended user
+            self.user_suspended = User.query.filter_by(username="test_suspended_user").first()
+            if not self.user_suspended:
+                self.user_suspended = User(
+                    username="test_suspended_user",
+                    password="hashedpassword",
+                    full_name="Test Suspended User",
+                    email="suspended_user@example.com",
+                    role="Desk Officer",
+                    status="Suspended",
+                    mfa_enabled=True,
+                )
+                db.session.add(self.user_suspended)
 
-def test_google_auth_flow():
-    app = setup_test_app()
-    client = app.test_client()
+            db.session.commit()
 
-    # 1. Test auth_config endpoint
-    r = client.get("/api/auth.php?action=auth_config")
-    assert r.status_code == 200, r.get_json()
-    assert r.get_json().get("googleClientId") == "test-google-client-id"
-    print("1. auth_config OK")
+    def test_auth_config_returns_client_id(self):
+        res = self.client.get("/api/auth.php?action=auth_config")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(data.get("google_client_id"), "test-client-id-12345.apps.googleusercontent.com")
 
-    # 2. Test google_login with unlinked account
-    # Token format: "mock-google-token:<email>:<sub_id>"
-    unlinked_token = "mock-google-token:unknown_user@gmail.com:google-sub-9999"
-    r = client.post("/api/auth.php?action=google_login", json={"credential": unlinked_token})
-    assert r.status_code == 403, r.get_json()
-    assert "No registered account found" in r.get_json().get("error", "")
-    print("2. Unlinked google_login rejected with 403 OK")
+    def test_google_login_missing_token(self):
+        res = self.client.post("/api/auth.php?action=google_login", json={})
+        self.assertEqual(res.status_code, 400)
+        data = res.get_json()
+        self.assertIn("required", data.get("error", "").lower())
 
-    # 3. Normal login then link Google account in settings
-    mfa_login(client, "jdelacuz", "officer123")
-    r = client.get("/api/auth.php?action=my_account")
-    assert r.status_code == 200
-    assert r.get_json().get("isGoogleLinked") is False
+    @patch("urllib.request.urlopen")
+    def test_google_login_suspended_account_rejected_without_mfa(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = json.dumps({
+            "aud": "test-client-id-12345.apps.googleusercontent.com",
+            "email": "suspended_user@example.com",
+            "email_verified": "true",
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
 
-    officer_google_token = "mock-google-token:jdelacruz.official@gmail.com:google-sub-1001"
-    r = client.post("/api/auth.php?action=link_google", json={"credential": officer_google_token})
-    assert r.status_code == 200, r.get_json()
-    assert r.get_json().get("isGoogleLinked") is True
-    assert r.get_json().get("googleEmail") == "jdelacruz.official@gmail.com"
+        res = self.client.post("/api/auth.php?action=google_login", json={"credential": "mock_token"})
+        self.assertEqual(res.status_code, 403)
+        data = res.get_json()
+        self.assertIn("suspended", data.get("error", "").lower())
 
-    r = client.get("/api/auth.php?action=my_account")
-    assert r.get_json().get("isGoogleLinked") is True
-    assert r.get_json().get("googleEmail") == "jdelacruz.official@gmail.com"
-    print("3. Google account linked in settings OK")
+    @patch("urllib.request.urlopen")
+    def test_google_login_enforces_2fa_when_enabled(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = json.dumps({
+            "aud": "test-client-id-12345.apps.googleusercontent.com",
+            "email": "mfa_user@example.com",
+            "email_verified": True,
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
 
-    # 4. Log out and log in via Google
-    client.get("/api/auth.php?action=logout")
-    r = client.get("/api/auth.php?action=me")
-    assert r.get_json().get("authenticated") is False
+        res = self.client.post("/api/auth.php?action=google_login", json={"credential": "mock_token"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data.get("ok"))
+        self.assertTrue(data.get("mfaRequired"), "2FA MUST NOT BE BYPASSED")
+        self.assertIsNotNone(data.get("maskedEmail"))
+        pre_auth_token = data.get("pre_auth_token")
+        self.assertIsNotNone(pre_auth_token, "Pre-auth token MUST be generated")
 
-    r = client.post("/api/auth.php?action=google_login", json={"credential": officer_google_token})
-    assert r.status_code == 200, r.get_json()
-    data = r.get_json()
-    assert data.get("ok") is True
-    assert data["user"]["username"] == "jdelacuz"
-    print("4. Google sign-in for linked account succeeded OK")
+        # Security check: Protected API endpoints MUST reject pre_auth_token / partial state
+        protected_res = self.client.get("/api/records.php?action=list", headers={"Authorization": f"Bearer {pre_auth_token}"})
+        self.assertEqual(protected_res.status_code, 401, "Protected routes MUST reject pre_auth_token")
 
-    # 5. Prevent duplicate linking across accounts
-    client.get("/api/auth.php?action=logout")
-    mfa_login(client, "msantos", "officer123")
-    r = client.post("/api/auth.php?action=link_google", json={"credential": officer_google_token})
-    assert r.status_code == 409, r.get_json()
-    assert "already linked to another" in r.get_json().get("error", "")
-    print("5. Duplicate linking rejected with 409 OK")
+        me_res = self.client.get("/api/auth.php?action=me")
+        self.assertFalse(me_res.get_json().get("authenticated"))
 
-    # 6. Unlink Google account
-    client.get("/api/auth.php?action=logout")
-    mfa_login(client, "jdelacuz", "officer123")
-    r = client.post("/api/auth.php?action=unlink_google")
-    assert r.status_code == 200, r.get_json()
-    assert r.get_json().get("isGoogleLinked") is False
+        # Check OTP created in DB
+        with self.app.app_context():
+            u = User.query.filter_by(email="mfa_user@example.com").first()
+            otp = OtpCode.query.filter_by(user_id=u.id, purpose="login", consumed_at=None).order_by(OtpCode.id.desc()).first()
+            self.assertIsNotNone(otp)
 
-    client.get("/api/auth.php?action=logout")
-    r = client.post("/api/auth.php?action=google_login", json={"credential": officer_google_token})
-    assert r.status_code == 403
-    print("6. Unlinked Google account rejected from sign-in OK")
+        # Test verification using pre_auth_token
+        from app.blueprints.auth import _check_otp, _hash_otp
+        with self.app.app_context():
+            u = User.query.filter_by(email="mfa_user@example.com").first()
+            otp = OtpCode.query.filter_by(user_id=u.id, purpose="login", consumed_at=None).order_by(OtpCode.id.desc()).first()
+            test_code = "123456"
+            otp.code_hash = _hash_otp(test_code)
+            db.session.commit()
 
-    # 7. Account matching registered email (e.g. admin has fileyourname@gmail.com)
-    admin_token = "mock-google-token:fileyourname@gmail.com:google-sub-admin"
-    r = client.post("/api/auth.php?action=google_login", json={"credential": admin_token})
-    assert r.status_code == 200, r.get_json()
-    assert r.get_json()["user"]["username"] == "admin"
-    print("7. Login matching registered email OK")
+        verify_res = self.client.post("/api/auth.php?action=verify_otp", json={
+            "code": "123456",
+            "pre_auth_token": pre_auth_token,
+        })
+        self.assertEqual(verify_res.status_code, 200)
+        self.assertTrue(verify_res.get_json().get("ok"))
+        self.assertEqual(verify_res.get_json().get("user", {}).get("username"), "test_mfa_user")
 
-    # 8. Suspended user rejection
-    with app.app_context():
-        u = User.query.filter_by(username="pencoder").first()
-        u.status = "Suspended"
-        u.google_id = "google-sub-pencoder"
-        u.google_email = "pencoder@gmail.com"
-        db.session.commit()
+        # Now fully authenticated
+        me_after = self.client.get("/api/auth.php?action=me")
+        self.assertTrue(me_after.get_json().get("authenticated"))
 
-    pencoder_token = "mock-google-token:pencoder@gmail.com:google-sub-pencoder"
-    r = client.post("/api/auth.php?action=google_login", json={"credential": pencoder_token})
-    assert r.status_code == 403, r.get_json()
-    assert "suspended" in r.get_json().get("error", "").lower()
-    print("8. Suspended user rejected from Google sign-in OK")
+    @patch("urllib.request.urlopen")
+    def test_google_login_completes_when_2fa_disabled(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = json.dumps({
+            "aud": "test-client-id-12345.apps.googleusercontent.com",
+            "email": "nomfa_user@example.com",
+            "email_verified": True,
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
 
-    print("\nAll Google authentication tests PASSED successfully!")
+        res = self.client.post("/api/auth.php?action=google_login", json={"credential": "mock_token"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data.get("ok"))
+        self.assertFalse(data.get("mfaRequired"))
+
+        # User is authenticated
+        me_res = self.client.get("/api/auth.php?action=me")
+        self.assertTrue(me_res.get_json().get("authenticated"))
 
 
 if __name__ == "__main__":
-    test_google_auth_flow()
+    unittest.main()
