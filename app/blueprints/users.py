@@ -22,36 +22,51 @@ def _hash_password(raw: str) -> str:
 @bp.route("/api/users.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def users_router():
-    action = request.args.get("action", "")
-    method = request.method
+    try:
+        action = request.args.get("action", "")
+        method = request.method
 
-    # Readable by any signed-in user (certificates need the captain's name/signature
-    # regardless of role) — everything else below requires manage_users.
-    if action == "captain_signature" and method == "GET":
-        return _captain_signature()
+        # Readable by any signed-in user (certificates need the captain's name/signature
+        # regardless of role) — everything else below requires manage_users.
+        if action == "captain_signature" and method == "GET":
+            return _captain_signature()
 
-    from ..permissions import role_can
-    if not role_can(session.get("role", ""), "manage_users"):
-        return json_error("You do not have permission to perform this action.", 403)
+        from ..permissions import role_can
+        if not role_can(session.get("role", ""), "manage_users"):
+            return json_error("You do not have permission to perform this action.", 403)
 
-    if action == "list" and method == "GET":
-        return _list()
-    if action == "create" and method == "POST":
-        return _create()
-    if action == "update" and method == "PUT":
-        return _update()
-    if action == "toggle_status" and method == "POST":
-        return _toggle_status()
-    if action == "delete" and method == "DELETE":
-        return _delete()
-    if action == "upload_signature" and method == "POST":
-        return _upload_signature()
-    if action == "remove_signature" and method == "POST":
-        return _remove_signature()
-    if action == "audit" and method == "GET":
-        return _audit()
+        if action == "list" and method == "GET":
+            return _list()
+        if action == "create" and method == "POST":
+            return _create()
+        if action == "update" and method == "PUT":
+            return _update()
+        if action == "toggle_status" and method == "POST":
+            return _toggle_status()
+        if action == "delete" and method == "DELETE":
+            return _delete()
+        if action == "upload_signature" and method == "POST":
+            return _upload_signature()
+        if action == "remove_signature" and method == "POST":
+            return _remove_signature()
+        if action == "audit" and method == "GET":
+            return _audit()
 
-    return json_error("Unknown action or method", 404)
+        return json_error("Unknown action or method", 404)
+    except Exception as e:
+        current_app.logger.exception(f"Error in users_router '{request.args.get('action')}': {e}")
+        return json_error("Internal server error", 500)
+
+
+def _get_target_user_id():
+    raw_id = request.args.get("id")
+    if not raw_id:
+        return None
+    try:
+        uid = int(raw_id)
+        return uid if uid > 0 else None
+    except (ValueError, TypeError):
+        return None
 
 
 def _captain_signature():
@@ -79,9 +94,10 @@ def _list():
 def _create():
     d = request.get_json(silent=True) or {}
     username = (d.get("username") or "").strip()
-    full_name = (d.get("name") or "").strip()
+    full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
     password = d.get("password") or ""
     email = (d.get("email") or "").strip()
+    contact = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     if not username or not full_name or not password:
         return json_error("Name, username, and password are required")
     if not email:
@@ -98,7 +114,7 @@ def _create():
 
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
-        email=email, contact_no=d.get("contact"), role=d.get("role") or "Desk Officer",
+        email=email, contact_no=contact, role=d.get("role") or "Desk Officer",
         # New accounts always start Active — the system's default initial
         # status. Status only becomes choosable later, via Edit; whatever
         # the request body sends here is ignored so an Add User form can
@@ -112,15 +128,15 @@ def _create():
 
 
 def _update():
-    uid = int(request.args.get("id", 0))
+    uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
 
     d = request.get_json(silent=True) or {}
-    full_name = (d.get("name") or "").strip()
+    full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
     email = (d.get("email") or "").strip()
     if not full_name:
         return json_error("Name is required")
@@ -131,9 +147,9 @@ def _update():
 
     user.full_name = full_name
     user.email = email
-    user.contact_no = d.get("contact")
-    user.role = d.get("role") or "Desk Officer"
-    user.status = d.get("status") or "Active"
+    user.contact_no = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
+    user.role = d.get("role") or user.role
+    user.status = d.get("status") or user.status
 
     if d.get("password"):
         min_len = get_security_settings()["min_password_length"]
@@ -150,10 +166,10 @@ def _update():
 
 
 def _toggle_status():
-    uid = int(request.args.get("id", 0))
+    uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
     user.status = "Suspended" if user.status == "Active" else "Active"
@@ -163,12 +179,12 @@ def _toggle_status():
 
 
 def _delete():
-    uid = int(request.args.get("id", 0))
+    uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
     if session.get("user_id") == uid:
         return json_error("You cannot delete your own account while logged in")
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if user:
         username = user.username
         db.session.delete(user)
@@ -178,10 +194,10 @@ def _delete():
 
 
 def _upload_signature():
-    uid = int(request.args.get("id", 0))
+    uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
 
@@ -218,10 +234,10 @@ def _upload_signature():
 
 
 def _remove_signature():
-    uid = int(request.args.get("id", 0))
+    uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
 
@@ -237,7 +253,10 @@ def _remove_signature():
 
 
 def _audit():
-    limit = min(100, max(1, int(request.args.get("limit", 10))))
+    try:
+        limit = min(100, max(1, int(request.args.get("limit", 10))))
+    except (ValueError, TypeError):
+        limit = 10
     rows = AuditLog.query.order_by(AuditLog.id.desc()).limit(limit).all()
     return jsonify([{
         "username": r.username, "action": r.action, "module": r.module,

@@ -10,7 +10,7 @@ const BC_API = '.'; // same-origin, relative to current folder: http://localhost
 const BCApi = {
   async _fetch(url, opts = {}) {
     const res = await fetch(url, { credentials: 'include', ...opts });
-    if (res.status === 401) {
+    if (res.status === 401 && !url.includes('api/auth.php') && !window.location.pathname.endsWith('login.html')) {
       window.location.href = 'login.html';
       throw new Error('Not authenticated');
     }
@@ -23,6 +23,15 @@ const BCApi = {
   },
 
   // ---- auth ----
+  getAuthConfig() {
+    return this._fetch(`${BC_API}/api/auth.php?action=auth_config`);
+  },
+  googleLogin(token) {
+    return this._fetch(`${BC_API}/api/auth.php?action=google_login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: token }),
+    });
+  },
   login(username, password) {
     return this._fetch(`${BC_API}/api/auth.php?action=login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -31,14 +40,21 @@ const BCApi = {
   },
   logout() { return this._fetch(`${BC_API}/api/auth.php?action=logout`); },
   me() { return this._fetch(`${BC_API}/api/auth.php?action=me`); },
-  verifyOtp(code) {
+  verifyOtp(code, preAuthToken = null) {
+    const payload = { code };
+    if (preAuthToken) payload.pre_auth_token = preAuthToken;
     return this._fetch(`${BC_API}/api/auth.php?action=verify_otp`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify(payload),
     });
   },
-  resendOtp() {
-    return this._fetch(`${BC_API}/api/auth.php?action=resend_otp`, { method: 'POST' });
+  resendOtp(preAuthToken = null) {
+    const payload = {};
+    if (preAuthToken) payload.pre_auth_token = preAuthToken;
+    return this._fetch(`${BC_API}/api/auth.php?action=resend_otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
   },
   changePassword(currentPassword, newPassword) {
     return this._fetch(`${BC_API}/api/auth.php?action=change_password`, {

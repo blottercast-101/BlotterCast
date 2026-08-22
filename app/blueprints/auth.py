@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import bcrypt
 from flask import Blueprint, current_app, jsonify, request, session
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func
 
 from ..email import send_otp_email
@@ -13,6 +14,27 @@ from ..models import OtpCode, User
 from ..permissions import get_security_settings, json_error, log_audit, login_required
 
 bp = Blueprint("auth", __name__)
+
+
+def _get_serializer() -> URLSafeTimedSerializer:
+    secret = current_app.config.get("SECRET_KEY", "dev-secret-change-me")
+    return URLSafeTimedSerializer(secret, salt="blottercast-2fa-preauth")
+
+
+def _generate_pre_auth_token(user_id: int) -> str:
+    s = _get_serializer()
+    return s.dumps({"user_id": user_id, "created_at": datetime.utcnow().timestamp()})
+
+
+def _verify_pre_auth_token(token: str, max_age: int = 300) -> int:
+    if not token:
+        return None
+    s = _get_serializer()
+    try:
+        payload = s.loads(token, max_age=max_age)
+        return payload.get("user_id")
+    except (SignatureExpired, BadSignature, Exception):
+        return None
 
 
 def _check_password(raw: str, hashed: str) -> bool:
@@ -74,38 +96,137 @@ def _issue_and_send_otp(user: User, purpose: str = "login") -> None:
 # Same URL contract the frontend already calls: /api/auth.php?action=...
 @bp.route("/api/auth.php", methods=["GET", "POST"])
 def auth_router():
-    action = request.args.get("action", "")
+    try:
+        action = request.args.get("action", "")
 
-    if request.method == "POST" and action == "login":
-        return _login()
-    if action == "verify_otp" and request.method == "POST":
-        return _verify_otp()
-    if action == "resend_otp" and request.method == "POST":
-        return _resend_otp()
-    if action == "logout":
-        return _logout()
-    if action == "me":
-        return _me()
-    if action == "change_password" and request.method == "POST":
-        return _change_password()
-    if action == "forgot_password" and request.method == "POST":
-        return _forgot_password()
-    if action == "resend_reset_otp" and request.method == "POST":
-        return _resend_reset_otp()
-    if action == "reset_password" and request.method == "POST":
-        return _reset_password()
-    if action == "verify_reset_otp" and request.method == "POST":
-        return _verify_reset_otp()
-    if action == "my_security" and request.method == "GET":
-        return _my_security()
-    if action == "toggle_my_mfa" and request.method == "POST":
-        return _toggle_my_mfa()
-    if action == "my_account" and request.method == "GET":
-        return _my_account()
-    if action == "update_my_account" and request.method == "POST":
-        return _update_my_account()
+        if action == "auth_config" and request.method == "GET":
+            return _auth_config()
+        if action == "google_login" and request.method == "POST":
+            return _google_login()
+        if request.method == "POST" and action == "login":
+            return _login()
+        if action == "verify_otp" and request.method == "POST":
+            return _verify_otp()
+        if action == "resend_otp" and request.method == "POST":
+            return _resend_otp()
+        if action == "logout":
+            return _logout()
+        if action == "me":
+            return _me()
+        if action == "change_password" and request.method == "POST":
+            return _change_password()
+        if action == "forgot_password" and request.method == "POST":
+            return _forgot_password()
+        if action == "resend_reset_otp" and request.method == "POST":
+            return _resend_reset_otp()
+        if action == "reset_password" and request.method == "POST":
+            return _reset_password()
+        if action == "verify_reset_otp" and request.method == "POST":
+            return _verify_reset_otp()
+        if action == "my_security" and request.method == "GET":
+            return _my_security()
+        if action == "toggle_my_mfa" and request.method == "POST":
+            return _toggle_my_mfa()
+        if action == "my_account" and request.method == "GET":
+            return _my_account()
+        if action == "update_my_account" and request.method == "POST":
+            return _update_my_account()
 
-    return json_error("Unknown action", 404)
+        return json_error("Unknown action", 404)
+    except Exception as e:
+        current_app.logger.exception(f"Error in auth_router '{request.args.get('action')}': {e}")
+        return json_error("Internal server error", 500)
+
+
+def _auth_config():
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID", "")
+    return jsonify({
+        "status": "success",
+        "google_client_id": client_id,
+    })
+
+
+def _google_login():
+    data = request.get_json(silent=True) or {}
+    token = data.get("credential") or data.get("id_token") or data.get("token") or ""
+    if not token:
+        return json_error("Google ID token required", 400)
+
+    try:
+        import urllib.parse
+        import urllib.request
+        import json as json_lib
+
+        verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={urllib.parse.quote(token)}"
+        req = urllib.request.Request(verify_url, headers={"User-Agent": "BlotterCast/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status != 200:
+                return json_error("Failed to verify Google ID token with provider", 401)
+            token_info = json_lib.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        current_app.logger.warning(f"Google token verification request failed: {e}")
+        return json_error("Invalid or expired Google ID token", 401)
+
+    expected_aud = current_app.config.get("GOOGLE_CLIENT_ID", "").strip()
+    if expected_aud:
+        token_aud = token_info.get("aud")
+        if token_aud != expected_aud:
+            current_app.logger.warning(f"Google token audience mismatch: expected '{expected_aud}', got '{token_aud}'")
+            return json_error("Google token audience mismatch", 401)
+
+    email = token_info.get("email")
+    email_verified = token_info.get("email_verified")
+    if not email:
+        return json_error("Google token does not contain a verified email address", 401)
+    if isinstance(email_verified, str) and email_verified.lower() != "true":
+        return json_error("Google email address is not verified", 401)
+    elif isinstance(email_verified, bool) and not email_verified:
+        return json_error("Google email address is not verified", 401)
+
+    user = User.query.filter(func.lower(User.email) == email.lower()).first()
+    if not user:
+        return json_error(
+            "No BlotterCast account is associated with this Google email address. "
+            "Please contact an administrator to create or link your account.", 401
+        )
+
+    if user.status.upper() == "SUSPENDED":
+        return json_error("This account has been suspended. Please contact an administrator.", 403)
+    if user.status != "Active":
+        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+
+    user.failed_attempts = 0
+    user.locked_until = None
+
+    # Enforce Two-Factor Authentication (2FA) if enabled on the user account
+    if user.is_2fa_enabled:
+        if not user.email:
+            return json_error(
+                "This account has no email on file for 2FA OTP codes. "
+                "Contact an administrator to add one.", 403
+            )
+        db.session.commit()
+        _issue_and_send_otp(user)
+
+        session.clear()
+        session["mfa_pending_user_id"] = user.id
+        session["mfa_pending_at"] = datetime.utcnow().timestamp()
+
+        pre_auth_token = _generate_pre_auth_token(user.id)
+        log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent")
+
+        return jsonify({
+            "ok": True,
+            "mfaRequired": True,
+            "pre_auth_token": pre_auth_token,
+            "maskedEmail": _mask_email(user.email),
+            "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
+            "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
+        })
+
+    # If 2FA is not enabled, directly complete sign-in
+    db.session.commit()
+    return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA disabled for this account)")
 
 
 def _complete_login(user, audit_note):
@@ -177,7 +298,7 @@ def _login():
     # Authentication). Only send/require a code when the account actually
     # has it turned on — otherwise password verification alone completes
     # the login, same as before 2FA existed.
-    if not user.mfa_enabled:
+    if not user.is_2fa_enabled:
         db.session.commit()
         return _complete_login(user, "Successful login (2FA disabled for this account)")
 
@@ -195,19 +316,34 @@ def _login():
     session["mfa_pending_user_id"] = user.id
     session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
+    pre_auth_token = _generate_pre_auth_token(user.id)
     log_audit(user.username, "Login", "System", "Password verified, MFA code sent")
 
     return jsonify({
         "ok": True, "mfaRequired": True,
+        "pre_auth_token": pre_auth_token,
         "maskedEmail": _mask_email(user.email),
         "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
         "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
     })
 
 
-def _pending_mfa_user():
-    """Returns the User for a valid pending-MFA session, or None (clearing
-    the session) if there isn't one or the overall pending window has lapsed."""
+def _pending_mfa_user(data=None):
+    """Returns the User for a valid pending-MFA session / pre_auth_token, or None
+    (clearing the session) if there isn't one or the window has lapsed."""
+    data = data or {}
+    token = data.get("pre_auth_token") or data.get("preAuthToken")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+
+    if token:
+        expiry_seconds = (current_app.config["MFA_CODE_EXPIRY_MINUTES"] + 5) * 60
+        uid = _verify_pre_auth_token(token, max_age=expiry_seconds)
+        if uid:
+            return db.session.get(User, uid)
+
     uid = session.get("mfa_pending_user_id")
     pending_at = session.get("mfa_pending_at")
     if not uid or not pending_at:
@@ -220,15 +356,15 @@ def _pending_mfa_user():
         session.clear()
         return None
 
-    return User.query.get(uid)
+    return db.session.get(User, uid)
 
 
 def _verify_otp():
-    user = _pending_mfa_user()
+    data = request.get_json(silent=True) or {}
+    user = _pending_mfa_user(data)
     if not user:
         return json_error("Your sign-in attempt has expired. Please log in again.", 401)
 
-    data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     if not code:
         return json_error("Enter the verification code sent to your email")
@@ -259,7 +395,8 @@ def _verify_otp():
 
 
 def _resend_otp():
-    user = _pending_mfa_user()
+    data = request.get_json(silent=True) or {}
+    user = _pending_mfa_user(data)
     if not user:
         return json_error("Your sign-in attempt has expired. Please log in again.", 401)
 
@@ -291,7 +428,7 @@ def _pending_reset_user():
         session.clear()
         return None
 
-    return User.query.get(uid)
+    return db.session.get(User, uid)
 
 
 def _forgot_password():
@@ -449,7 +586,7 @@ def _change_password_impl():
     if not current_password or not new_password:
         return json_error("Current and new password are both required")
 
-    user = User.query.get(session["user_id"])
+    user = db.session.get(User, session["user_id"])
     if not user or not _check_password(current_password, user.password):
         return json_error("Current password is incorrect", 401)
 
@@ -478,7 +615,7 @@ def _my_security():
     not an admin action."""
     if not session.get("user_id"):
         return json_error("Not authenticated", 401)
-    user = User.query.get(session["user_id"])
+    user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
     return jsonify({"mfaEnabled": user.mfa_enabled})
@@ -490,7 +627,7 @@ def _toggle_my_mfa():
     very next login onward and survives logout in between."""
     if not session.get("user_id"):
         return json_error("Not authenticated", 401)
-    user = User.query.get(session["user_id"])
+    user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
     data = request.get_json(silent=True) or {}
@@ -509,7 +646,7 @@ def _my_account():
     users.php), but a user's own name/email/contact are theirs to fix."""
     if not session.get("user_id"):
         return json_error("Not authenticated", 401)
-    user = User.query.get(session["user_id"])
+    user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
     return jsonify({
@@ -525,7 +662,7 @@ def _update_my_account():
     users.php, same as before."""
     if not session.get("user_id"):
         return json_error("Not authenticated", 401)
-    user = User.query.get(session["user_id"])
+    user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
 
