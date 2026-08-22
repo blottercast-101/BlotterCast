@@ -708,13 +708,8 @@ def _update_my_account():
     if User.query.filter(User.id != user.id, func.lower(User.email) == email.lower()).first():
         return json_error("That email address is already in use by another account", 409)
 
-    if user.email.lower() != email.lower():
-        user.email = email
-        user.google_id = None  # Ready to automatically bind to the new Google account on next login
-    else:
-        user.email = email
-
     user.full_name = full_name
+    user.email = email
     user.contact_no = (data.get("contact") or "").strip() or None
     db.session.commit()
     log_audit(user.username, "Updated", "System", "Updated their own account details")
