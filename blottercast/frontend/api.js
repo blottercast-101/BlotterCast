@@ -40,6 +40,9 @@ const BCApi = {
   },
   logout() { return this._fetch(`${BC_API}/api/auth.php?action=logout`); },
   me() { return this._fetch(`${BC_API}/api/auth.php?action=me`); },
+  heartbeat() {
+    return this._fetch(`${BC_API}/api/auth.php?action=heartbeat`, { method: 'POST' });
+  },
   verifyOtp(code, preAuthToken = null) {
     const payload = { code };
     if (preAuthToken) payload.pre_auth_token = preAuthToken;

@@ -27,10 +27,10 @@ admin_data = next(u for u in users if u["id"] == admin_id)
 kapitan_data = next(u for u in users if u["id"] == kapitan_id)
 
 assert admin_data["is_protected"] is True, "System Admin must have is_protected=True"
-assert admin_data["status"] == "Active", "System Admin status must be Active"
+assert admin_data["status"] == "Active", "Logged-in System Admin status must be Active"
 assert kapitan_data["is_protected"] is True, "Barangay Captain must have is_protected=True"
-assert kapitan_data["status"] == "Active", "Barangay Captain status must be Active"
-print("[OK] List API correctly identifies protected accounts as is_protected=True and Active")
+assert kapitan_data["status"] != "Suspended", "Barangay Captain status must not be Suspended"
+print("[OK] List API correctly identifies protected accounts as is_protected=True and non-suspended")
 
 # 2. Test Toggle Status on Barangay Captain
 r_toggle_kapitan = c.post(f"/api/users.php?action=toggle_status&id={kapitan_id}")
@@ -46,16 +46,16 @@ err = r_toggle_admin.get_json()
 assert "protected and cannot be suspended" in err.get("error", ""), f"Unexpected error msg: {err}"
 print("[OK] Backend gracefully blocks suspending System Admin:", err["error"])
 
-# 4. Test Delete on Barangay Captain
+# 4. Test Delete Barangay Captain
 r_del_kapitan = c.delete(f"/api/users.php?action=delete&id={kapitan_id}")
 assert r_del_kapitan.status_code == 400, f"Expected 400 on delete kapitan, got {r_del_kapitan.status_code}"
 err = r_del_kapitan.get_json()
 assert "protected and cannot be deleted" in err.get("error", ""), f"Unexpected error msg: {err}"
 print("[OK] Backend gracefully blocks deleting Barangay Captain:", err["error"])
 
-# 5. Test Delete on System Admin
+# 5. Test Delete System Admin (Self or other)
 r_del_admin = c.delete(f"/api/users.php?action=delete&id={admin_id}")
-assert r_del_admin.status_code in (400, 403), f"Expected 400 or 403 on delete admin, got {r_del_admin.status_code}"
+assert r_del_admin.status_code == 400, f"Expected 400 on delete admin, got {r_del_admin.status_code}"
 err = r_del_admin.get_json()
 print("[OK] Backend gracefully blocks deleting System Admin:", err["error"])
 
@@ -71,8 +71,8 @@ assert r_up.status_code == 200, f"Update returned {r_up.status_code}: {r_up.get_
 
 with app.app_context():
     kap_check = db.session.get(User, kapitan_id)
-    assert kap_check.status == "Active", f"Protected user status must remain Active, got {kap_check.status}"
-print("[OK] Updating a protected user ignores any attempts to set status to Suspended and keeps it Active")
+    assert kap_check.status != "Suspended", f"Protected user status must not be Suspended, got {kap_check.status}"
+print("[OK] Updating a protected user ignores any attempts to set status to Suspended")
 
 # 7. Test Non-protected user lifecycle (create -> suspend -> activate -> delete)
 unique_suffix = int(time.time())
@@ -92,9 +92,9 @@ officer_id = r_create.get_json()["id"]
 r_tog1 = c.post(f"/api/users.php?action=toggle_status&id={officer_id}")
 assert r_tog1.status_code == 200 and r_tog1.get_json()["status"] == "Suspended"
 
-# Toggle activate test officer
+# Toggle activate test officer (restores to Inactive since officer is offline)
 r_tog2 = c.post(f"/api/users.php?action=toggle_status&id={officer_id}")
-assert r_tog2.status_code == 200 and r_tog2.get_json()["status"] == "Active"
+assert r_tog2.status_code == 200 and r_tog2.get_json()["status"] == "Inactive"
 
 # Delete test officer
 r_del = c.delete(f"/api/users.php?action=delete&id={officer_id}")

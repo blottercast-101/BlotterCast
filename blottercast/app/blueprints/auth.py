@@ -110,6 +110,8 @@ def auth_router():
             return _verify_otp()
         if action == "resend_otp" and request.method == "POST":
             return _resend_otp()
+        if action == "heartbeat" and request.method == "POST":
+            return _heartbeat()
         if action == "logout":
             return _logout()
         if action == "me":
@@ -207,8 +209,6 @@ def _google_login():
 
     if user.status.upper() == "SUSPENDED":
         return json_error("This account has been suspended. Please contact an administrator.", 403)
-    if user.status != "Active":
-        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
 
     user.failed_attempts = 0
     user.locked_until = None
@@ -270,6 +270,7 @@ def _complete_login(user, audit_note):
         must_change_password = age_days > settings["password_expiry_days"]
 
     user.last_login = datetime.utcnow()
+    user.last_seen = datetime.utcnow()
     db.session.commit()
 
     session.clear()
@@ -317,8 +318,8 @@ def _login():
             db.session.commit()
         return json_error("Invalid username or password", 401)
 
-    if user.status != "Active":
-        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+    if user.status.upper() == "SUSPENDED":
+        return json_error("This account has been suspended. Please contact an administrator.", 403)
 
     user.failed_attempts = 0
     user.locked_until = None
@@ -473,8 +474,8 @@ def _forgot_password():
     user = User.query.filter_by(username=username).first()
     if not user:
         return json_error("No account found with that username.", 404)
-    if user.status != "Active":
-        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+    if user.status.upper() == "SUSPENDED":
+        return json_error("This account has been suspended. Please contact an administrator.", 403)
     if not user.email:
         return json_error(
             "This account has no email on file, so a reset code can't be sent. "
@@ -585,8 +586,25 @@ def _reset_password():
     return jsonify({"ok": True, "message": "Your password has been reset. Please sign in."})
 
 
+def _heartbeat():
+    uid = session.get("user_id")
+    if uid:
+        user = db.session.get(User, uid)
+        if user and user.status != "Suspended":
+            user.last_seen = datetime.utcnow()
+            db.session.commit()
+            return jsonify({"ok": True, "online": True})
+    return jsonify({"ok": True, "online": False})
+
+
 def _logout():
+    uid = session.get("user_id")
     username = session.get("username")
+    if uid:
+        user = db.session.get(User, uid)
+        if user:
+            user.last_seen = None
+            db.session.commit()
     if username:
         log_audit(username, "Logout", "System", "User logged out")
     session.clear()
@@ -604,6 +622,13 @@ def _me():
         session.clear()
         return jsonify({"authenticated": False})
     session["last_activity"] = datetime.utcnow().timestamp()
+
+    uid = session.get("user_id")
+    if uid:
+        user = db.session.get(User, uid)
+        if user and user.status != "Suspended":
+            user.last_seen = datetime.utcnow()
+            db.session.commit()
 
     return jsonify({"authenticated": True, "user": {
         "full_name": session.get("full_name"), "role": session.get("role"),

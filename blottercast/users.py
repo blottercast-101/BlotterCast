@@ -72,30 +72,37 @@ PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
 
 
 def _captain_signature():
-    row = User.query.filter_by(role="Barangay Captain", status="Active").order_by(User.id).first()
+    row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
     return jsonify({
         "fullName": row.full_name if row else None,
         "signaturePath": row.signature_path if row else None,
     })
 
 
+def _get_computed_status(u: User) -> str:
+    if u.status == "Suspended":
+        return "Suspended"
+    if u.last_seen:
+        elapsed = (datetime.utcnow() - u.last_seen).total_seconds()
+        if elapsed <= 45:
+            return "Active"
+    return "Inactive"
+
+
 def _list():
     rows = User.query.order_by(User.full_name).all()
-    # Ensure protected accounts are always Active
-    for u in rows:
-        if u.role in PROTECTED_ROLES and u.status != "Active":
-            u.status = "Active"
-            db.session.commit()
-
     return jsonify([{
         "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
-        "contact_no": u.contact_no, "role": u.role, "status": u.status,
+        "contact_no": u.contact_no, "role": u.role,
+        "status": _get_computed_status(u),
+        "is_online": _get_computed_status(u) == "Active",
         "is_protected": u.role in PROTECTED_ROLES,
         "signature_path": u.signature_path,
         # Naive datetimes from utcnow() have no offset — appending "Z" makes
         # the value unambiguous UTC so the browser doesn't guess it's local
         # time (which silently shifts it by the browser's own UTC offset).
         "last_login": (u.last_login.isoformat() + "Z") if u.last_login else None,
+        "last_seen": (u.last_seen.isoformat() + "Z") if u.last_seen else None,
         "created_at": (u.created_at.isoformat() + "Z") if u.created_at else None,
     } for u in rows])
 
@@ -124,11 +131,7 @@ def _create():
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
         email=email, contact_no=contact, role=d.get("role") or "Desk Officer",
-        # New accounts always start Active — the system's default initial
-        # status. Status only becomes choosable later, via Edit; whatever
-        # the request body sends here is ignored so an Add User form can
-        # never smuggle a different starting status through the API.
-        status="Active", password_changed_at=datetime.utcnow(),
+        status="Inactive", password_changed_at=datetime.utcnow(),
     )
     db.session.add(user)
     db.session.commit()
@@ -158,10 +161,6 @@ def _update():
     user.email = email
     user.contact_no = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     user.role = d.get("role") or user.role
-    if user.role in PROTECTED_ROLES:
-        user.status = "Active"
-    else:
-        user.status = d.get("status") or user.status
 
     if d.get("password"):
         min_len = get_security_settings()["min_password_length"]
@@ -186,10 +185,19 @@ def _toggle_status():
         return json_error("User not found", 404)
     if user.role in PROTECTED_ROLES:
         return json_error(f"{user.role} accounts are protected and cannot be suspended.", 400)
-    user.status = "Suspended" if user.status == "Active" else "Active"
+    
+    if user.status == "Suspended":
+        user.status = "Inactive"
+        action_note = "Unsuspended"
+    else:
+        user.status = "Suspended"
+        user.last_seen = None
+        action_note = "Suspended"
+
     db.session.commit()
-    log_audit(session.get("username"), "Updated", "Users", f"{user.username} set to {user.status}")
-    return jsonify({"ok": True, "status": user.status})
+    computed = _get_computed_status(user)
+    log_audit(session.get("username"), "Updated", "Users", f"{user.username} {action_note.lower()}")
+    return jsonify({"ok": True, "status": computed})
 
 
 def _delete():

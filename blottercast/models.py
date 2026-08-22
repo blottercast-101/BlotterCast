@@ -25,12 +25,13 @@ class User(db.Model):
     email = db.Column(db.String(150))
     contact_no = db.Column(db.String(30))
     role = db.Column(db.String(30), nullable=False, default="Desk Officer")
-    status = db.Column(db.String(20), nullable=False, default="Active")
+    status = db.Column(db.String(20), nullable=False, default="Inactive")
     mfa_enabled = db.Column(db.Boolean, nullable=False, default=True)
     google_id = db.Column(db.String(100))
     auth_provider = db.Column(db.String(30), nullable=False, default="local")
     signature_path = db.Column(db.String(255))
     last_login = db.Column(db.DateTime)
+    last_seen = db.Column(db.DateTime)
     failed_attempts = db.Column(db.Integer, nullable=False, default=0)
     locked_until = db.Column(db.DateTime)
     password_changed_at = db.Column(db.DateTime, default=now)
@@ -52,12 +53,13 @@ class User(db.Model):
         email=None,
         contact_no=None,
         role="Desk Officer",
-        status="Active",
+        status="Inactive",
         mfa_enabled=True,
         google_id=None,
         auth_provider="local",
         signature_path=None,
         last_login=None,
+        last_seen=None,
         failed_attempts=0,
         locked_until=None,
         password_changed_at=None,
@@ -85,6 +87,8 @@ class User(db.Model):
             self.signature_path = signature_path
         if last_login is not None:
             self.last_login = last_login
+        if last_seen is not None:
+            self.last_seen = last_seen
         self.failed_attempts = failed_attempts
         if locked_until is not None:
             self.locked_until = locked_until

@@ -25,6 +25,7 @@ ADDITIVE_COLUMNS = [
     ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
     ("users", "google_id", "VARCHAR(100)", "NULL", False),
     ("users", "auth_provider", "VARCHAR(30)", "'local'", True),
+    ("users", "last_seen", "TIMESTAMP", "NULL", False),
     ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
 ]
 

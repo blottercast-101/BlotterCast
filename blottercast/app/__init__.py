@@ -10,19 +10,11 @@ FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 def _auto_migrate_schema(app):
     """Automatically patches database schema on application startup across all environments
-    (SQLite, PostgreSQL on Render, MySQL) so newly added columns like 'archived' exist."""
+    (SQLite, PostgreSQL on Render, MySQL) so newly added columns exist."""
     with app.app_context():
         try:
-            from sqlalchemy import inspect, text
-            inspector = inspect(db.engine)
-            tables = ["incidents", "settlements", "census_records", "blotter_records"]
-            for table in tables:
-                if table in inspector.get_table_names():
-                    columns = [c["name"] for c in inspector.get_columns(table)]
-                    if "archived" not in columns:
-                        with db.engine.begin() as conn:
-                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN archived BOOLEAN DEFAULT FALSE"))
-                            conn.execute(text(f"UPDATE {table} SET archived = FALSE WHERE archived IS NULL"))
+            from .migrate import ensure_columns
+            ensure_columns(db)
         except Exception as e:
             app.logger.warning(f"Auto-migration notice: {e}")
 

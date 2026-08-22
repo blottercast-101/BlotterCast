@@ -102,6 +102,14 @@ async function doLogout() {
   window.location.href = 'login.html';
 }
 
+// ── Real-Time Presence Heartbeat ────────────────────────────
+// Keeps active user presence marked "ACTIVE (Online)" in real-time.
+setInterval(() => {
+  if (!document.hidden && !window.location.pathname.endsWith('login.html')) {
+    BCApi.heartbeat().catch(() => {});
+  }
+}, 15000);
+
 
 // ── Field validation helpers ────────────────────────────────
 // Small, dependency-free predicates used right before any create/update
