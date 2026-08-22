@@ -44,46 +44,6 @@ class User(db.Model):
     def is_2fa_enabled(self, val: bool) -> None:
         self.mfa_enabled = bool(val)
 
-    def __init__(
-        self,
-        username=None,
-        password=None,
-        full_name=None,
-        email=None,
-        contact_no=None,
-        role="Desk Officer",
-        status="Active",
-        mfa_enabled=True,
-        google_id=None,
-        auth_provider="local",
-        signature_path=None,
-        last_login=None,
-        failed_attempts=0,
-        locked_until=None,
-        password_changed_at=None,
-        created_at=None,
-        **kwargs
-    ):
-        super().__init__(
-            username=username,
-            password=password,
-            full_name=full_name,
-            email=email,
-            contact_no=contact_no,
-            role=role,
-            status=status,
-            mfa_enabled=mfa_enabled,
-            google_id=google_id,
-            auth_provider=auth_provider,
-            signature_path=signature_path,
-            last_login=last_login,
-            failed_attempts=failed_attempts,
-            locked_until=locked_until,
-            password_changed_at=password_changed_at,
-            created_at=created_at,
-            **kwargs
-        )
-
 
 class OtpCode(db.Model):
     __tablename__ = "otp_codes"
@@ -96,28 +56,6 @@ class OtpCode(db.Model):
     consumed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
-    def __init__(
-        self,
-        user_id=None,
-        code_hash=None,
-        purpose="login",
-        expires_at=None,
-        attempts=0,
-        consumed_at=None,
-        created_at=None,
-        **kwargs
-    ):
-        super().__init__(
-            user_id=user_id,
-            code_hash=code_hash,
-            purpose=purpose,
-            expires_at=expires_at,
-            attempts=attempts,
-            consumed_at=consumed_at,
-            created_at=created_at,
-            **kwargs
-        )
-
 
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
@@ -127,9 +65,6 @@ class AuditLog(db.Model):
     module = db.Column(db.String(50), nullable=False)
     details = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=now, index=True)
-
-    def __init__(self, username=None, action=None, module=None, details=None, created_at=None, **kwargs):
-        super().__init__(username=username, action=action, module=module, details=details, created_at=created_at, **kwargs)
 
 
 class SystemSetting(db.Model):

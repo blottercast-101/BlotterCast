@@ -8,6 +8,25 @@ from .extensions import db
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 
+def _auto_migrate_schema(app):
+    """Automatically patches database schema on application startup across all environments
+    (SQLite, PostgreSQL on Render, MySQL) so newly added columns like 'archived' exist."""
+    with app.app_context():
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            tables = ["incidents", "settlements", "census_records", "blotter_records"]
+            for table in tables:
+                if table in inspector.get_table_names():
+                    columns = [c["name"] for c in inspector.get_columns(table)]
+                    if "archived" not in columns:
+                        with db.engine.begin() as conn:
+                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN archived BOOLEAN DEFAULT FALSE"))
+                            conn.execute(text(f"UPDATE {table} SET archived = FALSE WHERE archived IS NULL"))
+        except Exception as e:
+            app.logger.warning(f"Auto-migration notice: {e}")
+
+
 def create_app(config_class=Config):
     app = Flask(
         __name__,
@@ -17,6 +36,7 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     db.init_app(app)
+    _auto_migrate_schema(app)
 
     from .blueprints.auth import bp as auth_bp
     from .blueprints.records import bp as records_bp
