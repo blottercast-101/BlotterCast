@@ -26,7 +26,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
         code_digits = list(str(otp_code).strip())
 
     digit_tds = "".join([
-        f'<td align="center" style="padding: 0 4px; font-family: \'SFMono-Regular\', Consolas, \'Liberation Mono\', Menlo, Courier, monospace, sans-serif; font-size: 30px; font-weight: 700; color: #86efac; line-height: 1; min-width: 20px;">{d}</td>'
+        f'<td align="center" style="padding: 0 5px; font-family: \'SFMono-Regular\', Consolas, \'Liberation Mono\', Menlo, Courier, monospace, sans-serif; font-size: 32px; font-weight: 800; color: #4ade80 !important; -webkit-text-fill-color: #4ade80 !important; line-height: 1; min-width: 22px;">{d}</td>'
         for d in code_digits
     ])
 
@@ -55,7 +55,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
       background-color: #121212 !important;
       background-image: linear-gradient(#121212, #121212) !important;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      color: #94a3b8 !important;
+      color: #cbd5e1 !important;
     }}
     .dark-card {{
       background-color: #1e232a !important;
@@ -67,10 +67,19 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
       border: 2px dashed #22c55e !important;
     }}
     .brand-accent {{
-      color: #86efac !important;
+      color: #4ade80 !important;
+      -webkit-text-fill-color: #4ade80 !important;
+    }}
+    .pill-highlight {{
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      background-color: #2a333d !important;
     }}
     [data-ogsc] .brand-accent, [data-ogsc] .code-digit {{
-      color: #86efac !important;
+      color: #4ade80 !important;
+    }}
+    [data-ogsc] .pill-highlight {{
+      color: #ffffff !important;
     }}
     [data-ogsb] .dark-card {{
       background-color: #1e232a !important;
@@ -85,7 +94,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
   </style>
   <![endif]-->
 </head>
-<body bgcolor="#121212" style="margin: 0; padding: 0; background-color: #121212; background-image: linear-gradient(#121212, #121212); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #94a3b8;">
+<body bgcolor="#121212" style="margin: 0; padding: 0; background-color: #121212; background-image: linear-gradient(#121212, #121212); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #cbd5e1;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#121212" style="background-color: #121212; background-image: linear-gradient(#121212, #121212); table-layout: fixed; width: 100%;">
     <tr>
       <td align="center" style="padding: 28px 12px 36px 12px; background-color: #121212; background-image: linear-gradient(#121212, #121212);">
@@ -99,7 +108,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 4px;">
-                    <span class="brand-accent" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 700; color: #86efac; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
+                    <span class="brand-accent" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #4ade80 !important; -webkit-text-fill-color: #4ade80 !important; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
                       BlotterCast
                     </span>
                   </td>
@@ -117,7 +126,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td style="padding-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15.5px; color: #e2e8f0; line-height: 1.5;">
-                    Hello <strong style="color: #ffffff; font-weight: 700;">{name_display}</strong>,
+                    Hello <span class="pill-highlight" style="color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700; background-color: #2a333d; padding: 2px 8px; border-radius: 6px; display: inline-block;">{name_display}</span>,
                   </td>
                 </tr>
                 <tr>
@@ -150,8 +159,8 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <!-- Expiration Notice & Security Disclaimer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
-                    This security code expires in <strong style="color: #ffffff; font-weight: 700;">{expire_minutes} minutes</strong>.
+                  <td align="center" style="padding-bottom: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
+                    This security code expires in <span class="pill-highlight" style="color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700; background-color: #2a333d; padding: 2px 8px; border-radius: 6px; display: inline-block;">{expire_minutes} minutes</span>.
                   </td>
                 </tr>
                 <tr>
@@ -181,7 +190,6 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               </div>
 
             </td>
-          </tr>
         </table>
 
       </td>
