@@ -137,6 +137,25 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 .logout-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
+/* Custom sleek sidebar scrollbar */
+#sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+#sidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+#sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+#sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+#sidebar nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 /* ---------------- Stat cards ---------------- */
 .stat-card {
   border-radius: 1rem;

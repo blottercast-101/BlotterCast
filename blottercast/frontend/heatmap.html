@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Heat Map — BlotterCast</title>
-  <link rel="icon" type="image/png" href="favicon.png"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -251,10 +252,6 @@
     </header>
 
     <main class="flex-1 p-6 space-y-6">
-      <div id="boundaryStatus" class="status-note">
-        Loading barangay boundary...
-      </div>
-
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div class="xl:col-span-2 card p-5">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -428,7 +425,6 @@
     const topCategory = document.getElementById('topCategory');
     const categoryList = document.getElementById('categoryList');
     const incidentTableBody = document.getElementById('incidentTableBody');
-    const boundaryStatus = document.getElementById('boundaryStatus');
 
     async function loadBoundary() {
       try {
@@ -448,11 +444,8 @@
 
         map.invalidateSize();
         map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
-
-        boundaryStatus.innerHTML = 'Barangay boundary loaded successfully.';
       } catch (err) {
-        boundaryStatus.innerHTML = 'Boundary file was not loaded. Add <strong>mapulang-lupa.geojson</strong> beside this file.';
-        console.error(err);
+        console.error('Boundary file error:', err);
       }
     }
 
