@@ -4,8 +4,9 @@ import secrets
 from datetime import datetime, timedelta
 
 import bcrypt
+import requests
 from flask import Blueprint, current_app, jsonify, request, session
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 
 from ..email import send_otp_email
 from ..extensions import db
@@ -24,6 +25,45 @@ def _check_password(raw: str, hashed: str) -> bool:
 
 def _hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+# ---------------------------------------------------------------
+# Google Token verification helper
+# ---------------------------------------------------------------
+def _verify_google_token(credential: str) -> dict | None:
+    if not credential or not isinstance(credential, str):
+        return None
+
+    # Support testing mock tokens in test environment
+    if current_app.config.get("TESTING") and credential.startswith("mock-google-token:"):
+        parts = credential.split(":")
+        mock_email = parts[1] if len(parts) > 1 else "test@example.com"
+        mock_sub = parts[2] if len(parts) > 2 else "mock-sub-123456"
+        return {
+            "sub": mock_sub,
+            "email": mock_email,
+            "email_verified": True,
+            "name": "Mock Google User",
+        }
+
+    try:
+        resp = requests.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": credential},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        if not data.get("email") or not data.get("sub"):
+            return None
+        # Verify audience if GOOGLE_CLIENT_ID is explicitly configured
+        configured_client_id = current_app.config.get("GOOGLE_CLIENT_ID")
+        if configured_client_id and data.get("aud") != configured_client_id:
+            return None
+        return data
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------
@@ -76,8 +116,12 @@ def _issue_and_send_otp(user: User, purpose: str = "login") -> None:
 def auth_router():
     action = request.args.get("action", "")
 
+    if action == "auth_config" and request.method == "GET":
+        return _auth_config()
     if request.method == "POST" and action == "login":
         return _login()
+    if action == "google_login" and request.method == "POST":
+        return _google_login()
     if action == "verify_otp" and request.method == "POST":
         return _verify_otp()
     if action == "resend_otp" and request.method == "POST":
@@ -104,6 +148,10 @@ def auth_router():
         return _my_account()
     if action == "update_my_account" and request.method == "POST":
         return _update_my_account()
+    if action == "link_google" and request.method == "POST":
+        return _link_google()
+    if action == "unlink_google" and request.method == "POST":
+        return _unlink_google()
 
     return json_error("Unknown action", 404)
 
@@ -515,6 +563,8 @@ def _my_account():
     return jsonify({
         "username": user.username, "fullName": user.full_name,
         "email": user.email, "contact": user.contact_no, "role": user.role,
+        "googleEmail": user.google_email,
+        "isGoogleLinked": bool(user.google_id or user.google_email),
     })
 
 
@@ -548,4 +598,131 @@ def _update_my_account():
     return jsonify({"ok": True, "user": {
         "username": user.username, "fullName": user.full_name,
         "email": user.email, "contact": user.contact_no, "role": user.role,
+        "googleEmail": user.google_email,
+        "isGoogleLinked": bool(user.google_id or user.google_email),
     }})
+
+
+def _auth_config():
+    return jsonify({
+        "googleClientId": current_app.config.get("GOOGLE_CLIENT_ID", ""),
+    })
+
+
+def _google_login():
+    data = request.get_json(silent=True) or {}
+    credential = (data.get("credential") or "").strip()
+    if not credential:
+        return json_error("Google credential is required", 400)
+
+    token_data = _verify_google_token(credential)
+    if not token_data:
+        return json_error("Invalid or expired Google credential. Please try again.", 400)
+
+    sub = str(token_data.get("sub") or "").strip()
+    email = str(token_data.get("email") or "").strip().lower()
+    email_verified = token_data.get("email_verified")
+
+    if not email:
+        return json_error("Unable to retrieve email from Google account.", 400)
+
+    if not email_verified:
+        return json_error("Your Google email address is not verified.", 400)
+
+    settings = get_security_settings()
+
+    # Search for an active user linked with this Google account
+    # 1. Match by stored google_id
+    user = User.query.filter(User.google_id == sub).first() if sub else None
+
+    # 2. Match by stored google_email
+    if not user and email:
+        user = User.query.filter(func.lower(User.google_email) == email).first()
+
+    # 3. Match by primary user email if already registered in system
+    if not user and email:
+        user = User.query.filter(func.lower(User.email) == email).first()
+
+    if not user:
+        return json_error(
+            f"No BlotterCast account is linked to this Google account ({email}). "
+            f"Please sign in with your username and password, or contact an administrator to link your account.",
+            403,
+        )
+
+    # Check account lockout
+    if settings["lockout_enabled"] and user.locked_until and user.locked_until > datetime.utcnow():
+        minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1)
+        return json_error(
+            f"This account is locked due to too many failed login attempts. "
+            f"Try again in {minutes_left} minute(s), or contact an administrator.", 403
+        )
+
+    if user.status != "Active":
+        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+
+    # Save / update google linking details for the matched user
+    user.google_id = sub
+    user.google_email = email
+    user.failed_attempts = 0
+    user.locked_until = None
+    db.session.commit()
+
+    return _complete_login(user, f"Successful sign-in via Google ({email})")
+
+
+def _link_google():
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+
+    data = request.get_json(silent=True) or {}
+    credential = (data.get("credential") or "").strip()
+    if not credential:
+        return json_error("Google credential is required", 400)
+
+    token_data = _verify_google_token(credential)
+    if not token_data:
+        return json_error("Invalid or expired Google credential. Please try again.", 400)
+
+    sub = str(token_data.get("sub") or "").strip()
+    email = str(token_data.get("email") or "").strip().lower()
+
+    if not email:
+        return json_error("Unable to retrieve email from Google account.", 400)
+
+    # Check if another user already has this google_id or google_email
+    existing = User.query.filter(
+        User.id != user.id,
+        or_(User.google_id == sub, func.lower(User.google_email) == email)
+    ).first()
+    if existing:
+        return json_error(
+            f"This Google account ({email}) is already linked to another BlotterCast user ({existing.username}).",
+            409,
+        )
+
+    user.google_id = sub
+    user.google_email = email
+    db.session.commit()
+
+    log_audit(user.username, "Updated", "System", f"Linked Google account ({email})")
+    return jsonify({"ok": True, "googleEmail": email, "isGoogleLinked": True})
+
+
+def _unlink_google():
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = User.query.get(session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+
+    user.google_id = None
+    user.google_email = None
+    db.session.commit()
+
+    log_audit(user.username, "Updated", "System", "Unlinked Google account")
+    return jsonify({"ok": True, "isGoogleLinked": False})
+

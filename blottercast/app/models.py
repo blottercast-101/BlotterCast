@@ -15,6 +15,9 @@ class Zone(db.Model):
     lng = db.Column(db.Numeric(9, 6), nullable=False)
     weight = db.Column(db.Numeric(4, 3), nullable=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class User(db.Model):
     __tablename__ = "users"
@@ -28,11 +31,16 @@ class User(db.Model):
     status = db.Column(db.String(20), nullable=False, default="Active")
     mfa_enabled = db.Column(db.Boolean, nullable=False, default=True)
     signature_path = db.Column(db.String(255))
+    google_id = db.Column(db.String(255), unique=True, index=True)
+    google_email = db.Column(db.String(150))
     last_login = db.Column(db.DateTime)
     failed_attempts = db.Column(db.Integer, nullable=False, default=0)
     locked_until = db.Column(db.DateTime)
     password_changed_at = db.Column(db.DateTime, default=now)
     created_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class OtpCode(db.Model):
@@ -46,6 +54,9 @@ class OtpCode(db.Model):
     consumed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
@@ -56,12 +67,18 @@ class AuditLog(db.Model):
     details = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=now, index=True)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class SystemSetting(db.Model):
     __tablename__ = "system_settings"
     setting_key = db.Column(db.String(100), primary_key=True)
     setting_value = db.Column(db.Text, nullable=False)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class Incident(db.Model):
@@ -83,6 +100,9 @@ class Incident(db.Model):
     status = db.Column(db.String(30), nullable=False, default="Under Investigation")
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def to_dict(self):
         return {
@@ -117,6 +137,9 @@ class BlotterRecord(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self):
         return {
             "id": self.id, "docket_no": self.docket_no,
@@ -150,6 +173,9 @@ class Settlement(db.Model):
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
     blotter = db.relationship("BlotterRecord")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def to_dict(self):
         b = self.blotter
@@ -193,6 +219,9 @@ class CensusRecord(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self):
         return {
             "id": self.id, "resident_no": self.resident_no,
@@ -224,6 +253,9 @@ class BarangayClearance(db.Model):
     created_at = db.Column(db.DateTime, default=now)
 
     resident = db.relationship("CensusRecord")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def to_dict(self):
         r = self.resident
@@ -260,6 +292,9 @@ class BarangayResidency(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -293,6 +328,9 @@ class BarangayNonResidency(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -325,6 +363,9 @@ class IndigencyCertificate(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -352,6 +393,9 @@ class MlRun(db.Model):
     hotspot_metrics_json = db.Column(db.Text, nullable=False)
     hotspots_json = db.Column(db.Text, nullable=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class SystemBackup(db.Model):
     __tablename__ = "backups"
@@ -361,6 +405,9 @@ class SystemBackup(db.Model):
     status = db.Column(db.String(20), nullable=False, default="Success")
     created_by = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class GeneratedReport(db.Model):
@@ -373,6 +420,9 @@ class GeneratedReport(db.Model):
     format = db.Column(db.String(10), nullable=False, default="PDF")
     file_path = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class Notification(db.Model):
@@ -387,9 +437,15 @@ class Notification(db.Model):
     ref_id = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 class NotificationRead(db.Model):
     __tablename__ = "notification_reads"
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     notification_id = db.Column(db.Integer, db.ForeignKey("notifications.id", ondelete="CASCADE"), primary_key=True)
     read_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)

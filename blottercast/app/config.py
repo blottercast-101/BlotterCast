@@ -50,3 +50,7 @@ class Config:
     MFA_CODE_EXPIRY_MINUTES = int(os.environ.get("MFA_CODE_EXPIRY_MINUTES", "5"))
     MFA_MAX_ATTEMPTS = int(os.environ.get("MFA_MAX_ATTEMPTS", "5"))
     MFA_RESEND_COOLDOWN_SECONDS = int(os.environ.get("MFA_RESEND_COOLDOWN_SECONDS", "30"))
+
+    # ---- Google OAuth / Identity Services ----
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+

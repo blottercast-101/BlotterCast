@@ -23,11 +23,27 @@ const BCApi = {
   },
 
   // ---- auth ----
+  authConfig() { return this._fetch(`${BC_API}/api/auth.php?action=auth_config`); },
   login(username, password) {
     return this._fetch(`${BC_API}/api/auth.php?action=login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
+  },
+  googleLogin(credential) {
+    return this._fetch(`${BC_API}/api/auth.php?action=google_login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+  },
+  linkGoogle(credential) {
+    return this._fetch(`${BC_API}/api/auth.php?action=link_google`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+  },
+  unlinkGoogle() {
+    return this._fetch(`${BC_API}/api/auth.php?action=unlink_google`, { method: 'POST' });
   },
   logout() { return this._fetch(`${BC_API}/api/auth.php?action=logout`); },
   me() { return this._fetch(`${BC_API}/api/auth.php?action=me`); },

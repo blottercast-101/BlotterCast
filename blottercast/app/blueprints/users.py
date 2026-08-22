@@ -68,6 +68,8 @@ def _list():
         "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
         "contact_no": u.contact_no, "role": u.role, "status": u.status,
         "signature_path": u.signature_path,
+        "google_email": u.google_email,
+        "is_google_linked": bool(u.google_id or u.google_email),
         # Naive datetimes from utcnow() have no offset — appending "Z" makes
         # the value unambiguous UTC so the browser doesn't guess it's local
         # time (which silently shifts it by the browser's own UTC offset).
