@@ -190,7 +190,7 @@
       <div class="grid grid-cols-2 gap-4">
         <div id="uf_role_wrap">
           <label class="form-label">Role</label>
-          <select id="uf_role" class="form-input" onchange="updateSignatureSectionVisibility(this.value)">
+          <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)">
             <option>System Admin</option><option>Barangay Captain</option>
             <option selected>Desk Officer</option><option>Data Encoder</option>
           </select>
@@ -205,7 +205,26 @@
           <p class="text-xs text-forest-400 mt-1">New accounts always start Active — change status here after creation if needed.</p>
         </div>
       </div>
-      <div><label class="form-label">Password</label><input type="password" id="uf_password" class="form-input" placeholder="Set initial password"/></div>
+      <div id="uf_password_wrap">
+        <label class="form-label flex items-center justify-between">
+          <span>Temporary Password</span>
+          <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
+        </label>
+        <div class="relative">
+          <input type="text" id="uf_password" class="form-input font-mono font-semibold pr-20 text-forest-800 tracking-wider bg-forest-50/50" readonly/>
+          <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button type="button" onclick="regenerateTempPassword()" class="p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Regenerate Password">
+              <span data-icon="refresh" data-icon-size="15"></span>
+            </button>
+            <button type="button" onclick="copyTempPassword()" class="p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Copy to Clipboard">
+              <span data-icon="copy" data-icon-size="15"></span>
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-forest-400 mt-1">
+          Auto-generated prefix: <strong class="text-forest-600 font-semibold">DSK</strong> (Desk Officer), <strong class="text-forest-600 font-semibold">DTA</strong> (Data Encoder). The user can change their password in Settings after logging in.
+        </p>
+      </div>
       <div id="uf_sig_section" class="hidden border-t border-forest-100 pt-4">
         <label class="form-label">E-Signature <span class="text-forest-400 font-normal">(used on printed Barangay Clearance &amp; Certificate of Indigency)</span></label>
         <div class="flex items-center gap-4">
@@ -338,34 +357,76 @@ function renderUsers() {
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }
 
+function generateTempPasswordForRole(role) {
+  const r = (role || '').toLowerCase();
+  let prefix = 'USR';
+  if (r.includes('desk')) prefix = 'DSK';
+  else if (r.includes('data') || r.includes('encoder')) prefix = 'DTA';
+  else if (r.includes('admin')) prefix = 'ADM';
+  else if (r.includes('captain')) prefix = 'CPT';
+
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let suffix = '';
+  for (let i = 0; i < 6; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `${prefix}-${suffix}`;
+}
+
+function regenerateTempPassword() {
+  const role = document.getElementById('uf_role').value;
+  document.getElementById('uf_password').value = generateTempPasswordForRole(role);
+}
+
+function copyTempPassword() {
+  const pw = document.getElementById('uf_password').value;
+  if (!pw) return;
+  navigator.clipboard.writeText(pw).then(() => {
+    showToast('Temporary password copied to clipboard!');
+  }).catch(() => {
+    showToast('Temporary password: ' + pw);
+  });
+}
+
+function onRoleChange(role) {
+  updateSignatureSectionVisibility(role);
+  if (!editUserId) {
+    document.getElementById('uf_password').value = generateTempPasswordForRole(role);
+  }
+}
+
 function openAddUser() {
-  editUserId=null; document.getElementById('userModalTitle').textContent='Add New User';
+  editUserId = null;
+  document.getElementById('userModalTitle').textContent = 'Add New User';
   document.getElementById('userForm').reset();
   document.getElementById('uf_username').disabled = false;
-  document.getElementById('uf_password').placeholder='Set initial password';
-  // New accounts always get the system's default initial status — the
-  // administrator only picks it later, via Edit, if it needs to change.
+  document.getElementById('uf_role').value = 'Desk Officer';
   document.getElementById('uf_status').value = 'Active';
   document.getElementById('uf_status_wrap').classList.add('hidden');
   document.getElementById('uf_role_wrap').classList.add('col-span-2');
-  // Signature can only be attached to an existing account (needs an id to upload against).
+  document.getElementById('uf_password_wrap').classList.remove('hidden');
+  document.getElementById('uf_password').value = generateTempPasswordForRole('Desk Officer');
   document.getElementById('uf_sig_section').classList.add('hidden');
   openModal('userModal');
 }
+
 function editUser(id) {
-  const u=usersData.find(x=>x.id===id); editUserId=id;
-  document.getElementById('userModalTitle').textContent='Edit User';
-  document.getElementById('uf_name').value=u.name;
-  document.getElementById('uf_username').value=u.username;
+  const u = usersData.find(x => x.id === id);
+  editUserId = id;
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('uf_name').value = u.name;
+  document.getElementById('uf_username').value = u.username;
   document.getElementById('uf_username').disabled = true;
-  document.getElementById('uf_email').value=u.email;
-  document.getElementById('uf_contact').value=u.contact;
-  document.getElementById('uf_role').value=u.role;
-  document.getElementById('uf_status').value=u.status;
+  document.getElementById('uf_email').value = u.email;
+  document.getElementById('uf_contact').value = u.contact || '';
+  document.getElementById('uf_role').value = u.role;
+  document.getElementById('uf_status').value = u.status;
   document.getElementById('uf_status_wrap').classList.remove('hidden');
   document.getElementById('uf_role_wrap').classList.remove('col-span-2');
-  document.getElementById('uf_password').value='';
-  document.getElementById('uf_password').placeholder='Leave blank to keep current password';
+  
+  // Password cannot be edited by admin; users change their own password
+  document.getElementById('uf_password_wrap').classList.add('hidden');
+  
   updateSignatureSectionVisibility(u.role);
   renderSignaturePreview(u.signaturePath);
   openModal('userModal');
@@ -423,17 +484,18 @@ async function removeSignatureNow() {
     showToast(err.message, 'error');
   }
 }
+
 async function saveUser() {
-  const vals={
-    name:document.getElementById('uf_name').value.trim(),
-    username:document.getElementById('uf_username').value.trim(),
-    email:document.getElementById('uf_email').value.trim(),
-    contact:document.getElementById('uf_contact').value.trim(),
-    role:document.getElementById('uf_role').value,
-    status:document.getElementById('uf_status').value,
-    password:document.getElementById('uf_password').value,
+  const vals = {
+    name: document.getElementById('uf_name').value.trim(),
+    username: document.getElementById('uf_username').value.trim(),
+    email: document.getElementById('uf_email').value.trim(),
+    contact: document.getElementById('uf_contact').value.trim(),
+    role: document.getElementById('uf_role').value,
+    status: document.getElementById('uf_status').value,
+    password: document.getElementById('uf_password').value.trim(),
   };
-  if(!vals.name||!vals.username){await bcAlert('Please fill in required fields.');return;}
+  if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
   if (vals.name && !bcIsValidName(vals.name)) { await bcAlert('Full Name should only contain letters (no numbers).'); return; }
   if (vals.email && !bcIsValidEmail(vals.email)) { await bcAlert('Please enter a valid email address.'); return; }
   if (vals.email && usersData.some(u => u.id !== editUserId && u.email.toLowerCase() === vals.email.toLowerCase())) {
@@ -444,14 +506,19 @@ async function saveUser() {
     if (editUserId) {
       await BCApi.updateUser(editUserId, vals);
       showToast('User updated!');
+      closeModal('userModal');
+      await loadUsers();
+      await loadAuditLog();
     } else {
-      if (!vals.password) { await bcAlert('Password is required for new accounts.'); return; }
-      await BCApi.createUser(vals);
-      showToast('User added!');
+      const res = await BCApi.createUser(vals);
+      closeModal('userModal');
+      await loadUsers();
+      await loadAuditLog();
+      await bcAlert(
+        `Account created successfully!\n\nUsername: ${vals.username}\nRole: ${vals.role}\nTemporary Password: ${vals.password}\n\nPlease copy and share this temporary password with the user. They can change it in their Settings after signing in.`,
+        { title: 'User Account Created', okLabel: 'Done' }
+      );
     }
-    closeModal('userModal');
-    await loadUsers();
-    await loadAuditLog();
   } catch (err) {
     showToast(err.message, 'error');
   }

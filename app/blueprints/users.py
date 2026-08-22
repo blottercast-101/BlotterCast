@@ -91,15 +91,35 @@ def _list():
     } for u in rows])
 
 
+def _generate_temp_password(role: str) -> str:
+    role_lower = (role or "").lower()
+    if "desk" in role_lower:
+        prefix = "DSK"
+    elif "data" in role_lower or "encoder" in role_lower:
+        prefix = "DTA"
+    elif "admin" in role_lower:
+        prefix = "ADM"
+    elif "captain" in role_lower:
+        prefix = "CPT"
+    else:
+        prefix = "USR"
+    # Generate 6 random uppercase characters and digits (excluding confusing 0/O/1/I)
+    suffix = "".join(secrets.choice("23456789ABCDEFGHJKLMNPQRSTUVWXYZ") for _ in range(6))
+    return f"{prefix}-{suffix}"
+
+
 def _create():
     d = request.get_json(silent=True) or {}
     username = (d.get("username") or "").strip()
     full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
-    password = d.get("password") or ""
+    role = (d.get("role") or "Desk Officer").strip()
+    password = (d.get("password") or "").strip()
+    if not password:
+        password = _generate_temp_password(role)
     email = (d.get("email") or "").strip()
     contact = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
-    if not username or not full_name or not password:
-        return json_error("Name, username, and password are required")
+    if not username or not full_name:
+        return json_error("Name and username are required")
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
 
@@ -114,17 +134,13 @@ def _create():
 
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
-        email=email, contact_no=contact, role=d.get("role") or "Desk Officer",
-        # New accounts always start Active — the system's default initial
-        # status. Status only becomes choosable later, via Edit; whatever
-        # the request body sends here is ignored so an Add User form can
-        # never smuggle a different starting status through the API.
+        email=email, contact_no=contact, role=role,
         status="Active", password_changed_at=datetime.utcnow(),
     )
     db.session.add(user)
     db.session.commit()
     log_audit(session.get("username"), "Created", "Users", f"New account created: {username} ({user.role})")
-    return jsonify({"ok": True, "id": user.id}), 201
+    return jsonify({"ok": True, "id": user.id, "temp_password": password}), 201
 
 
 def _update():
@@ -151,14 +167,8 @@ def _update():
     user.role = d.get("role") or user.role
     user.status = d.get("status") or user.status
 
-    if d.get("password"):
-        min_len = get_security_settings()["min_password_length"]
-        if len(d["password"]) < min_len:
-            return json_error(f"Password must be at least {min_len} characters long")
-        user.password = _hash_password(d["password"])
-        user.password_changed_at = datetime.utcnow()
-        user.failed_attempts = 0
-        user.locked_until = None
+    # Note: Admin cannot directly overwrite or change another user's password.
+    # Users independently change their own password via Settings -> Security.
 
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"Account updated: {full_name}")
