@@ -194,7 +194,8 @@
       <button onclick="closeModal('residentModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form class="space-y-4">
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-4 gap-4">
+        <div><label class="form-label">Resident No.</label><input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Last Name <span class="text-red-500">*</span></label><input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-no-numbers required/></div>
         <div><label class="form-label">First Name <span class="text-red-500">*</span></label><input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-no-numbers required/></div>
         <div><label class="form-label">Middle Name</label><input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-no-numbers/></div>
@@ -399,18 +400,26 @@ function renderResidents(){
   bcRenderPagination(document.getElementById('resPagCtrl'), curPage, tp, (p) => { curPage = p; renderResidents(); });
 }
 
-function openAddResident(){
+async function openAddResident(){
   editId=null; document.getElementById('resModalTitle').textContent='Add Resident';
   ['rf_last','rf_first','rf_mid','rf_dob','rf_addr','rf_hh','rf_contact','rf_occ'].forEach(id=>document.getElementById(id).value='');
   ['rf_sex','rf_civil','rf_zone','rf_voter','rf_status'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('rf_resNo').value = 'Loading…';
   document.getElementById('rf_nat').value='Filipino';
   document.getElementById('rf_deceased_hint').classList.add('hidden');
   setResidentFormLock(false); // Desk Officer's restriction only applies to editing existing residents
   openModal('residentModal');
+  try {
+    const { seqNo } = await BCApi.peekSeq('census');
+    if (editId === null) document.getElementById('rf_resNo').value = seqNo;
+  } catch (err) {
+    document.getElementById('rf_resNo').value = '';
+  }
 }
 function editResident(id){
   editId=id; const r=censusData.find(x=>x.id===id);
   document.getElementById('resModalTitle').textContent='Edit Resident';
+  document.getElementById('rf_resNo').value=r.resNo;
   document.getElementById('rf_last').value=r.lastName;
   document.getElementById('rf_first').value=r.firstName;
   document.getElementById('rf_mid').value=r.midName;
@@ -432,6 +441,7 @@ function editResident(id){
 }
 async function saveResident(){
   const vals={
+    residentNo: editId ? document.getElementById('rf_resNo').value.trim() : '',
     lastName:document.getElementById('rf_last').value.trim(),
     firstName:document.getElementById('rf_first').value.trim(),
     middleName:document.getElementById('rf_mid').value.trim(),

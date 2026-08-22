@@ -467,17 +467,14 @@
     document.getElementById('sf_blotter_picker_wrap').classList.remove('hidden');
     clearBlotterCasePicker();
     document.getElementById('sf_caseNo').value = 'Loading…';
+    openModal('settlementModal');
     try {
       const { seqNo } = await BCApi.peekSeq('settlements');
-      document.getElementById('sf_caseNo').value = seqNo;
+      if (stlEditId === null) document.getElementById('sf_caseNo').value = seqNo;
     } catch (err) {
       document.getElementById('sf_caseNo').value = '';
     }
     try { await loadBlotterOptionsForPicker(); } catch (err) { showToast('Could not load blotter records: ' + err.message, 'error'); }
-    if (blotterOptions.length === 0) {
-      showToast('Every blotter case already has a settlement, or no blotter records exist yet.', 'error');
-    }
-    openModal('settlementModal');
   }
 
   function editSettlement(id) {

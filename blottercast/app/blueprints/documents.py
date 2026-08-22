@@ -121,8 +121,18 @@ def _census():
     method = request.method
 
     if method == "GET":
+        if request.args.get("peek"):
+            max_no = db.session.query(
+                func.max(func.cast(func.substr(CensusRecord.resident_no, 5), db.Integer))
+            ).filter(CensusRecord.resident_no.like("RES-%")).scalar()
+            return jsonify({"seqNo": f"RES-{(max_no or 0) + 1:04d}"})
+
         show_archived = request.args.get("archived") == "1"
-        rows = CensusRecord.query.filter_by(archived=show_archived).order_by(CensusRecord.last_name, CensusRecord.first_name).all()
+        if show_archived:
+            q = CensusRecord.query.filter(CensusRecord.archived == True)
+        else:
+            q = CensusRecord.query.filter((CensusRecord.archived == False) | (CensusRecord.archived == None))
+        rows = q.order_by(CensusRecord.last_name, CensusRecord.first_name).all()
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":

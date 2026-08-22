@@ -163,15 +163,15 @@ class Incident(db.Model):
     def to_dict(self):
         return {
             "id": self.id, "report_no": self.report_no,
-            "incident_date": self.incident_date.isoformat() if self.incident_date else None,
-            "time_reported": self.time_reported.isoformat() if self.time_reported else None,
+            "incident_date": self.incident_date.isoformat() if hasattr(self.incident_date, "isoformat") else (str(self.incident_date) if self.incident_date else None),
+            "time_reported": self.time_reported.isoformat() if hasattr(self.time_reported, "isoformat") else (str(self.time_reported) if self.time_reported else None),
             "hour": self.hour, "zone_id": self.zone_id, "location": self.location,
             "lat": float(self.lat) if self.lat is not None else None,
             "lng": float(self.lng) if self.lng is not None else None,
             "category": self.category, "description": self.description,
             "reporter": self.reporter, "officer": self.officer,
             "priority": self.priority, "status": self.status,
-            "archived": self.archived,
+            "archived": bool(self.archived),
         }
 
 
@@ -197,13 +197,13 @@ class BlotterRecord(db.Model):
     def to_dict(self):
         return {
             "id": self.id, "docket_no": self.docket_no,
-            "date_filed": self.date_filed.isoformat() if self.date_filed else None,
+            "date_filed": self.date_filed.isoformat() if hasattr(self.date_filed, "isoformat") else (str(self.date_filed) if self.date_filed else None),
             "complainant": self.complainant, "complainant_id": self.complainant_id,
             "complainant_addr": self.complainant_addr,
             "respondent": self.respondent, "respondent_id": self.respondent_id,
             "respondent_addr": self.respondent_addr, "nature": self.nature,
             "case_type": self.case_type, "status": self.status, "zone_id": self.zone_id,
-            "archived": self.archived,
+            "archived": bool(self.archived),
         }
 
 
@@ -235,11 +235,11 @@ class Settlement(db.Model):
             "id": self.id, "blotter_id": self.blotter_id, "case_no": self.case_no,
             "case_title": self.case_title, "complaint_title": self.complaint_title,
             "nature": self.nature,
-            "date_filed": self.date_filed.isoformat() if self.date_filed else None,
-            "date_confrontation": self.date_confrontation.isoformat() if self.date_confrontation else None,
+            "date_filed": self.date_filed.isoformat() if hasattr(self.date_filed, "isoformat") else (str(self.date_filed) if self.date_filed else None),
+            "date_confrontation": self.date_confrontation.isoformat() if hasattr(self.date_confrontation, "isoformat") else (str(self.date_confrontation) if self.date_confrontation else None),
             "action_taken": self.action_taken,
-            "date_settlement": self.date_settlement.isoformat() if self.date_settlement else None,
-            "date_execution": self.date_execution.isoformat() if self.date_execution else None,
+            "date_settlement": self.date_settlement.isoformat() if hasattr(self.date_settlement, "isoformat") else (str(self.date_settlement) if self.date_settlement else None),
+            "date_execution": self.date_execution.isoformat() if hasattr(self.date_execution, "isoformat") else (str(self.date_execution) if self.date_execution else None),
             "main_point": self.main_point, "status": self.status, "remarks": self.remarks,
             "blotter_docket_no": b.docket_no if b else None,
             "complainant": b.complainant if b else None,
@@ -247,7 +247,7 @@ class Settlement(db.Model):
             "respondent": b.respondent if b else None,
             "respondent_addr": b.respondent_addr if b else None,
             "blotter_case_type": b.case_type if b else None,
-            "archived": self.archived,
+            "archived": bool(self.archived),
         }
 
 
@@ -278,12 +278,12 @@ class CensusRecord(db.Model):
             "id": self.id, "resident_no": self.resident_no,
             "last_name": self.last_name, "first_name": self.first_name,
             "middle_name": self.middle_name,
-            "date_of_birth": self.date_of_birth.isoformat() if self.date_of_birth else None,
+            "date_of_birth": self.date_of_birth.isoformat() if hasattr(self.date_of_birth, "isoformat") else (str(self.date_of_birth) if self.date_of_birth else None),
             "sex": self.sex, "civil_status": self.civil_status, "nationality": self.nationality,
             "zone_id": self.zone_id, "address": self.address, "household_no": self.household_no,
             "contact_no": self.contact_no, "voter_status": self.voter_status,
             "occupation": self.occupation, "status": self.status,
-            "archived": self.archived,
+            "archived": bool(self.archived),
         }
 
 

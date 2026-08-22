@@ -75,7 +75,10 @@ def _incidents():
         if request.args.get("peek"):
             return jsonify({"seqNo": next_seq_no(Incident, "report_no", "INC", 4)})
         show_archived = request.args.get("archived") == "1"
-        q = Incident.query.filter_by(archived=show_archived)
+        if show_archived:
+            q = Incident.query.filter(Incident.archived == True)
+        else:
+            q = Incident.query.filter((Incident.archived == False) | (Incident.archived == None))
         if request.args.get("from"):
             q = q.filter(Incident.incident_date >= request.args["from"])
         if request.args.get("to"):
@@ -197,10 +200,11 @@ def _blotter():
         # Archived records are kept for recordkeeping/audit but are removed
         # from the active view by default — pass ?archived=1 to see them.
         show_archived = request.args.get("archived") == "1"
-        rows = (
-            BlotterRecord.query.filter_by(archived=show_archived)
-            .order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
-        )
+        if show_archived:
+            q = BlotterRecord.query.filter(BlotterRecord.archived == True)
+        else:
+            q = BlotterRecord.query.filter((BlotterRecord.archived == False) | (BlotterRecord.archived == None))
+        rows = q.order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":
@@ -327,11 +331,11 @@ def _settlements():
         if request.args.get("peek"):
             return jsonify({"seqNo": next_seq_no(Settlement, "case_no", "STL")})
         show_archived = request.args.get("archived") == "1"
-        rows = (
-            Settlement.query.filter_by(archived=show_archived)
-            .order_by(Settlement.date_filed.desc(), Settlement.id.desc())
-            .all()
-        )
+        if show_archived:
+            q = Settlement.query.filter(Settlement.archived == True)
+        else:
+            q = Settlement.query.filter((Settlement.archived == False) | (Settlement.archived == None))
+        rows = q.order_by(Settlement.date_filed.desc(), Settlement.id.desc()).all()
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":

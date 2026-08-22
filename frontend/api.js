@@ -129,6 +129,9 @@ const BCApi = {
   // record actually exists, instead of leaving that field blank until
   // after saving.
   peekSeq(type) {
+    if (type === 'census') {
+      return this._fetch(`${BC_API}/api/documents.php?type=census&peek=1`);
+    }
     return this._fetch(`${BC_API}/api/records.php?type=${type}&peek=1`);
   },
 
