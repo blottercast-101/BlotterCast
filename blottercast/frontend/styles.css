@@ -103,61 +103,49 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 
 .sidebar-header {
-  padding: 24px 24px;
-  border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+  padding: 20px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   box-sizing: border-box;
 }
 
-.sidebar-logo-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: #1e7e40;
+.sidebar-logo-glyph {
+  width: 36px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  box-sizing: border-box;
-}
-
-.sidebar-logo-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
 }
 
 .sidebar-brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
 }
 
 .sidebar-brand-title {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1;
   margin: 0;
 }
 
 .sidebar-brand-subtitle {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgba(52, 211, 153, 0.9);
-  margin-top: 2px;
-  line-height: 1.2;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8ce1a7;
+  letter-spacing: 0.01em;
+  margin-top: 3px;
+  line-height: 1;
 }
 
 .sidebar-brand-lockup {
