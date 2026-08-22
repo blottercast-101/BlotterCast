@@ -32,7 +32,7 @@ def settings_router():
 
     if action == "auto_backup_check" and method == "GET":
         if not role_can(session.get("role", ""), "system_settings"):
-            return json_error("You do not have permission to perform this action.", 403)
+            return jsonify({"ran": False, "reason": "not_authorized"}), 200
         return _auto_backup_check()
 
     if action == "ml_model" and method == "GET":
