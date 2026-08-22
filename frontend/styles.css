@@ -94,7 +94,7 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 .sidebar-grad > * { position: relative; z-index: 1; }
 
-.sidebar-brand-lockup { height: 38px; width: auto; display: block; }
+.sidebar-brand-lockup { height: 42px; width: auto; display: block; max-width: 100%; object-fit: contain; }
 
 .nav-section-label {
   color: var(--forest-400);
