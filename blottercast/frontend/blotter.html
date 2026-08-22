@@ -237,9 +237,9 @@
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[36px]">
+          <div class="flex items-end justify-between gap-2 mb-2 h-10">
             <label class="form-label mb-0 leading-tight">
-              Name of<br/>Complainant <span class="text-red-500">*</span>
+              Name of<br/>Complainant<span class="text-red-500 ml-0.5">*</span>
             </label>
             <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_complainantOutsideLabel">
               <input type="checkbox" id="f_complainantOutside" class="rounded accent-forest-600" onchange="toggleComplainantOutside()"/> Not a resident / outside party
@@ -252,7 +252,7 @@
           <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-end justify-between mb-1.5 min-h-[36px]">
+          <div class="flex items-end justify-between mb-2 h-10">
             <label class="form-label mb-0 pb-0.5">Complainant Address</label>
           </div>
           <input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/>
@@ -262,9 +262,9 @@
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[36px]">
+          <div class="flex items-end justify-between gap-2 mb-2 h-10">
             <label class="form-label mb-0 leading-tight">
-              Name of<br/>Respondent <span class="text-red-500">*</span>
+              Name of<br/>Respondent<span class="text-red-500 ml-0.5">*</span>
             </label>
             <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_respondentOutsideLabel">
               <input type="checkbox" id="f_respondentOutside" class="rounded accent-forest-600" onchange="toggleRespondentOutside()"/> Not a resident / outside party
@@ -277,7 +277,7 @@
           <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-end justify-between mb-1.5 min-h-[36px]">
+          <div class="flex items-end justify-between mb-2 h-10">
             <label class="form-label mb-0 pb-0.5">Respondent Address</label>
           </div>
           <input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/>
