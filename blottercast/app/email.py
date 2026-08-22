@@ -26,57 +26,54 @@ BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 10, purpose: str = "login") -> str:
-    """Generate email-client-compatible HTML with inline CSS matching the exact dark-themed BlotterCast security layout."""
+    """Generate email-client-compatible HTML with inline CSS matching the dark-themed BlotterCast security specification."""
     name_display = full_name.strip() if full_name and full_name.strip() else "User"
 
     if purpose == "reset":
-        lead_text = "A password reset was requested for your account. Please enter the 6-digit verification code below to complete your password reset:"
-        disclaimer_text = "If you did not attempt to reset your password, please notify your administrator."
+        lead_text = "A password reset was requested for your account. Please enter the 6-digit verification code below to proceed with resetting your password:"
+        disclaimer_text = "If you did not request a password reset, please notify your administrator."
     else:
         lead_text = "Two-Factor Authentication is enabled for your account. Please enter the 6-digit verification code below to complete your sign-in:"
         disclaimer_text = "If you did not attempt to sign in, please notify your administrator."
 
-    # Format OTP digits with single spacing
-    raw_digits = str(otp_code).strip()
-    spaced_code = " ".join(raw_digits)
+    # Format OTP with spaced characters for visual presentation
+    spaced_code = " ".join(str(otp_code).strip())
 
     return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
-  <title>BlotterCast Security Code</title>
+  <title>BlotterCast Security Verification</title>
   <!--[if mso]>
   <style type="text/css">
     body, table, td, p, span, a {{ font-family: Arial, Helvetica, sans-serif !important; }}
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #121316; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #121316; width: 100% !important; min-width: 100%;">
+<body style="margin: 0; padding: 0; background-color: #121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #94a3b8;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #121212; table-layout: fixed;">
     <tr>
-      <td align="center" style="padding: 32px 16px 48px 16px;">
+      <td align="center" style="padding: 40px 16px 48px 16px;">
         
         <!-- Main Card Container -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 440px; background-color: #1e232a; border-radius: 20px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55); overflow: hidden;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #1e232a; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.07); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); overflow: hidden;">
           <tr>
-            <td style="padding: 40px 32px 36px 32px;">
+            <td style="padding: 36px 32px 32px 32px;">
               
-              <!-- Brand Title & Subtitle -->
+              <!-- Brand Header -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="padding-bottom: 8px;">
-                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 27px; font-weight: 700; color: #76d89a; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
+                  <td align="center" style="padding-bottom: 6px;">
+                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 28px; font-weight: 700; color: #86efac; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
                       BlotterCast
                     </span>
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 34px;">
-                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #7e8b9b; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.5; display: inline-block; text-align: center;">
-                      PAMAHALAANG BARANGAY NG<br />MAPULANG LUPA
+                  <td align="center" style="padding-bottom: 28px;">
+                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.4; display: inline-block;">
+                      PAMAHALAANG BARANGAY NG MAPULANG LUPA
                     </span>
                   </td>
                 </tr>
@@ -85,25 +82,25 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 1
               <!-- Greeting & Body Text -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td style="padding-bottom: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; color: #e2e8f0; line-height: 1.4;">
+                  <td style="padding-bottom: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; color: #e2e8f0; line-height: 1.5;">
                     Hello <strong style="color: #ffffff; font-weight: 700;">{name_display}</strong>,
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding-bottom: 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; color: #94a3b8; line-height: 1.6;">
+                  <td style="padding-bottom: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #94a3b8; line-height: 1.6;">
                     {lead_text}
                   </td>
                 </tr>
               </table>
 
-              <!-- OTP Verification Code Dashed Box -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 28px;">
+              <!-- OTP Verification Code Box -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 24px 0;">
                 <tr>
                   <td align="center">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="max-width: 320px; width: 100%; border: 2px dashed #22c55e; background-color: rgba(34, 197, 94, 0.05); border-radius: 16px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border: 2px dashed #22c55e; background-color: rgba(34, 197, 94, 0.05); border-radius: 12px;">
                       <tr>
-                        <td align="center" style="padding: 20px 14px;">
-                          <span style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 34px; font-weight: 700; color: #76d89a; letter-spacing: 12px; line-height: 1; display: inline-block; padding-left: 12px; text-shadow: 0 0 16px rgba(118, 216, 154, 0.25);">
+                        <td align="center" style="padding: 20px 16px;">
+                          <span style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 32px; font-weight: 700; color: #86efac; letter-spacing: 12px; line-height: 1; display: inline-block; padding-left: 12px;">
                             {spaced_code}
                           </span>
                         </td>
@@ -116,22 +113,27 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 1
               <!-- Expiration Notice & Security Disclaimer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #94a3b8; line-height: 1.5;">
+                  <td align="center" style="padding-bottom: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
                     This security code expires in <strong style="color: #ffffff; font-weight: 700;">{expire_minutes} minutes</strong>.
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #7e8b9b; line-height: 1.5;">
+                  <td align="center" style="padding-bottom: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #64748b; line-height: 1.5;">
                     {disclaimer_text}
                   </td>
                 </tr>
               </table>
 
+              <!-- Subtle Divider -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 20px;">
+                <tr><td></td></tr>
+              </table>
+
               <!-- Sub-footer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: #5b697a; line-height: 1.5; text-align: center;">
-                    BlotterCast &mdash; Official Barangay Records &amp;<br />Intelligence System
+                  <td align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; color: #475569; line-height: 1.4;">
+                    BlotterCast &mdash; Official Barangay Records &amp; Intelligence System
                   </td>
                 </tr>
               </table>
@@ -151,26 +153,25 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
     """Send the OTP email with rich responsive HTML template and text fallback.
     Returns True if it went out over the Brevo API, False if written to local outbox log."""
     greeting = f"Hi {full_name}," if full_name else "Hi,"
-    expiry = current_app.config.get("MFA_CODE_EXPIRY_MINUTES", 10)
+    expiry = current_app.config.get("MFA_CODE_EXPIRY_MINUTES", 5)
 
     if purpose == "reset":
         subject = "Your BlotterCast password reset code"
         body = (
             f"{greeting}\n\n"
             f"Your BlotterCast password reset verification code is: {code}\n\n"
-            f"This code expires in {expiry} minutes. If you did not request a "
-            f"password reset, you can safely ignore this email — your password "
-            f"will not be changed.\n\n"
-            f"— BlotterCast"
+            f"This security code expires in {expiry} minutes.\n"
+            f"If you did not request a password reset, please notify your administrator.\n\n"
+            f"BlotterCast — Official Barangay Records & Intelligence System"
         )
     else:
         subject = "Your BlotterCast verification code"
         body = (
             f"{greeting}\n\n"
             f"Your BlotterCast sign-in verification code is: {code}\n\n"
-            f"This code expires in {expiry} minutes. If you did not attempt to "
-            f"sign in, you can safely ignore this email.\n\n"
-            f"— BlotterCast"
+            f"This security code expires in {expiry} minutes.\n"
+            f"If you did not attempt to sign in, please notify your administrator.\n\n"
+            f"BlotterCast — Official Barangay Records & Intelligence System"
         )
 
     html_content = render_otp_email_html(

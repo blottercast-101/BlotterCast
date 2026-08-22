@@ -118,7 +118,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 1
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #64748b; line-height: 1.5;">
+                  <td align="center" style="padding-bottom: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #64748b; line-height: 1.5;">
                     {disclaimer_text}
                   </td>
                 </tr>
@@ -153,26 +153,25 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
     """Send the OTP email with rich responsive HTML template and text fallback.
     Returns True if it went out over the Brevo API, False if written to local outbox log."""
     greeting = f"Hi {full_name}," if full_name else "Hi,"
-    expiry = current_app.config.get("MFA_CODE_EXPIRY_MINUTES", 10)
+    expiry = current_app.config.get("MFA_CODE_EXPIRY_MINUTES", 5)
 
     if purpose == "reset":
         subject = "Your BlotterCast password reset code"
         body = (
             f"{greeting}\n\n"
             f"Your BlotterCast password reset verification code is: {code}\n\n"
-            f"This code expires in {expiry} minutes. If you did not request a "
-            f"password reset, you can safely ignore this email — your password "
-            f"will not be changed.\n\n"
-            f"— BlotterCast"
+            f"This security code expires in {expiry} minutes.\n"
+            f"If you did not request a password reset, please notify your administrator.\n\n"
+            f"BlotterCast — Official Barangay Records & Intelligence System"
         )
     else:
         subject = "Your BlotterCast verification code"
         body = (
             f"{greeting}\n\n"
             f"Your BlotterCast sign-in verification code is: {code}\n\n"
-            f"This code expires in {expiry} minutes. If you did not attempt to "
-            f"sign in, you can safely ignore this email.\n\n"
-            f"— BlotterCast"
+            f"This security code expires in {expiry} minutes.\n"
+            f"If you did not attempt to sign in, please notify your administrator.\n\n"
+            f"BlotterCast — Official Barangay Records & Intelligence System"
         )
 
     html_content = render_otp_email_html(
