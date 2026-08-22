@@ -117,8 +117,6 @@
           <div><label class="form-label">Municipality / City</label><input type="text" class="form-input" data-setting="municipality" value="Pandi, Bulacan"/></div>
           <div><label class="form-label">Region</label><input type="text" class="form-input" data-setting="region" value="Region III – Central Luzon"/></div>
           <div><label class="form-label">Barangay Captain</label><input type="text" class="form-input" data-setting="captain_name" data-no-numbers value="Kapitan Jose Reyes"/></div>
-          <div><label class="form-label">Contact Number</label><input type="text" class="form-input" data-setting="contact_no" data-digits-only maxlength="11" value="09170000000"/></div>
-          <div><label class="form-label">Email Address</label><input type="email" class="form-input" data-setting="email" value="mapulanglupa@pandi.gov.ph"/></div>
         </div>
       </div>
       <div class="settings-section">
@@ -182,11 +180,11 @@
         <h3>My Account</h3>
         <p class="text-forest-400 text-xs mb-4" style="margin-top:-0.75rem;">Available to every account — update your own details, no admin needed.</p>
         <div class="grid grid-cols-2 gap-4">
-          <div><label class="form-label">Username</label><input type="text" id="acct_username" class="form-input" disabled/></div>
-          <div><label class="form-label">Role</label><input type="text" id="acct_role" class="form-input" disabled/></div>
-          <div><label class="form-label">Full Name</label><input type="text" id="acct_fullName" class="form-input"/></div>
-          <div><label class="form-label">Contact Number</label><input type="text" id="acct_contact" class="form-input" placeholder="09XXXXXXXXX"/></div>
-          <div class="col-span-2"><label class="form-label">Email</label><input type="email" id="acct_email" class="form-input" placeholder="you@example.com"/></div>
+          <div><label class="form-label">Username</label><input type="text" id="acct_username" class="form-input bg-forest-50/60 cursor-not-allowed" disabled/></div>
+          <div><label class="form-label">Role</label><input type="text" id="acct_role" class="form-input bg-forest-50/60 cursor-not-allowed" disabled/></div>
+          <div><label class="form-label">Full Name <span class="text-red-500 font-bold">*</span></label><input type="text" id="acct_fullName" class="form-input" placeholder="e.g. Juan Dela Cruz" required/></div>
+          <div><label class="form-label">Contact Number <span class="text-red-500 font-bold">*</span></label><input type="text" id="acct_contact" class="form-input" placeholder="09XXXXXXXXX" maxlength="11" data-digits-only required/></div>
+          <div class="col-span-2"><label class="form-label">Email <span class="text-red-500 font-bold">*</span></label><input type="email" id="acct_email" class="form-input" placeholder="you@example.com" required/></div>
         </div>
         <div class="flex justify-end mt-4">
           <button onclick="saveMyAccount()" class="btn-primary text-sm"><span data-icon="save" data-icon-size="14"></span> Save Account Details</button>
@@ -376,12 +374,6 @@ function collectSettings() {
 async function saveSettings() {
   const btn = document.querySelector('[onclick="saveSettings()"]');
   const values = collectSettings();
-  if (values.contact_no && !bcIsValidContact(values.contact_no)) {
-    showToast('Contact Number should be a valid PH mobile number (e.g. 09171234567).', 'error'); return;
-  }
-  if (values.email && !bcIsValidEmail(values.email)) {
-    showToast('Please enter a valid email address.', 'error'); return;
-  }
   if (values.captain_name && !bcIsValidName(values.captain_name)) {
     showToast('Barangay Captain name should only contain letters (no numbers).', 'error'); return;
   }
@@ -465,13 +457,38 @@ async function loadMyAccount() {
 }
 async function saveMyAccount() {
   const fullName = document.getElementById('acct_fullName').value.trim();
-  const email = document.getElementById('acct_email').value.trim();
   const contact = document.getElementById('acct_contact').value.trim();
-  if (!fullName) { showToast('Name is required.', 'error'); return; }
-  if (!email) { showToast('Email is required.', 'error'); return; }
+  const email = document.getElementById('acct_email').value.trim();
+
+  if (!fullName) {
+    showToast('Full Name is required.', 'error');
+    document.getElementById('acct_fullName').focus();
+    return;
+  }
+  if (!contact) {
+    showToast('Contact Number is required.', 'error');
+    document.getElementById('acct_contact').focus();
+    return;
+  }
+  if (!bcIsValidContact(contact)) {
+    showToast('Contact Number must be a valid 11-digit mobile number starting with 09 (e.g. 09171234567).', 'error');
+    document.getElementById('acct_contact').focus();
+    return;
+  }
+  if (!email) {
+    showToast('Email address is required.', 'error');
+    document.getElementById('acct_email').focus();
+    return;
+  }
+  if (!bcIsValidEmail(email)) {
+    showToast('Please enter a valid email address.', 'error');
+    document.getElementById('acct_email').focus();
+    return;
+  }
+
   try {
     const result = await BCApi.updateMyAccount(fullName, email, contact);
-    showToast('Account details updated.');
+    showToast('Account details updated successfully.');
     // Keep the sidebar's name/role display in sync immediately.
     const nameEl = document.querySelector('[data-user-name]');
     if (nameEl) nameEl.textContent = result.user.fullName;

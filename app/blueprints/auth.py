@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import re
 import secrets
 from datetime import datetime, timedelta
 
@@ -700,17 +701,25 @@ def _update_my_account():
 
     data = request.get_json(silent=True) or {}
     full_name = (data.get("fullName") or "").strip()
+    contact = (data.get("contact") or "").strip()
     email = (data.get("email") or "").strip()
+
     if not full_name:
-        return json_error("Name is required")
+        return json_error("Full Name is required.")
+    if not contact:
+        return json_error("Contact Number is required.")
+    if not re.match(r"^09\d{9}$", contact):
+        return json_error("Contact number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).")
     if not email:
-        return json_error("Email is required — sign-in codes are sent there for MFA.")
+        return json_error("Email address is required.")
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return json_error("Please enter a valid email address.")
     if User.query.filter(User.id != user.id, func.lower(User.email) == email.lower()).first():
         return json_error("That email address is already in use by another account", 409)
 
     user.full_name = full_name
     user.email = email
-    user.contact_no = (data.get("contact") or "").strip() or None
+    user.contact_no = contact
     db.session.commit()
     log_audit(user.username, "Updated", "System", "Updated their own account details")
 
