@@ -211,15 +211,10 @@
           <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
         </label>
         <div class="relative">
-          <input type="text" id="uf_password" class="form-input font-mono font-semibold pr-20 text-forest-800 tracking-wider bg-forest-50/50" readonly/>
-          <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button type="button" onclick="regenerateTempPassword()" class="p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Regenerate Password">
-              <span data-icon="refresh" data-icon-size="15"></span>
-            </button>
-            <button type="button" onclick="copyTempPassword()" class="p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Copy to Clipboard">
-              <span data-icon="copy" data-icon-size="15"></span>
-            </button>
-          </div>
+          <input type="text" id="uf_password" class="form-input font-mono font-semibold pr-12 text-forest-800 tracking-wider bg-forest-50/50 cursor-pointer" onclick="copyTempPassword()" title="Click to copy" readonly/>
+          <button type="button" onclick="copyTempPassword()" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Copy Temporary Password">
+            <span data-icon="copy" data-icon-size="16"></span>
+          </button>
         </div>
         <p class="text-xs text-forest-400 mt-1">
           Auto-generated prefix: <strong class="text-forest-600 font-semibold">DSK</strong> (Desk Officer), <strong class="text-forest-600 font-semibold">DTA</strong> (Data Encoder). The user can change their password in Settings after logging in.
