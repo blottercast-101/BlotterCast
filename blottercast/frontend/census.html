@@ -175,8 +175,8 @@
       <div class="overflow-x-auto">
         <table class="data-table">
           <thead><tr>
-            <th>Resident No.</th><th>Full Name</th><th>Date of Birth</th><th>Age</th>
-            <th>Sex</th><th>Civil Status</th><th>Zone / Purok</th>
+            <th>Resident No.</th><th>Full Name</th><th>Date of Birth</th><th class="text-center px-4">Age</th>
+            <th class="text-center px-4">Sex</th><th>Civil Status</th><th>Zone / Purok</th>
             <th>Address</th><th>Household No.</th><th>Status</th><th>Actions</th>
           </tr></thead>
           <tbody id="residentBody"></tbody>
@@ -385,8 +385,13 @@ function renderResidents(){
       <td class="font-semibold text-forest-700">${r.resNo}</td>
       <td class="font-semibold text-forest-800">${r.lastName}, ${r.firstName}</td>
       <td class="text-xs">${r.dob}</td>
-      <td class="font-semibold text-center">${r.age}${typeof r.age==='number' && r.age>=60?' <span class="badge badge-ongoing text-xs ml-1">Senior</span>':''}</td>
-      <td><span class="badge ${r.sex==='Male'?'badge-ongoing':'badge-pending'}">${r.sex}</span></td>
+      <td class="text-center px-4 whitespace-nowrap">
+        <div class="inline-flex items-center gap-1.5 min-w-[80px] text-left">
+          <span class="font-semibold font-mono text-sm w-5 text-right tabular-nums inline-block">${r.age}</span>
+          <span class="inline-flex items-center w-14">${typeof r.age==='number' && r.age>=60 ? '<span class="badge badge-ongoing text-[10px] font-bold tracking-wider px-1.5 py-0.5">SENIOR</span>' : ''}</span>
+        </div>
+      </td>
+      <td class="text-center px-4 whitespace-nowrap"><span class="badge ${r.sex==='Male'?'badge-ongoing':'badge-pending'}">${r.sex ? r.sex.toUpperCase() : ''}</span></td>
       <td class="text-xs">${r.civil}</td>
       <td class="text-xs font-medium">${r.zone}</td>
       <td class="text-xs text-forest-400">${r.address}</td>
