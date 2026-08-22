@@ -374,13 +374,30 @@ function regenerateTempPassword() {
 }
 
 function copyTempPassword() {
-  const pw = document.getElementById('uf_password').value;
-  if (!pw) return;
-  navigator.clipboard.writeText(pw).then(() => {
+  const input = document.getElementById('uf_password');
+  if (!input || !input.value) return;
+  const pw = input.value;
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(pw).then(() => {
+      showToast('Temporary password copied to clipboard!');
+    }).catch(() => {
+      fallbackCopy(input);
+    });
+  } else {
+    fallbackCopy(input);
+  }
+}
+
+function fallbackCopy(input) {
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    document.execCommand('copy');
     showToast('Temporary password copied to clipboard!');
-  }).catch(() => {
-    showToast('Temporary password: ' + pw);
-  });
+  } catch (err) {
+    showToast('Password: ' + input.value);
+  }
 }
 
 function onRoleChange(role) {
@@ -542,7 +559,6 @@ async function removeUser(id) {
 
 (async function () {
   await requireAuth();
-  bcAddPasswordToggle('uf_password');
   try {
     await Promise.all([loadUsers(), loadAuditLog()]);
   } catch (err) {
