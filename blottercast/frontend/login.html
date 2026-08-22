@@ -653,24 +653,60 @@
     }
 
     if (!googleClientId) {
-      alertText.textContent = 'Google Sign-In client ID is not configured on the server. Please set GOOGLE_CLIENT_ID.';
+      alertText.textContent = 'Google Sign-In client ID is not configured on the server. Please set GOOGLE_CLIENT_ID in your .env file.';
       alert.classList.add('show');
       return;
     }
 
-    if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+    if (!window.google || !window.google.accounts) {
       alertText.textContent = 'Google Sign-In service could not be loaded. Please check your internet connection.';
       alert.classList.add('show');
       return;
     }
 
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleCredentialResponse,
-      auto_select: false,
-    });
+    // Try Google Identity Services One Tap prompt first
+    if (window.google.accounts.id) {
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+      });
 
-    window.google.accounts.id.prompt();
+      window.google.accounts.id.prompt((notification) => {
+        if (notification && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
+          // If One Tap was suppressed or dismissed, open standard OAuth popup
+          openGoogleOAuthPopup();
+        }
+      });
+    } else {
+      openGoogleOAuthPopup();
+    }
+  }
+
+  let googleTokenClient = null;
+
+  function openGoogleOAuthPopup() {
+    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+      return;
+    }
+    if (!googleTokenClient) {
+      googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: 'email profile openid',
+        callback: async (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            await handleGoogleCredentialResponse({ credential: tokenResponse.access_token });
+          }
+        },
+        error_callback: (err) => {
+          const alert = document.getElementById('loginAlert');
+          const alertText = document.getElementById('loginAlertMsg');
+          alertText.textContent = (err && err.message) || 'Google sign-in was cancelled.';
+          alert.classList.add('show');
+        }
+      });
+    }
+    googleTokenClient.requestAccessToken({ prompt: 'select_account' });
   }
 
   async function handleGoogleCredentialResponse(response) {

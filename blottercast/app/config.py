@@ -1,8 +1,13 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()  # loads .env from the project root if present; no-op otherwise
+# Explicitly load .env from project root directory
+ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT_DIR / ".env")
+load_dotenv(ROOT_DIR / ".env.local")
+load_dotenv()  # Fallback to current working directory if different
 
 
 def _normalize_db_url(url: str) -> str:

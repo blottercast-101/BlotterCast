@@ -49,7 +49,7 @@ def test_google_auth_flow():
     unlinked_token = "mock-google-token:unknown_user@gmail.com:google-sub-9999"
     r = client.post("/api/auth.php?action=google_login", json={"credential": unlinked_token})
     assert r.status_code == 403, r.get_json()
-    assert "No BlotterCast account is linked" in r.get_json().get("error", "")
+    assert "No registered account found" in r.get_json().get("error", "")
     print("2. Unlinked google_login rejected with 403 OK")
 
     # 3. Normal login then link Google account in settings

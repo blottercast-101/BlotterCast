@@ -46,24 +46,38 @@ def _verify_google_token(credential: str) -> dict | None:
             "name": "Mock Google User",
         }
 
+    # 1. Primary: Verify as Google OpenID Connect ID Token (JWT)
     try:
         resp = requests.get(
             "https://oauth2.googleapis.com/tokeninfo",
             params={"id_token": credential},
             timeout=8,
         )
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-        if not data.get("email") or not data.get("sub"):
-            return None
-        # Verify audience if GOOGLE_CLIENT_ID is explicitly configured
-        configured_client_id = current_app.config.get("GOOGLE_CLIENT_ID")
-        if configured_client_id and data.get("aud") != configured_client_id:
-            return None
-        return data
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("email") and data.get("sub"):
+                configured_client_id = (current_app.config.get("GOOGLE_CLIENT_ID") or "").strip()
+                if configured_client_id and data.get("aud") and data.get("aud") != configured_client_id:
+                    return None
+                return data
     except Exception:
-        return None
+        pass
+
+    # 2. Fallback: Verify as OAuth2 Bearer Access Token
+    try:
+        resp = requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {credential}"},
+            timeout=8,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("email") and data.get("sub"):
+                return data
+    except Exception:
+        pass
+
+    return None
 
 
 # ---------------------------------------------------------------
@@ -645,8 +659,8 @@ def _google_login():
 
     if not user:
         return json_error(
-            f"No BlotterCast account is linked to this Google account ({email}). "
-            f"Please sign in with your username and password, or contact an administrator to link your account.",
+            f"No registered account found with this Google email ({email}). "
+            f"Please sign in with your username and password or contact an administrator to link your account.",
             403,
         )
 
@@ -658,8 +672,10 @@ def _google_login():
             f"Try again in {minutes_left} minute(s), or contact an administrator.", 403
         )
 
-    if user.status != "Active":
-        return json_error(f"This account is {user.status.lower()}. Contact an administrator.", 403)
+    if user.status.lower() == "suspended":
+        return json_error("This account is suspended. Please contact an administrator.", 403)
+    elif user.status != "Active":
+        return json_error(f"This account is {user.status.lower()}. Please contact an administrator.", 403)
 
     # Save / update google linking details for the matched user
     user.google_id = sub
