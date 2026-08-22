@@ -114,7 +114,7 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 
 .sidebar-logo-emblem {
-  height: 40px;
+  height: 42px;
   width: auto;
   flex-shrink: 0;
   display: flex;
@@ -122,9 +122,11 @@ body { font-family: 'DM Sans', sans-serif; }
   justify-content: center;
 }
 
+.sidebar-logo-emblem img,
 .sidebar-logo-emblem svg {
-  height: 40px;
+  height: 42px;
   width: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -146,7 +148,7 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 
 .sidebar-brand-subtitle {
-  font-family: 'Inter', 'Outfit', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13.5px;
   font-weight: 500;
   color: #A3E6BA;
