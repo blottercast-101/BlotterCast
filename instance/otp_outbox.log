@@ -674,3 +674,16 @@ Your BlotterCast sign-in verification code is: 634634
 This code expires in 5 minutes. If you did not attempt to sign in, you can safely ignore this email.
 
 — BlotterCast
+
+----- 2026-08-22T04:55:43.243463 -----
+[BREVO_API_KEY not configured -- logged instead of sent]
+To: mfa_user@example.com
+Subject: Your BlotterCast verification code
+
+Hi Test MFA User,
+
+Your BlotterCast sign-in verification code is: 104026
+
+This code expires in 5 minutes. If you did not attempt to sign in, you can safely ignore this email.
+
+— BlotterCast
