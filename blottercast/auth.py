@@ -183,12 +183,25 @@ def _google_login():
     elif isinstance(email_verified, bool) and not email_verified:
         return json_error("Google email address is not verified", 401)
 
-    user = User.query.filter(func.lower(User.email) == email.lower()).first()
+    google_sub = str(token_info.get("sub") or "").strip()
+    clean_email = str(email or "").strip().lower()
+
+    user = None
+    if google_sub:
+        user = User.query.filter_by(google_id=google_sub).first()
+    if not user and clean_email:
+        user = User.query.filter(func.lower(func.trim(User.email)) == clean_email).first()
+
     if not user:
         return json_error(
             "No BlotterCast account is associated with this Google email address. "
             "Please contact an administrator to create or link your account.", 401
         )
+
+    # Link google_id if not already saved
+    if google_sub and user.google_id != google_sub:
+        user.google_id = google_sub
+        db.session.commit()
 
     if user.status.upper() == "SUSPENDED":
         return json_error("This account has been suspended. Please contact an administrator.", 403)
@@ -198,15 +211,26 @@ def _google_login():
     user.failed_attempts = 0
     user.locked_until = None
 
+    # Check if 2FA is active on the account (Settings -> Security)
+    is_2fa_active = False
+    if hasattr(user, "is_2fa_enabled") and user.is_2fa_enabled:
+        is_2fa_active = True
+    elif getattr(user, "mfa_enabled", None) is not None:
+        raw_mfa = user.mfa_enabled
+        if isinstance(raw_mfa, str):
+            is_2fa_active = raw_mfa.lower() in ("1", "true", "t", "yes", "on", "enabled")
+        else:
+            is_2fa_active = bool(raw_mfa)
+
     # Enforce Two-Factor Authentication (2FA) if enabled on the user account
-    if user.is_2fa_enabled:
+    if is_2fa_active:
         if not user.email:
             return json_error(
                 "This account has no email on file for 2FA OTP codes. "
                 "Contact an administrator to add one.", 403
             )
         db.session.commit()
-        _issue_and_send_otp(user)
+        _issue_and_send_otp(user, purpose="login")
 
         session.clear()
         session["mfa_pending_user_id"] = user.id
