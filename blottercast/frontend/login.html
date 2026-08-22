@@ -250,6 +250,53 @@
     .btn-login.loading .btn-text { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Google OAuth Button */
+    .btn-google-wrap {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .btn-google {
+      width: 100%;
+      padding: 13px 18px;
+      background: #ffffff;
+      color: #111827;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+    .btn-google:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
+    .btn-google:active {
+      transform: translateY(0);
+    }
+    .gsi-overlay-container {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0.001;
+      overflow: hidden;
+      z-index: 5;
+      cursor: pointer;
+    }
+    .gsi-overlay-container iframe {
+      width: 100% !important;
+      height: 100% !important;
+      cursor: pointer !important;
+    }
+
     /* Error alert */
     .alert-error {
       background: #fef2f2; border: 1.5px solid #fecaca;
@@ -400,6 +447,27 @@
   <!-- Form -->
   <form id="loginForm" onsubmit="handleLogin(event)" class="animate-in delay-2">
 
+    <!-- Continue with Google Button -->
+    <div class="btn-google-wrap" id="googleBtnWrapper">
+      <button type="button" class="btn-google" id="customGoogleBtn" onclick="triggerGoogleSignIn()">
+        <svg width="20" height="20" viewBox="0 0 24 24" style="flex-shrink:0;">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+      <div id="g_id_signin_container" class="gsi-overlay-container"></div>
+    </div>
+
+    <!-- Divider -->
+    <div id="googleDivider" style="display:flex;align-items:center;margin:1.35rem 0 1.35rem 0;color:#9ca3af;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="padding:0 0.85rem;color:#9ca3af;font-size:0.82rem;font-weight:500;">or sign in with username</span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    </div>
+
     <div class="input-group">
       <label class="input-label">Username</label>
       <div class="input-wrap">
@@ -430,14 +498,6 @@
       <div class="spinner" id="spinner"></div>
       <span class="btn-text">Sign In to BlotterCast</span>
     </button>
-
-    <div id="googleDivider" style="display:flex;align-items:center;margin:1.25rem 0 1rem 0;color:#9ca3af;font-size:0.8rem;">
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
-      <span style="padding:0 0.75rem;font-weight:500;letter-spacing:0.05em;">OR</span>
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
-    </div>
-
-    <div id="g_id_signin_container" style="display:flex;justify-content:center;margin-bottom:0.25rem;min-height:40px;"></div>
   </form>
 
   <!-- OTP Step -->
@@ -909,7 +969,7 @@
         window.google.accounts.id.renderButton(container, {
           theme: 'outline',
           size: 'large',
-          width: 320,
+          width: 380,
           text: 'continue_with',
           shape: 'rectangular',
         });
@@ -917,6 +977,12 @@
       isGsiInitialized = true;
     } catch (e) {
       console.warn('Google Sign-In initialization skipped:', e);
+    }
+  }
+
+  function triggerGoogleSignIn() {
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      window.google.accounts.id.prompt();
     }
   }
 
