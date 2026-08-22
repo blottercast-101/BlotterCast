@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — Barangay System</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414'}},fontFamily:{display:['DM Serif Display','serif'],body:['DM Sans','sans-serif']}}}}</script>
+</head>
+<body class="font-body bg-forest-50 min-h-screen">
+
+<aside id="sidebar" class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
+    <!-- Logo -->
+    <div class="px-6 py-8 border-b border-forest-700">
+      <div class="flex items-center gap-3">
+        <img src="logo-lockup.png" alt="BlotterCast — Barangay System" class="sidebar-brand-lockup"/>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <p class="nav-section-label">Main Menu</p>
+      <a href="dashboard.html" class="nav-link" data-page="dashboard">
+        <span class="nav-icon" data-icon="dashboard"></span> Dashboard
+      </a>
+      <a href="blotter.html" class="nav-link" data-page="blotter">
+        <span class="nav-icon" data-icon="blotter"></span> Blotter Records
+      </a>
+      <a href="incident.html" class="nav-link" data-page="incident">
+        <span class="nav-icon" data-icon="incident"></span> Incident Reports
+      </a>
+      <a href="settlement.html" class="nav-link" data-page="settlement">
+        <span class="nav-icon" data-icon="settlement"></span> Settlement Monitor
+      </a>
+
+      <p class="nav-section-label">Documents</p>
+      <a href="census.html" class="nav-link" data-page="census">
+        <span class="nav-icon" data-icon="census"></span> Census
+      </a>
+      <a href="clearance.html" class="nav-link" data-page="clearance">
+        <span class="nav-icon" data-icon="clearance"></span> Brgy Clearance
+      </a>
+      <a href="residency.html" class="nav-link" data-page="residency">
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Residency
+      </a>
+      <a href="non_residency.html" class="nav-link" data-page="non_residency">
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Non-Residency
+      </a>
+      <a href="indigency.html" class="nav-link" data-page="indigency">
+        <span class="nav-icon" data-icon="clearance"></span> Cert. of Indigency
+      </a>
+
+      <p class="nav-section-label">Analytics</p>
+      <a href="heatmap.html" class="nav-link" data-page="heatmap">
+        <span class="nav-icon" data-icon="heatmap"></span> Heat Map
+      </a>
+      <a href="trends.html" class="nav-link" data-page="trends">
+        <span class="nav-icon" data-icon="trends"></span> Trends
+      </a>
+      <a href="predictions.html" class="nav-link" data-page="predictions">
+        <span class="nav-icon" data-icon="predictions"></span> Predictions
+      </a>
+
+      <p class="nav-section-label">System</p>
+      <a href="users.html" class="nav-link" data-page="users">
+        <span class="nav-icon" data-icon="users"></span> Users &amp; Roles
+      </a>
+      <a href="reports.html" class="nav-link" data-page="reports">
+        <span class="nav-icon" data-icon="reports"></span> Reports
+      </a>
+      <a href="settings.html" class="nav-link active" data-page="settings">
+        <span class="nav-icon" data-icon="settings"></span> Settings
+      </a>
+    </nav>
+
+    <!-- User -->
+    <div class="px-4 py-4 border-t border-forest-700">
+      <div class="flex items-center gap-3">
+        <div class="sidebar-user-avatar" data-user-avatar>JD</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate" data-user-name>Juan Dela Cruz</div>
+          <div class="text-forest-400 text-xs" data-user-role>Desk Officer</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Log out"><span data-icon="logout" data-icon-size="16"></span></button>
+      </div>
+    </div>
+  </aside>
+
+<div class="ml-64 flex flex-col min-h-screen">
+  <header class="page-header">
+    <div>
+      <h1 class="font-display text-2xl text-forest-800">System Settings</h1>
+      <p class="text-forest-500 text-sm">Configure barangay information, notifications, security, and backup options</p>
+    </div>
+    <button onclick="saveSettings()" class="btn-primary" data-perm="system_settings"><span data-icon="save" data-icon-size="16"></span> Save Changes</button>
+  </header>
+
+  <!-- Tab Bar -->
+  <div class="bg-white border-b border-forest-100 px-8 py-3 flex gap-2">
+    <button class="settings-tab active" onclick="switchTab('general',this)" data-perm="system_settings"><span data-icon="building" data-icon-size="15"></span> General</button>
+    <button class="settings-tab" onclick="switchTab('notifications',this)" data-perm="system_settings"><span data-icon="bell" data-icon-size="15"></span> Notifications</button>
+    <button class="settings-tab" onclick="switchTab('security',this)"><span data-icon="lock" data-icon-size="15"></span> Security</button>
+    <button class="settings-tab" onclick="switchTab('backup',this)" data-perm="system_settings"><span data-icon="archive" data-icon-size="15"></span> Backup &amp; Recovery</button>
+  </div>
+
+  <main class="flex-1 p-6 space-y-5">
+
+    <!-- GENERAL -->
+    <div id="tab-general" class="space-y-5">
+      <div class="settings-section">
+        <h3>Barangay Information</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="form-label">Barangay Name</label><input type="text" class="form-input" data-setting="barangay_name" value="Barangay Mapulang Lupa"/></div>
+          <div><label class="form-label">Municipality / City</label><input type="text" class="form-input" data-setting="municipality" value="Pandi, Bulacan"/></div>
+          <div><label class="form-label">Region</label><input type="text" class="form-input" data-setting="region" value="Region III – Central Luzon"/></div>
+          <div><label class="form-label">Barangay Captain</label><input type="text" class="form-input" data-setting="captain_name" data-no-numbers value="Kapitan Jose Reyes"/></div>
+          <div><label class="form-label">Contact Number</label><input type="text" class="form-input" data-setting="contact_no" data-digits-only maxlength="11" value="09170000000"/></div>
+          <div><label class="form-label">Email Address</label><input type="email" class="form-input" data-setting="email" value="mapulanglupa@pandi.gov.ph"/></div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>System Preferences</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Date Format</label>
+            <select class="form-input" data-setting="date_format"><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option><option>YYYY-MM-DD</option></select>
+          </div>
+          <div>
+            <label class="form-label">Time Format</label>
+            <select class="form-input" data-setting="time_format"><option>12-Hour (AM/PM)</option><option>24-Hour</option></select>
+          </div>
+          <div>
+            <label class="form-label">Records Per Page</label>
+            <select class="form-input" data-setting="records_per_page"><option>5</option><option selected>6</option><option>10</option><option>20</option><option>50</option></select>
+          </div>
+          <div>
+            <label class="form-label">Default Language</label>
+            <select class="form-input" data-setting="default_language"><option>English</option><option>Filipino</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="tab-notifications" class="space-y-5 hidden">
+      <div class="settings-section">
+        <h3>Alert Thresholds</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Risk Score Threshold (0–100)</label>
+            <input type="number" class="form-input" data-setting="risk_threshold" value="75" min="0" max="100"/>
+            <p class="text-xs text-forest-400 mt-1">Trigger alert when predicted risk exceeds this value.</p>
+          </div>
+          <div>
+            <label class="form-label">Incident Spike Threshold</label>
+            <input type="number" class="form-input" data-setting="spike_threshold" value="5" min="1"/>
+            <p class="text-xs text-forest-400 mt-1">Alert when new incidents exceed this count in 24 hours.</p>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Notification Channels</h3>
+        <div class="space-y-0">
+          <div class="toggle-row">
+            <div><div class="toggle-label">In-App Notifications</div><div class="toggle-desc">Show alerts in the notification center</div></div>
+            <button class="toggle-switch on" data-setting="notif_inapp" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Model Retraining Alerts</div><div class="toggle-desc">Notify when ML model retraining completes</div></div>
+            <button class="toggle-switch on" data-setting="notif_retrain" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div id="tab-security" class="space-y-5 hidden">
+      <div class="settings-section">
+        <h3>My Account</h3>
+        <p class="text-forest-400 text-xs mb-4" style="margin-top:-0.75rem;">Available to every account — update your own details, no admin needed.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="form-label">Username</label><input type="text" id="acct_username" class="form-input" disabled/></div>
+          <div><label class="form-label">Role</label><input type="text" id="acct_role" class="form-input" disabled/></div>
+          <div><label class="form-label">Full Name</label><input type="text" id="acct_fullName" class="form-input"/></div>
+          <div><label class="form-label">Contact Number</label><input type="text" id="acct_contact" class="form-input" placeholder="09XXXXXXXXX"/></div>
+          <div class="col-span-2"><label class="form-label">Email</label><input type="email" id="acct_email" class="form-input" placeholder="you@example.com"/></div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button onclick="saveMyAccount()" class="btn-primary text-sm"><span data-icon="save" data-icon-size="14"></span> Save Account Details</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Linked Google Account</h3>
+        <p class="text-forest-400 text-xs mb-4" style="margin-top:-0.75rem;">Link your Google account to enable instant, secure one-click sign-in.</p>
+        
+        <div id="googleLinkedState" class="flex items-center justify-between p-4 bg-forest-50 border border-forest-200 rounded-xl" style="display:none;">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-forest-100 flex-shrink-0">
+              <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-forest-900" id="googleLinkedEmail">user@gmail.com</div>
+              <div class="text-xs text-forest-600 flex items-center gap-1">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Connected for Google Sign-In
+              </div>
+            </div>
+          </div>
+          <button onclick="unlinkGoogleAccount()" class="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition-colors">
+            Unlink
+          </button>
+        </div>
+
+        <div id="googleUnlinkedState" class="flex items-center justify-between p-4 bg-white border border-forest-100 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-forest-50 flex items-center justify-center border border-forest-100 flex-shrink-0 text-forest-400">
+              <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-forest-800">No Google account linked</div>
+              <div class="text-xs text-forest-400">Link your Google account to log in with "Continue with Google".</div>
+            </div>
+          </div>
+          <button onclick="triggerLinkGoogle()" class="px-3.5 py-1.5 text-xs font-semibold text-forest-800 hover:text-forest-900 bg-white hover:bg-forest-50 border border-forest-300 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+            Link Google Account
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Change Password</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2"><label class="form-label">Current Password</label><input type="password" id="acct_currentPw" class="form-input"/></div>
+          <div><label class="form-label">New Password</label><input type="password" id="acct_newPw" class="form-input"/></div>
+          <div><label class="form-label">Confirm New Password</label><input type="password" id="acct_confirmPw" class="form-input"/></div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Two-Factor Authentication</h3>
+        <div class="space-y-0">
+          <div class="toggle-row">
+            <div><div class="toggle-label">Require a code by email at sign-in</div><div class="toggle-desc" id="mfaToggleDesc">Applies only to your own account, from your next login onward.</div></div>
+            <button id="mfaToggleBtn" class="toggle-switch off" onclick="toggleMyMfa()"><span class="sr-only">Toggle two-factor authentication</span></button>
+          </div>
+        </div>
+      </div>
+      <div id="tab-security-admin-only" data-perm="system_settings">
+      <div class="settings-section">
+        <h3>Authentication Settings</h3>
+        <div class="space-y-0">
+          <div class="toggle-row">
+            <div><div class="toggle-label">Account Lockout After Failed Attempts</div><div class="toggle-desc">Lock account after 5 consecutive failed logins</div></div>
+            <button class="toggle-switch on" data-setting="lockout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="form-label">Session Timeout (minutes)</label>
+            <input type="number" class="form-input" data-setting="session_timeout" value="30"/>
+          </div>
+          <div>
+            <label class="form-label">Max Failed Login Attempts</label>
+            <input type="number" class="form-input" data-setting="max_failed_logins" value="5"/>
+          </div>
+          <div>
+            <label class="form-label">Minimum Password Length</label>
+            <input type="number" class="form-input" data-setting="min_password_length" value="8"/>
+          </div>
+          <div>
+            <label class="form-label">Password Expiry (days)</label>
+            <input type="number" class="form-input" data-setting="password_expiry_days" value="90"/>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Data Privacy</h3>
+        <div class="space-y-0">
+          <div class="toggle-row">
+            <div><div class="toggle-label">Audit Trail Logging</div><div class="toggle-desc">Log all data changes, logins, and report exports</div></div>
+            <button class="toggle-switch on" data-setting="audit_trail" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Data Subject Rights Module</div><div class="toggle-desc">Allow data access/correction requests from data subjects</div></div>
+            <button class="toggle-switch on" data-setting="data_subject_rights" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- BACKUP -->
+    <div id="tab-backup" class="space-y-5 hidden">
+      <div class="settings-section">
+        <h3>Automated Backup</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Backup Frequency</label>
+            <select class="form-input" data-setting="backup_frequency"><option selected>Daily</option><option>Every 12 hours</option><option>Weekly</option></select>
+          </div>
+          <div>
+            <label class="form-label">Backup Time</label>
+            <input type="time" class="form-input" data-setting="backup_time" value="02:00"/>
+          </div>
+          <div>
+            <label class="form-label">Backup Destination</label>
+            <select class="form-input" data-setting="backup_destination"><option>Local Storage Device</option><option>External Drive</option><option>Both</option></select>
+          </div>
+          <div>
+            <label class="form-label">Retain Backups For (days)</label>
+            <input type="number" class="form-input" data-setting="retain_backups_days" value="30"/>
+          </div>
+        </div>
+        <p class="text-xs text-forest-400 mt-2">Frequency/time/destination/retention are scheduling preferences saved here; this prototype has no background cron worker, so backups run when you click the button below (or via a server cron job calling this same endpoint).</p>
+        <div class="mt-4 flex gap-3">
+          <button onclick="runBackupNow()" class="btn-primary text-sm" id="backupBtn"><span data-icon="play" data-icon-size="14"></span> Run Backup Now</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Recovery Objectives</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Recovery Time Objective (RTO)</label>
+            <input type="text" class="form-input" data-setting="rto_hours" value="4 hours"/>
+            <p class="text-xs text-forest-400 mt-1">Maximum acceptable downtime after failure.</p>
+          </div>
+          <div>
+            <label class="form-label">Recovery Point Objective (RPO)</label>
+            <input type="text" class="form-input" data-setting="rpo_hours" value="24 hours"/>
+            <p class="text-xs text-forest-400 mt-1">Maximum acceptable data loss window.</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-forest-50">
+          <div class="font-semibold text-forest-700 text-sm">Backup History</div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>File</th><th>Size</th><th>Status</th><th>By</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="backupHistoryBody"><tr><td colspan="6" class="text-center py-6 text-forest-400">No backups yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ML MODEL -->
+  
+      <div class="settings-section">
+        <h3><span data-icon="database" data-icon-size="18"></span> Data Management</h3>
+        <p class="text-sm text-forest-500 mb-4">All records are stored in the MySQL <code>blottercast</code> database. Records added on the Blotter and Incident pages automatically feed the Heat Map, Trends, and the Python ML Predictions module.</p>
+        <div class="flex items-center gap-3">
+          <button onclick="resetDemoData()" class="btn-secondary"><span data-icon="refresh" data-icon-size="15"></span> Reset Demo Dataset</button>
+          <button onclick="downloadData()" class="btn-secondary"><span data-icon="download" data-icon-size="16"></span> Export Records (JSON)</button>
+        </div>
+      </div>
+
+    </main>
+</div>
+
+<script src="api.js"></script>
+<script src="permissions.js"></script>
+<script src="app.js"></script>
+<script src="icons.js"></script>
+<script src="custom-controls.js"></script>
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.settings-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  btn.classList.add('active');
+}
+
+function applySettings(values) {
+  document.querySelectorAll('[data-setting]').forEach(el => {
+    const key = el.dataset.setting;
+    if (!(key in values)) return;
+    const val = values[key];
+    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
+      const on = val === '1' || val === 'true';
+      el.classList.toggle('on', on);
+      el.classList.toggle('off', !on);
+    } else if (el.tagName === 'SELECT') {
+      // match by value first, fall back to matching visible text
+      if ([...el.options].some(o => o.value === val)) el.value = val;
+      else {
+        const opt = [...el.options].find(o => o.textContent.trim() === val);
+        if (opt) el.value = opt.value;
+      }
+    } else {
+      el.value = val;
+    }
+  });
+}
+
+function collectSettings() {
+  const out = {};
+  document.querySelectorAll('[data-setting]').forEach(el => {
+    const key = el.dataset.setting;
+    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
+      out[key] = el.classList.contains('on') ? '1' : '0';
+    } else {
+      out[key] = el.value;
+    }
+  });
+  return out;
+}
+
+async function saveSettings() {
+  const btn = document.querySelector('[onclick="saveSettings()"]');
+  const values = collectSettings();
+  if (values.contact_no && !bcIsValidContact(values.contact_no)) {
+    showToast('Contact Number should be a valid PH mobile number (e.g. 09171234567).', 'error'); return;
+  }
+  if (values.email && !bcIsValidEmail(values.email)) {
+    showToast('Please enter a valid email address.', 'error'); return;
+  }
+  if (values.captain_name && !bcIsValidName(values.captain_name)) {
+    showToast('Barangay Captain name should only contain letters (no numbers).', 'error'); return;
+  }
+  try {
+    await BCApi.settingsSave(values);
+    showToast('Settings saved successfully!');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function runBackupNow() {
+  const btn = document.getElementById('backupBtn');
+  btn.disabled = true; btn.innerHTML = '<span data-icon="spinner" data-icon-size="15"></span> Running backup…';
+  try {
+    const result = await BCApi.runBackup();
+    showToast(`Backup created: ${result.file} (${(result.size/1024).toFixed(0)} KB)`);
+    await loadBackupHistory();
+  } catch (err) {
+    showToast('Backup failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<span data-icon="play" data-icon-size="14"></span> Run Backup Now';
+  }
+}
+
+async function loadBackupHistory() {
+  try {
+    const rows = await BCApi.backupHistory();
+    document.getElementById('backupHistoryBody').innerHTML = rows.length === 0
+      ? '<tr><td colspan="6" class="text-center py-6 text-forest-400">No backups yet. Click "Run Backup Now" above.</td></tr>'
+      : rows.map(r => `
+        <tr>
+          <td class="font-mono text-xs text-forest-600">${r.file_name}</td>
+          <td class="text-xs">${(r.size_bytes/1024).toFixed(0)} KB</td>
+          <td><span class="badge ${r.status==='Success'?'badge-resolved':'badge-not-complied'}">${r.status}</span></td>
+          <td class="text-xs text-forest-400">${r.created_by||''}</td>
+          <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
+          <td>${r.status==='Success' ? `<a href="api/settings.php?action=download_backup&file=${encodeURIComponent(r.file_name)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>` : ''}</td>
+        </tr>`).join('');
+  } catch (err) {
+    showToast('Could not load backup history: ' + err.message, 'error');
+  }
+}
+
+async function resetDemoData() {
+  if (!(await bcConfirm('Reset all records to a freshly seeded demo dataset? Records you added will be removed. This runs api/seed.php on the server.', { title: 'Reset Demo Data', okLabel: 'Reset', danger: true }))) return;
+  try {
+    await BCApi._fetch('api/seed.php');
+    showToast('Demo dataset reseeded. Reloading…');
+    setTimeout(() => window.location.reload(), 1200);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+async function downloadData() {
+  try {
+    const [incidents, blotter, settlements] = await Promise.all([
+      BCApi.list('incidents'), BCApi.list('blotter'), BCApi.list('settlements'),
+    ]);
+    const blob = new Blob([JSON.stringify({ incidents, blotter, settlements }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'blottercast-records.json';
+    a.click();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadMyAccount() {
+  try {
+    const acct = await BCApi.myAccount();
+    document.getElementById('acct_username').value = acct.username;
+    document.getElementById('acct_role').value = acct.role;
+    document.getElementById('acct_fullName').value = acct.fullName || '';
+    document.getElementById('acct_email').value = acct.email || '';
+    document.getElementById('acct_contact').value = acct.contact || '';
+
+    renderGoogleLinkState(acct);
+  } catch (err) {
+    showToast('Could not load your account details: ' + err.message, 'error');
+  }
+}
+
+function renderGoogleLinkState(acct) {
+  const linkedBox = document.getElementById('googleLinkedState');
+  const unlinkedBox = document.getElementById('googleUnlinkedState');
+  const emailEl = document.getElementById('googleLinkedEmail');
+
+  if (acct && acct.isGoogleLinked) {
+    emailEl.textContent = acct.googleEmail || acct.email || 'Linked Google Account';
+    linkedBox.style.display = 'flex';
+    unlinkedBox.style.display = 'none';
+  } else {
+    linkedBox.style.display = 'none';
+    unlinkedBox.style.display = 'flex';
+  }
+}
+
+let settingsGoogleClientId = '362507343436-o7agh2rgv2an9c11ubmnog5codjo858r.apps.googleusercontent.com';
+
+async function triggerLinkGoogle() {
+  if (!settingsGoogleClientId) {
+    try {
+      const config = await BCApi.authConfig();
+      if (config && config.googleClientId) {
+        settingsGoogleClientId = config.googleClientId;
+      }
+    } catch (e) {}
+  }
+
+  if (!settingsGoogleClientId) {
+    showToast('Google Sign-In is not configured on the server (GOOGLE_CLIENT_ID missing).', 'error');
+    return;
+  }
+
+  if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+    showToast('Google Identity service not loaded. Please check your internet connection.', 'error');
+    return;
+  }
+
+  window.google.accounts.id.initialize({
+    client_id: settingsGoogleClientId,
+    callback: handleGoogleLinkResponse,
+    auto_select: false,
+  });
+
+  window.google.accounts.id.prompt();
+}
+
+async function handleGoogleLinkResponse(response) {
+  if (!response || !response.credential) return;
+  try {
+    const res = await BCApi.linkGoogle(response.credential);
+    showToast(`Successfully linked Google account (${res.googleEmail})!`);
+    await loadMyAccount();
+  } catch (err) {
+    showToast(err.message || 'Could not link Google account.', 'error');
+  }
+}
+
+async function unlinkGoogleAccount() {
+  if (!confirm('Are you sure you want to unlink your Google account? You will need to sign in with your username and password.')) {
+    return;
+  }
+  try {
+    await BCApi.unlinkGoogle();
+    showToast('Google account unlinked.');
+    await loadMyAccount();
+  } catch (err) {
+    showToast(err.message || 'Could not unlink Google account.', 'error');
+  }
+}
+async function saveMyAccount() {
+  const fullName = document.getElementById('acct_fullName').value.trim();
+  const email = document.getElementById('acct_email').value.trim();
+  const contact = document.getElementById('acct_contact').value.trim();
+  if (!fullName) { showToast('Name is required.', 'error'); return; }
+  if (!email) { showToast('Email is required.', 'error'); return; }
+  try {
+    const result = await BCApi.updateMyAccount(fullName, email, contact);
+    showToast('Account details updated.');
+    // Keep the sidebar's name/role display in sync immediately.
+    const nameEl = document.querySelector('[data-user-name]');
+    if (nameEl) nameEl.textContent = result.user.fullName;
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+async function saveMyPassword() {
+  const current = document.getElementById('acct_currentPw').value;
+  const next = document.getElementById('acct_newPw').value;
+  const confirm = document.getElementById('acct_confirmPw').value;
+  if (!current || !next) { showToast('Fill in both your current and new password.', 'error'); return; }
+  if (next !== confirm) { showToast('New password and confirmation do not match.', 'error'); return; }
+  try {
+    await BCApi.changePassword(current, next);
+    document.getElementById('acct_currentPw').value = '';
+    document.getElementById('acct_newPw').value = '';
+    document.getElementById('acct_confirmPw').value = '';
+    showToast('Password changed.');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadMySecurity() {
+  try {
+    const { mfaEnabled } = await BCApi.mySecurity();
+    const btn = document.getElementById('mfaToggleBtn');
+    btn.classList.toggle('on', mfaEnabled);
+    btn.classList.toggle('off', !mfaEnabled);
+  } catch (err) {
+    showToast('Could not load your security setting: ' + err.message, 'error');
+  }
+}
+async function toggleMyMfa() {
+  const btn = document.getElementById('mfaToggleBtn');
+  const enabling = btn.classList.contains('off'); // about to turn on
+  btn.disabled = true;
+  try {
+    await BCApi.toggleMyMfa(enabling);
+    btn.classList.toggle('on', enabling);
+    btn.classList.toggle('off', !enabling);
+    showToast(enabling
+      ? 'Two-factor authentication turned on for your account. You\'ll get a code by email starting with your next login.'
+      : 'Two-factor authentication turned off for your account. You can sign in with just your password from now on.');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+(async function () {
+  const user = await requireAuth();
+  // My Account + personal 2FA — available to every role, independent of
+  // the system-wide settings below (which only System Admin can load/save).
+  await Promise.all([loadMyAccount(), loadMySecurity()]);
+
+  if (!user || !roleCan(user.role, 'system_settings')) {
+    // General/Notifications/Backup are all admin-only — landing a
+    // non-admin there by default would show a tab full of controls that
+    // silently do nothing for them. Security is the tab that actually
+    // works for every role, so that's where they start instead.
+    const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');
+    if (securityTabBtn) switchTab('security', securityTabBtn);
+    return; // rest of this page is admin-only
+  }
+
+  try {
+    const values = await BCApi.settingsList();
+    applySettings(values);
+    await loadBackupHistory();
+    // If it's been long enough since the last backup (per Backup Frequency
+    // below), this silently runs one now instead of waiting for someone to
+    // click "Run Backup Now" — then refreshes the history so it's visible.
+    try {
+      const auto = await BCApi.autoBackupCheck();
+      if (auto.ran) {
+        await loadBackupHistory();
+        showToast(auto.success ? 'Automatic backup completed (' + auto.file + ').' : 'Automatic backup failed: ' + auto.error, auto.success ? 'success' : 'error');
+      }
+    } catch (e) { /* not fatal — manual "Run Backup Now" still works */ }
+  } catch (err) {
+    showToast('Could not load settings: ' + err.message, 'error');
+  }
+})();
+</script>
+</body>
+</html>
