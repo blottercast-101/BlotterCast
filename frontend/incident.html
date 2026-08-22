@@ -316,8 +316,14 @@
   let viewingArchived = false;
 
   async function loadIncidents() {
-    const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
-    incidentData = raw.map(mapIncident);
+    try {
+      const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
+      incidentData = Array.isArray(raw) ? raw.map(mapIncident) : [];
+    } catch (err) {
+      console.error('loadIncidents error:', err);
+      incidentData = [];
+      showToast('Could not load incidents: ' + (err.message || err), 'error');
+    }
     updateSummary();
     renderIncidents();
   }

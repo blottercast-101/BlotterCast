@@ -299,8 +299,14 @@
   let viewingArchived = false;
 
   async function loadSettlements() {
-    const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
-    settlementData = raw.map(mapSettlement);
+    try {
+      const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
+      settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
+    } catch (err) {
+      console.error('loadSettlements error:', err);
+      settlementData = [];
+      showToast('Could not load settlements: ' + (err.message || err), 'error');
+    }
     updateStlSummary();
     renderSettlements();
   }

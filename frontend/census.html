@@ -296,8 +296,14 @@ function mapResident(r) {
 let viewingArchived = false;
 
 async function loadResidents() {
-  const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
-  censusData = raw.map(mapResident);
+  try {
+    const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
+    censusData = Array.isArray(raw) ? raw.map(mapResident) : [];
+  } catch (err) {
+    console.error('loadResidents error:', err);
+    censusData = [];
+    showToast('Could not load residents: ' + (err.message || err), 'error');
+  }
   calcStats();
   renderResidents();
 }
