@@ -579,12 +579,20 @@ function _confirmExportFilter() {
 // ── Notification bell (real, system-generated alerts) ──────
 // Only does anything on pages that actually have #notifPanel in the DOM
 // (currently the Dashboard); harmless no-op calls elsewhere.
-const NOTIF_SEVERITY_ICON = { critical: 'warning', warning: 'clock', info: 'bell' };
-const NOTIF_SEVERITY_COLOR = { critical: '#dc2626', warning: '#d97706', info: '#23703c' };
+const NOTIF_TYPE_CONFIG = {
+  incident_crud: { icon: 'incident', color: '#16a34a', badge: 'INCIDENT', bg: '#f0fdf4' },
+  new_incident: { icon: 'warning', color: '#dc2626', badge: 'HIGH PRIORITY', bg: '#fef2f2' },
+  heatmap_hotspot: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', bg: '#fffbeb' },
+  predictive_risk: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
+  high_risk_zone: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
+  trend_spike: { icon: 'trends', color: '#2563eb', badge: 'TREND SURGE', bg: '#eff6ff' },
+  settlement_overdue: { icon: 'clock', color: '#d97706', badge: 'SETTLEMENT', bg: '#fffbeb' },
+};
 
 function timeAgo(dateStr) {
+  if (!dateStr) return 'just now';
   const seconds = Math.floor((Date.now() - new Date(dateStr.replace(' ', 'T'))) / 1000);
-  if (seconds < 60) return 'just now';
+  if (isNaN(seconds) || seconds < 60) return 'just now';
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
@@ -598,9 +606,15 @@ async function refreshNotifBadge() {
   if (!badge) return;
   try {
     const res = await BCApi.notifUnreadCount();
-    badge.classList.toggle('hidden', res.count === 0);
+    const count = res?.count || 0;
+    badge.classList.toggle('hidden', count === 0);
   } catch (e) { /* not fatal — badge just stays as-is */ }
 }
+
+// Auto-poll notifications every 30 seconds on active tabs
+setInterval(() => {
+  if (!document.hidden) refreshNotifBadge();
+}, 30000);
 
 async function toggleNotifPanel() {
   const panel = document.getElementById('notifPanel');
@@ -610,23 +624,31 @@ async function toggleNotifPanel() {
   if (!opening) return;
 
   const list = document.getElementById('notifList');
-  list.innerHTML = '<div class="px-4 py-6 text-center text-forest-400 text-sm">Loading…</div>';
+  list.innerHTML = '<div class="px-4 py-6 text-center text-forest-400 text-sm">Loading notifications…</div>';
   try {
-    const items = await BCApi.notifList(20);
-    if (items.length === 0) {
+    const items = await BCApi.notifList(25);
+    if (!items || items.length === 0) {
       list.innerHTML = '<div class="px-4 py-8 text-center text-forest-400 text-sm">No notifications yet.</div>';
     } else {
-      list.innerHTML = items.map(n => `
-        <a href="${n.link || '#'}" onclick="markNotifRead(${n.id})"
-           class="flex gap-3 px-4 py-3 border-b border-forest-50 hover:bg-forest-50 transition-colors ${n.is_read == 0 ? 'bg-forest-50/60' : ''}">
-          <span style="color:${NOTIF_SEVERITY_COLOR[n.severity] || '#23703c'}" data-icon="${NOTIF_SEVERITY_ICON[n.severity] || 'bell'}" data-icon-size="16" class="flex-shrink-0 mt-0.5"></span>
-          <span class="flex-1 min-w-0">
-            <span class="block text-sm font-semibold text-forest-800 truncate">${n.title}</span>
-            <span class="block text-xs text-forest-500 mt-0.5">${n.body}</span>
-            <span class="block text-xs text-forest-400 mt-1">${timeAgo(n.created_at)}</span>
-          </span>
-          ${n.is_read == 0 ? '<span class="w-2 h-2 rounded-full bg-forest-500 flex-shrink-0 mt-1.5"></span>' : ''}
-        </a>`).join('');
+      list.innerHTML = items.map(n => {
+        const cfg = NOTIF_TYPE_CONFIG[n.type] || { icon: 'bell', color: '#23703c', badge: 'ALERT', bg: '#f0f9f2' };
+        return `
+          <a href="${n.link || '#'}" onclick="markNotifRead(${n.id})"
+             class="flex gap-3 px-4 py-3.5 border-b border-forest-50 hover:bg-forest-50/80 transition-colors ${n.is_read == 0 ? 'bg-forest-50/40' : ''}">
+            <div style="background:${cfg.bg}; color:${cfg.color};" class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-black/5">
+              <span data-icon="${cfg.icon}" data-icon-size="16"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider" style="background:${cfg.bg}; color:${cfg.color};">${cfg.badge}</span>
+                <span class="text-[11px] text-forest-400 font-medium">${timeAgo(n.created_at)}</span>
+              </div>
+              <span class="block text-sm font-semibold text-forest-800 leading-snug">${n.title}</span>
+              <span class="block text-xs text-forest-600 mt-1 line-clamp-2 leading-relaxed">${n.body}</span>
+            </div>
+            ${n.is_read == 0 ? '<span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-2"></span>' : ''}
+          </a>`;
+      }).join('');
     }
   } catch (e) {
     list.innerHTML = '<div class="px-4 py-6 text-center text-red-500 text-sm">Could not load notifications.</div>';

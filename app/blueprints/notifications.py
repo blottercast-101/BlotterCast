@@ -27,7 +27,12 @@ def notifications_router():
 
 
 def _generate_notifications():
-    three_days_ago = datetime.utcnow().date() - timedelta(days=3)
+    now_utc = datetime.utcnow()
+    three_days_ago = now_utc.date() - timedelta(days=3)
+    seven_days_ago = now_utc.date() - timedelta(days=7)
+    fourteen_days_ago = now_utc.date() - timedelta(days=14)
+
+    # 1. High-Priority Incidents
     already_alerted = {
         n.ref_id for n in Notification.query.filter_by(type="new_incident", ref_table="incidents").all()
         if n.ref_id is not None
@@ -39,12 +44,12 @@ def _generate_notifications():
         if r.id in already_alerted:
             continue
         db.session.add(Notification(
-            type="new_incident", title="High-priority incident reported",
-            body=f"{r.report_no} at {r.location} ({r.zone_id})", severity="critical",
+            type="new_incident", title=f"High-Priority Incident: {r.report_no}",
+            body=f"{r.report_no} • {r.category} at {r.location} ({r.zone_id})", severity="critical",
             link="incident.html", ref_table="incidents", ref_id=r.id,
         ))
 
-    fourteen_days_ago = datetime.utcnow().date() - timedelta(days=14)
+    # 2. Overdue Settlements (14+ days pending)
     already_alerted_stl = {
         n.ref_id for n in Notification.query.filter_by(type="settlement_overdue", ref_table="settlements").all()
         if n.ref_id is not None
@@ -55,34 +60,99 @@ def _generate_notifications():
     for r in overdue:
         if r.id in already_alerted_stl:
             continue
-        body = r.case_no + (f" ({r.case_title})" if r.case_title else "") + " has been pending for 14+ days"
+        body = r.case_no + (f" ({r.case_title})" if r.case_title else "") + " has been pending settlement for 14+ days."
         db.session.add(Notification(
-            type="settlement_overdue", title="Settlement follow-up overdue", body=body,
+            type="settlement_overdue", title="Settlement Follow-Up Overdue", body=body,
             severity="warning", link="settlement.html", ref_table="settlements", ref_id=r.id,
         ))
 
+    # 3. Heatmap / Geospatial Hotspot Alerts
+    recent_zone_counts = db.session.query(
+        Incident.zone_id, db.func.count(Incident.id)
+    ).filter(
+        Incident.incident_date >= fourteen_days_ago
+    ).group_by(Incident.zone_id).all()
+
+    for zone_id, cnt in recent_zone_counts:
+        if not zone_id or cnt < 2:
+            continue
+        # Check if an alert for this zone was already generated recently
+        recent_notif = Notification.query.filter(
+            Notification.type == "heatmap_hotspot",
+            Notification.title.like(f"%{zone_id}%"),
+            Notification.created_at >= (now_utc - timedelta(days=3))
+        ).first()
+        if not recent_notif:
+            db.session.add(Notification(
+                type="heatmap_hotspot",
+                title=f"Geospatial Hotspot Alert: {zone_id}",
+                body=f"High incident cluster detected in {zone_id} ({cnt} incidents recorded in the last 14 days). Increased patrol presence recommended.",
+                severity="critical" if cnt >= 4 else "warning",
+                link="heatmap.html",
+                ref_table="incidents",
+                ref_id=None,
+            ))
+
+    # 4. Predictive ML Analytics (High-Risk Zone Forecasts)
     threshold_row = SystemSetting.query.get("risk_threshold")
     threshold = (float(threshold_row.setting_value) if threshold_row else 75) / 100
 
     run = MlRun.query.order_by(MlRun.id.desc()).first()
     if run:
-        hotspots = json.loads(run.hotspots_json) or []
-        for h in hotspots:
-            if h.get("meanDailyProb", 0) < threshold:
-                continue
-            zone = h.get("zone", "?")
-            exists = Notification.query.filter(
-                Notification.type == "high_risk_zone", Notification.ref_table == "ml_runs",
-                Notification.ref_id == run.id, Notification.body.like(f"%{zone}%"),
+        try:
+            hotspots = json.loads(run.hotspots_json) or []
+            for h in hotspots:
+                mean_prob = h.get("meanDailyProb", 0)
+                if mean_prob < threshold:
+                    continue
+                zone = h.get("zone", "?")
+                exists = Notification.query.filter(
+                    Notification.type.in_(["high_risk_zone", "predictive_risk"]),
+                    Notification.ref_table == "ml_runs",
+                    Notification.ref_id == run.id,
+                    Notification.body.like(f"%{zone}%"),
+                ).first()
+                if exists:
+                    continue
+                pct = round(mean_prob * 100)
+                db.session.add(Notification(
+                    type="predictive_risk",
+                    title=f"Forecasted Incident Spike: Zone {zone}",
+                    body=f"ML model forecasts elevated incident probability ({pct}%) in Zone {zone}, exceeding the threshold.",
+                    severity="critical" if pct >= 80 else "warning",
+                    link="predictions.html",
+                    ref_table="ml_runs",
+                    ref_id=run.id,
+                ))
+        except Exception:
+            pass
+
+    # 5. Trend Analysis (Week-over-Week & Category Surges)
+    curr_week_count = Incident.query.filter(
+        Incident.incident_date >= seven_days_ago
+    ).count()
+    prev_week_count = Incident.query.filter(
+        Incident.incident_date >= fourteen_days_ago,
+        Incident.incident_date < seven_days_ago
+    ).count()
+
+    if curr_week_count >= 2 and curr_week_count > prev_week_count:
+        pct_increase = round(((curr_week_count - prev_week_count) / max(prev_week_count, 1)) * 100)
+        if pct_increase >= 20:
+            recent_trend_notif = Notification.query.filter(
+                Notification.type == "trend_spike",
+                Notification.created_at >= (now_utc - timedelta(days=3))
             ).first()
-            if exists:
-                continue
-            pct = round(h.get("meanDailyProb", 0) * 100)
-            db.session.add(Notification(
-                type="high_risk_zone", title="Elevated incident risk forecast",
-                body=f"Zone {zone} is forecast at {pct}% daily incident probability, above the configured threshold",
-                severity="warning", link="predictions.html", ref_table="ml_runs", ref_id=run.id,
-            ))
+            if not recent_trend_notif:
+                db.session.add(Notification(
+                    type="trend_spike",
+                    title=f"Incident Trend Surge (+{pct_increase}% WoW)",
+                    body=f"Incident volume rose by {pct_increase}% this week ({curr_week_count} incidents vs {prev_week_count} prior week). Review trend breakdown.",
+                    severity="warning",
+                    link="trends.html",
+                    ref_table="incidents",
+                    ref_id=None,
+                ))
 
     db.session.commit()
 

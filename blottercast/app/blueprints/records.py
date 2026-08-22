@@ -12,7 +12,7 @@ from ..helpers import (
     parse_time,
     zone_coords,
 )
-from ..models import BlotterRecord, CensusRecord, Incident, Settlement
+from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
 from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("records", __name__)
@@ -108,6 +108,20 @@ def _incidents():
             priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
         )
         db.session.add(incident)
+        db.session.flush()
+
+        actor = session.get("username") or "System"
+        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        db.session.add(Notification(
+            type="incident_crud",
+            title=f"New Incident Report Filed: {incident.report_no}",
+            body=f"[ADD] Case ID: {incident.report_no} • {incident.category} at {incident.location} ({incident.zone_id}) • Actor: {actor} • {ts}",
+            severity="critical" if incident.priority == "High" else "info",
+            link="incident.html",
+            ref_table="incidents",
+            ref_id=incident.id,
+        ))
+
         db.session.commit()
         return jsonify({"ok": True, "id": incident.id}), 201
 
@@ -138,6 +152,19 @@ def _incidents():
         incident.officer = d.get("officer", "")
         incident.priority = d.get("priority") or "Medium"
         incident.status = d.get("status") or "Under Investigation"
+
+        actor = session.get("username") or "System"
+        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        db.session.add(Notification(
+            type="incident_crud",
+            title=f"Incident Report Updated: {incident.report_no}",
+            body=f"[EDIT] Case ID: {incident.report_no} • Status: {incident.status} • Actor: {actor} • {ts}",
+            severity="warning" if incident.priority == "High" else "info",
+            link="incident.html",
+            ref_table="incidents",
+            ref_id=incident.id,
+        ))
+
         db.session.commit()
         return jsonify({"ok": True})
 

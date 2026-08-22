@@ -116,9 +116,25 @@
         <p class="text-forest-500 text-sm">Welcome back, Juan. Here's today's overview.</p>
       </div>
       <div class="flex items-center gap-4">
-        <div class="relative">
-          <input type="text" placeholder="Search records…" class="pl-9 pr-4 py-2 rounded-full border border-forest-200 bg-forest-50 text-sm text-forest-700 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400 w-56"/>
-          <span class="absolute left-3 top-2.5 text-forest-400" data-icon="search" data-icon-size="16"></span>
+        <div class="relative" id="dashboardSearchWrap">
+          <input type="text" id="dashboardGlobalSearch" placeholder="Search records (Case ID, name, date)…"
+                 oninput="handleDashboardSearch(this.value)"
+                 onfocus="if(this.value.trim()) handleDashboardSearch(this.value)"
+                 class="pl-9 pr-8 py-2 rounded-full border border-forest-200 bg-forest-50 text-sm text-forest-700 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400 focus:bg-white w-72 transition-all"
+                 autocomplete="off"/>
+          <span class="absolute left-3 top-2.5 text-forest-400 pointer-events-none" data-icon="search" data-icon-size="16"></span>
+          <button id="clearSearchBtn" type="button" onclick="clearDashboardSearch()" class="hidden absolute right-2.5 top-2.5 text-forest-400 hover:text-forest-600 transition-colors" title="Clear search">
+            <span data-icon="x" data-icon-size="14"></span>
+          </button>
+          
+          <!-- Live Global Search Dropdown -->
+          <div id="dashboardSearchResults" class="hidden absolute right-0 top-full mt-2 w-96 max-w-[90vw] bg-white border border-forest-100 rounded-2xl shadow-xl z-40 overflow-hidden">
+            <div class="px-4 py-3 bg-forest-50/60 border-b border-forest-50 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-forest-700" id="searchMatchCount">Search Results</span>
+              <span class="text-[11px] text-forest-400">Blotter &amp; Incidents</span>
+            </div>
+            <div id="searchResultItems" class="max-h-80 overflow-y-auto divide-y divide-forest-50"></div>
+          </div>
         </div>
         <div class="relative">
           <button onclick="toggleNotifPanel()" class="relative p-2 rounded-xl bg-forest-50 hover:bg-forest-100 text-forest-600 transition-colors">
@@ -293,12 +309,153 @@
   <script>
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
+    let dashRecentBlotter = [];
+    let dashAllBlotter = [];
+    let dashAllIncidents = [];
+
+    function renderDashboardBlotterTable(records) {
+      const tbody = document.getElementById('dashboardBlotterTable');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!records || !records.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-forest-400 text-sm">No matching blotter entries found.</td></tr>';
+        return;
+      }
+      records.forEach(r => {
+        const statusClass = r.status === 'Resolved' ? 'badge-resolved' : r.status === 'Ongoing' ? 'badge-ongoing' : 'badge-pending';
+        tbody.innerHTML += `
+          <tr class="hover:bg-forest-50/40 transition-colors">
+            <td class="font-semibold text-forest-700">${r.docket_no || r.docketNo || '—'}</td>
+            <td>${r.complainant || '—'}</td>
+            <td>${r.nature || '—'}</td>
+            <td><span class="badge ${statusClass}">${r.status || 'Pending'}</span></td>
+          </tr>`;
+      });
+    }
+
+    async function handleDashboardSearch(val) {
+      const q = (val || '').trim().toLowerCase();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      const dropdown = document.getElementById('dashboardSearchResults');
+      const resultList = document.getElementById('searchResultItems');
+      const matchCount = document.getElementById('searchMatchCount');
+
+      if (!q) {
+        if (clearBtn) clearBtn.classList.add('hidden');
+        if (dropdown) dropdown.classList.add('hidden');
+        renderDashboardBlotterTable(dashRecentBlotter);
+        return;
+      }
+
+      if (clearBtn) clearBtn.classList.remove('hidden');
+
+      // 1. Live filter the dashboard's recent blotter table in place
+      const filteredTable = dashRecentBlotter.filter(r => {
+        const docket = (r.docket_no || r.docketNo || '').toLowerCase();
+        const comp = (r.complainant || '').toLowerCase();
+        const resp = (r.respondent || '').toLowerCase();
+        const nature = (r.nature || '').toLowerCase();
+        const status = (r.status || '').toLowerCase();
+        const date = (r.date_filed || r.dateFiled || '').toLowerCase();
+        return docket.includes(q) || comp.includes(q) || resp.includes(q) || nature.includes(q) || status.includes(q) || date.includes(q);
+      });
+      renderDashboardBlotterTable(filteredTable);
+
+      // 2. Populate global live search dropdown across both Blotter & Incidents
+      if (dropdown && resultList) {
+        dropdown.classList.remove('hidden');
+
+        if (!dashAllBlotter.length || !dashAllIncidents.length) {
+          try {
+            const [bltList, incList] = await Promise.all([
+              BCApi.list('blotter').catch(() => []),
+              BCApi.list('incidents').catch(() => [])
+            ]);
+            dashAllBlotter = bltList || [];
+            dashAllIncidents = incList || [];
+          } catch (e) {}
+        }
+
+        const matchedBlotters = dashAllBlotter.filter(b => {
+          const id = (b.docket_no || b.docketNo || '').toLowerCase();
+          const comp = (b.complainant || '').toLowerCase();
+          const resp = (b.respondent || '').toLowerCase();
+          const nat = (b.nature || '').toLowerCase();
+          const date = (b.date_filed || b.dateFiled || '').toLowerCase();
+          return id.includes(q) || comp.includes(q) || resp.includes(q) || nat.includes(q) || date.includes(q);
+        }).slice(0, 5);
+
+        const matchedIncidents = dashAllIncidents.filter(i => {
+          const id = (i.report_no || i.reportNo || '').toLowerCase();
+          const rep = (i.reporter || '').toLowerCase();
+          const off = (i.officer || '').toLowerCase();
+          const cat = (i.category || '').toLowerCase();
+          const loc = (i.location || '').toLowerCase();
+          const date = (i.incident_date || i.incidentDate || '').toLowerCase();
+          return id.includes(q) || rep.includes(q) || off.includes(q) || cat.includes(q) || loc.includes(q) || date.includes(q);
+        }).slice(0, 5);
+
+        const totalMatches = matchedBlotters.length + matchedIncidents.length;
+        if (matchCount) matchCount.textContent = `${totalMatches} Result${totalMatches === 1 ? '' : 's'}`;
+
+        if (totalMatches === 0) {
+          resultList.innerHTML = `<div class="p-6 text-center text-sm text-forest-400">No records found matching "<span class="font-medium text-forest-600">${val}</span>"</div>`;
+        } else {
+          let html = '';
+          matchedBlotters.forEach(b => {
+            const dNo = b.docket_no || b.docketNo || 'BLT';
+            html += `
+              <a href="blotter.html?search=${encodeURIComponent(dNo)}"
+                 class="block px-4 py-3 hover:bg-forest-50 transition-colors">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-forest-100 text-forest-800">
+                    <span data-icon="blotter" data-icon-size="12"></span> ${dNo}
+                  </span>
+                  <span class="text-[11px] text-forest-400">${b.date_filed || b.dateFiled || ''}</span>
+                </div>
+                <div class="text-xs font-semibold text-forest-800">${b.complainant || 'Anonymous'} vs ${b.respondent || 'Unnamed'}</div>
+                <div class="text-[11px] text-forest-500 truncate mt-0.5">${b.nature || 'Blotter Entry'} • <span class="capitalize">${b.status || 'Pending'}</span></div>
+              </a>`;
+          });
+
+          matchedIncidents.forEach(inc => {
+            const rNo = inc.report_no || inc.reportNo || 'INC';
+            const prioColor = inc.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+            html += `
+              <a href="incident.html?search=${encodeURIComponent(rNo)}"
+                 class="block px-4 py-3 hover:bg-forest-50 transition-colors">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                    <span data-icon="incident" data-icon-size="12"></span> ${rNo}
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold ${prioColor}">${inc.priority || 'Normal'}</span>
+                </div>
+                <div class="text-xs font-semibold text-forest-800">${inc.category || 'Incident'} at ${inc.location || 'Location'}</div>
+                <div class="text-[11px] text-forest-500 truncate mt-0.5">Reported by: ${inc.reporter || 'Staff'} • ${inc.incident_date || inc.incidentDate || ''}</div>
+              </a>`;
+          });
+          resultList.innerHTML = html;
+        }
+      }
+    }
+
+    function clearDashboardSearch() {
+      const input = document.getElementById('dashboardGlobalSearch');
+      if (input) input.value = '';
+      handleDashboardSearch('');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('dashboardSearchWrap');
+      const dropdown = document.getElementById('dashboardSearchResults');
+      if (wrap && dropdown && !wrap.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
     (async function () {
       await requireAuth();
       refreshNotifBadge();
-      // Auto-backup check: only System Admin has system_settings, so this
-      // silently no-ops (403) for every other role — exactly the roles who
-      // shouldn't be the one triggering a database dump anyway.
       BCApi.autoBackupCheck().catch(() => {});
       try {
         const stats = await BCApi.dashboard();
@@ -314,7 +471,6 @@
         document.getElementById('statResolved').textContent = stats.resolvedCount;
         document.getElementById('statResolvedSub').textContent = stats.resolutionRate + '% resolution rate';
 
-        // Resolution rate donut (circumference = 2 * PI * r, r=52 -> 326.7)
         const circumference = 326.7;
         const pct = Math.max(0, Math.min(100, stats.resolutionRate));
         const donut = document.getElementById('resolutionDonut');
@@ -325,22 +481,8 @@
         document.getElementById('statWeekCount').textContent = stats.weekCount;
         document.getElementById('statPendingMini').textContent = stats.pendingSettlements;
 
-        // Recent blotter entries
-        const tbody = document.getElementById('dashboardBlotterTable');
-        tbody.innerHTML = '';
-        if (!stats.recentBlotter.length) {
-          tbody.innerHTML = '<tr><td colspan="4">No blotter entries yet.</td></tr>';
-        }
-        stats.recentBlotter.forEach(r => {
-          const statusClass = r.status === 'Resolved' ? 'badge-resolved' : r.status === 'Ongoing' ? 'badge-ongoing' : 'badge-pending';
-          tbody.innerHTML += `
-            <tr>
-              <td class="font-semibold text-forest-700">${r.docket_no}</td>
-              <td>${r.complainant}</td>
-              <td>${r.nature}</td>
-              <td><span class="badge ${statusClass}">${r.status}</span></td>
-            </tr>`;
-        });
+        dashRecentBlotter = stats.recentBlotter || [];
+        renderDashboardBlotterTable(dashRecentBlotter);
       } catch (err) {
         showToast('Could not load dashboard: ' + err.message, 'error');
       }
