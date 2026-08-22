@@ -14,10 +14,19 @@
 <body class="font-body bg-forest-50 min-h-screen">
 
 <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
-    <!-- Logo -->
-    <div class="px-6 py-5 border-b border-forest-700/60">
-      <div class="flex items-center gap-3">
-        <img src="logo-lockup.png" alt="BlotterCast — Barangay System" class="sidebar-brand-lockup" onerror="this.onerror=null;this.src='assets/logo-lockup.png';"/>
+    <!-- Logo Header -->
+    <div class="sidebar-header flex items-center gap-2.5 px-5 py-4 border-b border-white/10">
+      <div class="sidebar-logo-emblem flex-shrink-0">
+        <svg viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-10 w-auto">
+          <path d="M20 10h32c14 0 25 11 25 25 0 9.8-5.6 18.3-13.8 22.4C72.8 61.4 78 70.8 78 81.5c0 14.6-11.9 26.5-26.5 26.5H20V10z" stroke="#FFFFFF" stroke-width="7.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M51 22c-6.6 0-12 5.4-12 12 0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" stroke="#FFFFFF" stroke-width="5.5" fill="none"/>
+          <circle cx="51" cy="34" r="3.8" fill="#FFFFFF"/>
+          <path d="M20 86c14-3 30-10 37-25" stroke="#FFFFFF" stroke-width="7.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="sidebar-brand-group flex flex-col justify-center min-w-0">
+        <span class="sidebar-brand-title text-[23px] font-semibold text-white tracking-tight leading-none block">lotterCast</span>
+        <span class="sidebar-brand-subtitle text-[13.5px] font-medium text-[#A3E6BA] tracking-normal leading-tight block mt-0.5">Barangay System</span>
       </div>
     </div>
 
