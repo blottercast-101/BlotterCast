@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign In — BlotterCast</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -80,14 +81,14 @@
     /* Brand */
     .brand-block { margin-bottom: auto; }
     .brand-mark {
-      display: flex; align-items: flex-start; gap: 1px;
+      display: flex; align-items: center; gap: 14px;
       text-decoration: none;
     }
-    .brand-icon-img { width: 62px; height: 78px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); margin-top: 2px; }
-    .brand-textcol { display: flex; flex-direction: column; margin-top: 12px;}
+    .brand-icon-img { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); border-radius: 12px; }
+    .brand-textcol { display: flex; flex-direction: column; }
     .brand-name { font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 2.1rem; color: white; letter-spacing: -0.01em; line-height: 1; }
-    .brand-republic { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--green-pale); letter-spacing: 0.09em; margin-top: 8px; }
-    .brand-tagline { font-family: 'Quicksand', sans-serif; font-weight: 500; font-size: 0.95rem; color: rgba(255,255,255,0.55); margin-left: 3px;}
+    .brand-republic { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.75rem; color: var(--green-pale); letter-spacing: 0.09em; margin-top: 4px; }
+    .brand-tagline { font-family: 'Quicksand', sans-serif; font-weight: 500; font-size: 0.95rem; color: rgba(255,255,255,0.55); margin-top: 10px; }
 
     /* Tagline block */
     .left-tagline {
@@ -351,9 +352,9 @@
     <!-- Brand -->
     <div class="brand-block">
       <a href="index.html" class="brand-mark" role="img" aria-label="BlotterCast, Republic of the Philippines">
-        <img src="logo.png" alt="" class="brand-icon-img" aria-hidden="true"/>
+        <img src="logo.png" alt="BlotterCast" class="brand-icon-img" aria-hidden="true"/>
         <span class="brand-textcol" aria-hidden="true">
-          <span class="brand-name">lotterCast</span>
+          <span class="brand-name">BlotterCast</span>
           <span class="brand-republic">REPUBLIC OF THE PHILIPPINES</span>
         </span>
       </a>
