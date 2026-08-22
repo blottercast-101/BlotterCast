@@ -8,9 +8,9 @@ from flask import Blueprint, current_app, jsonify, request, session
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
-from ..extensions import db
-from ..models import AuditLog, User
-from ..permissions import get_security_settings, json_error, log_audit, login_required, permission_required
+from app.extensions import db
+from app.models import AuditLog, User
+from app.permissions import get_security_settings, json_error, log_audit, login_required, permission_required, role_can
 
 bp = Blueprint("users", __name__)
 
@@ -31,7 +31,6 @@ def users_router():
         if action == "captain_signature" and method == "GET":
             return _captain_signature()
 
-        from ..permissions import role_can
         if not role_can(session.get("role", ""), "manage_users"):
             return json_error("You do not have permission to perform this action.", 403)
 
@@ -69,6 +68,9 @@ def _get_target_user_id():
         return None
 
 
+PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
+
+
 def _captain_signature():
     row = User.query.filter_by(role="Barangay Captain", status="Active").order_by(User.id).first()
     return jsonify({
@@ -79,9 +81,16 @@ def _captain_signature():
 
 def _list():
     rows = User.query.order_by(User.full_name).all()
+    # Ensure protected accounts are always Active
+    for u in rows:
+        if u.role in PROTECTED_ROLES and u.status != "Active":
+            u.status = "Active"
+            db.session.commit()
+
     return jsonify([{
         "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
         "contact_no": u.contact_no, "role": u.role, "status": u.status,
+        "is_protected": u.role in PROTECTED_ROLES,
         "signature_path": u.signature_path,
         # Naive datetimes from utcnow() have no offset — appending "Z" makes
         # the value unambiguous UTC so the browser doesn't guess it's local
@@ -149,7 +158,10 @@ def _update():
     user.email = email
     user.contact_no = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     user.role = d.get("role") or user.role
-    user.status = d.get("status") or user.status
+    if user.role in PROTECTED_ROLES:
+        user.status = "Active"
+    else:
+        user.status = d.get("status") or user.status
 
     if d.get("password"):
         min_len = get_security_settings()["min_password_length"]
@@ -172,6 +184,8 @@ def _toggle_status():
     user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
+    if user.role in PROTECTED_ROLES:
+        return json_error(f"{user.role} accounts are protected and cannot be suspended.", 400)
     user.status = "Suspended" if user.status == "Active" else "Active"
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"{user.username} set to {user.status}")
@@ -185,11 +199,14 @@ def _delete():
     if session.get("user_id") == uid:
         return json_error("You cannot delete your own account while logged in")
     user = db.session.get(User, uid)
-    if user:
-        username = user.username
-        db.session.delete(user)
-        db.session.commit()
-        log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
+    if not user:
+        return json_error("User not found", 404)
+    if user.role in PROTECTED_ROLES:
+        return json_error(f"{user.role} accounts are protected and cannot be deleted.", 400)
+    username = user.username
+    db.session.delete(user)
+    db.session.commit()
+    log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
     return jsonify({"ok": True})
 
 

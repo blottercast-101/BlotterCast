@@ -287,9 +287,11 @@ let usersData = []; let usersPage = 1; const USERS_ROWS = 8;
 let editUserId = null;
 
 function mapUser(u) {
+  const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
   return {
     id: Number(u.id), name: u.full_name, username: u.username, email: u.email || '',
-    contact: u.contact_no || '', role: u.role, status: u.status, signaturePath: u.signature_path || null,
+    contact: u.contact_no || '', role: u.role, status: isProtected ? 'Active' : u.status,
+    is_protected: isProtected, signaturePath: u.signature_path || null,
     lastLogin: bcFormatTimestamp(u.last_login),
   };
 }
@@ -334,7 +336,9 @@ function renderUsers() {
   const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('usersTableBody').innerHTML = pageRows.length === 0
     ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No users match your filters.</td></tr>'
-    : pageRows.map(u=>`
+    : pageRows.map(u => {
+      const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
+      return `
     <tr>
       <td>
         <div class="flex items-center gap-3">
@@ -349,13 +353,17 @@ function renderUsers() {
       <td class="text-xs text-forest-400">${u.lastLogin}</td>
       <td><span class="badge ${u.status==='Active'?'badge-resolved':u.status==='Suspended'?'badge-not-complied':'badge-pending'}">${u.status}</span></td>
       <td>
-        <div class="row-actions">
+        <div class="row-actions items-center">
           <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> Edit</button>
-          <button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Active'?'Suspend':'Activate'}</button>
-          <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+          ${isProtected
+            ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> Protected</span>`
+            : `<button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Active'?'Suspend':'Activate'}</button>
+               <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
+          }
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
   document.getElementById('usersPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }
@@ -413,6 +421,16 @@ function onRoleChange(role) {
   if (!editUserId) {
     document.getElementById('uf_password').value = role ? generateTempPasswordForRole(role) : '';
   }
+  const isProtectedRole = role === 'System Admin' || role === 'Barangay Captain';
+  const statusEl = document.getElementById('uf_status');
+  if (editUserId && isProtectedRole) {
+    statusEl.value = 'Active';
+    statusEl.disabled = true;
+    document.getElementById('uf_status_wrap').classList.add('opacity-60');
+  } else if (editUserId) {
+    statusEl.disabled = false;
+    document.getElementById('uf_status_wrap').classList.remove('opacity-60');
+  }
 }
 
 function openAddUser() {
@@ -421,7 +439,10 @@ function openAddUser() {
   document.getElementById('userForm').reset();
   resetFormDropdowns('userForm');
   document.getElementById('uf_username').disabled = false;
-  document.getElementById('uf_status').value = 'Active';
+  const statusEl = document.getElementById('uf_status');
+  statusEl.value = 'Active';
+  statusEl.disabled = false;
+  document.getElementById('uf_status_wrap').classList.remove('opacity-60');
   document.getElementById('uf_status_wrap').classList.add('hidden');
   document.getElementById('uf_role_wrap').classList.add('col-span-2');
   document.getElementById('uf_password_wrap').classList.remove('hidden');
@@ -433,6 +454,7 @@ function openAddUser() {
 function editUser(id) {
   const u = usersData.find(x => x.id === id);
   editUserId = id;
+  const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
   document.getElementById('userModalTitle').textContent = 'Edit User';
   document.getElementById('uf_name').value = u.name;
   document.getElementById('uf_username').value = u.username;
@@ -440,7 +462,16 @@ function editUser(id) {
   document.getElementById('uf_email').value = u.email;
   document.getElementById('uf_contact').value = u.contact || '';
   document.getElementById('uf_role').value = u.role;
-  document.getElementById('uf_status').value = u.status;
+  
+  const statusEl = document.getElementById('uf_status');
+  statusEl.value = isProtected ? 'Active' : u.status;
+  if (isProtected) {
+    statusEl.disabled = true;
+    document.getElementById('uf_status_wrap').classList.add('opacity-60');
+  } else {
+    statusEl.disabled = false;
+    document.getElementById('uf_status_wrap').classList.remove('opacity-60');
+  }
   document.getElementById('uf_status_wrap').classList.remove('hidden');
   document.getElementById('uf_role_wrap').classList.remove('col-span-2');
   
@@ -506,13 +537,16 @@ async function removeSignatureNow() {
 }
 
 async function saveUser() {
+  const statusEl = document.getElementById('uf_status');
+  const roleVal = document.getElementById('uf_role').value;
+  const isProtectedRole = roleVal === 'System Admin' || roleVal === 'Barangay Captain';
   const vals = {
     name: document.getElementById('uf_name').value.trim(),
     username: document.getElementById('uf_username').value.trim(),
     email: document.getElementById('uf_email').value.trim(),
     contact: document.getElementById('uf_contact').value.trim(),
-    role: document.getElementById('uf_role').value,
-    status: document.getElementById('uf_status').value,
+    role: roleVal,
+    status: isProtectedRole || statusEl.disabled ? 'Active' : statusEl.value,
     password: document.getElementById('uf_password').value.trim(),
   };
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
@@ -544,6 +578,11 @@ async function saveUser() {
   }
 }
 async function toggleStatus(id) {
+  const u = usersData.find(x => x.id === id);
+  if (u && (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected)) {
+    showToast('System Admin and Barangay Captain accounts are protected and cannot be suspended.', 'error');
+    return;
+  }
   try {
     const result = await BCApi.toggleUserStatus(id);
     showToast(`User ${result.status.toLowerCase()}.`);
@@ -554,6 +593,11 @@ async function toggleStatus(id) {
   }
 }
 async function removeUser(id) {
+  const u = usersData.find(x => x.id === id);
+  if (u && (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected)) {
+    showToast('System Admin and Barangay Captain accounts are protected and cannot be deleted.', 'error');
+    return;
+  }
   if (!(await bcConfirm('Permanently delete this user account? This cannot be undone.', { title: 'Delete User Account', okLabel: 'Delete', danger: true }))) return;
   try {
     await BCApi.deleteUser(id);

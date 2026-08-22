@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from .extensions import db
+from app.extensions import db
 
 
 def now():
@@ -64,25 +64,36 @@ class User(db.Model):
         created_at=None,
         **kwargs
     ):
-        super().__init__(
-            username=username,
-            password=password,
-            full_name=full_name,
-            email=email,
-            contact_no=contact_no,
-            role=role,
-            status=status,
-            mfa_enabled=mfa_enabled,
-            google_id=google_id,
-            auth_provider=auth_provider,
-            signature_path=signature_path,
-            last_login=last_login,
-            failed_attempts=failed_attempts,
-            locked_until=locked_until,
-            password_changed_at=password_changed_at,
-            created_at=created_at,
-            **kwargs
-        )
+        super().__init__()
+        if username is not None:
+            self.username = username
+        if password is not None:
+            self.password = password
+        if full_name is not None:
+            self.full_name = full_name
+        if email is not None:
+            self.email = email
+        if contact_no is not None:
+            self.contact_no = contact_no
+        self.role = role
+        self.status = status
+        self.mfa_enabled = mfa_enabled
+        if google_id is not None:
+            self.google_id = google_id
+        self.auth_provider = auth_provider
+        if signature_path is not None:
+            self.signature_path = signature_path
+        if last_login is not None:
+            self.last_login = last_login
+        self.failed_attempts = failed_attempts
+        if locked_until is not None:
+            self.locked_until = locked_until
+        if password_changed_at is not None:
+            self.password_changed_at = password_changed_at
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class OtpCode(db.Model):
@@ -107,16 +118,21 @@ class OtpCode(db.Model):
         created_at=None,
         **kwargs
     ):
-        super().__init__(
-            user_id=user_id,
-            code_hash=code_hash,
-            purpose=purpose,
-            expires_at=expires_at,
-            attempts=attempts,
-            consumed_at=consumed_at,
-            created_at=created_at,
-            **kwargs
-        )
+        super().__init__()
+        if user_id is not None:
+            self.user_id = user_id
+        if code_hash is not None:
+            self.code_hash = code_hash
+        self.purpose = purpose
+        if expires_at is not None:
+            self.expires_at = expires_at
+        self.attempts = attempts
+        if consumed_at is not None:
+            self.consumed_at = consumed_at
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class AuditLog(db.Model):
@@ -129,7 +145,19 @@ class AuditLog(db.Model):
     created_at = db.Column(db.DateTime, default=now, index=True)
 
     def __init__(self, username=None, action=None, module=None, details=None, created_at=None, **kwargs):
-        super().__init__(username=username, action=action, module=module, details=details, created_at=created_at, **kwargs)
+        super().__init__()
+        if username is not None:
+            self.username = username
+        if action is not None:
+            self.action = action
+        if module is not None:
+            self.module = module
+        if details is not None:
+            self.details = details
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class SystemSetting(db.Model):

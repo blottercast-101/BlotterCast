@@ -8,10 +8,10 @@ from flask import Blueprint, current_app, jsonify, request, session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func
 
-from ..email import send_otp_email
-from ..extensions import db
-from ..models import OtpCode, User
-from ..permissions import get_security_settings, json_error, log_audit, login_required
+from app.email import send_otp_email
+from app.extensions import db
+from app.models import OtpCode, User
+from app.permissions import get_security_settings, json_error, log_audit, login_required
 
 bp = Blueprint("auth", __name__)
 
