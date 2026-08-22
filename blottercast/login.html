@@ -619,7 +619,7 @@
     try {
       const result = await BCApi.login(username, password);
       btn.classList.remove('loading');
-      if (result.mfaRequired) {
+      if (result.mfaRequired || result.mfa_required) {
         showOtpStep(result);
       } else {
         // 2FA is off for this account — password verification alone was
@@ -926,7 +926,7 @@
     alert.classList.remove('show');
     try {
       const result = await BCApi.googleLogin(response.credential);
-      if (result.mfaRequired) {
+      if (result.mfaRequired || result.mfa_required) {
         showOtpStep(result);
       } else {
         if (resendTimer) clearInterval(resendTimer);

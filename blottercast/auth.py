@@ -243,8 +243,11 @@ def _google_login():
         return jsonify({
             "ok": True,
             "mfaRequired": True,
+            "mfa_required": True,
+            "user_id": user.id,
             "pre_auth_token": pre_auth_token,
             "maskedEmail": _mask_email(user.email),
+            "masked_email": _mask_email(user.email),
             "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
             "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
         })
@@ -345,9 +348,13 @@ def _login():
     log_audit(user.username, "Login", "System", "Password verified, MFA code sent")
 
     return jsonify({
-        "ok": True, "mfaRequired": True,
+        "ok": True,
+        "mfaRequired": True,
+        "mfa_required": True,
+        "user_id": user.id,
         "pre_auth_token": pre_auth_token,
         "maskedEmail": _mask_email(user.email),
+        "masked_email": _mask_email(user.email),
         "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
         "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
     })
