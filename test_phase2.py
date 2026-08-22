@@ -13,11 +13,7 @@ r = client.post("/api/documents.php?type=census", json={
     "lastName": "Cruz", "firstName": "Juan", "dob": "1990-05-01", "sex": "Male",
     "address": "123 Rizal St", "householdNo": "HH-01",
 })
-if r.status_code == 201:
-    resident_id = r.get_json()["id"]
-else:
-    list_r = client.get("/api/documents.php?type=census")
-    resident_id = list_r.get_json()[0]["id"]
+resident_id = r.get_json()["id"]
 
 for i in range(3):
     client.post("/api/records.php?type=incidents", json={

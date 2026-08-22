@@ -20,29 +20,23 @@ already exist in a deployed database.
 
 from sqlalchemy import inspect, text
 
-# (table, column, SQL type, DEFAULT literal, is_not_null)
+# (table, column, SQL type, DEFAULT literal for existing rows)
 ADDITIVE_COLUMNS = [
-    ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
-    ("users", "google_id", "VARCHAR(100)", "NULL", False),
-    ("users", "auth_provider", "VARCHAR(30)", "'local'", True),
-    ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
+    ("users", "mfa_enabled", "BOOLEAN", "TRUE"),
+    ("blotter_records", "archived", "BOOLEAN", "FALSE"),
 ]
 
 
 def ensure_columns(db):
     inspector = inspect(db.engine)
     with db.engine.begin() as conn:
-        for item in ADDITIVE_COLUMNS:
-            table, column, coltype, default = item[0], item[1], item[2], item[3]
-            is_not_null = item[4] if len(item) > 4 else True
+        for table, column, coltype, default in ADDITIVE_COLUMNS:
             if not inspector.has_table(table):
                 continue  # db.create_all() creates the whole table, column included
             existing = {c["name"] for c in inspector.get_columns(table)}
             if column in existing:
                 continue
-            if is_not_null:
-                sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype} NOT NULL DEFAULT {default}"
-            else:
-                sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
-            conn.execute(text(sql))
+            conn.execute(text(
+                f"ALTER TABLE {table} ADD COLUMN {column} {coltype} NOT NULL DEFAULT {default}"
+            ))
             print(f"  migrated: added {table}.{column}")
