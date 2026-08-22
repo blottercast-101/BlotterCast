@@ -121,7 +121,8 @@ def _census():
     method = request.method
 
     if method == "GET":
-        rows = CensusRecord.query.order_by(CensusRecord.last_name, CensusRecord.first_name).all()
+        show_archived = request.args.get("archived") == "1"
+        rows = CensusRecord.query.filter_by(archived=show_archived).order_by(CensusRecord.last_name, CensusRecord.first_name).all()
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":
@@ -161,7 +162,7 @@ def _census():
             resident_no=resident_no, last_name=last_name, first_name=first_name, middle_name=middle_name,
             date_of_birth=dob, sex=sex, civil_status=civil_status, nationality=nationality, zone_id=zone,
             address=address, household_no=household, contact_no=contact, voter_status=voter,
-            occupation=occupation, status=status,
+            occupation=occupation, status=status, archived=False,
         )
         db.session.add(record)
         db.session.commit()
@@ -175,6 +176,13 @@ def _census():
         record = CensusRecord.query.get(rid)
         if not record:
             return json_error("Resident not found.", 404)
+
+        if request.args.get("restore") == "1":
+            record.archived = False
+            db.session.commit()
+            log_audit(session.get("username"), "Restored", "Census", f"Resident record #{rid} restored to active list")
+            return jsonify({"ok": True})
+
         d = request.get_json(silent=True) or {}
         dob = d.get("dob") or None
         last_name, first_name, middle_name = d.get("lastName", ""), d.get("firstName", ""), d.get("middleName", "")
@@ -224,11 +232,12 @@ def _census():
         if not rid:
             return json_error("id required")
         record = CensusRecord.query.get(rid)
-        if record:
-            db.session.delete(record)
-            db.session.commit()
-        log_audit(session.get("username"), "Deleted", "Census", f"Resident record #{rid} deleted")
-        return jsonify({"ok": True})
+        if not record:
+            return json_error("Resident not found.", 404)
+        record.archived = True
+        db.session.commit()
+        log_audit(session.get("username"), "Archived", "Census", f"Resident record #{rid} archived")
+        return jsonify({"ok": True, "archived": True})
 
 
 def _get_resident_or_404(resident_id, not_found_msg):

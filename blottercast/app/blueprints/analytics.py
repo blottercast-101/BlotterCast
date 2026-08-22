@@ -35,12 +35,12 @@ def public_stats_router():
 
 
 def _public_stats():
-    # Archived blotter records are kept for recordkeeping but excluded from
+    # Archived records are kept for recordkeeping but excluded from
     # every "active" count on these pages — same rule as the Blotter Records
     # module itself.
     blotter_count = BlotterRecord.query.filter_by(archived=False).count()
-    incident_count = Incident.query.count()
-    settlement_count = Settlement.query.count()
+    incident_count = Incident.query.filter_by(archived=False).count()
+    settlement_count = Settlement.query.filter_by(archived=False).count()
     overall_records = blotter_count + incident_count + settlement_count
     zones_monitored = Zone.query.count()
 
@@ -102,17 +102,17 @@ def _zones():
 
 
 def _dashboard():
-    # Archived blotter records stay in the database but drop out of every
+    # Archived records stay in the database but drop out of every
     # active-records view/stat, same as the Blotter Records module.
     blotter_count = BlotterRecord.query.filter_by(archived=False).count()
-    incident_count = Incident.query.count()
+    incident_count = Incident.query.filter_by(archived=False).count()
     week_ago = datetime.utcnow().date() - timedelta(days=7)
-    week_count = Incident.query.filter(Incident.incident_date >= week_ago).count()
-    pending_stl = Settlement.query.filter_by(status="Pending").count()
+    week_count = Incident.query.filter(Incident.incident_date >= week_ago, Incident.archived == False).count()
+    pending_stl = Settlement.query.filter_by(status="Pending", archived=False).count()
     # Resolution rate spans every applicable case/record module, not just
     # incidents — a blotter case can be "Resolved" independently of any
     # linked incident report.
-    resolved_incidents = Incident.query.filter(Incident.status.in_(["Resolved", "Closed"])).count()
+    resolved_incidents = Incident.query.filter(Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False).count()
     resolved_blotters = BlotterRecord.query.filter_by(status="Resolved", archived=False).count()
     resolvable_total = incident_count + blotter_count
     resolved_total = resolved_incidents + resolved_blotters
@@ -131,7 +131,7 @@ def _dashboard():
 
 @permission_required("view_analytics")
 def _heatmap_impl():
-    q = Incident.query
+    q = Incident.query.filter_by(archived=False)
     if request.args.get("from"):
         q = q.filter(Incident.incident_date >= request.args["from"])
     if request.args.get("to"):
@@ -156,7 +156,9 @@ def _heatmap():
 def _trends_impl():
     years = [
         r[0] for r in
-        db.session.query(extract("year", Incident.incident_date)).distinct()
+        db.session.query(extract("year", Incident.incident_date))
+        .filter(Incident.archived == False)
+        .distinct()
         .order_by(extract("year", Incident.incident_date).desc()).all()
     ]
     years = [int(y) for y in years if y is not None]
@@ -164,16 +166,12 @@ def _trends_impl():
 
     monthly_rows = (
         db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
-        .filter(extract("year", Incident.incident_date) == year).group_by("m").order_by("m").all()
-    )
-    dow_rows = (
-        # SQLite/Postgres both support strftime('%w')/EXTRACT(dow) differently;
-        # use Python-side grouping to stay portable across both backends.
-        None
+        .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
+        .group_by("m").order_by("m").all()
     )
     # Portable day-of-week aggregation: pull dates for the year, bucket in Python.
     dates = [d[0] for d in db.session.query(Incident.incident_date).filter(
-        extract("year", Incident.incident_date) == year
+        extract("year", Incident.incident_date) == year, Incident.archived == False
     ).all()]
     dow_counts = {}
     for d in dates:
@@ -184,14 +182,14 @@ def _trends_impl():
 
     cat_rows = (
         db.session.query(Incident.category, func.count().label("c"))
-        .filter(extract("year", Incident.incident_date) == year)
+        .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
         .group_by(Incident.category).order_by(func.count().desc()).all()
     )
 
-    total_count = Incident.query.filter(extract("year", Incident.incident_date) == year).count()
-    prev_count = Incident.query.filter(extract("year", Incident.incident_date) == year - 1).count()
+    total_count = Incident.query.filter(extract("year", Incident.incident_date) == year, Incident.archived == False).count()
+    prev_count = Incident.query.filter(extract("year", Incident.incident_date) == year - 1, Incident.archived == False).count()
     resolved_count = Incident.query.filter(
-        extract("year", Incident.incident_date) == year, Incident.status.in_(["Resolved", "Closed"])
+        extract("year", Incident.incident_date) == year, Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False
     ).count()
 
     return jsonify({

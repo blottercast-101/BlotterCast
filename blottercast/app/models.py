@@ -156,6 +156,7 @@ class Incident(db.Model):
     officer = db.Column(db.String(100))
     priority = db.Column(db.String(10), nullable=False, default="Medium")
     status = db.Column(db.String(30), nullable=False, default="Under Investigation")
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
@@ -170,6 +171,7 @@ class Incident(db.Model):
             "category": self.category, "description": self.description,
             "reporter": self.reporter, "officer": self.officer,
             "priority": self.priority, "status": self.status,
+            "archived": self.archived,
         }
 
 
@@ -221,6 +223,7 @@ class Settlement(db.Model):
     main_point = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default="Pending")
     remarks = db.Column(db.String(255))
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
@@ -244,6 +247,7 @@ class Settlement(db.Model):
             "respondent": b.respondent if b else None,
             "respondent_addr": b.respondent_addr if b else None,
             "blotter_case_type": b.case_type if b else None,
+            "archived": self.archived,
         }
 
 
@@ -265,6 +269,7 @@ class CensusRecord(db.Model):
     voter_status = db.Column(db.String(30), nullable=False, default="Not Registered")
     occupation = db.Column(db.String(100))
     status = db.Column(db.String(20), nullable=False, default="Active")
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
@@ -278,6 +283,7 @@ class CensusRecord(db.Model):
             "zone_id": self.zone_id, "address": self.address, "household_no": self.household_no,
             "contact_no": self.contact_no, "voter_status": self.voter_status,
             "occupation": self.occupation, "status": self.status,
+            "archived": self.archived,
         }
 
 

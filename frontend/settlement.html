@@ -153,7 +153,10 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="settlement" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Settlement Records</h2>
+        <h2 class="font-display text-lg text-forest-800" id="stlTitle">Settlement Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
+          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        </button>
       </div>
 
       <!-- Filter Bar -->
@@ -293,11 +296,27 @@
     };
   }
 
+  let viewingArchived = false;
+
   async function loadSettlements() {
-    const raw = await BCApi.list('settlements');
+    const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
     settlementData = raw.map(mapSettlement);
     updateStlSummary();
     renderSettlements();
+  }
+
+  async function toggleArchivedView() {
+    viewingArchived = !viewingArchived;
+    stlPage = 1;
+    document.getElementById('stlTitle').textContent = viewingArchived ? 'Archived Settlement Records' : 'Settlement Records';
+    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
+      ? '<span data-icon="settlement" data-icon-size="14"></span> Back to Active'
+      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    try {
+      await loadSettlements();
+    } catch (err) {
+      showToast('Could not load records: ' + err.message, 'error');
+    }
   }
 
   let blotterOptions = []; // cases available to attach a new settlement to
@@ -427,8 +446,12 @@
           <td>
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
+              ${viewingArchived ? `
+              <button onclick="restoreSettlement(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+              ` : `
               <button onclick="editSettlement(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="deleteSettlement(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+              <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              `}
             </div>
           </td>
         </tr>`).join('');
@@ -458,20 +481,20 @@
   }
 
   function editSettlement(id) {
-    const r=settlementData.find(x=>x.id===id); stlEditId=id;
-    document.getElementById('stlModalTitle').textContent='Edit Settlement Record';
-    // The blotter link is fixed at creation time — show it read-only.
+    const r = settlementData.find(x => x.id === id);
+    stlEditId = id;
+    document.getElementById('stlModalTitle').textContent = 'Edit Settlement Record';
     document.getElementById('sf_blotter_picker_wrap').classList.add('hidden');
-    document.getElementById('sf_caseNo').value=r.caseNo;
-    document.getElementById('sf_caseTitle').value=r.caseTitle||'';
-    document.getElementById('sf_nature_display').value=r.nature;
-    document.getElementById('sf_dateConfrontation').value=r.dateConfrontation||'';
-    document.getElementById('sf_actionTaken').value=r.actionTaken||'';
-    document.getElementById('sf_dateSettlement').value=r.dateSettlement||'';
-    document.getElementById('sf_dateExecution').value=r.dateExecution||'';
-    document.getElementById('sf_mainPoint').value=r.mainPoint||'';
-    document.getElementById('sf_status').value=r.status;
-    document.getElementById('sf_remarks').value=r.remarks||'';
+    document.getElementById('sf_caseNo').value = r.caseNo;
+    document.getElementById('sf_caseTitle').value = r.caseTitle || '';
+    document.getElementById('sf_nature_display').value = (r.nature || '') + (r.complaintTitle ? ' — ' + r.complaintTitle : '');
+    document.getElementById('sf_dateConfrontation').value = r.dateConfrontation || '';
+    document.getElementById('sf_actionTaken').value = r.actionTaken || '';
+    document.getElementById('sf_dateSettlement').value = r.dateSettlement || '';
+    document.getElementById('sf_dateExecution').value = r.dateExecution || '';
+    document.getElementById('sf_mainPoint').value = r.mainPoint || '';
+    document.getElementById('sf_status').value = r.status;
+    document.getElementById('sf_remarks').value = r.remarks || '';
     openModal('settlementModal');
   }
 
@@ -547,11 +570,22 @@
     }
   }
 
-  async function deleteSettlement(id) {
-    if (!(await bcConfirm('Delete this settlement record? This cannot be undone.', { title: 'Delete Settlement Record', okLabel: 'Delete', danger: true }))) return;
+  async function archiveSettlement(id) {
+    if (!(await bcConfirm('Archive this settlement record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('settlements', id);
-      showToast('Record deleted.');
+      showToast('Settlement record archived.');
+      await loadSettlements();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function restoreSettlement(id) {
+    if (!(await bcConfirm('Restore this settlement record to the active list?', { title: 'Restore Settlement Record', okLabel: 'Restore' }))) return;
+    try {
+      await BCApi.restore('settlements', id);
+      showToast('Settlement record restored to active list.');
       await loadSettlements();
     } catch (err) {
       showToast(err.message, 'error');

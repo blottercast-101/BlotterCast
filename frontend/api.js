@@ -204,7 +204,15 @@ const BCApi = {
   notifMarkAllRead() { return this._fetch(`${BC_API}/api/notifications.php?action=mark_all_read`, { method: 'POST' }); },
 
   // ---- census / clearance / indigency (record & monitor only) ----
-  docList(type) { return this._fetch(`${BC_API}/api/documents.php?type=${type}`); },
+  docList(type, params = {}) {
+    const qs = new URLSearchParams({ type, ...params }).toString();
+    return this._fetch(`${BC_API}/api/documents.php?${qs}`);
+  },
+  docRestore(type, id) {
+    return this._fetch(`${BC_API}/api/documents.php?type=${type}&id=${id}&restore=1`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+  },
   checkBlotterRecords(lastName, firstName, residentId) {
     return this._fetch(`${BC_API}/api/documents.php?type=blotter_check&lastName=${encodeURIComponent(lastName)}&firstName=${encodeURIComponent(firstName)}&residentId=${encodeURIComponent(residentId || '')}`);
   },

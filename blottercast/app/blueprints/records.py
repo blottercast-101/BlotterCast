@@ -74,8 +74,8 @@ def _incidents():
     if method == "GET":
         if request.args.get("peek"):
             return jsonify({"seqNo": next_seq_no(Incident, "report_no", "INC", 4)})
-
-        q = Incident.query
+        show_archived = request.args.get("archived") == "1"
+        q = Incident.query.filter_by(archived=show_archived)
         if request.args.get("from"):
             q = q.filter(Incident.incident_date >= request.args["from"])
         if request.args.get("to"):
@@ -106,6 +106,7 @@ def _incidents():
             category=d.get("category") or "Other", description=d.get("description", ""),
             reporter=d.get("reporter", ""), officer=d.get("officer", ""),
             priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
+            archived=False,
         )
         db.session.add(incident)
         db.session.flush()
@@ -132,6 +133,12 @@ def _incidents():
         incident = Incident.query.get(rid)
         if not incident:
             return json_error("Not found", 404)
+
+        if request.args.get("restore") == "1":
+            incident.archived = False
+            db.session.commit()
+            return jsonify({"ok": True})
+
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
         lat_def, lng_def = zone_coords(zone_id)
@@ -173,10 +180,11 @@ def _incidents():
         if not rid:
             return json_error("id required")
         incident = Incident.query.get(rid)
-        if incident:
-            db.session.delete(incident)
-            db.session.commit()
-        return jsonify({"ok": True})
+        if not incident:
+            return json_error("Not found", 404)
+        incident.archived = True
+        db.session.commit()
+        return jsonify({"ok": True, "archived": True})
 
 
 # ---------------- BLOTTER ----------------
@@ -318,7 +326,12 @@ def _settlements():
     if method == "GET":
         if request.args.get("peek"):
             return jsonify({"seqNo": next_seq_no(Settlement, "case_no", "STL")})
-        rows = Settlement.query.order_by(Settlement.date_filed.desc(), Settlement.id.desc()).all()
+        show_archived = request.args.get("archived") == "1"
+        rows = (
+            Settlement.query.filter_by(archived=show_archived)
+            .order_by(Settlement.date_filed.desc(), Settlement.id.desc())
+            .all()
+        )
         return jsonify([r.to_dict() for r in rows])
 
     if method == "POST":
@@ -335,9 +348,10 @@ def _settlements():
             blotter_id=blotter_id, case_no=case_no,
             case_title=f"{b.complainant} vs. {b.respondent}", complaint_title=b.nature,
             nature="Criminal" if b.case_type == "CRIM" else "Civil", date_filed=b.date_filed,
-            date_confrontation=d.get("dateConfrontation") or None, action_taken=d.get("actionTaken", ""),
-            date_settlement=d.get("dateSettlement") or None, date_execution=d.get("dateExecution") or None,
+            date_confrontation=parse_date(d.get("dateConfrontation")) or None, action_taken=d.get("actionTaken", ""),
+            date_settlement=parse_date(d.get("dateSettlement")) or None, date_execution=parse_date(d.get("dateExecution")) or None,
             main_point=d.get("mainPoint", ""), status=d.get("status") or "Pending", remarks=d.get("remarks", ""),
+            archived=False,
         )
         db.session.add(settlement)
         db.session.commit()
@@ -350,11 +364,17 @@ def _settlements():
         settlement = Settlement.query.get(rid)
         if not settlement:
             return json_error("Not found", 404)
+
+        if request.args.get("restore") == "1":
+            settlement.archived = False
+            db.session.commit()
+            return jsonify({"ok": True})
+
         d = request.get_json(silent=True) or {}
-        settlement.date_confrontation = d.get("dateConfrontation") or None
+        settlement.date_confrontation = parse_date(d.get("dateConfrontation")) or None
         settlement.action_taken = d.get("actionTaken", "")
-        settlement.date_settlement = d.get("dateSettlement") or None
-        settlement.date_execution = d.get("dateExecution") or None
+        settlement.date_settlement = parse_date(d.get("dateSettlement")) or None
+        settlement.date_execution = parse_date(d.get("dateExecution")) or None
         settlement.main_point = d.get("mainPoint", "")
         settlement.status = d.get("status") or "Pending"
         settlement.remarks = d.get("remarks", "")
@@ -366,7 +386,8 @@ def _settlements():
         if not rid:
             return json_error("id required")
         settlement = Settlement.query.get(rid)
-        if settlement:
-            db.session.delete(settlement)
-            db.session.commit()
-        return jsonify({"ok": True})
+        if not settlement:
+            return json_error("Not found", 404)
+        settlement.archived = True
+        db.session.commit()
+        return jsonify({"ok": True, "archived": True})

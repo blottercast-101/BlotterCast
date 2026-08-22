@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Incident Reports — Barangay System</title>
-  <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
@@ -150,7 +151,10 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="incident" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Incident Records</h2>
+        <h2 class="font-display text-lg text-forest-800" id="incTitle">Incident Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
+          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        </button>
       </div>
 
       <!-- Filter Bar -->
@@ -309,11 +313,27 @@
     };
   }
 
+  let viewingArchived = false;
+
   async function loadIncidents() {
-    const raw = await BCApi.list('incidents');
+    const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
     incidentData = raw.map(mapIncident);
     updateSummary();
     renderIncidents();
+  }
+
+  async function toggleArchivedView() {
+    viewingArchived = !viewingArchived;
+    incPage = 1;
+    document.getElementById('incTitle').textContent = viewingArchived ? 'Archived Incident Reports' : 'Incident Records';
+    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
+      ? '<span data-icon="incident" data-icon-size="14"></span> Back to Active'
+      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    try {
+      await loadIncidents();
+    } catch (err) {
+      showToast('Could not load records: ' + err.message, 'error');
+    }
   }
 
   function priorityClass(p) { return p==='High'?'priority-high':p==='Medium'?'priority-medium':'priority-low'; }
@@ -368,8 +388,12 @@
           <td>
             <div class="row-actions">
               <button onclick="viewIncident(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
+              ${viewingArchived ? `
+              <button onclick="restoreIncident(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+              ` : `
               <button onclick="editIncident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="deleteIncident(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+              <button onclick="archiveIncident(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              `}
             </div>
           </td>
         </tr>`).join('');
@@ -470,11 +494,22 @@
     }
   }
 
-  async function deleteIncident(id) {
-    if (!(await bcConfirm('Delete this incident report? This cannot be undone.', { title: 'Delete Incident Report', okLabel: 'Delete', danger: true }))) return;
+  async function archiveIncident(id) {
+    if (!(await bcConfirm('Archive this incident report? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Incident Report', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('incidents', id);
-      showToast('Report deleted.');
+      showToast('Incident report archived.');
+      await loadIncidents();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function restoreIncident(id) {
+    if (!(await bcConfirm('Restore this incident report to the active list?', { title: 'Restore Incident Report', okLabel: 'Restore' }))) return;
+    try {
+      await BCApi.restore('incidents', id);
+      showToast('Incident report restored.');
       await loadIncidents();
     } catch (err) {
       showToast(err.message, 'error');

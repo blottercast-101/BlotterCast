@@ -1,0 +1,203 @@
+import unittest
+from app import create_app
+from app.config import Config
+from app.extensions import db
+from app.models import Incident, Settlement, CensusRecord, BlotterRecord, Zone, User
+from datetime import datetime, date, time
+
+
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SECRET_KEY = "test-secret"
+    WTF_CSRF_ENABLED = False
+
+
+class TestArchivalSystems(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.client = self.app.test_client()
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        db.create_all()
+
+        z1 = Zone(zone_id="Zone 1", label="Zone 1", lat=14.0, lng=121.0, weight=1.0)
+        db.session.add(z1)
+        user = User(
+            username="admin",
+            email="admin@example.com",
+            full_name="Admin User",
+            role="Admin",
+            status="Active",
+            password="test-password",
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.ctx.pop()
+
+    def login_as(self, role="System Admin", username="admin"):
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 1
+            sess["username"] = username
+            sess["role"] = role
+
+    def test_incident_archival_and_restore(self):
+        self.login_as()
+        # 1. Create incident
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "date": "2026-08-20",
+            "timeReported": "10:30:00",
+            "zone": "Zone 1",
+            "location": "Main St",
+            "category": "Theft",
+            "priority": "Medium",
+            "description": "Stolen bike",
+            "reporter": "Juan Cruz",
+            "officer": "Officer Santos",
+            "status": "Under Investigation"
+        })
+        self.assertEqual(res.status_code, 201)
+        inc_id = res.get_json()["id"]
+
+        # 2. Check in active list
+        res = self.client.get("/api/records.php?type=incidents")
+        self.assertEqual(res.status_code, 200)
+        records = res.get_json()
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["id"], inc_id)
+
+        # 3. Check in archived list (should be empty)
+        res = self.client.get("/api/records.php?type=incidents&archived=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.get_json()), 0)
+
+        # 4. Soft-delete / Archive
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("archived"))
+
+        # 5. Check active list (now empty)
+        res = self.client.get("/api/records.php?type=incidents")
+        self.assertEqual(len(res.get_json()), 0)
+
+        # 6. Check archived list (now has 1)
+        res = self.client.get("/api/records.php?type=incidents&archived=1")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], inc_id)
+
+        # 7. Restore
+        res = self.client.put(f"/api/records.php?type=incidents&id={inc_id}&restore=1", json={})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("ok"))
+
+        # 8. Check active list (restored)
+        res = self.client.get("/api/records.php?type=incidents")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(records[0]["id"], inc_id)
+
+    def test_settlement_archival_and_restore(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0001", last_name="Santos", first_name="Maria", sex="Female")
+        res_r = CensusRecord(resident_no="RES-0002", last_name="Reyes", first_name="Pedro", sex="Male")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+        b = BlotterRecord(
+            docket_no="BLT-2026-0001", date_filed=date(2026, 8, 1),
+            complainant="Santos, Maria", complainant_id=res_c.id,
+            respondent="Reyes, Pedro", respondent_id=res_r.id,
+            nature="Boundary Dispute", case_type="CIVIL", status="Ongoing", zone_id="Zone 1"
+        )
+        db.session.add(b)
+        db.session.commit()
+        blotter_id = b.id
+
+        # 1. Create settlement
+        res = self.client.post("/api/records.php?type=settlements", json={
+            "blotterId": blotter_id,
+            "status": "Pending",
+            "actionTaken": "First Mediation Hearing",
+            "dateConfrontation": "2026-08-10",
+        })
+        self.assertEqual(res.status_code, 201)
+        stl_id = res.get_json()["id"]
+
+        # 2. Check active list
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], stl_id)
+
+        # 3. Archive settlement
+        res = self.client.delete(f"/api/records.php?type=settlements&id={stl_id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("archived"))
+
+        # 4. Check active list (empty) & archived list (1)
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(len(res.get_json()), 0)
+        res = self.client.get("/api/records.php?type=settlements&archived=1")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], stl_id)
+
+        # 5. Restore
+        res = self.client.put(f"/api/records.php?type=settlements&id={stl_id}&restore=1", json={})
+        self.assertEqual(res.status_code, 200)
+
+        # 6. Check active list (restored)
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(len(res.get_json()), 1)
+
+    def test_census_archival_and_restore(self):
+        self.login_as()
+        # 1. Create census resident
+        res = self.client.post("/api/documents.php?type=census", json={
+            "lastName": "Dela Cruz",
+            "firstName": "Juan",
+            "middleName": "Protacio",
+            "dob": "1990-05-15",
+            "sex": "Male",
+            "civilStatus": "Single",
+            "nationality": "Filipino",
+            "zone": "Zone 1",
+            "address": "123 Mabini St",
+            "householdNo": "HH-001",
+            "contactNo": "09171234567",
+            "voterStatus": "Registered Voter",
+            "occupation": "Carpenter",
+            "status": "Active"
+        })
+        self.assertEqual(res.status_code, 201)
+        res_id = res.get_json()["id"]
+
+        # 2. Check active list
+        res = self.client.get("/api/documents.php?type=census")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], res_id)
+
+        # 3. Archive resident
+        res = self.client.delete(f"/api/documents.php?type=census&id={res_id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("archived"))
+
+        # 4. Check active list (empty) & archived list (1)
+        res = self.client.get("/api/documents.php?type=census")
+        self.assertEqual(len(res.get_json()), 0)
+        res = self.client.get("/api/documents.php?type=census&archived=1")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], res_id)
+
+        # 5. Restore resident
+        res = self.client.put(f"/api/documents.php?type=census&id={res_id}&restore=1", json={})
+        self.assertEqual(res.status_code, 200)
+
+        # 6. Check active list (restored)
+        res = self.client.get("/api/documents.php?type=census")
+        self.assertEqual(len(res.get_json()), 1)
+        self.assertEqual(res.get_json()[0]["id"], res_id)
+
+
+if __name__ == "__main__":
+    unittest.main()

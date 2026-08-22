@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Census — BlotterCast</title>
-  <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
@@ -144,7 +145,10 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="census" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Resident Records</h2>
+        <h2 class="font-display text-lg text-forest-800" id="resTitle">Resident Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
+          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        </button>
       </div>
       <div class="filter-bar">
         <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="resSearch" placeholder="Search name, address…" class="filter-input w-full pl-8" oninput="renderResidents()"/></span>
@@ -255,6 +259,20 @@
   </div>
 </div>
 
+<!-- View Resident Details Modal -->
+<div class="modal-overlay" id="censusViewModal">
+  <div class="modal-box" style="width:640px">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-display text-xl text-forest-800">Resident Details</h2>
+      <button onclick="closeModal('censusViewModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+    </div>
+    <div id="resViewContent" class="space-y-1 mb-6 text-sm"></div>
+    <div class="flex justify-end">
+      <button onclick="closeModal('censusViewModal')" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="api.js"></script>
 <script src="permissions.js"></script>
 <script src="app.js"></script>
@@ -274,11 +292,27 @@ function mapResident(r) {
   };
 }
 
+let viewingArchived = false;
+
 async function loadResidents() {
-  const raw = await BCApi.docList('census');
+  const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
   censusData = raw.map(mapResident);
   calcStats();
   renderResidents();
+}
+
+async function toggleArchivedView() {
+  viewingArchived = !viewingArchived;
+  curPage = 1;
+  document.getElementById('resTitle').textContent = viewingArchived ? 'Archived Resident Records' : 'Resident Records';
+  document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
+    ? '<span data-icon="census" data-icon-size="14"></span> Back to Active'
+    : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+  try {
+    await loadResidents();
+  } catch (err) {
+    showToast('Could not load residents: ' + err.message, 'error');
+  }
 }
 
 const ROWS=8; let curPage=1; let editId=null; let currentRole=null;
@@ -349,9 +383,13 @@ function renderResidents(){
       <td><span class="badge ${r.status==='Active'?'badge-resolved':r.status==='Deceased'?'badge-not-complied':'badge-pending'}">${r.status}</span></td>
       <td>
         <div class="row-actions">
-          <button onclick="issueDoc(${r.id})" class="icon-btn" title="Issue Document"><span data-icon="reports" data-icon-size="16"></span></button>
+          <button onclick="viewResident(${r.id})" class="icon-btn" title="View Details"><span data-icon="view" data-icon-size="16"></span></button>
+          ${viewingArchived ? `
+          <button onclick="restoreResident(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+          ` : `
           <button onclick="editResident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-          <button onclick="deleteResident(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+          <button onclick="archiveResident(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+          `}
         </div>
       </td>
     </tr>`).join('');
@@ -461,21 +499,53 @@ async function saveResident(){
     showToast(err.message, 'error');
   }
 }
-async function deleteResident(id){
-  if (!(await bcConfirm('Remove this resident from Census? This cannot be undone.', { title: 'Remove Resident', okLabel: 'Remove', danger: true }))) return;
+async function archiveResident(id){
+  if (!(await bcConfirm('Archive this resident record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Resident Record', okLabel: 'Archive', danger: true }))) return;
   try {
     await BCApi.docDelete('census', id);
-    showToast('Resident removed.');
+    showToast('Resident record archived.');
     await loadResidents();
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
-function issueDoc(id){
-  const r=censusData.find(x=>x.id===id);
-  showToast(`Redirecting to issue a document for ${r.firstName} ${r.lastName}…`);
-  sessionStorage.setItem('bc_prefill_resident_id', String(id));
-  setTimeout(()=>{ window.location.href='clearance.html'; },900);
+
+async function restoreResident(id){
+  if (!(await bcConfirm('Restore this resident to the active list?', { title: 'Restore Resident Record', okLabel: 'Restore' }))) return;
+  try {
+    await BCApi.docRestore('census', id);
+    showToast('Resident record restored to active list.');
+    await loadResidents();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function viewResident(id){
+  const r = censusData.find(x => x.id === id);
+  if (!r) return;
+  const rows = [
+    ['Resident No.', r.resNo],
+    ['Full Name', `${r.lastName}, ${r.firstName} ${r.midName || ''}`.trim()],
+    ['Date of Birth', r.dob || '—'],
+    ['Age', r.age != null && r.age !== '—' ? `${r.age} yrs old` : '—'],
+    ['Sex', r.sex],
+    ['Civil Status', r.civil],
+    ['Nationality', r.nationality || 'Filipino'],
+    ['Zone / Purok', r.zone],
+    ['Street / House Address', r.address],
+    ['Household No.', r.household || '—'],
+    ['Contact Number', r.contact || '—'],
+    ['Voter Status', r.voter || '—'],
+    ['Occupation', r.occupation || '—'],
+    ['Status', r.status || 'Active'],
+  ];
+  document.getElementById('resViewContent').innerHTML = rows.map(([k, v]) => `
+    <div class="flex gap-4 py-2 border-b border-forest-50">
+      <span class="w-48 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
+      <span class="text-forest-800 font-medium">${v}</span>
+    </div>`).join('');
+  openModal('censusViewModal');
 }
 
 function parseCsv(text) {
