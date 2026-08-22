@@ -267,7 +267,7 @@
         <div>
           <label class="form-label">Type</label>
           <select id="f_type" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="CRIM">Criminal</option>
             <option value="CIVIL">Civil</option>
           </select>
@@ -275,7 +275,7 @@
         <div>
           <label class="form-label">Status</label>
           <select id="f_status" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="Pending">Pending</option>
             <option value="Ongoing">Ongoing</option>
             <option value="Resolved">Resolved</option>
@@ -531,6 +531,7 @@
     document.getElementById('f_respondentFreeText').value = '';
     document.getElementById('f_docketNo').value = '';
     _updateOutsideToggleAvailability();
+    resetFormDropdowns('blotterForm');
   }
 
   async function openAdd() {

@@ -203,15 +203,15 @@
       <div class="grid grid-cols-4 gap-4">
         <div><label class="form-label">Date of Birth <span class="text-red-500">*</span></label><input type="date" id="rf_dob" class="form-input" data-no-future required/></div>
         <div><label class="form-label">Sex <span class="text-red-500">*</span></label>
-          <select id="rf_sex" class="form-input" required><option value="" selected disabled hidden>Select…</option><option>Male</option><option>Female</option></select></div>
+          <select id="rf_sex" class="form-input" required><option value="" selected disabled>-Select-</option><option>Male</option><option>Female</option></select></div>
         <div><label class="form-label">Civil Status <span class="text-red-500">*</span></label>
-          <select id="rf_civil" class="form-input" required><option value="" selected disabled hidden>Select…</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select></div>
+          <select id="rf_civil" class="form-input" required><option value="" selected disabled>-Select-</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select></div>
         <div><label class="form-label">Nationality <span class="text-red-500">*</span></label><input type="text" id="rf_nat" class="form-input" value="Filipino" required/></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="form-label">Zone / Purok <span class="text-red-500">*</span></label>
           <select id="rf_zone" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="Zone 1">Zone 1</option><option value="Zone 2">Zone 2</option>
             <option value="Zone 3">Zone 3</option><option value="Zone 4">Zone 4</option>
             <option value="Zone 5">Zone 5</option><option value="Zone 6">Zone 6</option>
@@ -224,12 +224,12 @@
         <div><label class="form-label">Household No. <span class="text-red-500">*</span></label><input type="text" id="rf_hh" class="form-input" placeholder="HH-001" required/></div>
         <div><label class="form-label">Contact Number <span class="text-red-500">*</span></label><input type="text" id="rf_contact" class="form-input" placeholder="09171234567" data-digits-only maxlength="11" required/></div>
         <div><label class="form-label">Voter Status <span class="text-red-500">*</span></label>
-          <select id="rf_voter" class="form-input" required><option value="" selected disabled hidden>Select…</option><option>Registered Voter</option><option>Not Registered</option><option>Deactivated</option></select></div>
+          <select id="rf_voter" class="form-input" required><option value="" selected disabled>-Select-</option><option>Registered Voter</option><option>Not Registered</option><option>Deactivated</option></select></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="form-label">Occupation <span class="text-red-500">*</span></label><input type="text" id="rf_occ" class="form-input" placeholder="e.g. Farmer, Teacher" data-no-numbers required/></div>
         <div><label class="form-label">Status <span class="text-red-500">*</span></label>
-          <select id="rf_status" class="form-input" required onchange="onRfStatusChange()"><option value="" selected disabled hidden>Select…</option><option>Active</option><option>Deceased</option><option>Transferred</option></select>
+          <select id="rf_status" class="form-input" required onchange="onRfStatusChange()"><option value="" selected disabled>-Select-</option><option>Active</option><option>Deceased</option><option>Transferred</option></select>
           <p id="rf_deceased_hint" class="text-xs text-forest-400 mt-1 hidden">Voter Status is automatically set to Deactivated for deceased residents.</p>
         </div>
       </div>
@@ -410,6 +410,7 @@ async function openAddResident(){
   editId=null; document.getElementById('resModalTitle').textContent='Add Resident';
   ['rf_last','rf_first','rf_mid','rf_dob','rf_addr','rf_hh','rf_contact','rf_occ'].forEach(id=>document.getElementById(id).value='');
   ['rf_sex','rf_civil','rf_zone','rf_voter','rf_status'].forEach(id=>document.getElementById(id).value='');
+  resetFormDropdowns('residentModal');
   document.getElementById('rf_resNo').value = 'Loading…';
   document.getElementById('rf_nat').value='Filipino';
   document.getElementById('rf_deceased_hint').classList.add('hidden');

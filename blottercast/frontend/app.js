@@ -350,6 +350,26 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
 }
+
+/**
+ * Standardize dropdown reset across all forms and modals.
+ * Resets all <select> elements in a given form or container to their default placeholder (<option value="">-Select-</option>).
+ * @param {string|HTMLElement} target - form or modal element or its id
+ */
+function resetFormDropdowns(target) {
+  const container = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!container) return;
+  const selects = container.querySelectorAll('select');
+  selects.forEach(select => {
+    const emptyOpt = select.querySelector('option[value=""]');
+    if (emptyOpt) {
+      select.value = '';
+    } else if (select.options.length > 0) {
+      select.selectedIndex = 0;
+    }
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay') && !e.target.hasAttribute('data-no-dismiss')) {
     e.target.classList.remove('open');

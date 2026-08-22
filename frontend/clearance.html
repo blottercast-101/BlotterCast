@@ -210,7 +210,7 @@
         <div class="col-span-2">
           <label class="form-label">Purpose of Clearance</label>
           <select id="cl_purpose" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option>Employment</option><option>Loan Application</option><option>Business Permit</option>
             <option>School Requirement</option><option>Travel Abroad</option><option>Legal Purposes</option>
             <option>Other</option>
@@ -390,6 +390,7 @@ function previewLog(id){
 
 async function openClearanceForm(){
   bcResidentPickerClear('cl_residentSearch');
+  resetFormDropdowns('clearanceFormModal');
   openModal('clearanceFormModal');
 
   // Show what the O.R. No. will be, rather than leaving it blank until
@@ -408,7 +409,7 @@ async function openClearanceForm(){
 
 function resetClearanceForm(){
   bcResidentPickerClear('cl_residentSearch');
-  document.getElementById('cl_purpose').value = '';
+  resetFormDropdowns('clearanceFormModal');
   document.getElementById('cl_or').value = '';
   document.getElementById('cl_fee').value = '20';
 }

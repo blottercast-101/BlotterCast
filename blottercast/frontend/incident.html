@@ -233,7 +233,7 @@
         <div>
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
           </select>
         </div>
         <div class="col-span-2"><label class="form-label">Location Detail</label><input type="text" id="if_location" class="form-input" placeholder="Street, landmark, purok…"/></div>
@@ -242,7 +242,7 @@
         <div>
           <label class="form-label">Category</label>
           <select id="if_category" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option>Physical Assault</option><option>Theft</option><option>Domestic Dispute</option>
             <option>Vandalism</option><option>Trespassing</option><option>Drug-Related Activity</option>
             <option>Public Disturbance</option><option>Other</option>
@@ -251,7 +251,7 @@
         <div>
           <label class="form-label">Priority Level</label>
           <select id="if_priority" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
           </select>
         </div>
@@ -264,7 +264,7 @@
       <div>
         <label class="form-label">Status</label>
         <select id="if_status" class="form-input" required>
-          <option value="" selected disabled hidden>Select…</option>
+          <option value="" selected disabled>-Select-</option>
           <option value="Under Investigation">Under Investigation</option>
           <option value="Resolved">Resolved</option>
           <option value="Closed">Closed</option>
@@ -414,6 +414,7 @@
     document.getElementById('incModalTitle').textContent = 'New Incident Report';
     document.getElementById('incidentForm').reset();
     document.getElementById('if_reportNo').value = '';
+    resetFormDropdowns('incidentForm');
   }
 
   async function openAddIncident() {

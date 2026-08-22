@@ -94,8 +94,9 @@
       const opt = select.options[select.selectedIndex];
       const valSpan = trigger.querySelector('.bc-select-value');
       const text = opt ? (opt.textContent || '').trim() : '';
-      valSpan.textContent = text || 'Select…';
-      valSpan.classList.toggle('bc-select-placeholder', !opt || opt.disabled || !text);
+      valSpan.textContent = text || '-Select-';
+      const isPlaceholder = !opt || opt.disabled || !opt.value || text === '-Select-' || text === 'Select…' || text.toLowerCase() === '-select-';
+      valSpan.classList.toggle('bc-select-placeholder', isPlaceholder);
       trigger.disabled = select.disabled;
       trigger.classList.toggle('bc-select-disabled', select.disabled);
     }

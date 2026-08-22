@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Certificate of Indigency — BlotterCast</title>
-  <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
@@ -207,7 +208,7 @@
       <div>
         <label class="form-label">Purpose of Certificate</label>
         <select id="if_purpose" class="form-input" required>
-          <option value="" selected disabled hidden>Select…</option>
+          <option value="" selected disabled>-Select-</option>
           <option>Medical Assistance / PhilHealth</option>
           <option>DSWD Financial Assistance</option>
           <option>Educational Scholarship</option>
@@ -420,7 +421,7 @@ function previewInd(id){
 
 function resetIndigencyForm(){
   bcResidentPickerClear('if_residentSearch');
-  document.getElementById('if_purpose').value = '';
+  resetFormDropdowns('indigencyFormModal');
 }
 
 async function issueIndigency(){

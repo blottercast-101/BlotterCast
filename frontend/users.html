@@ -190,14 +190,18 @@
       <div class="grid grid-cols-2 gap-4">
         <div id="uf_role_wrap">
           <label class="form-label">Role</label>
-          <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)">
-            <option>System Admin</option><option>Barangay Captain</option>
-            <option selected>Desk Officer</option><option>Data Encoder</option>
+          <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)" required>
+            <option value="" selected disabled>-Select-</option>
+            <option value="System Admin">System Admin</option>
+            <option value="Barangay Captain">Barangay Captain</option>
+            <option value="Desk Officer">Desk Officer</option>
+            <option value="Data Encoder">Data Encoder</option>
           </select>
         </div>
         <div id="uf_status_wrap">
           <label class="form-label">Status</label>
           <select id="uf_status" class="form-input">
+            <option value="" selected disabled>-Select-</option>
             <option value="Active">Active</option>
             <option value="Suspended">Suspended</option>
             <option value="Inactive">Inactive</option>
@@ -403,7 +407,7 @@ function fallbackCopy(input) {
 function onRoleChange(role) {
   updateSignatureSectionVisibility(role);
   if (!editUserId) {
-    document.getElementById('uf_password').value = generateTempPasswordForRole(role);
+    document.getElementById('uf_password').value = role ? generateTempPasswordForRole(role) : '';
   }
 }
 
@@ -411,13 +415,13 @@ function openAddUser() {
   editUserId = null;
   document.getElementById('userModalTitle').textContent = 'Add New User';
   document.getElementById('userForm').reset();
+  resetFormDropdowns('userForm');
   document.getElementById('uf_username').disabled = false;
-  document.getElementById('uf_role').value = 'Desk Officer';
   document.getElementById('uf_status').value = 'Active';
   document.getElementById('uf_status_wrap').classList.add('hidden');
   document.getElementById('uf_role_wrap').classList.add('col-span-2');
   document.getElementById('uf_password_wrap').classList.remove('hidden');
-  document.getElementById('uf_password').value = generateTempPasswordForRole('Desk Officer');
+  document.getElementById('uf_password').value = '';
   document.getElementById('uf_sig_section').classList.add('hidden');
   openModal('userModal');
 }

@@ -228,7 +228,7 @@
         <div>
           <label class="form-label">Action Taken</label>
           <select id="sf_actionTaken" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="Mediation (M)">Mediation (M)</option>
             <option value="Conciliation (C)">Conciliation (C)</option>
             <option value="Arbitration (A)">Arbitration (A)</option>
@@ -246,7 +246,7 @@
         <div>
           <label class="form-label">Status of Compliance</label>
           <select id="sf_status" class="form-input" required>
-            <option value="" selected disabled hidden>Select…</option>
+            <option value="" selected disabled>-Select-</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
             <option value="Pending">Pending</option>
@@ -470,6 +470,7 @@
   async function openAddSettlement() {
     stlEditId=null; document.getElementById('stlModalTitle').textContent='New Settlement Record';
     document.getElementById('settlementForm').reset();
+    resetFormDropdowns('settlementForm');
     document.getElementById('sf_blotter_picker_wrap').classList.remove('hidden');
     clearBlotterCasePicker();
     document.getElementById('sf_caseNo').value = 'Loading…';

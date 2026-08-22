@@ -208,7 +208,7 @@
       <div>
         <label class="form-label">Purpose of Certificate</label>
         <select id="if_purpose" class="form-input" required>
-          <option value="" selected disabled hidden>Select…</option>
+          <option value="" selected disabled>-Select-</option>
           <option>Medical Assistance / PhilHealth</option>
           <option>DSWD Financial Assistance</option>
           <option>Educational Scholarship</option>
@@ -421,7 +421,7 @@ function previewInd(id){
 
 function resetIndigencyForm(){
   bcResidentPickerClear('if_residentSearch');
-  document.getElementById('if_purpose').value = '';
+  resetFormDropdowns('indigencyFormModal');
 }
 
 async function issueIndigency(){
