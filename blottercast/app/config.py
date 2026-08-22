@@ -57,5 +57,8 @@ class Config:
     MFA_RESEND_COOLDOWN_SECONDS = int(os.environ.get("MFA_RESEND_COOLDOWN_SECONDS", "30"))
 
     # ---- Google OAuth / Identity Services ----
-    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_ID = os.environ.get(
+        "GOOGLE_CLIENT_ID",
+        "362507343436-o7agh2rgv2an9c11ubmnog5codjo858r.apps.googleusercontent.com",
+    ).strip()
 

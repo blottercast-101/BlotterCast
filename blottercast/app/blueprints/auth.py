@@ -618,8 +618,21 @@ def _update_my_account():
 
 
 def _auth_config():
+    client_id = (current_app.config.get("GOOGLE_CLIENT_ID") or os.environ.get("GOOGLE_CLIENT_ID") or "").strip()
+    if not client_id:
+        try:
+            from dotenv import dotenv_values
+            from ..config import ROOT_DIR
+            env_vals = dotenv_values(ROOT_DIR / ".env")
+            client_id = (env_vals.get("GOOGLE_CLIENT_ID") or "").strip()
+            if client_id:
+                current_app.config["GOOGLE_CLIENT_ID"] = client_id
+        except Exception:
+            pass
+    if not client_id:
+        client_id = "362507343436-o7agh2rgv2an9c11ubmnog5codjo858r.apps.googleusercontent.com"
     return jsonify({
-        "googleClientId": current_app.config.get("GOOGLE_CLIENT_ID", ""),
+        "googleClientId": client_id,
     })
 
 
