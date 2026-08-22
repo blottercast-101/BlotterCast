@@ -139,10 +139,11 @@ def auth_router():
 
 
 def _auth_config():
-    client_id = current_app.config.get("GOOGLE_CLIENT_ID", "")
+    import os
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID") or os.environ.get("GOOGLE_CLIENT_ID", "")
     return jsonify({
         "status": "success",
-        "google_client_id": client_id,
+        "google_client_id": client_id.strip(),
     })
 
 

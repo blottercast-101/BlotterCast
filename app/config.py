@@ -15,6 +15,7 @@ def _normalize_db_url(url: str) -> str:
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
     SQLALCHEMY_DATABASE_URI = _normalize_db_url(
         os.environ.get("DATABASE_URL", "sqlite:///blottercast.db")

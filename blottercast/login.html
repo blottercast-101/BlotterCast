@@ -943,6 +943,11 @@
     }
   }
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGoogleSignIn);
+  } else {
+    initGoogleSignIn();
+  }
   window.addEventListener('load', initGoogleSignIn);
 
   // Shake keyframe
