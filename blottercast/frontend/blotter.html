@@ -222,7 +222,7 @@
 
 <!-- Add/Edit Modal -->
 <div class="modal-overlay" id="blotterModal">
-  <div class="modal-box max-w-2xl w-full">
+  <div class="modal-box">
     <div class="flex items-center justify-between mb-6">
       <h2 class="font-display text-xl text-forest-800" id="modalTitle">New Blotter Entry</h2>
       <button onclick="closeModal('blotterModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
@@ -233,12 +233,15 @@
         <div><label class="form-label">Docket No.</label><input type="text" id="f_docketNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Date Filed</label><input type="date" id="f_dateFiled" class="form-input" data-no-future/></div>
       </div>
+
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between gap-2 mb-1 min-h-[26px]">
-            <label class="form-label mb-0 whitespace-nowrap">Name of Complainant <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none whitespace-nowrap" id="f_complainantOutsideLabel">
+          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[36px]">
+            <label class="form-label mb-0 leading-tight">
+              Name of<br/>Complainant <span class="text-red-500">*</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_complainantOutsideLabel">
               <input type="checkbox" id="f_complainantOutside" class="rounded accent-forest-600" onchange="toggleComplainantOutside()"/> Not a resident / outside party
             </label>
           </div>
@@ -249,8 +252,8 @@
           <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1 min-h-[26px]">
-            <label class="form-label mb-0 whitespace-nowrap">Complainant Address</label>
+          <div class="flex items-end justify-between mb-1.5 min-h-[36px]">
+            <label class="form-label mb-0 pb-0.5">Complainant Address</label>
           </div>
           <input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/>
         </div>
@@ -259,9 +262,11 @@
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between gap-2 mb-1 min-h-[26px]">
-            <label class="form-label mb-0 whitespace-nowrap">Name of Respondent <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none whitespace-nowrap" id="f_respondentOutsideLabel">
+          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[36px]">
+            <label class="form-label mb-0 leading-tight">
+              Name of<br/>Respondent <span class="text-red-500">*</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_respondentOutsideLabel">
               <input type="checkbox" id="f_respondentOutside" class="rounded accent-forest-600" onchange="toggleRespondentOutside()"/> Not a resident / outside party
             </label>
           </div>
@@ -272,19 +277,19 @@
           <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1 min-h-[26px]">
-            <label class="form-label mb-0 whitespace-nowrap">Respondent Address</label>
+          <div class="flex items-end justify-between mb-1.5 min-h-[36px]">
+            <label class="form-label mb-0 pb-0.5">Respondent Address</label>
           </div>
           <input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/>
         </div>
       </div>
-      <p class="text-xs text-forest-400 -mt-2">Either the complainant or the respondent can be marked "Not a resident" if they're from outside the barangay — but not both, since at least one party must be a registered Census resident.</p>
+      <p class="text-xs text-forest-600 leading-relaxed -mt-1">Either the complainant or the respondent can be marked "Not a resident" if they're from outside the barangay — but not both, since at least one party must be a registered Census resident.</p>
       <div class="grid grid-cols-3 gap-4">
         <div><label class="form-label">Nature of Case</label><input type="text" id="f_nature" class="form-input" placeholder="e.g. Pag-aaway" data-no-numbers/></div>
         <div>
           <label class="form-label">Type</label>
           <select id="f_type" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" selected disabled>Select...</option>
             <option value="CRIM">Criminal</option>
             <option value="CIVIL">Civil</option>
           </select>
@@ -292,7 +297,7 @@
         <div>
           <label class="form-label">Status</label>
           <select id="f_status" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" selected disabled>Select...</option>
             <option value="Pending">Pending</option>
             <option value="Ongoing">Ongoing</option>
             <option value="Resolved">Resolved</option>
