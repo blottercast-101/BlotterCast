@@ -222,7 +222,7 @@
 
 <!-- Add/Edit Modal -->
 <div class="modal-overlay" id="blotterModal">
-  <div class="modal-box">
+  <div class="modal-box max-w-2xl w-full">
     <div class="flex items-center justify-between mb-6">
       <h2 class="font-display text-xl text-forest-800" id="modalTitle">New Blotter Entry</h2>
       <button onclick="closeModal('blotterModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
@@ -236,10 +236,10 @@
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between mb-1 min-h-[22px]">
-            <label class="form-label mb-0">Name of Complainant <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none" id="f_complainantOutsideLabel">
-              <input type="checkbox" id="f_complainantOutside" class="rounded" onchange="toggleComplainantOutside()"/> Not a resident / outside party
+          <div class="flex items-center justify-between gap-2 mb-1 min-h-[26px]">
+            <label class="form-label mb-0 whitespace-nowrap">Name of Complainant <span class="text-red-500">*</span></label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none whitespace-nowrap" id="f_complainantOutsideLabel">
+              <input type="checkbox" id="f_complainantOutside" class="rounded accent-forest-600" onchange="toggleComplainantOutside()"/> Not a resident / outside party
             </label>
           </div>
           <input type="text" id="f_complainantSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
@@ -249,8 +249,8 @@
           <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1 min-h-[22px]">
-            <label class="form-label mb-0">Complainant Address</label>
+          <div class="flex items-center justify-between mb-1 min-h-[26px]">
+            <label class="form-label mb-0 whitespace-nowrap">Complainant Address</label>
           </div>
           <input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/>
         </div>
@@ -259,10 +259,10 @@
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between mb-1 min-h-[22px]">
-            <label class="form-label mb-0">Name of Respondent <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none" id="f_respondentOutsideLabel">
-              <input type="checkbox" id="f_respondentOutside" class="rounded" onchange="toggleRespondentOutside()"/> Not a resident / outside party
+          <div class="flex items-center justify-between gap-2 mb-1 min-h-[26px]">
+            <label class="form-label mb-0 whitespace-nowrap">Name of Respondent <span class="text-red-500">*</span></label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer select-none whitespace-nowrap" id="f_respondentOutsideLabel">
+              <input type="checkbox" id="f_respondentOutside" class="rounded accent-forest-600" onchange="toggleRespondentOutside()"/> Not a resident / outside party
             </label>
           </div>
           <input type="text" id="f_respondentSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
@@ -272,8 +272,8 @@
           <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1 min-h-[22px]">
-            <label class="form-label mb-0">Respondent Address</label>
+          <div class="flex items-center justify-between mb-1 min-h-[26px]">
+            <label class="form-label mb-0 whitespace-nowrap">Respondent Address</label>
           </div>
           <input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/>
         </div>
