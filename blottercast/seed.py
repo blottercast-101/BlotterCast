@@ -8,6 +8,7 @@ Creates all tables (if missing) and seeds:
 Run with:  python seed.py
 Safe to re-run — it skips or synchronizes existing data.
 """
+import sys
 from datetime import datetime, date, time, timedelta
 import bcrypt
 
@@ -216,7 +217,7 @@ def hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def run():
+def run(force_reset: bool = False):
     app = create_app()
     with app.app_context():
         db.create_all()
@@ -264,48 +265,56 @@ def run():
                 user.full_name = full_name
                 user.role = role
 
-        # 4. Clean and seed authentic in-boundary incident reports
-        Incident.query.delete()
-        Notification.query.filter_by(ref_table="incidents").delete()
-        db.session.flush()
+        # 4. Incident Reports Seeding (Non-destructive: preserves existing reports)
+        existing_incidents_count = Incident.query.count()
+        if existing_incidents_count > 0 and not force_reset:
+            print(f"  [INFO] Preserved {existing_incidents_count} existing incident report(s). (Pass --reset or --force to wipe and re-seed baseline)")
+        else:
+            if force_reset:
+                Incident.query.delete()
+                Notification.query.filter_by(ref_table="incidents").delete()
+                db.session.flush()
 
-        today = date.today()
-        year = today.year
+            today = date.today()
+            year = today.year
 
-        for idx, inc_info in enumerate(AUTHENTIC_INCIDENTS, start=1):
-            report_no = f"INC-{year}-{idx:04d}"
-            inc_date = today - timedelta(days=inc_info["days_ago"])
-            inc_time = time(inc_info["hour"], inc_info["minute"], 0)
-            
-            base_zone = ZONE_LANDMARK_COORDINATES[inc_info["zone_id"]]
-            lat = round(base_zone["latitude"] + inc_info.get("dlat", 0.0), 6)
-            lng = round(base_zone["longitude"] + inc_info.get("dlng", 0.0), 6)
+            for idx, inc_info in enumerate(AUTHENTIC_INCIDENTS, start=1):
+                report_no = f"INC-{year}-{idx:04d}"
+                inc_date = today - timedelta(days=inc_info["days_ago"])
+                inc_time = time(inc_info["hour"], inc_info["minute"], 0)
+                
+                base_zone = ZONE_LANDMARK_COORDINATES[inc_info["zone_id"]]
+                lat = round(base_zone["latitude"] + inc_info.get("dlat", 0.0), 6)
+                lng = round(base_zone["longitude"] + inc_info.get("dlng", 0.0), 6)
 
-            inc = Incident(
-                report_no=report_no,
-                incident_date=inc_date,
-                time_reported=inc_time,
-                hour=inc_info["hour"],
-                zone_id=inc_info["zone_id"],
-                location=inc_info["location"],
-                lat=lat,
-                lng=lng,
-                category=inc_info["category"],
-                description=inc_info["description"],
-                reporter=inc_info["reporter"],
-                officer=inc_info["officer"],
-                priority=inc_info["priority"],
-                status=inc_info["status"],
-                archived=False,
-            )
-            db.session.add(inc)
+                inc = Incident(
+                    report_no=report_no,
+                    incident_date=inc_date,
+                    time_reported=inc_time,
+                    hour=inc_info["hour"],
+                    zone_id=inc_info["zone_id"],
+                    location=inc_info["location"],
+                    lat=lat,
+                    lng=lng,
+                    category=inc_info["category"],
+                    description=inc_info["description"],
+                    reporter=inc_info["reporter"],
+                    officer=inc_info["officer"],
+                    priority=inc_info["priority"],
+                    status=inc_info["status"],
+                    archived=False,
+                )
+                db.session.add(inc)
+
+            print(f"  [SEED] Seeded {len(AUTHENTIC_INCIDENTS)} authentic in-boundary incident reports.")
 
         db.session.commit()
-        print(f"Seed complete. {len(ZONE_LANDMARK_COORDINATES)} zones synchronized, {len(AUTHENTIC_INCIDENTS)} authentic in-boundary incidents seeded.")
+        print(f"Seed complete. {len(ZONE_LANDMARK_COORDINATES)} zones synchronized.")
         print("Demo accounts:")
         for username, password, _, role, email in DEMO_USERS:
             print(f"  {username:10} / {password:12} ({role}) — {email}")
 
 
 if __name__ == "__main__":
-    run()
+    force_reset = any(arg in sys.argv for arg in ["--reset", "--force", "-f"])
+    run(force_reset=force_reset)
