@@ -93,10 +93,8 @@ def _incidents():
     if method == "POST":
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
-        if d.get("lat") not in (None, "") and d.get("lng") not in (None, ""):
-            lat, lng = d["lat"], d["lng"]
-        else:
-            lat, lng = zone_coords(zone_id)
+        lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
+        lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
 
         report_no = d.get("reportNo") or next_seq_no(Incident, "report_no", "INC", 4)
         idate = parse_date(d.get("date")) or datetime.utcnow().date()
@@ -144,9 +142,8 @@ def _incidents():
 
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
-        lat_def, lng_def = zone_coords(zone_id)
-        lat = d["lat"] if d.get("lat") not in (None, "") else lat_def
-        lng = d["lng"] if d.get("lng") not in (None, "") else lng_def
+        lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
+        lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
         time_reported = parse_time(d.get("timeReported")) or parse_time("12:00:00")
 
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()

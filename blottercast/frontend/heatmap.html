@@ -550,13 +550,34 @@
       `;
     }
 
-    // Point-in-Polygon Boundary Validator using Turf.js
+    // Point-in-Polygon Boundary Validator using Turf.js with Ray-Casting fallback
     function isPointInsideBarangayBoundary(lat, lng) {
       if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return false;
-      if (!boundaryGeojson) return true; // before boundary finishes loading
+      const numLat = Number(lat);
+      const numLng = Number(lng);
+      if (!numLat || !numLng) return false;
+      if (!boundaryGeojson) return false; // Strict: boundary must be loaded first
+
+      // 1. Turf.js check: Turf expects [longitude, latitude]
       try {
-        const point = turf.point([lng, lat]);
-        return turf.booleanPointInPolygon(point, boundaryGeojson);
+        const pt = turf.point([numLng, numLat]);
+        if (turf.booleanPointInPolygon(pt, boundaryGeojson)) {
+          return true;
+        }
+      } catch (e) {}
+
+      // 2. Strict Ray Casting Point-in-Polygon check on polygon coordinates [lng, lat]
+      try {
+        const coords = boundaryGeojson.geometry ? boundaryGeojson.geometry.coordinates[0] : (boundaryGeojson.coordinates ? boundaryGeojson.coordinates[0] : null);
+        if (!coords || !coords.length) return false;
+        let inside = false;
+        for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+          const xi = coords[i][0], yi = coords[i][1]; // xi = lng, yi = lat
+          const xj = coords[j][0], yj = coords[j][1]; // xj = lng, yj = lat
+          const intersect = ((yi > numLat) !== (yj > numLat)) && (numLng < (xj - xi) * (numLat - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
       } catch (e) {
         return false;
       }
@@ -566,7 +587,8 @@
     function isAuthenticLocation(locationDetail, zoneId) {
       if (!locationDetail && !zoneId) return false;
       const loc = (locationDetail || '').toLowerCase().trim();
-      if (loc.startsWith('test location') || loc.startsWith('test') || loc.includes('mock') || loc.includes('sample')) {
+      if (!loc || loc.length <= 2) return false;
+      if (loc.startsWith('test') || loc.includes('mock') || loc.includes('sample') || loc === 'sdada' || loc === 'asdf' || loc === 'main street' || loc === 'corner st') {
         return false;
       }
       return true;
@@ -938,8 +960,8 @@
 
     (async function () {
       try {
-        await loadIncidents();
         await loadBoundary();
+        await loadIncidents();
         updateHeatMapPage();
       } catch (err) {
         console.error('Could not load incident data:', err);
