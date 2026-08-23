@@ -269,8 +269,9 @@
         </button>
       </div>
 
-      <!-- Backdrop for Wide View Fullscreen Map Modal -->
-      <div id="incPickerWideBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[95] transition-opacity animate-fadeIn" onclick="toggleExpandPickerMap(false)"></div>
+      <!-- Wide View: Full-screen backdrop + flex centering shell (body-level, z-200 beats all modals) -->
+      <!-- This element is moved to document.body on expand so it renders above everything -->
+      <div id="incPickerWideBackdrop" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8 animate-fadeIn"></div>
 
       <!-- Geographic Forward Geocoding & Interactive Pin Picker -->
       <div class="bg-forest-50/70 p-3 rounded-lg border border-forest-100 space-y-2">
@@ -295,40 +296,39 @@
         </div>
 
         <div id="incPickerMapContainer" class="hidden">
-          <!-- Floating Header visible in Wide View -->
-          <div id="incPickerWideHeader" class="hidden flex items-center justify-between gap-2 border-b border-forest-100 pb-2.5">
+          <!-- Top header bar — shown only in Wide View, acts as the card's top bar -->
+          <div id="incPickerWideHeader" class="hidden items-center justify-between gap-2 px-5 py-3.5 border-b border-gray-100 bg-white">
             <div class="flex items-center gap-2 flex-wrap min-w-0">
-              <span class="text-sm font-bold text-forest-900 flex items-center gap-1.5 whitespace-nowrap">
-                <span data-icon="map" data-icon-size="16"></span> Mapulang Lupa Pin Placement &amp; Boundaries
+              <span class="text-sm font-semibold text-gray-800 flex items-center gap-1.5 whitespace-nowrap">
+                <span data-icon="map" data-icon-size="15"></span> Mapulang Lupa Pin Placement &amp; Boundaries
               </span>
-              <span id="wideZoneBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded bg-forest-100 text-forest-800 border border-forest-200 whitespace-nowrap">Zone: None</span>
-              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">⚪ Unverified Location</span>
-              <span class="font-mono text-xs font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200 whitespace-nowrap" id="wideCoordsPreview">Lat: --, Lng: --</span>
+              <span id="wideZoneBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">Zone: None</span>
+              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">⚪ Unverified Location</span>
             </div>
-            <button type="button" onclick="toggleExpandPickerMap(false)" title="Close wide view (Esc)" aria-label="Close wide map view"
-              class="flex-shrink-0 p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-forest-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span class="font-mono text-xs text-gray-500" id="wideCoordsPreview">Lat: --, Lng: --</span>
+              <button type="button" onclick="toggleExpandPickerMap(false)" title="Close wide view (Esc)" aria-label="Close wide map view"
+                class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors duration-150 focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
+          <!-- Map fills the flex-1 space between header and footer -->
           <div id="incPickerMap" style="height: 180px; width: 100%;" class="rounded border border-forest-200 shadow-inner z-0"></div>
 
-          <!-- Inline Footer (Default view) -->
+          <!-- Inline Footer (Default / mini-map view) -->
           <div id="incPickerInlineFooter" class="flex justify-between items-center text-[11px] text-forest-600 mt-1">
             <span>Tip: Click or drag marker anywhere inside the green boundary.</span>
             <span class="font-mono text-xs font-semibold text-forest-800" id="if_coordsPreview">Lat: --, Lng: --</span>
           </div>
 
-          <!-- Wide View Floating Footer -->
-          <div id="incPickerWideFooter" class="hidden flex items-center justify-between text-xs text-forest-700 bg-forest-50/80 p-2.5 rounded-lg border border-forest-200 mt-2">
-            <div class="flex items-center gap-3">
-              <span><strong>Tip:</strong> Click or drag the marker inside your designated zone boundary.</span>
-              <span class="text-forest-400">|</span>
-              <span class="text-forest-600">Press <kbd class="px-1.5 py-0.5 bg-white border border-forest-300 rounded shadow-xs font-mono text-[11px]">Esc</kbd> to return</span>
-            </div>
-            <button type="button" onclick="toggleExpandPickerMap(false)" class="text-xs text-forest-800 font-semibold hover:underline">
+          <!-- Wide View bottom bar -->
+          <div id="incPickerWideFooter" class="hidden items-center justify-between px-5 py-2.5 border-t border-gray-100 bg-gray-50/80 text-xs text-gray-500">
+            <span>💡 <strong class="text-gray-600">Tip:</strong> Click or drag the marker inside your designated zone boundary. Press <kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded font-mono text-[11px] shadow-sm">Esc</kbd> to collapse.</span>
+            <button type="button" onclick="toggleExpandPickerMap(false)" class="ml-4 flex-shrink-0 px-3.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
               Done Pinning
             </button>
           </div>
@@ -792,39 +792,89 @@
     if (wideCoordsPreview) wideCoordsPreview.textContent = coordsStr;
   }
 
+  // Store the container's original DOM parent so we can restore it on collapse
+  let _wideViewOriginalParent = null;
+  let _wideViewOriginalNextSibling = null;
+
   function toggleExpandPickerMap(forceState) {
     isMapExpanded = typeof forceState === 'boolean' ? forceState : !isMapExpanded;
     const container = document.getElementById('incPickerMapContainer');
-    const mapEl = document.getElementById('incPickerMap');
-    const wideHeader = document.getElementById('incPickerWideHeader');
-    const wideFooter = document.getElementById('incPickerWideFooter');
+    const mapEl    = document.getElementById('incPickerMap');
+    const wideHeader   = document.getElementById('incPickerWideHeader');
+    const wideFooter   = document.getElementById('incPickerWideFooter');
     const inlineFooter = document.getElementById('incPickerInlineFooter');
-    const expandLabel = document.getElementById('expandBtnLabel');
-    const backdrop = document.getElementById('incPickerWideBackdrop');
+    const expandLabel  = document.getElementById('expandBtnLabel');
+    const backdrop     = document.getElementById('incPickerWideBackdrop');
 
-    if (!container || !mapEl) return;
+    if (!container || !mapEl || !backdrop) return;
 
     if (isMapExpanded) {
       showPickerMap();
-      if (backdrop) backdrop.classList.remove('hidden');
-      container.className = 'fixed inset-4 md:inset-8 z-[100] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-forest-300 flex flex-col p-4 animate-fadeIn space-y-2.5';
+
+      // ── DOM transplant: lift map card into the body-level backdrop ──
+      _wideViewOriginalParent        = container.parentNode;
+      _wideViewOriginalNextSibling   = container.nextSibling;
+      document.body.appendChild(backdrop);   // ensure backdrop is above every modal
+      backdrop.appendChild(container);        // card lives inside the flex centering shell
+
+      // Style backdrop (flex centering shell)
+      backdrop.classList.remove('hidden');
+
+      // Close when clicking the dark backdrop area (not the card)
+      backdrop.onclick = function(e) {
+        if (e.target === backdrop) toggleExpandPickerMap(false);
+      };
+
+      // Style the card — clean white card, no fixed positioning needed
+      container.className = 'relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-fadeIn';
+      container.style.height = '85vh';
+
+      // Map element fills the card's flex-1 region
       mapEl.style.height = '100%';
-      mapEl.style.minHeight = '420px';
+      mapEl.style.minHeight = '';
       mapEl.classList.add('flex-1');
-      if (wideHeader) wideHeader.classList.remove('hidden');
-      if (wideFooter) wideFooter.classList.remove('hidden');
+      mapEl.classList.remove('rounded', 'border', 'border-forest-200', 'shadow-inner');
+
+      if (wideHeader)   { wideHeader.classList.remove('hidden');   wideHeader.style.display   = 'flex'; }
+      if (wideFooter)   { wideFooter.classList.remove('hidden');   wideFooter.style.display   = 'flex'; }
       if (inlineFooter) inlineFooter.classList.add('hidden');
-      if (expandLabel) expandLabel.textContent = 'Collapse View';
+      if (expandLabel)  expandLabel.textContent = 'Collapse View';
+      // Map el: flex:1 so it fills space between header and footer
+      mapEl.style.flex = '1 1 0%';
+
     } else {
-      if (backdrop) backdrop.classList.add('hidden');
+      // ── DOM restore: put card back in the form's original position ──
+      if (_wideViewOriginalParent) {
+        _wideViewOriginalParent.insertBefore(container, _wideViewOriginalNextSibling);
+        _wideViewOriginalParent = null;
+        _wideViewOriginalNextSibling = null;
+      }
+
+      backdrop.classList.add('hidden');
+      backdrop.onclick = null;
+
+      // Move backdrop back inside the form modal (its original home in the DOM)
+      // It stays hidden so position doesn't matter until next expand
+      if (!backdrop.closest('#incidentModal')) {
+        const bpPlaceholder = document.getElementById('incPickerWideBackdropSlot');
+        if (bpPlaceholder) bpPlaceholder.appendChild(backdrop);
+      }
+
+      // Restore card to inline styles
       container.className = 'space-y-2 mt-2';
+      container.style.height = '';
+
+      // Restore map element
       mapEl.style.height = '180px';
       mapEl.style.minHeight = '180px';
       mapEl.classList.remove('flex-1');
-      if (wideHeader) wideHeader.classList.add('hidden');
-      if (wideFooter) wideFooter.classList.add('hidden');
+      mapEl.classList.add('rounded', 'border', 'border-forest-200', 'shadow-inner');
+
+      if (wideHeader)   { wideHeader.style.display   = 'none'; wideHeader.classList.add('hidden'); }
+      if (wideFooter)   { wideFooter.style.display   = 'none'; wideFooter.classList.add('hidden'); }
       if (inlineFooter) inlineFooter.classList.remove('hidden');
-      if (expandLabel) expandLabel.textContent = 'Wide View';
+      if (expandLabel)  expandLabel.textContent = 'Wide View';
+      mapEl.style.flex = '';
     }
 
     if (window.lucide) lucide.createIcons();
@@ -847,7 +897,7 @@
           pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [25, 25] });
         }
       }
-    }, 180);
+    }, 200);
   }
 
   function onLocationDetailInput() {
