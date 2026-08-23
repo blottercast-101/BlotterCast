@@ -515,15 +515,18 @@
 
     const getOccurrenceDensityTier = (incidentCount) => {
       if (incidentCount >= 101) {
-        return { label: 'High', color: '#EF4444', badgeClass: 'bg-red-500 text-white' };
+        return { label: 'High', color: '#EF4444', border: '#DC2626', opacity: 0.50, badgeClass: 'bg-red-500 text-white' };
       }
       if (incidentCount >= 50) {
-        return { label: 'Elevated', color: '#FB923C', badgeClass: 'bg-orange-400 text-white' };
+        return { label: 'Elevated', color: '#FB923C', border: '#EA580C', opacity: 0.45, badgeClass: 'bg-orange-400 text-white' };
       }
       if (incidentCount >= 25) {
-        return { label: 'Medium', color: '#FACC15', badgeClass: 'bg-yellow-400 text-gray-900' };
+        return { label: 'Medium', color: '#FACC15', border: '#CA8A04', opacity: 0.40, badgeClass: 'bg-yellow-400 text-gray-900' };
       }
-      return { label: 'Low', color: '#10B981', badgeClass: 'bg-emerald-500 text-white' };
+      if (incidentCount >= 1) {
+        return { label: 'Low', color: '#10B981', border: '#059669', opacity: 0.35, badgeClass: 'bg-emerald-500 text-white' };
+      }
+      return { label: 'Zero Activity', color: '#E2E8F0', border: '#94A3B8', opacity: 0.20, badgeClass: 'bg-slate-100 text-slate-700' };
     };
 
     function getZoneIncidentCounts(data) {
@@ -845,26 +848,11 @@
     function getZonePolygonStyle(feature, zoneCounts) {
       const zoneId = feature.properties.zone;
       const count = zoneCounts[zoneId] || 0;
-      if (count === 0) {
-        return {
-          fillColor: '#9CA3AF',
-          fillOpacity: 0.15,
-          color: '#374151',
-          weight: 1.5,
-          dashArray: '3',
-        };
-      }
       const tier = getOccurrenceDensityTier(count);
-      const opacityMap = {
-        Low: 0.35,
-        Medium: 0.40,
-        Elevated: 0.45,
-        High: 0.50
-      };
       return {
         fillColor: tier.color,
-        fillOpacity: opacityMap[tier.label] || 0.35,
-        color: '#374151',
+        fillOpacity: tier.opacity,
+        color: tier.border,
         weight: 1.5,
         dashArray: '3',
       };
