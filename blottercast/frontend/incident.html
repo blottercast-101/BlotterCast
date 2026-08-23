@@ -163,8 +163,8 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="incSearchInput" placeholder="Search report no., location, reporter…" class="filter-input w-full pl-8" oninput="renderIncidents()"/></span>
-        <select id="incCategoryFilter" class="filter-input" onchange="renderIncidents()">
+        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="incSearchInput" placeholder="Search report no., location, reporter…" class="filter-input w-full pl-8" oninput="incPage=1; renderIncidents()"/></span>
+        <select id="incCategoryFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Categories</option>
           <option>Physical Assault</option>
           <option>Theft</option>
@@ -174,13 +174,13 @@
           <option>Drug-Related Activity</option>
           <option>Public Disturbance</option>
         </select>
-        <select id="incPriorityFilter" class="filter-input" onchange="renderIncidents()">
+        <select id="incPriorityFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Priorities</option>
           <option value="High">High</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
-        <select id="incStatusFilter" class="filter-input" onchange="renderIncidents()">
+        <select id="incStatusFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Statuses</option>
           <option value="Under Investigation">Under Investigation</option>
           <option value="Resolved">Resolved</option>
@@ -372,15 +372,15 @@
   }
 
   function getIncFiltered() {
-    const s = document.getElementById('incSearchInput').value.toLowerCase();
+    const s = document.getElementById('incSearchInput').value.trim().toLowerCase();
     const c = document.getElementById('incCategoryFilter').value;
     const p = document.getElementById('incPriorityFilter').value;
     const st = document.getElementById('incStatusFilter').value;
     return incidentData.filter(r =>
       (!s || r.reportNo.toLowerCase().includes(s) || r.location.toLowerCase().includes(s) || r.reporter.toLowerCase().includes(s)) &&
-      (!c || r.category === c) &&
-      (!p || r.priority === p) &&
-      (!st || r.status === st)
+      (!c || c === 'ALL' || c === 'All Categories' || r.category === c) &&
+      (!p || p === 'ALL' || p === 'All Priorities' || r.priority === p) &&
+      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
   }
 

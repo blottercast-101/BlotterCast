@@ -175,13 +175,13 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="searchInput" placeholder="Search docket, name…" class="filter-input w-full pl-8" oninput="renderTable()"/></span>
-        <select id="typeFilter" class="filter-input" onchange="renderTable()">
+        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="searchInput" placeholder="Search docket, name…" class="filter-input w-full pl-8" oninput="currentPage=1; renderTable()"/></span>
+        <select id="typeFilter" class="filter-input" onchange="currentPage=1; renderTable()">
           <option value="">All Types</option>
           <option value="CRIM">Criminal</option>
           <option value="CIVIL">Civil</option>
         </select>
-        <select id="statusFilter" class="filter-input" onchange="renderTable()">
+        <select id="statusFilter" class="filter-input" onchange="currentPage=1; renderTable()">
           <option value="">All Statuses</option>
           <option value="Ongoing">Ongoing</option>
           <option value="Pending">Pending</option>
@@ -493,13 +493,13 @@
   }
 
   function getFiltered() {
-    const s = document.getElementById('searchInput').value.toLowerCase();
+    const s = document.getElementById('searchInput').value.trim().toLowerCase();
     const t = document.getElementById('typeFilter').value;
     const st = document.getElementById('statusFilter').value;
     return blotterData.filter(r =>
       (!s || r.docketNo.toLowerCase().includes(s) || r.complainant.toLowerCase().includes(s) || r.respondent.toLowerCase().includes(s)) &&
-      (!t || r.type === t) &&
-      (!st || r.status === st)
+      (!t || t === 'ALL' || t === 'All Types' || r.type === t) &&
+      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
   }
 
@@ -521,7 +521,7 @@
           <td>${r.respondent}</td>
           <td class="text-xs text-forest-400">${r.respondentAddr}</td>
           <td>${r.nature}</td>
-          <td><span class="badge ${r.type==='CRIM'?'badge-ongoing':'badge-pending'}">${r.type}</span></td>
+          <td><span class="badge ${r.type==='CRIM'||r.type==='Criminal'?'badge-criminal':'badge-civil'}">${r.type}</span></td>
           <td><span class="badge ${r.status==='Resolved'?'badge-resolved':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}">${r.status}</span></td>
           <td>
             <div class="row-actions">
