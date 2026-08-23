@@ -277,7 +277,8 @@ let editUserId = null;function mapUser(u) {
     contact: u.contact_no || '', role: u.role, status: u.status,
     is_online: !!u.is_online,
     is_protected: isProtected, signaturePath: u.signature_path || null,
-    lastLogin: bcFormatTimestamp(u.last_login),
+    last_login_raw: u.last_login,
+    get lastLogin() { return bcFormatTimestamp(this.last_login_raw); },
   };
 }
 
@@ -609,6 +610,11 @@ setInterval(() => {
     loadUsers(true);
   }
 }, 5000);
+
+window.addEventListener('bc-time-format-changed', () => {
+  renderUsers();
+  loadAuditLog().catch(() => {});
+});
 
 (async function () {
   await requireAuth();

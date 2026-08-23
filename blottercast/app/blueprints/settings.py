@@ -47,6 +47,21 @@ def settings_router():
     if action == "letterhead" and method == "GET":
         return _letterhead()
 
+    if action == "time_format" and method == "GET":
+        row = SystemSetting.query.get("time_format")
+        return jsonify({"time_format": row.setting_value if row else "12"})
+    if action == "time_format" and method == "POST":
+        d = request.get_json(silent=True) or {}
+        tf = str(d.get("time_format") or d.get("timeFormat") or "12").strip()
+        tf = "24" if tf.startswith("24") else "12"
+        row = SystemSetting.query.get("time_format")
+        if row:
+            row.setting_value = tf
+        else:
+            db.session.add(SystemSetting(setting_key="time_format", setting_value=tf))
+        db.session.commit()
+        return jsonify({"ok": True, "time_format": tf})
+
     # Everything else requires full system_settings access.
     if not role_can(session.get("role", ""), "system_settings"):
         return json_error("You do not have permission to perform this action.", 403)

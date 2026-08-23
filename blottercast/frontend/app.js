@@ -84,6 +84,7 @@ async function requireAuth() {
       greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
     }
     if (status.user.mustChangePassword) bcShowForcedPasswordChange();
+    bcSyncTimeFormatFromServer().catch(() => {});
     return status.user;
   } catch (e) {
     window.location.href = 'login.html';
@@ -142,37 +143,120 @@ function bcIsValidName(str) {
   return BC_NAME_RE.test((str || '').trim());
 }
 
-// The system's one canonical timezone — this is a single-barangay-office
-// app, so every timestamp is shown in the same timezone the office
-// actually operates in, regardless of which timezone the viewing browser
-// happens to be set to. Pairs with the "Z"-suffixed UTC timestamps the
-// server sends for exactly this reason (see api/users.php's Last Login).
+// ── Global Time Format Preference & Formatting Engine ──────────
 const BC_SYSTEM_TIMEZONE = 'Asia/Manila';
-function bcFormatTimestamp(iso, emptyLabel = 'Never') {
-  if (!iso) return emptyLabel;
-  return new Date(iso).toLocaleString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-    timeZone: BC_SYSTEM_TIMEZONE,
-  });
+
+function bcGetTimeFormat() {
+  const saved = localStorage.getItem('bc_time_format') || '12';
+  return saved.startsWith('24') ? '24' : '12';
 }
-// Same as bcFormatTimestamp but date-only — for places that only ever
-// showed a calendar date, not a time of day.
+
+function bcSetTimeFormat(fmt, broadcastOnly = false) {
+  const normalized = (String(fmt || '12')).startsWith('24') ? '24' : '12';
+  localStorage.setItem('bc_time_format', normalized);
+  window.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: normalized } }));
+  document.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: normalized } }));
+  if (!broadcastOnly && typeof BCApi !== 'undefined' && BCApi.setTimeFormat) {
+    BCApi.setTimeFormat(normalized).catch(() => {});
+  }
+}
+
+async function bcSyncTimeFormatFromServer() {
+  try {
+    if (typeof BCApi !== 'undefined' && BCApi.getTimeFormat) {
+      const res = await BCApi.getTimeFormat();
+      if (res && res.time_format) {
+        const serverFmt = res.time_format.startsWith('24') ? '24' : '12';
+        const currentFmt = bcGetTimeFormat();
+        if (serverFmt !== currentFmt) {
+          localStorage.setItem('bc_time_format', serverFmt);
+          window.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: serverFmt } }));
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+/**
+ * Formats a time value (e.g. "13:45", "13:45:00", or a Date/ISO timestamp)
+ * into "01:45 PM" (12-hour) or "13:45" (24-hour) based on active preference.
+ */
+function bcFormatTime(val, formatPref) {
+  if (!val) return '';
+  const use24 = (formatPref || bcGetTimeFormat()) === '24';
+  
+  if (typeof val === 'string' && val.includes(':') && !val.includes('T') && !val.includes(' ')) {
+    const parts = val.split(':').map(Number);
+    const h = parts[0];
+    const m = parts[1];
+    if (Number.isNaN(h) || Number.isNaN(m)) return val;
+    if (use24) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    if (use24) {
+      return d.toLocaleTimeString('en-PH', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: BC_SYSTEM_TIMEZONE
+      });
+    }
+    return d.toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: BC_SYSTEM_TIMEZONE
+    });
+  } catch (e) {
+    return String(val);
+  }
+}
+
+/**
+ * Universal Date+Time Formatter.
+ * Formats timestamps into:
+ *   - 12-Hour: "Aug 23, 2026, 01:36 AM" / "Aug 23, 2026, 01:36 PM"
+ *   - 24-Hour: "Aug 23, 2026, 01:36" / "Aug 23, 2026, 13:36"
+ */
+function bcFormatTimestamp(iso, emptyLabel = 'Never', formatPref) {
+  if (!iso) return emptyLabel;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return emptyLabel;
+    const use24 = (formatPref || bcGetTimeFormat()) === '24';
+    const datePart = d.toLocaleDateString('en-PH', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE
+    });
+    const timePart = d.toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit', hour12: !use24, timeZone: BC_SYSTEM_TIMEZONE
+    });
+    return `${datePart}, ${timePart}`;
+  } catch (e) {
+    return emptyLabel;
+  }
+}
+
+function bcFormatDateTime(iso, emptyLabel = 'Never', formatPref) {
+  return bcFormatTimestamp(iso, emptyLabel, formatPref);
+}
+
 function bcFormatDate(iso, emptyLabel = '') {
   if (!iso) return emptyLabel;
-  return new Date(iso).toLocaleDateString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
-  });
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return emptyLabel;
+    return d.toLocaleDateString('en-PH', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
+    });
+  } catch (e) {
+    return emptyLabel;
+  }
 }
-// Plain "HH:MM" (24-hour, what <input type="time"> and the database both
-// use) -> 12-hour clock with AM/PM for display. Never show military time
-// to the person reading a report.
+
 function bcFormatTime12h(hhmm) {
-  if (!hhmm) return '';
-  const [h, m] = hhmm.split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  return bcFormatTime(hhmm);
 }
 
 // Zone is its own field (Incident.zone_id) — it must never be baked into

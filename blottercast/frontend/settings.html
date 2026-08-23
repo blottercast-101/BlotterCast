@@ -132,7 +132,10 @@
           </div>
           <div>
             <label class="form-label">Time Format</label>
-            <select class="form-input" data-setting="time_format"><option>12-Hour (AM/PM)</option><option>24-Hour</option></select>
+            <select class="form-input" data-setting="time_format" id="pref_time_format" onchange="onTimeFormatSelectChange(this.value)">
+              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
+            </select>
           </div>
           <div>
             <label class="form-label">Records Per Page</label>
@@ -213,6 +216,19 @@
           <div class="toggle-row">
             <div><div class="toggle-label">Require a code by email at sign-in</div><div class="toggle-desc" id="mfaToggleDesc">Applies only to your own account, from your next login onward.</div></div>
             <button id="mfaToggleBtn" class="toggle-switch off" onclick="toggleMyMfa()"><span class="sr-only">Toggle two-factor authentication</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Display Preferences</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">System Time Format</label>
+            <select id="user_time_format" class="form-input" onchange="onTimeFormatSelectChange(this.value)">
+              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
+            </select>
           </div>
         </div>
       </div>
@@ -340,6 +356,29 @@ function switchTab(name, btn) {
   btn.classList.add('active');
 }
 
+function onTimeFormatSelectChange(val) {
+  const normalized = (String(val || '12')).startsWith('24') ? '24' : '12';
+  bcSetTimeFormat(normalized);
+  const sel1 = document.getElementById('pref_time_format');
+  const sel2 = document.getElementById('user_time_format');
+  if (sel1 && sel1.value !== normalized) sel1.value = normalized;
+  if (sel2 && sel2.value !== normalized) sel2.value = normalized;
+  showToast(`Time display set to ${normalized === '24' ? '24-hour (HH:mm)' : '12-hour (hh:mm A)'}.`);
+}
+
+function syncTimeFormatControls() {
+  const current = bcGetTimeFormat();
+  const sel1 = document.getElementById('pref_time_format');
+  const sel2 = document.getElementById('user_time_format');
+  if (sel1) sel1.value = current;
+  if (sel2) sel2.value = current;
+}
+
+window.addEventListener('bc-time-format-changed', (e) => {
+  syncTimeFormatControls();
+  loadBackupHistory().catch(() => {});
+});
+
 function applySettings(values) {
   document.querySelectorAll('[data-setting]').forEach(el => {
     const key = el.dataset.setting;
@@ -360,6 +399,10 @@ function applySettings(values) {
       el.value = val;
     }
   });
+  if (values.time_format) {
+    bcSetTimeFormat(values.time_format, true);
+    syncTimeFormatControls();
+  }
 }
 
 function collectSettings() {
@@ -547,6 +590,7 @@ async function toggleMyMfa() {
 
 (async function () {
   const user = await requireAuth();
+  syncTimeFormatControls();
   // My Account + personal 2FA — available to every role, independent of
   // the system-wide settings below (which only System Admin can load/save).
   await Promise.all([loadMyAccount(), loadMySecurity()]);

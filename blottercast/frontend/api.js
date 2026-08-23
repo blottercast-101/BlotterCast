@@ -243,6 +243,12 @@ const BCApi = {
 
   // ---- settings & backup ----
   settingsList() { return this._fetch(`${BC_API}/api/settings.php?action=list`); },
+  getTimeFormat() { return this._fetch(`${BC_API}/api/settings.php?action=time_format`); },
+  setTimeFormat(timeFormat) {
+    return this._fetch(`${BC_API}/api/settings.php?action=time_format`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_format: timeFormat }),
+    });
+  },
   letterheadInfo() { return this._fetch(`${BC_API}/api/settings.php?action=letterhead`); },
   getMlModel() { return this._fetch(`${BC_API}/api/settings.php?action=ml_model`); },
   autoBackupCheck() { return this._fetch(`${BC_API}/api/settings.php?action=auto_backup_check`); },

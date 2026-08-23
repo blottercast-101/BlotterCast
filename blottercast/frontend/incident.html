@@ -397,7 +397,7 @@
         <tr data-id="${r.id}" data-key="${r.reportNo}" data-report-no="${r.reportNo}">
           <td class="font-semibold text-forest-700">${r.reportNo}</td>
           <td>${r.dateReported}</td>
-          <td>${bcFormatTime12h(r.timeReported)}</td>
+          <td>${bcFormatTime(r.timeReported)}</td>
           <td class="text-xs">${bcFormatIncidentLocation(r.zone, r.location)}</td>
           <td><span class="text-xs font-medium text-forest-700">${r.category}</span></td>
           <td class="text-xs text-gray-500 max-w-xs truncate" title="${r.description}">${r.description}</td>
@@ -540,7 +540,7 @@
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
     const rows = [
-      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime12h(r.timeReported)],
+      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime(r.timeReported)],
       ['Zone', r.zone], ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
       ['Description', r.description], ['Reporter', r.reporter], ['Officer', r.officer], ['Status', r.status],
     ];
@@ -562,6 +562,10 @@
       ).join('');
     } catch (err) { /* dropdown just stays on the placeholder if this fails */ }
   }
+
+  window.addEventListener('bc-time-format-changed', () => {
+    renderIncidents();
+  });
 
   (async function () {
     await requireAuth();
