@@ -113,8 +113,9 @@ async function requireAuth() {
   }
 }
 
-// ── 2-Hour Inactivity / Idle Auto-Logout (Timestamp & Background-Safe) ──
-const BC_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours = 7,200,000 ms
+// ── Global Inactivity / Idle Auto-Logout Engine (Dynamic & Background-Safe) ──
+let _bcIdleTimeoutMs = 2 * 60 * 60 * 1000; // 120 minutes = 7,200,000 ms default
+let _bcIdleEnabled = true;
 const BC_IDLE_CHECK_INTERVAL_MS = 5000;       // check every 5 seconds
 const BC_ACTIVITY_THROTTLE_MS = 1000;     // write to localStorage at most once per second
 let _bcLastThrottleWrite = 0;
@@ -127,6 +128,7 @@ function _bcIsPublicPage() {
 }
 
 function _bcRecordActivity() {
+  if (!_bcIdleEnabled) return;
   const now = Date.now();
   if (now - _bcLastThrottleWrite > BC_ACTIVITY_THROTTLE_MS) {
     _bcLastThrottleWrite = now;
@@ -137,12 +139,12 @@ function _bcRecordActivity() {
 }
 
 function _bcCheckIdleExpiry() {
-  if (_bcIsPublicPage()) return;
+  if (_bcIsPublicPage() || !_bcIdleEnabled) return;
   try {
     const raw = localStorage.getItem('bc_last_active_timestamp');
     const lastActive = raw ? Number(raw) : Date.now();
     const elapsed = Date.now() - lastActive;
-    if (elapsed >= BC_IDLE_TIMEOUT_MS) {
+    if (elapsed >= _bcIdleTimeoutMs) {
       _bcTriggerIdleLogout();
     }
   } catch (e) {}
@@ -152,14 +154,43 @@ async function _bcTriggerIdleLogout() {
   _bcStopIdleTracker();
   try { await BCApi.logout(); } catch (e) {}
   try {
+    localStorage.removeItem('token');
     localStorage.removeItem('bc_last_active_timestamp');
     sessionStorage.setItem('bc_logged_out_modal', '1');
+    sessionStorage.setItem('bc_session_expired_reason', `Your session expired due to ${Math.round(_bcIdleTimeoutMs / 60000)} minutes of inactivity.`);
   } catch (e) {}
-  window.location.replace('index.html?logged_out=1');
+  window.location.replace('login.html?session_expired=1');
 }
 
-function _bcStartIdleTracker() {
+function _bcStopIdleTracker() {
+  if (_bcIdleCheckInterval) {
+    clearInterval(_bcIdleCheckInterval);
+    _bcIdleCheckInterval = null;
+  }
+}
+
+async function _bcStartIdleTracker() {
   if (_bcIsPublicPage()) return;
+
+  // Fetch or sync global security settings
+  try {
+    const settings = await BCApi.settingsList();
+    if (settings) {
+      if ('idle_timeout_enabled' in settings) {
+        _bcIdleEnabled = settings.idle_timeout_enabled === '1' || settings.idle_timeout_enabled === 'true';
+      }
+      const dur = Number(settings.idle_timeout_duration_minutes || settings.session_timeout || 120);
+      if (dur > 0) {
+        _bcIdleTimeoutMs = dur * 60 * 1000;
+      }
+    }
+  } catch (e) {}
+
+  if (!_bcIdleEnabled) {
+    _bcStopIdleTracker();
+    return;
+  }
+
   _bcRecordActivity();
 
   if (!_bcIdleCheckInterval) {
@@ -168,7 +199,8 @@ function _bcStartIdleTracker() {
 
   if (!_bcIdleListenersAttached) {
     _bcIdleListenersAttached = true;
-    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(evt => {
       window.addEventListener(evt, _bcRecordActivity, { passive: true });
     });
 

@@ -265,23 +265,26 @@ def _google_login():
     user.failed_attempts = 0
     user.locked_until = None
 
-    # Check if 2FA is active on the account (Settings -> Security)
-    is_2fa_active = False
-    if hasattr(user, "is_2fa_enabled") and user.is_2fa_enabled:
-        is_2fa_active = True
-    elif getattr(user, "mfa_enabled", None) is not None:
-        raw_mfa = user.mfa_enabled
-        if isinstance(raw_mfa, str):
-            is_2fa_active = raw_mfa.lower() in ("1", "true", "t", "yes", "on", "enabled")
-        else:
-            is_2fa_active = bool(raw_mfa)
+    # Check if 2FA is active on the account (Settings -> Security) or enforced system-wide
+    settings = get_security_settings()
+    global_2fa_enforced = bool(settings.get("enforce_2fa_all_users", False))
+    is_2fa_active = global_2fa_enforced
+    if not is_2fa_active:
+        if hasattr(user, "is_2fa_enabled") and user.is_2fa_enabled:
+            is_2fa_active = True
+        elif getattr(user, "mfa_enabled", None) is not None:
+            raw_mfa = user.mfa_enabled
+            if isinstance(raw_mfa, str):
+                is_2fa_active = raw_mfa.lower() in ("1", "true", "t", "yes", "on", "enabled")
+            else:
+                is_2fa_active = bool(raw_mfa)
 
-    # Enforce Two-Factor Authentication (2FA) if enabled on the user account
+    # Enforce Two-Factor Authentication (2FA) if enabled or globally enforced
     if is_2fa_active:
         if not user.email:
             return json_error(
-                "This account has no email on file for 2FA OTP codes. "
-                "Contact an administrator to add one.", 403
+                "Two-Factor Authentication is required, but this account has no email on file for OTP verification. "
+                "Please contact a System Administrator.", 403
             )
         db.session.commit()
         _issue_and_send_otp(user, purpose="login")
@@ -291,7 +294,7 @@ def _google_login():
         session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
         pre_auth_token = _generate_pre_auth_token(user.id)
-        log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent")
+        log_audit(user.username, "Login", "System", f"Google OAuth verified, MFA code sent (Global={global_2fa_enforced})")
 
         return jsonify({
             "ok": True,
@@ -301,6 +304,7 @@ def _google_login():
             "pre_auth_token": pre_auth_token,
             "maskedEmail": _mask_email(user.email),
             "masked_email": _mask_email(user.email),
+            "enforcedGlobally": global_2fa_enforced,
             "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
             "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
         })
@@ -376,18 +380,18 @@ def _login():
     user.failed_attempts = 0
     user.locked_until = None
 
-    # 2FA is optional, per-account (Settings → Security → Two-Factor
-    # Authentication). Only send/require a code when the account actually
-    # has it turned on — otherwise password verification alone completes
-    # the login, same as before 2FA existed.
-    if not user.is_2fa_enabled:
+    global_2fa_enforced = bool(settings.get("enforce_2fa_all_users", False))
+    is_2fa_active = global_2fa_enforced or user.is_2fa_enabled
+
+    # If 2FA is not active on this account, directly complete sign-in
+    if not is_2fa_active:
         db.session.commit()
         return _complete_login(user, "Successful login (2FA disabled for this account)")
 
     if not user.email:
         return json_error(
-            "This account has no email on file, so a sign-in code can't be sent. "
-            "Contact an administrator to add one.", 403
+            "Two-Factor Authentication is required, but this account has no email on file for OTP verification. "
+            "Please contact a System Administrator.", 403
         )
 
     db.session.commit()
@@ -399,7 +403,7 @@ def _login():
     session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
     pre_auth_token = _generate_pre_auth_token(user.id)
-    log_audit(user.username, "Login", "System", "Password verified, MFA code sent")
+    log_audit(user.username, "Login", "System", f"Password verified, MFA code sent (Global={global_2fa_enforced})")
 
     return jsonify({
         "ok": True,
@@ -409,6 +413,7 @@ def _login():
         "pre_auth_token": pre_auth_token,
         "maskedEmail": _mask_email(user.email),
         "masked_email": _mask_email(user.email),
+        "enforcedGlobally": global_2fa_enforced,
         "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
         "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
     })

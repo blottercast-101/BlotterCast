@@ -80,6 +80,79 @@ def settings_router():
     return json_error("Unknown action", 404)
 
 
+@bp.route("/api/admin/security-settings", methods=["GET", "PATCH", "POST"])
+@login_required
+@permission_required("system_settings")
+def admin_security_settings():
+    from ..permissions import get_security_settings
+    if request.method == "GET":
+        settings = get_security_settings()
+        return jsonify({
+            "ok": True,
+            "status": "success",
+            "enforce_2fa_all_users": settings.get("enforce_2fa_all_users", False),
+            "idle_timeout_enabled": settings.get("idle_timeout_enabled", True),
+            "idle_timeout_duration_minutes": settings.get("idle_timeout_duration_minutes", 120),
+            "session_timeout": settings.get("session_timeout", 120),
+            "lockout_enabled": settings.get("lockout_enabled", True),
+            "max_failed_logins": settings.get("max_failed_logins", 5),
+            "min_password_length": settings.get("min_password_length", 8),
+            "password_expiry_days": settings.get("password_expiry_days", 90),
+        })
+
+    # PATCH or POST
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return json_error("No settings provided to update", 400)
+
+    updated_count = 0
+    mapping = {
+        "enforce_2fa_all_users": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "idle_timeout_duration_minutes": lambda v: str(max(1, int(v))),
+        "session_timeout": lambda v: str(max(1, int(v))),
+        "lockout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "max_failed_logins": lambda v: str(max(1, int(v))),
+        "min_password_length": lambda v: str(max(4, int(v))),
+        "password_expiry_days": lambda v: str(max(0, int(v))),
+    }
+
+    for key, formatter in mapping.items():
+        if key in data:
+            val_str = formatter(data[key])
+            row = SystemSetting.query.get(key)
+            if row:
+                row.setting_value = val_str
+            else:
+                db.session.add(SystemSetting(setting_key=key, setting_value=val_str))
+            updated_count += 1
+
+            # Sync session_timeout and idle_timeout_duration_minutes
+            if key == "idle_timeout_duration_minutes" and "session_timeout" not in data:
+                st_row = SystemSetting.query.get("session_timeout")
+                if st_row:
+                    st_row.setting_value = val_str
+                else:
+                    db.session.add(SystemSetting(setting_key="session_timeout", setting_value=val_str))
+            elif key == "session_timeout" and "idle_timeout_duration_minutes" not in data:
+                id_row = SystemSetting.query.get("idle_timeout_duration_minutes")
+                if id_row:
+                    id_row.setting_value = val_str
+                else:
+                    db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=val_str))
+
+    db.session.commit()
+    log_audit(session.get("username"), "Updated", "Security", f"Admin security settings updated ({updated_count} fields)")
+
+    settings = get_security_settings()
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "message": "System-wide security settings updated successfully.",
+        "settings": settings,
+    })
+
+
 def _settings_map(keys=None):
     q = SystemSetting.query
     if keys:
@@ -103,6 +176,21 @@ def _save():
             row.setting_value = str(value)
         else:
             db.session.add(SystemSetting(setting_key=clean_key, setting_value=str(value)))
+
+        # Keep session_timeout and idle_timeout_duration_minutes in sync
+        if clean_key == "idle_timeout_duration_minutes" and "session_timeout" not in d:
+            st = SystemSetting.query.get("session_timeout")
+            if st:
+                st.setting_value = str(value)
+            else:
+                db.session.add(SystemSetting(setting_key="session_timeout", setting_value=str(value)))
+        elif clean_key == "session_timeout" and "idle_timeout_duration_minutes" not in d:
+            it = SystemSetting.query.get("idle_timeout_duration_minutes")
+            if it:
+                it.setting_value = str(value)
+            else:
+                db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=str(value)))
+
     db.session.commit()
 
     log_audit(session.get("username"), "Updated", "Settings", "System settings saved")

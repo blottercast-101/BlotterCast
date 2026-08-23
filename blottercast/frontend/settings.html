@@ -235,29 +235,48 @@
       </div>
       <div id="tab-security-admin-only" data-perm="system_settings">
       <div class="settings-section">
-        <h3>Authentication Settings</h3>
+        <h3>System-Wide Security Policies (Admin Only)</h3>
+        <p class="text-xs text-forest-400 mb-4" style="margin-top:-0.5rem;">Global security configurations that apply automatically across all accounts and roles.</p>
         <div class="space-y-0">
           <div class="toggle-row">
-            <div><div class="toggle-label">Account Lockout After Failed Attempts</div><div class="toggle-desc">Lock account after 5 consecutive failed logins</div></div>
+            <div>
+              <div class="toggle-label font-semibold text-forest-800">Require 2FA for All Accounts</div>
+              <div class="toggle-desc">When enabled, all users must complete Two-Factor Authentication during login.</div>
+            </div>
+            <button class="toggle-switch off" data-setting="enforce_2fa_all_users" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label font-semibold text-forest-800">Session Inactivity Auto-Logout</div>
+              <div class="toggle-desc">Automatically log out inactive users after 2 hours of inactivity across all active sessions.</div>
+            </div>
+            <button class="toggle-switch on" data-setting="idle_timeout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Account Lockout After Failed Attempts</div>
+              <div class="toggle-desc">Lock account after 5 consecutive failed logins</div>
+            </div>
             <button class="toggle-switch on" data-setting="lockout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <label class="form-label">Session Timeout (minutes)</label>
-            <input type="number" class="form-input" data-setting="session_timeout" value="120"/>
+            <label class="form-label">Inactivity Timeout Duration (minutes)</label>
+            <input type="number" class="form-input" data-setting="idle_timeout_duration_minutes" value="120" min="5" max="1440"/>
+            <p class="text-xs text-forest-400 mt-1">Default: 120 minutes (2 hours).</p>
           </div>
           <div>
             <label class="form-label">Max Failed Login Attempts</label>
-            <input type="number" class="form-input" data-setting="max_failed_logins" value="5"/>
+            <input type="number" class="form-input" data-setting="max_failed_logins" value="5" min="1" max="20"/>
           </div>
           <div>
             <label class="form-label">Minimum Password Length</label>
-            <input type="number" class="form-input" data-setting="min_password_length" value="8"/>
+            <input type="number" class="form-input" data-setting="min_password_length" value="8" min="6" max="32"/>
           </div>
           <div>
             <label class="form-label">Password Expiry (days)</label>
-            <input type="number" class="form-input" data-setting="password_expiry_days" value="90"/>
+            <input type="number" class="form-input" data-setting="password_expiry_days" value="90" min="0" max="365"/>
           </div>
         </div>
       </div>

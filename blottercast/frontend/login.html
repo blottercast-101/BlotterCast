@@ -1016,17 +1016,22 @@
   function checkLoggedOutNotification() {
     const urlParams = new URLSearchParams(window.location.search);
     const hasParam = urlParams.get('logged_out') === '1';
+    const isSessionExpired = urlParams.get('session_expired') === '1';
     const hasStorage = sessionStorage.getItem('bc_logged_out_alert') === '1';
+    const expiredReason = sessionStorage.getItem('bc_session_expired_reason');
 
-    if (hasParam || hasStorage) {
+    if (hasParam || isSessionExpired || hasStorage || expiredReason) {
       sessionStorage.removeItem('bc_logged_out_alert');
-      if (hasParam) {
-        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-      }
+      sessionStorage.removeItem('bc_session_expired_reason');
+      try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
       const alert = document.getElementById('loginAlert');
       const alertText = document.getElementById('loginAlertMsg');
       if (alert && alertText) {
-        alertText.textContent = "You've been logged out! Please login to your account to access BlotterCast";
+        if (isSessionExpired || expiredReason) {
+          alertText.textContent = expiredReason || 'Your session expired due to 2 hours of inactivity. Please sign in again.';
+        } else {
+          alertText.textContent = "You've been logged out! Please login to your account to access BlotterCast";
+        }
         alert.classList.add('show');
       }
     }

@@ -26,6 +26,9 @@ PERMISSIONS = {
 SECURITY_DEFAULTS = {
     "lockout_enabled": True,
     "session_timeout": 120,
+    "idle_timeout_enabled": True,
+    "idle_timeout_duration_minutes": 120,
+    "enforce_2fa_all_users": False,
     "max_failed_logins": 5,
     "min_password_length": 8,
     "password_expiry_days": 90,
@@ -40,10 +43,20 @@ def get_security_settings() -> dict:
     out = dict(SECURITY_DEFAULTS)
     rows = SystemSetting.query.filter(SystemSetting.setting_key.in_(out.keys())).all()
     for r in rows:
-        if r.setting_key == "lockout_enabled":
-            out[r.setting_key] = r.setting_value in ("1", "true", "True")
+        if r.setting_key in ("lockout_enabled", "idle_timeout_enabled", "enforce_2fa_all_users"):
+            out[r.setting_key] = str(r.setting_value).lower() in ("1", "true", "yes", "on", "t")
         else:
-            out[r.setting_key] = int(r.setting_value)
+            try:
+                out[r.setting_key] = int(r.setting_value)
+            except (ValueError, TypeError):
+                pass
+
+    # Keep session_timeout and idle_timeout_duration_minutes synchronized
+    if "idle_timeout_duration_minutes" in out and out["idle_timeout_duration_minutes"] > 0:
+        out["session_timeout"] = out["idle_timeout_duration_minutes"]
+    elif "session_timeout" in out and out["session_timeout"] > 0:
+        out["idle_timeout_duration_minutes"] = out["session_timeout"]
+
     return out
 
 
@@ -60,12 +73,14 @@ def login_required(view):
             return json_error("Not authenticated", 401)
 
         settings = get_security_settings()
-        timeout_seconds = settings["session_timeout"] * 60
-        last_activity = session.get("last_activity")
-        if timeout_seconds > 0 and last_activity:
-            if (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
-                session.clear()
-                return json_error("Your session has expired due to inactivity. Please log in again.", 401)
+        if settings.get("idle_timeout_enabled", True):
+            timeout_minutes = settings.get("idle_timeout_duration_minutes") or settings.get("session_timeout", 120)
+            timeout_seconds = timeout_minutes * 60
+            last_activity = session.get("last_activity")
+            if timeout_seconds > 0 and last_activity:
+                if (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
+                    session.clear()
+                    return json_error("Your session has expired due to inactivity. Please log in again.", 401)
         session["last_activity"] = datetime.utcnow().timestamp()
 
         if session.get("must_change_password") and view.__module__.split(".")[-1] != "auth":
