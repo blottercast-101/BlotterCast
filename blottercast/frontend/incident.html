@@ -269,6 +269,9 @@
         </button>
       </div>
 
+      <!-- Backdrop for Wide View Fullscreen Map Modal -->
+      <div id="incPickerWideBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[95] transition-opacity animate-fadeIn" onclick="toggleExpandPickerMap(false)"></div>
+
       <!-- Geographic Forward Geocoding & Interactive Pin Picker -->
       <div class="bg-forest-50/70 p-3 rounded-lg border border-forest-100 space-y-2">
         <div class="flex items-center justify-between">
@@ -279,20 +282,54 @@
             <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
           </div>
           <div class="flex items-center gap-2">
-            <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1">
+            <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1 shadow-sm">
               <span data-icon="search" data-icon-size="12"></span> Geocode Location
             </button>
-            <button type="button" onclick="togglePickerMap()" id="btnToggleMap" class="text-xs px-2.5 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors">
+            <button type="button" onclick="togglePickerMap()" id="btnToggleMap" class="text-xs px-2 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors shadow-sm">
               Toggle Mini-Map
+            </button>
+            <button type="button" onclick="toggleExpandPickerMap()" id="btnExpandMap" class="text-xs px-2 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors flex items-center gap-1 shadow-sm" title="Expand Fullscreen Wide View">
+              <span data-icon="maximize" data-icon-size="12"></span> <span id="expandBtnLabel">Wide View</span>
             </button>
           </div>
         </div>
 
         <div id="incPickerMapContainer" class="hidden">
+          <!-- Floating Header visible in Wide View -->
+          <div id="incPickerWideHeader" class="hidden flex items-center justify-between gap-3 border-b border-forest-100 pb-2.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold text-forest-900 flex items-center gap-1.5">
+                <span data-icon="map" data-icon-size="16"></span> Mapulang Lupa Pin Placement & Boundaries
+              </span>
+              <span id="wideZoneBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded bg-forest-100 text-forest-800 border border-forest-200">Zone: None</span>
+              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs font-bold text-forest-900 bg-forest-50 px-2.5 py-1 rounded border border-forest-200" id="wideCoordsPreview">Lat: --, Lng: --</span>
+              <button type="button" onclick="toggleExpandPickerMap(false)" class="text-xs px-3 py-1.5 bg-forest-800 hover:bg-forest-900 text-white rounded-lg font-semibold transition-colors flex items-center gap-1 shadow">
+                <span data-icon="minimize" data-icon-size="13"></span> Close Wide View
+              </button>
+            </div>
+          </div>
+
           <div id="incPickerMap" style="height: 180px; width: 100%;" class="rounded border border-forest-200 shadow-inner z-0"></div>
-          <div class="flex justify-between items-center text-[11px] text-forest-600 mt-1">
+
+          <!-- Inline Footer (Default view) -->
+          <div id="incPickerInlineFooter" class="flex justify-between items-center text-[11px] text-forest-600 mt-1">
             <span>Tip: Click or drag marker anywhere inside the green boundary.</span>
             <span class="font-mono text-xs font-semibold text-forest-800" id="if_coordsPreview">Lat: --, Lng: --</span>
+          </div>
+
+          <!-- Wide View Floating Footer -->
+          <div id="incPickerWideFooter" class="hidden flex items-center justify-between text-xs text-forest-700 bg-forest-50/80 p-2.5 rounded-lg border border-forest-200 mt-2">
+            <div class="flex items-center gap-3">
+              <span><strong>Tip:</strong> Click or drag the marker inside your designated zone boundary.</span>
+              <span class="text-forest-400">|</span>
+              <span class="text-forest-600">Press <kbd class="px-1.5 py-0.5 bg-white border border-forest-300 rounded shadow-xs font-mono text-[11px]">Esc</kbd> to return</span>
+            </div>
+            <button type="button" onclick="toggleExpandPickerMap(false)" class="text-xs text-forest-800 font-semibold hover:underline">
+              Done Pinning
+            </button>
           </div>
         </div>
 
@@ -665,18 +702,35 @@
     }
   }
 
+  let isMapExpanded = false;
+
   function updatePickerStatusBadge(lat, lng) {
     const badge = document.getElementById('if_geoBadge');
     const preview = document.getElementById('if_coordsPreview');
+    const wideGeoBadge = document.getElementById('wideGeoBadge');
+    const wideCoordsPreview = document.getElementById('wideCoordsPreview');
+    const wideZoneBadge = document.getElementById('wideZoneBadge');
     const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
     const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
     const boundaryMsg = document.getElementById('if_boundaryErrorMsg');
+
+    const selectedZone = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
+    if (wideZoneBadge) {
+      wideZoneBadge.textContent = selectedZone ? `Zone: ${selectedZone}` : 'Zone: None Selected';
+    }
+
     if (!badge) return;
 
     if (lat == null || lng == null) {
-      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      badge.className = cls;
       badge.textContent = '⚪ Unverified Location';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '⚪ Unverified Location';
+      }
       if (preview) preview.textContent = 'Lat: --, Lng: --';
+      if (wideCoordsPreview) wideCoordsPreview.textContent = 'Lat: --, Lng: --';
       if (boundaryBanner) boundaryBanner.classList.add('hidden');
       isLocationVerifiedInBoundary = false;
       setBoundaryStyle(false);
@@ -687,13 +741,17 @@
     if (inBounds) {
       isLocationVerifiedInBoundary = true;
       isGeocoded = true;
-      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      badge.className = cls;
       badge.textContent = '✓ Inside Boundary';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '✓ Inside Boundary';
+      }
       if (boundaryBanner) boundaryBanner.classList.add('hidden');
       setBoundaryStyle(false);
 
       const detectedZoneObj = detectZoneFromCoordinates(lat, lng);
-      const selectedZone = document.getElementById('if_zone').value;
       if (detectedZoneObj && selectedZone && detectedZoneObj.zone !== selectedZone) {
         currentZoneConflict = {
           selectedZone,
@@ -714,8 +772,13 @@
       }
     } else {
       isLocationVerifiedInBoundary = false;
-      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+      badge.className = cls;
       badge.textContent = '⚠️ Outside Boundary / Non-Jurisdiction';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '⚠️ Outside Boundary';
+      }
       if (boundaryBanner && boundaryTitle && boundaryMsg) {
         boundaryTitle.textContent = 'Outside Barangay Jurisdiction';
         boundaryMsg.textContent = 'This location is outside Barangay Mapulang Lupa boundary. Incident reports can only be filed within barangay jurisdiction.';
@@ -723,7 +786,67 @@
       }
       setBoundaryStyle(true);
     }
-    if (preview) preview.textContent = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+    const coordsStr = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+    if (preview) preview.textContent = coordsStr;
+    if (wideCoordsPreview) wideCoordsPreview.textContent = coordsStr;
+  }
+
+  function toggleExpandPickerMap(forceState) {
+    isMapExpanded = typeof forceState === 'boolean' ? forceState : !isMapExpanded;
+    const container = document.getElementById('incPickerMapContainer');
+    const mapEl = document.getElementById('incPickerMap');
+    const wideHeader = document.getElementById('incPickerWideHeader');
+    const wideFooter = document.getElementById('incPickerWideFooter');
+    const inlineFooter = document.getElementById('incPickerInlineFooter');
+    const expandLabel = document.getElementById('expandBtnLabel');
+    const backdrop = document.getElementById('incPickerWideBackdrop');
+
+    if (!container || !mapEl) return;
+
+    if (isMapExpanded) {
+      showPickerMap();
+      if (backdrop) backdrop.classList.remove('hidden');
+      container.className = 'fixed inset-4 md:inset-8 z-[100] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-forest-300 flex flex-col p-4 animate-fadeIn space-y-2.5';
+      mapEl.style.height = '100%';
+      mapEl.style.minHeight = '420px';
+      mapEl.classList.add('flex-1');
+      if (wideHeader) wideHeader.classList.remove('hidden');
+      if (wideFooter) wideFooter.classList.remove('hidden');
+      if (inlineFooter) inlineFooter.classList.add('hidden');
+      if (expandLabel) expandLabel.textContent = 'Collapse View';
+    } else {
+      if (backdrop) backdrop.classList.add('hidden');
+      container.className = 'space-y-2 mt-2';
+      mapEl.style.height = '180px';
+      mapEl.style.minHeight = '180px';
+      mapEl.classList.remove('flex-1');
+      if (wideHeader) wideHeader.classList.add('hidden');
+      if (wideFooter) wideFooter.classList.add('hidden');
+      if (inlineFooter) inlineFooter.classList.remove('hidden');
+      if (expandLabel) expandLabel.textContent = 'Wide View';
+    }
+
+    if (window.lucide) lucide.createIcons();
+
+    // Re-verify current coords and sync badges
+    const curLat = document.getElementById('if_lat').value;
+    const curLng = document.getElementById('if_lng').value;
+    if (curLat && curLng) {
+      updatePickerStatusBadge(Number(curLat), Number(curLng));
+    } else {
+      updatePickerStatusBadge(null, null);
+    }
+
+    setTimeout(() => {
+      if (pickerMap) {
+        pickerMap.invalidateSize();
+        if (curLat && curLng) {
+          pickerMap.setView([Number(curLat), Number(curLng)], Math.max(pickerMap.getZoom(), 16));
+        } else if (pickerBoundaryLayer) {
+          pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [25, 25] });
+        }
+      }
+    }, 180);
   }
 
   function onLocationDetailInput() {
@@ -978,6 +1101,7 @@
     if (banner) banner.classList.add('hidden');
     const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
     if (boundaryBanner) boundaryBanner.classList.add('hidden');
+    toggleExpandPickerMap(false);
     const container = document.getElementById('incPickerMapContainer');
     if (container) container.classList.add('hidden');
     setBoundaryStyle(false);
@@ -1140,6 +1264,17 @@
   window.addEventListener('bc-time-format-changed', () => {
     renderIncidents();
   });
+
+  // Pressing Escape while in Wide View closes only the wide view without closing the main modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+      if (isMapExpanded) {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleExpandPickerMap(false);
+      }
+    }
+  }, true);
 
   (async function () {
     await requireAuth();
