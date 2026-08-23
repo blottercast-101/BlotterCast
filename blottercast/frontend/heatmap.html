@@ -583,22 +583,27 @@
       }
     }
 
-    // Whitelist and authentic address checker: invalidates arbitrary test/mock records
+    // Whitelist and authentic address checker: invalidates arbitrary test/mock/placeholder records
     function isAuthenticLocation(locationDetail, zoneId) {
-      if (!locationDetail && !zoneId) return false;
-      const loc = (locationDetail || '').toLowerCase().trim();
-      if (!loc || loc.length <= 2) return false;
-      if (loc.startsWith('test') || loc.includes('mock') || loc.includes('sample') || loc === 'sdada' || loc === 'asdf' || loc === 'main street' || loc === 'corner st') {
-        return false;
-      }
+      if (!locationDetail) return false;
+      const loc = locationDetail.trim().toLowerCase();
+      // Length guard against single characters or short gibberish ("q", "w", "as", "12")
+      if (loc.length < 4) return false;
+      // Keywords representing mock/placeholder strings
+      const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
+      if (mockKeywords.some(kw => loc.includes(kw))) return false;
+      if (loc === 'main street' || loc === 'corner st' || loc.startsWith('test location')) return false;
       return true;
     }
 
     function updateIncidentBoundaryStatuses() {
       incidents.forEach(item => {
+        const hasCoords = item.lat != null && item.lng != null && !isNaN(item.lat) && !isNaN(item.lng) && item.lat !== 0 && item.lng !== 0;
         const isAuthentic = isAuthenticLocation(item.locationDetail, item.zone);
-        const insidePoly = item.hasValidCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
-        const valid = isAuthentic && insidePoly;
+        const insidePoly = hasCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
+
+        // Record is mapped ONLY IF authentic address + non-zero valid coords + inside boundary polygon
+        const valid = Boolean(hasCoords && isAuthentic && insidePoly);
         item.isInsideBoundary = valid;
         item.isUnmapped = !valid;
       });
@@ -610,16 +615,16 @@
       const now = new Date(); now.setHours(0, 0, 0, 0);
       const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
       const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
-      incidents = raw.map(r => {
-        const hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng));
+      incidents = (Array.isArray(raw) ? raw : []).map(r => {
+        const hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
         const lat = hasCoords ? parseFloat(r.lat) : null;
         const lng = hasCoords ? parseFloat(r.lng) : null;
-        const d = new Date(r.incident_date + 'T00:00:00');
+        const d = new Date((r.incident_date || '') + 'T00:00:00');
         return {
           id: r.id,
-          date: r.incident_date,
+          date: r.incident_date || '—',
           period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
-          category: r.category,
+          category: r.category || 'Other',
           zone: r.zone_id || 'Zone 1',
           locationDetail: r.location || '',
           location: bcFormatIncidentLocation(r.zone_id, r.location),

@@ -10,7 +10,6 @@ from ..helpers import (
     next_seq_no,
     parse_date,
     parse_time,
-    zone_coords,
 )
 from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
 from ..permissions import json_error, login_required, permission_required
