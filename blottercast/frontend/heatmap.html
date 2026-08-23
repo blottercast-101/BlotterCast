@@ -794,6 +794,8 @@
 
     let boundaryLayer = null;
     let boundaryGeojson = null;
+    let zonesLayer = null;
+    let zonesGeojson = null;
     let heatLayer = null;
     let markerLayer = L.layerGroup().addTo(map);
     let highlightLayer = L.layerGroup().addTo(map);
@@ -811,25 +813,123 @@
 
     async function loadBoundary() {
       try {
-        const res = await fetch('mapulang-lupa.geojson');
-        if (!res.ok) throw new Error('Boundary file not found.');
+        const [boundRes, zonesRes] = await Promise.all([
+          fetch('mapulang-lupa.geojson'),
+          fetch('mapulang-lupa-zones.geojson')
+        ]);
 
-        boundaryGeojson = await res.json();
+        if (boundRes.ok) {
+          boundaryGeojson = await boundRes.json();
+          boundaryLayer = L.geoJSON(boundaryGeojson, {
+            style: {
+              color: '#1a5730',
+              weight: 3.5,
+              fillColor: 'transparent',
+              fillOpacity: 0
+            }
+          }).addTo(map);
 
-        boundaryLayer = L.geoJSON(boundaryGeojson, {
-          style: {
-            color: '#23703c',
-            weight: 3,
-            fillColor: '#4fa868',
-            fillOpacity: 0.10
-          }
-        }).addTo(map);
+          map.invalidateSize();
+          map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+          updateIncidentBoundaryStatuses();
+        }
 
-        map.invalidateSize();
-        map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
-        updateIncidentBoundaryStatuses();
+        if (zonesRes.ok) {
+          zonesGeojson = await zonesRes.json();
+        }
       } catch (err) {
         console.error('Boundary file error:', err);
+      }
+    }
+
+    function getZonePolygonStyle(feature, zoneCounts) {
+      const zoneId = feature.properties.zone;
+      const count = zoneCounts[zoneId] || 0;
+      if (count === 0) {
+        return {
+          fillColor: '#9CA3AF',
+          fillOpacity: 0.15,
+          color: '#374151',
+          weight: 1.5,
+          dashArray: '3',
+        };
+      }
+      const tier = getOccurrenceDensityTier(count);
+      const opacityMap = {
+        Low: 0.35,
+        Medium: 0.40,
+        Elevated: 0.45,
+        High: 0.50
+      };
+      return {
+        fillColor: tier.color,
+        fillOpacity: opacityMap[tier.label] || 0.35,
+        color: '#374151',
+        weight: 1.5,
+        dashArray: '3',
+      };
+    }
+
+    function renderZoneChoropleth(data) {
+      if (zonesLayer) {
+        map.removeLayer(zonesLayer);
+        zonesLayer = null;
+      }
+      if (!zonesGeojson) return;
+
+      const zoneCounts = getZoneIncidentCounts(data);
+
+      zonesLayer = L.geoJSON(zonesGeojson, {
+        style: (feature) => getZonePolygonStyle(feature, zoneCounts),
+        onEachFeature: (feature, layer) => {
+          const zProps = feature.properties;
+          const count = zoneCounts[zProps.zone] || 0;
+          const tier = getOccurrenceDensityTier(count);
+
+          // Tooltip on hover
+          layer.bindTooltip(`
+            <div class="font-sans text-xs">
+              <strong>${zProps.zone} (${zProps.name})</strong><br/>
+              <span style="color:${count > 0 ? tier.color : '#6B7280'}">${count} Incident${count !== 1 ? 's' : ''} (${count > 0 ? tier.label : 'None'})</span>
+            </div>
+          `, { sticky: true, className: 'zone-tooltip' });
+
+          // Popup on click
+          layer.bindPopup(`
+            <div class="p-2 font-sans text-xs space-y-1.5">
+              <div class="flex items-center justify-between gap-2 border-b pb-1.5">
+                <strong class="text-sm font-bold text-forest-900">${zProps.zone}</strong>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? tier.badgeClass : 'bg-gray-100 text-gray-700'}">${count > 0 ? tier.label : 'No Incidents'}</span>
+              </div>
+              <div><strong>Primary Landmark:</strong> ${zProps.landmark || zProps.name}</div>
+              <div><strong>Total Incidents:</strong> <span class="font-bold text-forest-800">${count}</span></div>
+              <div><strong>Density Tier:</strong> <span style="color:${count > 0 ? tier.color : '#6B7280'}; font-weight:600;">${count > 0 ? tier.label : 'Zero Activity'}</span></div>
+            </div>
+          `);
+
+          layer.on('mouseover', (e) => {
+            const l = e.target;
+            l.setStyle({
+              weight: 3,
+              color: '#111827',
+              fillOpacity: 0.65,
+              dashArray: ''
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+              l.bringToFront();
+            }
+          });
+
+          layer.on('mouseout', (e) => {
+            if (zonesLayer) {
+              zonesLayer.resetStyle(e.target);
+            }
+          });
+        }
+      }).addTo(map);
+
+      if (zonesLayer && zonesLayer.bringToBack) {
+        zonesLayer.bringToBack();
       }
     }
 
@@ -1096,6 +1196,7 @@
     function updateHeatMapPage() {
       const mappedOnly = getFilteredIncidents(true);
       const allFiltered = getFilteredIncidents(false);
+      renderZoneChoropleth(mappedOnly);
       renderHeatMap(mappedOnly);
       renderMarkers(mappedOnly);
       renderSummary(mappedOnly);

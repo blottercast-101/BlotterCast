@@ -489,18 +489,67 @@
   let pickerMarker = null;
   let pickerBoundaryLayer = null;
   let pickerBoundaryGeojson = null;
+  let pickerZonesLayer = null;
+  let pickerZonesGeojson = null;
   let isLocationVerifiedInBoundary = false;
   let isGeocoded = false;
 
-  function setBoundaryStyle(isError = false) {
+  function setBoundaryStyle(isError) {
     if (pickerBoundaryLayer) {
       pickerBoundaryLayer.setStyle({
-        color: isError ? '#e11d48' : '#23703c',
-        weight: isError ? 3.5 : 2.5,
-        fillColor: isError ? '#f43f5e' : '#4fa868',
-        fillOpacity: isError ? 0.18 : 0.12
+        color: isError ? '#e11d48' : '#1a5730',
+        weight: isError ? 3 : 3,
+        fillColor: 'transparent',
+        fillOpacity: 0
       });
     }
+  }
+
+  function getPickerZoneStyle(feature, isSelected = false) {
+    if (isSelected) {
+      return {
+        color: '#15803d',
+        weight: 3,
+        fillColor: '#22c55e',
+        fillOpacity: 0.35,
+        dashArray: ''
+      };
+    }
+    return {
+      color: '#475569',
+      weight: 1.5,
+      fillColor: '#94a3b8',
+      fillOpacity: 0.12,
+      dashArray: '3'
+    };
+  }
+
+  function highlightSelectedZoneOnMiniMap(zoneId) {
+    if (!pickerZonesLayer) return;
+    pickerZonesLayer.eachLayer((layer) => {
+      const isSel = layer.feature && layer.feature.properties && layer.feature.properties.zone === zoneId;
+      layer.setStyle(getPickerZoneStyle(layer.feature, isSel));
+      if (isSel && pickerMap && layer.getBounds) {
+        pickerMap.fitBounds(layer.getBounds(), { padding: [30, 30], maxZoom: 17 });
+      }
+    });
+  }
+
+  function detectZoneFromCoordinates(lat, lng) {
+    if (!pickerZonesGeojson || !pickerZonesGeojson.features) return null;
+    try {
+      const pt = turf.point([Number(lng), Number(lat)]);
+      for (const feat of pickerZonesGeojson.features) {
+        if (turf.booleanPointInPolygon(pt, feat)) {
+          return {
+            zone: feat.properties.zone,
+            name: feat.properties.name,
+            landmark: feat.properties.landmark || feat.properties.name
+          };
+        }
+      }
+    } catch (e) {}
+    return null;
   }
 
   async function initPickerMap() {
@@ -522,15 +571,36 @@
     }).addTo(pickerMap);
 
     try {
-      const res = await fetch('mapulang-lupa.geojson');
-      if (res.ok) {
-        pickerBoundaryGeojson = await res.json();
+      const [boundRes, zonesRes] = await Promise.all([
+        fetch('mapulang-lupa.geojson'),
+        fetch('mapulang-lupa-zones.geojson')
+      ]);
+
+      if (zonesRes.ok) {
+        pickerZonesGeojson = await zonesRes.json();
+        const selectedZone = document.getElementById('if_zone').value;
+
+        pickerZonesLayer = L.geoJSON(pickerZonesGeojson, {
+          style: (feature) => getPickerZoneStyle(feature, feature.properties.zone === selectedZone),
+          onEachFeature: (feature, layer) => {
+            const z = feature.properties;
+            layer.bindTooltip(`<strong>${z.zone}</strong> (${z.name})`, { sticky: true, className: 'text-xs' });
+
+            layer.on('click', (e) => {
+              setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
+            });
+          }
+        }).addTo(pickerMap);
+      }
+
+      if (boundRes.ok) {
+        pickerBoundaryGeojson = await boundRes.json();
         pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
           style: {
-            color: '#23703c',
-            weight: 2.5,
-            fillColor: '#4fa868',
-            fillOpacity: 0.12
+            color: '#1a5730',
+            weight: 3,
+            fillColor: 'transparent',
+            fillOpacity: 0
           }
         }).addTo(pickerMap);
         pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
@@ -621,6 +691,27 @@
       badge.textContent = '✓ Inside Boundary';
       if (boundaryBanner) boundaryBanner.classList.add('hidden');
       setBoundaryStyle(false);
+
+      const detectedZoneObj = detectZoneFromCoordinates(lat, lng);
+      const selectedZone = document.getElementById('if_zone').value;
+      if (detectedZoneObj && selectedZone && detectedZoneObj.zone !== selectedZone) {
+        currentZoneConflict = {
+          selectedZone,
+          detectedZone: detectedZoneObj.zone,
+          landmark: detectedZoneObj.landmark,
+          matchedKeyword: 'Pin Placement'
+        };
+        const banner = document.getElementById('if_zoneConflictBanner');
+        const msgEl = document.getElementById('if_zoneConflictMsg');
+        const fixBtn = document.getElementById('btnQuickFixZone');
+        if (banner && msgEl && fixBtn) {
+          msgEl.innerHTML = `Placed pin is located inside <strong class="text-amber-950 font-semibold">${detectedZoneObj.zone} (${detectedZoneObj.landmark})</strong>, but you selected <strong class="text-amber-950 font-semibold">${selectedZone}</strong>. Please switch zone or adjust pin.`;
+          fixBtn.textContent = `Switch to ${detectedZoneObj.zone}`;
+          banner.classList.remove('hidden');
+        }
+      } else {
+        checkZoneLocationConflict();
+      }
     } else {
       isLocationVerifiedInBoundary = false;
       badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
@@ -863,6 +954,8 @@
     // 1. Decoupled from geocoding coordinates:
     // Changing Zone NEVER injects coordinates or marks outside-boundary locations as inside!
     checkZoneLocationConflict();
+    const zoneVal = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
+    highlightSelectedZoneOnMiniMap(zoneVal);
 
     // 2. If coordinates are already set, re-verify status with the new zone conflict rule
     const lat = document.getElementById('if_lat').value;
