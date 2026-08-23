@@ -9,6 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <script>
     tailwind.config = {
       theme: { extend: { colors: {
@@ -16,7 +19,6 @@
       }, fontFamily: { display:['DM Serif Display','serif'], body:['DM Sans','sans-serif'] } } }
     }
   </script>
-
 </head>
 <body class="font-body bg-forest-50 min-h-screen">
 
@@ -238,13 +240,49 @@
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Zone 1">Zone 1</option><option value="Zone 2">Zone 2</option>
-            <option value="Zone 3">Zone 3</option><option value="Zone 4">Zone 4</option>
-            <option value="Zone 5">Zone 5</option><option value="Zone 6">Zone 6</option>
-            <option value="Zone 7">Zone 7</option><option value="Zone 8">Zone 8</option>
+            <option value="Zone 1">Zone 1 (Residence 3)</option>
+            <option value="Zone 2">Zone 2 (Residence 1)</option>
+            <option value="Zone 3">Zone 3 (Pandi Village 2)</option>
+            <option value="Zone 4">Zone 4 (Mitay 1)</option>
+            <option value="Zone 5">Zone 5 (Sitio Gubat)</option>
+            <option value="Zone 6">Zone 6 (Bangko St.)</option>
+            <option value="Zone 7">Zone 7 (Barangka St.)</option>
           </select>
         </div>
-        <div class="col-span-2"><label class="form-label">Location Detail</label><input type="text" id="if_location" class="form-input" placeholder="Street, landmark, purok…"/></div>
+        <div class="col-span-2">
+          <label class="form-label">Location Detail</label>
+          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…"/>
+        </div>
+      </div>
+
+      <!-- Geographic Forward Geocoding & Interactive Pin Picker -->
+      <div class="bg-forest-50/70 p-3 rounded-lg border border-forest-100 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-forest-800 flex items-center gap-1.5">
+              <span data-icon="location" data-icon-size="14"></span> Geocoded Pin & Boundary
+            </span>
+            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">No Pin Selected</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1">
+              <span data-icon="search" data-icon-size="12"></span> Geocode Location
+            </button>
+            <button type="button" onclick="togglePickerMap()" id="btnToggleMap" class="text-xs px-2.5 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors">
+              Toggle Mini-Map
+            </button>
+          </div>
+        </div>
+
+        <div id="incPickerMapContainer" class="hidden">
+          <div id="incPickerMap" style="height: 180px; width: 100%;" class="rounded border border-forest-200 shadow-inner z-0"></div>
+          <div class="flex justify-between items-center text-[11px] text-forest-600 mt-1">
+            <span>Tip: Click or drag marker anywhere inside the green boundary.</span>
+            <span class="font-mono text-xs font-semibold text-forest-800" id="if_coordsPreview">Lat: --, Lng: --</span>
+          </div>
+        </div>
+        <input type="hidden" id="if_lat"/>
+        <input type="hidden" id="if_lng"/>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -423,11 +461,183 @@
     bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
   }
 
+  let pickerMap = null;
+  let pickerMarker = null;
+  let pickerBoundaryLayer = null;
+  let pickerBoundaryGeojson = null;
+
+  async function initPickerMap() {
+    if (pickerMap) {
+      pickerMap.invalidateSize();
+      return;
+    }
+    const el = document.getElementById('incPickerMap');
+    if (!el) return;
+
+    pickerMap = L.map('incPickerMap', {
+      zoomControl: true,
+      preferCanvas: true
+    }).setView([14.883, 120.965], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(pickerMap);
+
+    try {
+      const res = await fetch('mapulang-lupa.geojson');
+      if (res.ok) {
+        pickerBoundaryGeojson = await res.json();
+        pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
+          style: {
+            color: '#23703c',
+            weight: 2.5,
+            fillColor: '#4fa868',
+            fillOpacity: 0.12
+          }
+        }).addTo(pickerMap);
+        pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
+      }
+    } catch (err) {
+      console.error('Picker boundary load error:', err);
+    }
+
+    pickerMap.on('click', (e) => {
+      setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
+    });
+  }
+
+  function setPickerCoordinates(lat, lng, pan = true) {
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (Number(lat) === 0 && Number(lng) === 0)) {
+      document.getElementById('if_lat').value = '';
+      document.getElementById('if_lng').value = '';
+      updatePickerStatusBadge(null, null);
+      if (pickerMarker && pickerMap) {
+        pickerMap.removeLayer(pickerMarker);
+        pickerMarker = null;
+      }
+      return;
+    }
+
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+    document.getElementById('if_lat').value = numLat.toFixed(6);
+    document.getElementById('if_lng').value = numLng.toFixed(6);
+
+    if (!pickerMap) initPickerMap();
+
+    if (pickerMarker) {
+      pickerMarker.setLatLng([numLat, numLng]);
+    } else if (pickerMap) {
+      pickerMarker = L.marker([numLat, numLng], { draggable: true }).addTo(pickerMap);
+      pickerMarker.on('dragend', (ev) => {
+        const pos = ev.target.getLatLng();
+        setPickerCoordinates(pos.lat, pos.lng, false);
+      });
+    }
+
+    if (pan && pickerMap) {
+      pickerMap.setView([numLat, numLng], Math.max(pickerMap.getZoom(), 16));
+    }
+
+    updatePickerStatusBadge(numLat, numLng);
+  }
+
+  function isPickerPointInBoundary(lat, lng) {
+    if (!pickerBoundaryGeojson) return true;
+    try {
+      const pt = turf.point([lng, lat]);
+      return turf.booleanPointInPolygon(pt, pickerBoundaryGeojson);
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function updatePickerStatusBadge(lat, lng) {
+    const badge = document.getElementById('if_geoBadge');
+    const preview = document.getElementById('if_coordsPreview');
+    if (!badge) return;
+
+    if (lat == null || lng == null) {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      badge.textContent = 'No Pin Selected';
+      if (preview) preview.textContent = 'Lat: --, Lng: --';
+      return;
+    }
+
+    const inBounds = isPickerPointInBoundary(lat, lng);
+    if (inBounds) {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      badge.textContent = '✓ Inside Boundary';
+    } else {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+      badge.textContent = '⚠ Outside Boundary';
+    }
+    if (preview) preview.textContent = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+  }
+
+  async function geocodeTypedAddress() {
+    const loc = document.getElementById('if_location').value.trim();
+    const zone = document.getElementById('if_zone').value;
+    if (!loc && !zone) {
+      showToast('Please type a location or select a zone first.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btnGeocode');
+    if (btn) btn.innerHTML = '<span data-icon="loader" class="animate-spin" data-icon-size="12"></span> Locating…';
+
+    try {
+      const res = await fetch(`/api/records.php?type=geocode&q=${encodeURIComponent(loc)}&zone=${encodeURIComponent(zone)}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (data && data.ok && data.lat && data.lng) {
+        showPickerMap();
+        setPickerCoordinates(data.lat, data.lng, true);
+        showToast(`Located: ${data.display_name || loc}`, 'success');
+      } else {
+        showToast(data.message || 'Location could not be mapped inside the barangay boundary.', 'warning');
+      }
+    } catch (err) {
+      showToast('Geocoding request failed.', 'error');
+    } finally {
+      if (btn) btn.innerHTML = '<span data-icon="search" data-icon-size="12"></span> Geocode Location';
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  function showPickerMap() {
+    const c = document.getElementById('incPickerMapContainer');
+    if (c && c.classList.contains('hidden')) {
+      c.classList.remove('hidden');
+      setTimeout(() => {
+        initPickerMap();
+        if (pickerMap) pickerMap.invalidateSize();
+      }, 100);
+    }
+  }
+
+  function togglePickerMap() {
+    const c = document.getElementById('incPickerMapContainer');
+    if (!c) return;
+    if (c.classList.contains('hidden')) {
+      c.classList.remove('hidden');
+      setTimeout(() => {
+        initPickerMap();
+        if (pickerMap) pickerMap.invalidateSize();
+      }, 100);
+    } else {
+      c.classList.add('hidden');
+    }
+  }
+
   function resetIncidentFormFields() {
     incEditId = null;
     document.getElementById('incModalTitle').textContent = 'New Incident Report';
     document.getElementById('incidentForm').reset();
     document.getElementById('if_reportNo').value = '';
+    setPickerCoordinates(null, null);
+    const container = document.getElementById('incPickerMapContainer');
+    if (container) container.classList.add('hidden');
     resetFormDropdowns('incidentForm');
   }
 
@@ -435,9 +645,6 @@
     resetIncidentFormFields();
     openModal('incidentModal');
 
-    // Look-ahead preview only, same reasoning as Blotter's Docket No.
-    // preview — the real number is (re)generated at save time, so it
-    // can't go stale or collide even with two forms open at once.
     const reportField = document.getElementById('if_reportNo');
     reportField.value = 'Loading…';
     try {
@@ -463,17 +670,21 @@
     document.getElementById('if_reporter').value = r.reporter;
     document.getElementById('if_officer').value = r.officer;
     document.getElementById('if_status').value = r.status;
+
+    if (r.lat != null && r.lng != null && !isNaN(r.lat) && !isNaN(r.lng) && r.lat !== 0) {
+      showPickerMap();
+      setPickerCoordinates(r.lat, r.lng, true);
+    } else {
+      setPickerCoordinates(null, null);
+      const container = document.getElementById('incPickerMapContainer');
+      if (container) container.classList.add('hidden');
+    }
+
     openModal('incidentModal');
   }
 
   async function saveIncident() {
     const vals = {
-      // Same reasoning as Blotter's Docket No.: on create this field only
-      // ever shows a look-ahead preview (see openAddIncident()), never a
-      // reserved number, so it must be sent as '' to let the server mint
-      // the real one at save time — otherwise two people opening "New
-      // Incident Report" around the same moment would both submit the
-      // same previewed number and collide.
       reportNo: incEditId ? document.getElementById('if_reportNo').value.trim() : '',
       date: document.getElementById('if_dateReported').value,
       timeReported: document.getElementById('if_timeReported').value,
@@ -485,6 +696,8 @@
       officer: document.getElementById('if_officer').value.trim(),
       status: document.getElementById('if_status').value,
       zone: document.getElementById('if_zone').value,
+      lat: document.getElementById('if_lat').value || null,
+      lng: document.getElementById('if_lng').value || null,
     };
     if (!vals.location || !vals.reporter) { await bcAlert('Please fill in required fields.'); return; }
     if (!vals.zone) { await bcAlert('Please select the Zone.'); return; }
@@ -493,14 +706,10 @@
     if (!vals.status) { await bcAlert('Please select the Status.'); return; }
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
-    // Zone lives in its own column (zone_id) — never baked into the
-    // location text, so changing the zone dropdown always takes effect
-    // everywhere it's displayed, with no stale prefix left behind.
+
     vals.location = bcStripZonePrefix(vals.location);
     try {
       if (incEditId) {
-        const prev = incidentData.find(x => x.id === incEditId);
-        if (prev && prev.zone !== vals.zone) { vals.lat = ''; vals.lng = ''; } // re-derive coords server-side
         await BCApi.update('incidents', incEditId, vals);
         showToast('Incident report updated!');
       } else {

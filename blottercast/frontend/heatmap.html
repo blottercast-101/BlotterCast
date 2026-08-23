@@ -596,20 +596,46 @@
       },
     };
 
-    // Substring & fuzzy landmark coordinate resolver (e.g. resolves "Ph1 Blk24 Lot 4 Residence 1")
-    function resolveCoordinatesByZoneAndText(zone, locationDetail) {
-      if (!zone || !locationDetail) return null;
-      const normalizedText = locationDetail.toString().toLowerCase().trim();
-      const zoneLandmark = ZONE_LANDMARK_COORDINATES[zone];
-      if (!zoneLandmark) return null;
+    const MAPULANG_LUPA_GAZETTEER = [
+      { name: 'Pandi Residences 1', aliases: ['pandi residences 1', 'pandi residence 1', 'residence 1', 'residences 1', 'res 1', 'res1'], lat: 14.881800, lng: 120.960200 },
+      { name: 'Pandi Residences 3', aliases: ['pandi residences 3', 'pandi residence 3', 'residence 3', 'residences 3', 'res 3', 'res3'], lat: 14.881000, lng: 120.969500 },
+      { name: 'Pandi Village 2 (Atlantica)', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.966800 },
+      { name: 'Pandi Encampment One', aliases: ['pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi encampment', 'encampment'], lat: 14.885400, lng: 120.961300 },
+      { name: 'Mitay 1', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'], lat: 14.883500, lng: 120.964800 },
+      { name: 'Sitio Gubat', aliases: ['sitio gubat', 'gubat', 'purok gubat'], lat: 14.885800, lng: 120.966500 },
+      { name: 'Bangko St.', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'bangko lane'], lat: 14.884200, lng: 120.962500 },
+      { name: 'Barangka St.', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka'], lat: 14.885200, lng: 120.964000 },
+      { name: 'Mapulang Lupa Barangay Hall', aliases: ['barangay hall', 'brgy hall', 'hall', 'mapulang lupa hall'], lat: 14.883600, lng: 120.965500 },
+      { name: 'Mapulang Lupa Elementary School', aliases: ['elementary school', 'mapulang lupa elementary', 'elem school', 'es school'], lat: 14.880000, lng: 120.963400 },
+      { name: 'Sitio Bata', aliases: ['sitio bata', 'bata'], lat: 14.886300, lng: 120.967900 },
+      { name: 'Silangan Corridor', aliases: ['silangan', 'silangan corridor', 'pandi-angat road', 'pandi angat rd'], lat: 14.888400, lng: 120.964000 },
+    ];
 
-      // Check if primary name or any alias is included in the location text
-      const matches = (zoneLandmark.aliases || []).some(alias => normalizedText.includes(alias.toLowerCase()));
-      if (matches || normalizedText.includes(zoneLandmark.name.toLowerCase())) {
-        return {
-          latitude: zoneLandmark.latitude,
-          longitude: zoneLandmark.longitude,
-        };
+    // Substring & forward gazetteer coordinate resolver (resolves streets, subdivisions, encampments)
+    function resolveCoordinatesByZoneAndText(zone, locationDetail) {
+      if (!locationDetail && !zone) return null;
+      const normalizedText = (locationDetail || '').toString().toLowerCase().trim();
+
+      // 1. Check full Mapulang Lupa gazetteer
+      for (const entry of MAPULANG_LUPA_GAZETTEER) {
+        if (entry.name.toLowerCase() === normalizedText || entry.aliases.some(alias => normalizedText.includes(alias))) {
+          return {
+            latitude: entry.lat,
+            longitude: entry.lng,
+          };
+        }
+      }
+
+      // 2. Fall back to Zone center landmark if recognized
+      const zoneLandmark = ZONE_LANDMARK_COORDINATES[zone];
+      if (zoneLandmark) {
+        const matches = (zoneLandmark.aliases || []).some(alias => normalizedText.includes(alias.toLowerCase()));
+        if (matches || normalizedText.includes(zoneLandmark.name.toLowerCase())) {
+          return {
+            latitude: zoneLandmark.latitude,
+            longitude: zoneLandmark.longitude,
+          };
+        }
       }
       return null;
     }

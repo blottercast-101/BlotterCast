@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 
 from ..extensions import db
+from ..geocoding import forward_geocode, is_point_inside_boundary
 from ..helpers import (
     compute_age,
     find_census_resident_id_by_name,
@@ -40,6 +41,15 @@ def _blotter_party_error(resident: CensusRecord, role_label: str):
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def records_router():
+    rtype = request.args.get("type", "")
+    if rtype == "geocode":
+        q = request.args.get("q", "")
+        zone = request.args.get("zone", "")
+        res = forward_geocode(q, zone)
+        if res:
+            return jsonify({"ok": True, **res})
+        return jsonify({"ok": False, "message": "Location could not be geocoded within Barangay Mapulang Lupa boundary."}), 404
+
     if request.method == "PUT":
         resp = _enforce("edit_records")
         if resp:
@@ -54,7 +64,6 @@ def records_router():
         if resp:
             return resp
 
-    rtype = request.args.get("type", "")
     if rtype == "incidents":
         return _incidents()
     if rtype == "blotter":
@@ -102,11 +111,16 @@ def _incidents():
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
         lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
 
-        # Auto-resolve coordinates if not explicitly pinned on map
+        # Strict boundary validation if explicit coordinates were passed
+        if lat is not None and lng is not None:
+            if not is_point_inside_boundary(lat, lng):
+                lat, lng = None, None
+
+        # Auto-resolve / Forward Geocode if coordinates not supplied
         if lat is None or lng is None:
-            rlat, rlng = resolve_coordinates_by_zone_and_text(zone_id, loc_text)
-            if rlat is not None and rlng is not None:
-                lat, lng = rlat, rlng
+            geo = forward_geocode(loc_text, zone_id)
+            if geo and geo.get("lat") and geo.get("lng"):
+                lat, lng = float(geo["lat"]), float(geo["lng"])
 
         report_no = d.get("reportNo") or next_seq_no(Incident, "report_no", "INC", 4)
         idate = parse_date(d.get("date")) or datetime.utcnow().date()
@@ -158,11 +172,16 @@ def _incidents():
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
         lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
 
-        # Auto-resolve coordinates if not explicitly pinned on map
+        # Strict boundary validation if explicit coordinates were passed
+        if lat is not None and lng is not None:
+            if not is_point_inside_boundary(lat, lng):
+                lat, lng = None, None
+
+        # Auto-resolve / Forward Geocode if coordinates not supplied
         if lat is None or lng is None:
-            rlat, rlng = resolve_coordinates_by_zone_and_text(zone_id, loc_text)
-            if rlat is not None and rlng is not None:
-                lat, lng = rlat, rlng
+            geo = forward_geocode(loc_text, zone_id)
+            if geo and geo.get("lat") and geo.get("lng"):
+                lat, lng = float(geo["lat"]), float(geo["lng"])
 
         time_reported = parse_time(d.get("timeReported")) or parse_time("12:00:00")
 
