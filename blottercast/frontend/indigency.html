@@ -226,32 +226,18 @@
         <div class="flex items-start gap-2 mb-2">
           <span class="text-red-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
           <div>
-            <div class="font-semibold text-red-800 text-sm">Not eligible for a Certificate of Indigency</div>
-            <div class="text-xs text-red-700 mt-0.5">This resident is listed as a <strong>Respondent</strong> in the blotter case(s) below. Only the respondent role is restricted — being named as a complainant does not affect eligibility.</div>
+            <div class="font-semibold text-red-800 text-sm">Issuance Blocked: Unresolved Blotter Record(s)</div>
+            <div class="text-xs text-red-700 mt-0.5">This resident is listed as a <strong>Respondent</strong> in active pending or ongoing blotter case(s). A Certificate of Indigency cannot be issued until all respondent cases are resolved.</div>
           </div>
         </div>
         <div id="if_blotter_block_list" class="space-y-2"></div>
-      </div>
-      <div id="if_blotter_warning" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4">
-        <div class="flex items-start gap-2 mb-2">
-          <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
-          <div>
-            <div class="font-semibold text-amber-800 text-sm">This resident has blotter record(s) on file</div>
-            <div class="text-xs text-amber-700 mt-0.5">Review before deciding whether to issue this certificate.</div>
-          </div>
-        </div>
-        <div id="if_blotter_list" class="space-y-2 mb-3"></div>
-        <label class="flex items-center gap-2 text-xs text-amber-800">
-          <input type="checkbox" id="if_blotter_ack" class="rounded"/>
-          I have reviewed the blotter record(s) above and choose to proceed with issuing this certificate.
-        </label>
       </div>
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <strong>Note:</strong> Certifying indigency is the responsibility of the Punong Barangay. Ensure the applicant's financial status has been verified before issuance.
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('indFormModal')" class="btn-secondary">Cancel</button>
-        <button onclick="issueIndigency()" class="btn-primary">Issue & Preview</button>
+        <button id="if_submit_btn" onclick="issueIndigency()" class="btn-primary">Issue & Preview</button>
       </div>
     </div>
   </div>
@@ -305,16 +291,17 @@ let ifRespondentBlocked = false;
 async function onIndResidentPicked(r) {
   const blockBox = document.getElementById('if_blotter_block');
   const blockListEl = document.getElementById('if_blotter_block_list');
-  const warningBox = document.getElementById('if_blotter_warning');
-  const listEl = document.getElementById('if_blotter_list');
+  const submitBtn = document.getElementById('if_submit_btn');
   ifRespondentBlocked = false;
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
   if (!r) {
     ['if_name_display','if_age_display','if_civil_display','if_addr_display'].forEach(f => document.getElementById(f).value = '');
-    blockBox.classList.add('hidden');
-    blockListEl.innerHTML = '';
-    warningBox.classList.add('hidden');
-    listEl.innerHTML = '';
-    document.getElementById('if_blotter_ack').checked = false;
+    if (blockBox) blockBox.classList.add('hidden');
+    if (blockListEl) blockListEl.innerHTML = '';
     return;
   }
   document.getElementById('if_name_display').value = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
@@ -322,37 +309,31 @@ async function onIndResidentPicked(r) {
   document.getElementById('if_civil_display').value = r.civilStatus;
   document.getElementById('if_addr_display').value = r.address;
 
-  document.getElementById('if_blotter_ack').checked = false;
-  blockBox.classList.add('hidden');
-  blockListEl.innerHTML = '';
-  warningBox.classList.add('hidden');
-  listEl.innerHTML = '';
+  if (blockBox) blockBox.classList.add('hidden');
+  if (blockListEl) blockListEl.innerHTML = '';
+
   try {
     const records = await BCApi.checkBlotterRecords(r.lastName, r.firstName, r.id);
-    const asRespondent = records.filter(b => b.role === 'Respondent');
-    const asComplainant = records.filter(b => b.role !== 'Respondent');
-    const renderCard = (b) => `
-        <div class="bg-white border border-amber-200 rounded-lg p-3 text-xs">
-          <div class="flex justify-between items-center mb-1">
-            <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
-            <span class="badge ${b.role === 'Complainant' ? 'badge-resolved' : 'badge-pending'}">${b.role}</span>
-          </div>
-          <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
-          <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: ${b.status}</div>
-        </div>`;
-
-    // Only the Respondent role is restricted — a Complainant stays eligible
-    // even in the exact same case, so the two are never merged into one
-    // check. Respondent records hard-block issuance (no override); any
-    // remaining Complainant-only records are shown as information only.
-    if (asRespondent.length > 0) {
+    // Strict Auto-Block: only active Pending or Ongoing cases where resident is a Respondent
+    const unresolvedRespondentCases = records.filter(b => b.role === 'Respondent' && (b.status === 'Pending' || b.status === 'Ongoing'));
+    if (unresolvedRespondentCases.length > 0) {
       ifRespondentBlocked = true;
-      blockListEl.innerHTML = asRespondent.map(renderCard).join('');
-      blockBox.classList.remove('hidden');
-    }
-    if (asComplainant.length > 0) {
-      listEl.innerHTML = asComplainant.map(renderCard).join('');
-      warningBox.classList.remove('hidden');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (blockListEl) {
+        blockListEl.innerHTML = unresolvedRespondentCases.map(b => `
+          <div class="bg-white border border-red-200 rounded-lg p-3 text-xs">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
+              <span class="badge badge-ongoing">${b.role} (${b.status})</span>
+            </div>
+            <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
+            <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: <span class="font-semibold text-red-600">${b.status}</span></div>
+          </div>`).join('');
+      }
+      if (blockBox) blockBox.classList.remove('hidden');
     }
   } catch (e) { /* if the check fails, don't block issuance on it */ }
 }
@@ -426,6 +407,13 @@ function previewInd(id){
 function resetIndigencyForm(){
   bcResidentPickerClear('if_residentSearch');
   resetFormDropdowns('indigencyFormModal');
+  ifRespondentBlocked = false;
+  const submitBtn = document.getElementById('if_submit_btn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+  const blockBox = document.getElementById('if_blotter_block');
+  if (blockBox) blockBox.classList.add('hidden');
+  const blockListEl = document.getElementById('if_blotter_block_list');
+  if (blockListEl) blockListEl.innerHTML = '';
 }
 
 async function issueIndigency(){
@@ -434,12 +422,7 @@ async function issueIndigency(){
   if(!residentId){await bcAlert('Please select the resident this certificate is for.');return;}
   if(!purpose){await bcAlert('Please select the purpose of this certificate.');return;}
   if (ifRespondentBlocked) {
-    await bcAlert('This resident is listed as a Respondent in a blotter case and is not eligible for a Certificate of Indigency.');
-    return;
-  }
-  const warningVisible = !document.getElementById('if_blotter_warning').classList.contains('hidden');
-  if (warningVisible && !document.getElementById('if_blotter_ack').checked) {
-    await bcAlert('This resident has blotter record(s) on file. Please review them and check the acknowledgment box before issuing this certificate.');
+    await bcAlert('Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.');
     return;
   }
 
