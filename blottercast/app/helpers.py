@@ -57,6 +57,73 @@ def next_or_no() -> str:
         n += 1
 
 
+ZONE_LANDMARK_DEFINITIONS = {
+    "Zone 1": {
+        "name": "Residence 3",
+        "aliases": ["residence 3", "residences 3", "pandi residences 3", "pandi residence 3", "res 3", "res3"],
+        "latitude": 14.881000,
+        "longitude": 120.969500,
+    },
+    "Zone 2": {
+        "name": "Residence 1",
+        "aliases": ["residence 1", "residences 1", "pandi residences 1", "pandi residence 1", "res 1", "res1"],
+        "latitude": 14.881800,
+        "longitude": 120.960200,
+    },
+    "Zone 3": {
+        "name": "Pandi Village 2 (Atlantica)",
+        "aliases": ["pandi village 2", "pandi village", "atlantica", "pv2", "pv 2"],
+        "latitude": 14.879500,
+        "longitude": 120.966800,
+    },
+    "Zone 4": {
+        "name": "Mitay 1",
+        "aliases": ["mitay 1", "mitay", "sitio mitay"],
+        "latitude": 14.883500,
+        "longitude": 120.964800,
+    },
+    "Zone 5": {
+        "name": "Sitio Gubat",
+        "aliases": ["sitio gubat", "gubat"],
+        "latitude": 14.885800,
+        "longitude": 120.966500,
+    },
+    "Zone 6": {
+        "name": "Bangko St.",
+        "aliases": ["bangko st", "bangko street", "bangko"],
+        "latitude": 14.884200,
+        "longitude": 120.962500,
+    },
+    "Zone 7": {
+        "name": "Barangka St.",
+        "aliases": ["barangka st", "barangka street", "barangka"],
+        "latitude": 14.885200,
+        "longitude": 120.964000,
+    },
+}
+
+
+def resolve_coordinates_by_zone_and_text(zone_id: str, location_detail: str) -> tuple[float | None, float | None]:
+    """Resolves geographic coordinates when an address includes block/lot or phase details
+    along with a recognized zone landmark name or alias (e.g. 'Ph1 Blk24 Lot 4 Residence 1')."""
+    if not zone_id or not location_detail:
+        return None, None
+
+    normalized = str(location_detail).lower().strip()
+    zone_info = ZONE_LANDMARK_DEFINITIONS.get(zone_id)
+    if not zone_info:
+        return None, None
+
+    if zone_info["name"].lower() in normalized:
+        return zone_info["latitude"], zone_info["longitude"]
+
+    for alias in zone_info.get("aliases", []):
+        if alias.lower() in normalized:
+            return zone_info["latitude"], zone_info["longitude"]
+
+    return None, None
+
+
 def zone_coords(zone_id: str):
     """Returns the exact geographic coordinates tied to the specified zone."""
     zone = Zone.query.get(zone_id)

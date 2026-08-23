@@ -550,22 +550,97 @@
       `;
     }
 
+    // Authentic geographical landmark coordinates and aliases for Barangay Mapulang Lupa
+    const ZONE_LANDMARK_COORDINATES = {
+      'Zone 1': {
+        name: 'Residence 3',
+        aliases: ['residence 3', 'residences 3', 'pandi residences 3', 'pandi residence 3', 'res 3', 'res3'],
+        latitude: 14.881000,
+        longitude: 120.969500,
+      },
+      'Zone 2': {
+        name: 'Residence 1',
+        aliases: ['residence 1', 'residences 1', 'pandi residences 1', 'pandi residence 1', 'res 1', 'res1'],
+        latitude: 14.881800,
+        longitude: 120.960200,
+      },
+      'Zone 3': {
+        name: 'Pandi Village 2 (Atlantica)',
+        aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'],
+        latitude: 14.879500,
+        longitude: 120.966800,
+      },
+      'Zone 4': {
+        name: 'Mitay 1',
+        aliases: ['mitay 1', 'mitay', 'sitio mitay'],
+        latitude: 14.883500,
+        longitude: 120.964800,
+      },
+      'Zone 5': {
+        name: 'Sitio Gubat',
+        aliases: ['sitio gubat', 'gubat'],
+        latitude: 14.885800,
+        longitude: 120.966500,
+      },
+      'Zone 6': {
+        name: 'Bangko St.',
+        aliases: ['bangko st', 'bangko street', 'bangko'],
+        latitude: 14.884200,
+        longitude: 120.962500,
+      },
+      'Zone 7': {
+        name: 'Barangka St.',
+        aliases: ['barangka st', 'barangka street', 'barangka'],
+        latitude: 14.885200,
+        longitude: 120.964000,
+      },
+    };
+
+    // Substring & fuzzy landmark coordinate resolver (e.g. resolves "Ph1 Blk24 Lot 4 Residence 1")
+    function resolveCoordinatesByZoneAndText(zone, locationDetail) {
+      if (!zone || !locationDetail) return null;
+      const normalizedText = locationDetail.toString().toLowerCase().trim();
+      const zoneLandmark = ZONE_LANDMARK_COORDINATES[zone];
+      if (!zoneLandmark) return null;
+
+      // Check if primary name or any alias is included in the location text
+      const matches = (zoneLandmark.aliases || []).some(alias => normalizedText.includes(alias.toLowerCase()));
+      if (matches || normalizedText.includes(zoneLandmark.name.toLowerCase())) {
+        return {
+          latitude: zoneLandmark.latitude,
+          longitude: zoneLandmark.longitude,
+        };
+      }
+      return null;
+    }
+
     // Hard-Enforced Boundary & Coordinate Validation Engine
     function isRecordValidAndWithinBoundary(incident, boundaryGeoJSON) {
+      if (!incident) return false;
+
+      let lat = incident.lat != null ? Number(incident.lat) : null;
+      let lng = incident.lng != null ? Number(incident.lng) : null;
+
+      // If missing or unassigned coordinates, attempt landmark resolution from location text
+      if ((lat == null || lng == null || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) && incident.zone && (incident.locationDetail || incident.location)) {
+        const resolved = resolveCoordinatesByZoneAndText(incident.zone, incident.locationDetail || incident.location);
+        if (resolved) {
+          lat = resolved.latitude;
+          lng = resolved.longitude;
+          incident.lat = lat;
+          incident.lng = lng;
+          incident.hasValidCoords = true;
+        }
+      }
+
       // 1. Strict null / undefined / zero / NaN checks
-      if (!incident || incident.lat == null || incident.lng == null) return false;
-      
-      const lat = Number(incident.lat);
-      const lng = Number(incident.lng);
-      
-      if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return false;
+      if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return false;
 
       // 2. Strict mock / gibberish location filter
       const loc = (incident.locationDetail || incident.location || '').trim().toLowerCase();
       if (loc.length < 4) return false;
       const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
       if (mockKeywords.some(kw => loc.includes(kw))) return false;
-      if (loc === 'main street' || loc === 'corner st' || loc.startsWith('test location')) return false;
 
       // 3. Strict Point-in-Polygon check (Turf expects [longitude, latitude])
       if (!boundaryGeoJSON) return false;
@@ -608,9 +683,20 @@
       const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
       const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
       incidents = (Array.isArray(raw) ? raw : []).map(r => {
-        const hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
-        const lat = hasCoords ? parseFloat(r.lat) : null;
-        const lng = hasCoords ? parseFloat(r.lng) : null;
+        let hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
+        let lat = hasCoords ? parseFloat(r.lat) : null;
+        let lng = hasCoords ? parseFloat(r.lng) : null;
+
+        // Auto-resolve coordinates if missing but has recognized landmark
+        if (!hasCoords && r.zone_id && r.location) {
+          const resolved = resolveCoordinatesByZoneAndText(r.zone_id, r.location);
+          if (resolved) {
+            lat = resolved.latitude;
+            lng = resolved.longitude;
+            hasCoords = true;
+          }
+        }
+
         const d = new Date((r.incident_date || '') + 'T00:00:00');
         return {
           id: r.id,

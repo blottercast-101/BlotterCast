@@ -10,6 +10,7 @@ from ..helpers import (
     next_seq_no,
     parse_date,
     parse_time,
+    resolve_coordinates_by_zone_and_text,
 )
 from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
 from ..permissions import json_error, login_required, permission_required
@@ -43,8 +44,13 @@ def records_router():
         resp = _enforce("edit_records")
         if resp:
             return resp
-    if request.method == "DELETE":
+    elif request.method == "DELETE":
         resp = _enforce("delete_records")
+        if resp:
+            return resp
+    elif request.method == "POST":
+        perm = "add_blotter" if request.args.get("type") == "blotter" else "edit_records"
+        resp = _enforce(perm)
         if resp:
             return resp
 
@@ -92,8 +98,15 @@ def _incidents():
     if method == "POST":
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
+        loc_text = d.get("location", "")
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
         lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
+
+        # Auto-resolve coordinates if not explicitly pinned on map
+        if lat is None or lng is None:
+            rlat, rlng = resolve_coordinates_by_zone_and_text(zone_id, loc_text)
+            if rlat is not None and rlng is not None:
+                lat, lng = rlat, rlng
 
         report_no = d.get("reportNo") or next_seq_no(Incident, "report_no", "INC", 4)
         idate = parse_date(d.get("date")) or datetime.utcnow().date()
@@ -102,7 +115,7 @@ def _incidents():
 
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
-            zone_id=zone_id, location=d.get("location", ""), lat=lat, lng=lng,
+            zone_id=zone_id, location=loc_text, lat=lat, lng=lng,
             category=d.get("category") or "Other", description=d.get("description", ""),
             reporter=d.get("reporter", ""), officer=d.get("officer", ""),
             priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
@@ -141,15 +154,23 @@ def _incidents():
 
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
+        loc_text = d.get("location", "")
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
         lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
+
+        # Auto-resolve coordinates if not explicitly pinned on map
+        if lat is None or lng is None:
+            rlat, rlng = resolve_coordinates_by_zone_and_text(zone_id, loc_text)
+            if rlat is not None and rlng is not None:
+                lat, lng = rlat, rlng
+
         time_reported = parse_time(d.get("timeReported")) or parse_time("12:00:00")
 
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
         incident.time_reported = time_reported
         incident.hour = time_reported.hour
         incident.zone_id = zone_id
-        incident.location = d.get("location", "")
+        incident.location = loc_text
         incident.lat = lat
         incident.lng = lng
         incident.category = d.get("category") or "Other"
