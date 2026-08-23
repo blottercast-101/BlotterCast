@@ -133,17 +133,14 @@ r_patch = c.patch("/api/admin/security-settings", json={"is_2fa_globally_enabled
 assert r_patch.status_code == 200
 c.post("/api/auth.php?action=logout")
 
-# msantos and pencoder (mfa_enabled = False) log in directly without 2FA
-for user_name, pw in [("admin", "admin123"), ("msantos", "officer123"), ("pencoder", "encoder123")]:
+# All roles log in directly without 2FA when master 2FA switch is OFF
+for user_name, pw in [("admin", "admin123"), ("kapitan", "kapitan123"), ("jdelacuz", "officer123"), ("msantos", "officer123"), ("pencoder", "encoder123")]:
     res = c.post("/api/auth.php?action=login", json={"username": user_name, "password": pw})
-    assert res.status_code == 200 and res.get_json()["mfaRequired"] is False, f"Failed for {user_name}"
+    assert res.status_code == 200, f"HTTP status failed for {user_name}"
+    data = res.get_json()
+    assert data.get("mfaRequired") is False and data.get("requires_2fa") is False, f"2FA not bypassed for {user_name}"
     c.post("/api/auth.php?action=logout")
-
-# jdelacuz and kapitan (mfa_enabled = True) still require personal 2FA
-r_mfa = c.post("/api/auth.php?action=login", json={"username": "jdelacuz", "password": "officer123"})
-assert r_mfa.status_code == 200 and r_mfa.get_json()["mfaRequired"] is True
-c.post("/api/auth.php?action=logout")
-print("Non-MFA accounts logged in directly, and MFA accounts used personal 2FA when master switch is OFF!")
+print("ALL roles (Admin, Barangay Captain, Desk Officer, Data Encoder) logged in directly without 2FA when master switch is OFF!")
 
 
 print("\n=== 5. Global Idle Timeout Master Switch Behavior ===")

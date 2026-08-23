@@ -146,6 +146,26 @@ def _issue_and_send_otp(user: User, purpose: str = "login") -> None:
     send_otp_email(user.email, code, user.full_name, purpose=purpose)
 
 
+@bp.route("/api/auth/login", methods=["POST"])
+def auth_login_direct():
+    return _login()
+
+
+@bp.route("/api/auth/google", methods=["POST"])
+def auth_google_direct():
+    return _google_login()
+
+
+@bp.route("/api/auth/verify-otp", methods=["POST"])
+def auth_verify_otp_direct():
+    return _verify_otp()
+
+
+@bp.route("/api/auth/logout", methods=["GET", "POST"])
+def auth_logout_direct():
+    return _logout()
+
+
 # Same URL contract the frontend already calls: /api/auth.php?action=...
 @bp.route("/api/auth.php", methods=["GET", "POST"])
 def auth_router():
@@ -267,43 +287,48 @@ def _google_login():
         user.failed_attempts = 0
         user.locked_until = None
 
-        # Master Security Switch: 2FA is controlled globally or per-account
+        # 1. Fetch the master security setting (single source of truth)
         settings = get_security_settings()
-        is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
+        global_2fa_enabled = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
 
-        # Enforce Two-Factor Authentication (2FA) if master switch is enabled
-        if is_2fa_active:
-            if not user.email:
-                return json_error(
-                    "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
-                    "Please contact a System Administrator.", 403
-                )
+        # 2. Master 2FA Enforcement Gate
+        if not global_2fa_enabled:
+            # If Master Switch is OFF: NO USER needs 2FA. Immediately complete login.
             db.session.commit()
-            _issue_and_send_otp(user, purpose="login")
+            return _complete_login(user, f"Successful Google OAuth login ({email}) (Master 2FA Switch OFF)")
 
-            session.clear()
-            session["mfa_pending_user_id"] = user.id
-            session["mfa_pending_at"] = datetime.utcnow().timestamp()
-
-            pre_auth_token = _generate_pre_auth_token(user.id)
-            log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent (Master Switch ON)")
-
-            return jsonify({
-                "ok": True,
-                "mfaRequired": True,
-                "mfa_required": True,
-                "user_id": user.id,
-                "pre_auth_token": pre_auth_token,
-                "maskedEmail": _mask_email(user.email),
-                "masked_email": _mask_email(user.email),
-                "enforcedGlobally": True,
-                "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
-                "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
-            })
-
-        # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
+        # If Master Switch is ON: ALL ROLES MUST COMPLETE 2FA
+        if not user.email:
+            return json_error(
+                "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
+                "Please contact a System Administrator.", 403
+            )
         db.session.commit()
-        return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA Master Switch OFF)")
+        _issue_and_send_otp(user, purpose="login")
+
+        session.clear()
+        session["mfa_pending_user_id"] = user.id
+        session["mfa_pending_at"] = datetime.utcnow().timestamp()
+
+        pre_auth_token = _generate_pre_auth_token(user.id)
+        log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent (Master Switch ON)")
+
+        return jsonify({
+            "ok": True,
+            "status": "2fa_required",
+            "requires_2fa": True,
+            "mfaRequired": True,
+            "mfa_required": True,
+            "user_id": user.id,
+            "pre_auth_token": pre_auth_token,
+            "temp_token": pre_auth_token,
+            "maskedEmail": _mask_email(user.email),
+            "masked_email": _mask_email(user.email),
+            "enforcedGlobally": True,
+            "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
+            "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
+            "message": "Two-factor authentication code sent. Please enter OTP to continue.",
+        })
 
     except Exception as e:
         db.session.rollback()
@@ -336,10 +361,20 @@ def _complete_login(user, audit_note):
 
     log_audit(user.username, "Login", "System", audit_note)
 
-    return jsonify({"ok": True, "mfaRequired": False, "user": {
-        "username": user.username, "full_name": user.full_name, "role": user.role,
-        "mustChangePassword": must_change_password,
-    }})
+    return jsonify({
+        "ok": True,
+        "status": "success",
+        "requires_2fa": False,
+        "mfaRequired": False,
+        "mfa_required": False,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role,
+            "mustChangePassword": must_change_password,
+        }
+    })
 
 
 def _login():
@@ -378,14 +413,16 @@ def _login():
         user.failed_attempts = 0
         user.locked_until = None
 
-        # Master Security Switch: 2FA is controlled globally or per-account
-        is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
+        # 1. Fetch the master security setting (single source of truth)
+        global_2fa_enabled = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
 
-        # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
-        if not is_2fa_active:
+        # 2. Master 2FA Enforcement Gate
+        if not global_2fa_enabled:
+            # If Master Switch is OFF: NO USER needs 2FA. Immediately complete login.
             db.session.commit()
-            return _complete_login(user, "Successful login (2FA Master Switch OFF)")
+            return _complete_login(user, "Successful login (Master 2FA Switch OFF)")
 
+        # If Master Switch is ON: ALL ROLES (Barangay Captain, Desk Officer, Data Encoder, Admin) MUST COMPLETE 2FA
         if not user.email:
             return json_error(
                 "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
@@ -405,15 +442,19 @@ def _login():
 
         return jsonify({
             "ok": True,
+            "status": "2fa_required",
+            "requires_2fa": True,
             "mfaRequired": True,
             "mfa_required": True,
             "user_id": user.id,
             "pre_auth_token": pre_auth_token,
+            "temp_token": pre_auth_token,
             "maskedEmail": _mask_email(user.email),
             "masked_email": _mask_email(user.email),
             "enforcedGlobally": True,
             "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
             "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
+            "message": "Two-factor authentication code sent. Please enter OTP to continue.",
         })
     except Exception as e:
         db.session.rollback()
