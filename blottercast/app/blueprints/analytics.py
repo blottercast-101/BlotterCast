@@ -5,7 +5,18 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import extract, func
 
 from ..extensions import db
-from ..models import BlotterRecord, Incident, MlRun, Settlement, Zone
+from ..models import (
+    BarangayClearance,
+    BarangayNonResidency,
+    BarangayResidency,
+    BlotterRecord,
+    CensusRecord,
+    Incident,
+    IndigencyCertificate,
+    MlRun,
+    Settlement,
+    Zone,
+)
 from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("analytics", __name__)
@@ -35,13 +46,21 @@ def public_stats_router():
 
 
 def _public_stats():
-    # Archived records are kept for recordkeeping but excluded from
-    # every "active" count on these pages — same rule as the Blotter Records
-    # module itself.
+    # Primary record counts across all modules
+    # Active records only (archived records excluded)
     blotter_count = BlotterRecord.query.filter_by(archived=False).count()
     incident_count = Incident.query.filter_by(archived=False).count()
     settlement_count = Settlement.query.filter_by(archived=False).count()
-    overall_records = blotter_count + incident_count + settlement_count
+    census_count = CensusRecord.query.filter_by(archived=False).count()
+
+    # Issued certificates / documents
+    clearance_count = BarangayClearance.query.count()
+    residency_count = BarangayResidency.query.count()
+    non_residency_count = BarangayNonResidency.query.count()
+    indigency_count = IndigencyCertificate.query.count()
+    docs_count = clearance_count + residency_count + non_residency_count + indigency_count
+
+    overall_records = blotter_count + incident_count + settlement_count + census_count + docs_count
     zones_monitored = Zone.query.count()
 
     run = MlRun.query.order_by(MlRun.id.desc()).first()

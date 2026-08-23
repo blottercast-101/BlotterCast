@@ -401,7 +401,7 @@
         </div>
         <div class="left-stat">
           <div class="left-stat-num" id="loginStatZones">—</div>
-          <div class="left-stat-label">Zones</div>
+          <div class="left-stat-label">Zones Monitored</div>
         </div>
       </div>
     </div>
@@ -1043,8 +1043,8 @@
     try {
       const s = await BCApi.publicStats();
       document.getElementById('loginStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
-      document.getElementById('loginStatRecords').textContent = s.overallRecords + '+';
-      document.getElementById('loginStatZones').textContent = s.zonesMonitored;
+      document.getElementById('loginStatRecords').textContent = (s.overallRecords != null ? s.overallRecords + '+' : '—');
+      document.getElementById('loginStatZones').textContent = s.zonesMonitored ?? '—';
 
       const sysUp = s.systemStatus && s.systemStatus.database && s.systemStatus.core;
       document.getElementById('loginSysStatus').innerHTML =
