@@ -94,7 +94,8 @@
       if (!opt) return true;
       const text = (opt.textContent || '').trim();
       const textLower = text.toLowerCase();
-      return opt.hidden || opt.disabled || !opt.value || textLower === '-select-' || textLower === 'select...' || textLower === 'select…';
+      if (textLower.startsWith('all ') || textLower === 'all') return false;
+      return opt.hidden || opt.disabled || (!opt.value && (textLower.includes('select') || textLower.includes('choose') || text === '')) || textLower === '-select-' || textLower === 'select...' || textLower === 'select…';
     }
 
     function syncTrigger() {
