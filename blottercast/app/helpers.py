@@ -121,14 +121,19 @@ def parse_date(value):
 
 
 def parse_time(value):
-    """Accepts 'HH:MM' / 'HH:MM:SS' string, a time, or None/'' -> time|None."""
+    """Accepts 'HH:MM', 'HH:MM:SS', 'hh:mm AM/PM', a datetime.time object, or None/'' -> time|None."""
     if value in (None, ""):
         return None
     if isinstance(value, time):
         return value
-    if len(value) == 5:
-        value += ":00"
-    return datetime.strptime(value, "%H:%M:%S").time()
+    if isinstance(value, str):
+        v = value.strip()
+        for fmt in ("%H:%M:%S", "%H:%M", "%I:%M %p", "%I:%M:%S %p", "%I:%M%p", "%I:%M:%S%p"):
+            try:
+                return datetime.strptime(v, fmt).time()
+            except ValueError:
+                pass
+    return None
 
 
 def full_name_of(resident: CensusRecord) -> str:

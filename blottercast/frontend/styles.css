@@ -1134,9 +1134,32 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
 }
 .bc-dp-today-btn:hover, .bc-dp-clear-btn:hover { background: var(--forest-100); }
 
-.bc-timepicker-panel { width: 168px; }
+.bc-time-wrap { position: relative; }
+.bc-time-native { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; opacity: 0 !important; pointer-events: none !important; z-index: -1; }
+.bc-time-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: #111827;
+  padding-right: 34px;
+}
+.bc-time-trigger .bc-time-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-time-value.bc-time-placeholder { color: #9ca3af; }
+.bc-time-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
+.bc-time-trigger.bc-time-disabled { opacity: 0.6; cursor: not-allowed; }
+
+.bc-timepicker-panel.bc-tp-12 { width: 220px; }
+.bc-timepicker-panel.bc-tp-24 { width: 172px; }
 .bc-tp-cols { display: flex; gap: 4px; max-height: 200px; }
 .bc-tp-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scroll-behavior: smooth; }
+.bc-tp-col-period { flex: 0.85; }
 .bc-tp-item {
   border: none;
   background: transparent;
@@ -1148,7 +1171,8 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
   transition: background 0.1s ease;
 }
 .bc-tp-item:hover { background: var(--forest-50); }
-.bc-tp-item-active { background: var(--forest-600); color: #fff; font-weight: 600; }
+.bc-tp-item-active { background: var(--forest-600) !important; color: #fff !important; font-weight: 600; }
+.bc-tp-period-item { font-weight: 700; font-size: 0.8rem; }
 
 /* ---------------- Scrollbar ---------------- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
