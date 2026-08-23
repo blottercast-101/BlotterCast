@@ -962,7 +962,7 @@
         if (isLocationVerifiedInBoundary) {
           showToast(`Located: ${data.display_name || loc}`, 'success');
         } else {
-          showToast('Location is outside Barangay Mapulang Lupa boundary.', 'warning');
+          showToast('Location is outside Barangay Mapulang Lupa. Incident cannot be filed outside barangay jurisdiction.', 'error');
         }
       } else {
         // Unresolved / Gibberish
@@ -989,7 +989,7 @@
         }
         setBoundaryStyle(true);
         updateSubmitButtonState();
-        showToast(data.message || 'Location could not be verified inside barangay boundary.', 'warning');
+        showToast(data.message || 'Location could not be geocoded within Barangay Mapulang Lupa boundary.', 'error');
       }
     } catch (err) {
       showToast('Geocoding request failed.', 'error');

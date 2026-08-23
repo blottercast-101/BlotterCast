@@ -647,7 +647,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .toast .bc-icon { flex-shrink: 0; }
 .toast.show { transform: translateY(0); opacity: 1; }
-.toast.error { background: var(--red-600); }
+.toast.error   { background: var(--red-600); }
+.toast.warning { background: #B45309; }   /* amber-700 — distinct from green success & red error */
 
 /* ---------------- Pagination ---------------- */
 .pagination-btn {

@@ -632,9 +632,12 @@ function showToast(msg, type = 'success') {
     t.className = 'toast';
     document.body.appendChild(t);
   }
-  const iconName = type === 'error' ? 'x' : 'check';
-  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  // Icon per type: success → check, warning → alert-triangle, error → x
+  const iconName = type === 'error' ? 'x' : type === 'warning' ? 'alert-triangle' : 'check';
+  // Apply the matching CSS modifier class
+  t.className = 'toast' + (type === 'error' ? ' error' : type === 'warning' ? ' warning' : '');
   t.innerHTML = `<span data-icon="${iconName}" data-icon-size="16"></span><span>${msg}</span>`;
+  if (window.lucide) lucide.createIcons({ nodes: [t] });
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
