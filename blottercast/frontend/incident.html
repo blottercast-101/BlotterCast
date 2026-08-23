@@ -296,20 +296,21 @@
 
         <div id="incPickerMapContainer" class="hidden">
           <!-- Floating Header visible in Wide View -->
-          <div id="incPickerWideHeader" class="hidden flex items-center justify-between gap-3 border-b border-forest-100 pb-2.5">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-sm font-bold text-forest-900 flex items-center gap-1.5">
-                <span data-icon="map" data-icon-size="16"></span> Mapulang Lupa Pin Placement & Boundaries
+          <div id="incPickerWideHeader" class="hidden flex items-center justify-between gap-2 border-b border-forest-100 pb-2.5">
+            <div class="flex items-center gap-2 flex-wrap min-w-0">
+              <span class="text-sm font-bold text-forest-900 flex items-center gap-1.5 whitespace-nowrap">
+                <span data-icon="map" data-icon-size="16"></span> Mapulang Lupa Pin Placement &amp; Boundaries
               </span>
-              <span id="wideZoneBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded bg-forest-100 text-forest-800 border border-forest-200">Zone: None</span>
-              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
+              <span id="wideZoneBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded bg-forest-100 text-forest-800 border border-forest-200 whitespace-nowrap">Zone: None</span>
+              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">⚪ Unverified Location</span>
+              <span class="font-mono text-xs font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200 whitespace-nowrap" id="wideCoordsPreview">Lat: --, Lng: --</span>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="font-mono text-xs font-bold text-forest-900 bg-forest-50 px-2.5 py-1 rounded border border-forest-200" id="wideCoordsPreview">Lat: --, Lng: --</span>
-              <button type="button" onclick="toggleExpandPickerMap(false)" class="text-xs px-3 py-1.5 bg-forest-800 hover:bg-forest-900 text-white rounded-lg font-semibold transition-colors flex items-center gap-1 shadow">
-                <span data-icon="minimize" data-icon-size="13"></span> Close Wide View
-              </button>
-            </div>
+            <button type="button" onclick="toggleExpandPickerMap(false)" title="Close wide view (Esc)" aria-label="Close wide map view"
+              class="flex-shrink-0 p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-forest-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
 
           <div id="incPickerMap" style="height: 180px; width: 100%;" class="rounded border border-forest-200 shadow-inner z-0"></div>
