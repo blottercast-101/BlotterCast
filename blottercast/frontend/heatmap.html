@@ -824,8 +824,9 @@
         if (boundRes.ok) {
           boundaryGeojson = await boundRes.json();
           boundaryLayer = L.geoJSON(boundaryGeojson, {
+            interactive: false,
             style: {
-              color: '#1a5730',
+              color: '#064e3b',
               weight: 3.5,
               fillColor: 'transparent',
               fillOpacity: 0
@@ -854,7 +855,7 @@
         fillOpacity: tier.opacity,
         color: tier.border,
         weight: 1.5,
-        dashArray: '3',
+        dashArray: '4',
       };
     }
 
