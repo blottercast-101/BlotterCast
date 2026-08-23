@@ -103,7 +103,7 @@ async function requireAuth() {
     }
     if (status.user.mustChangePassword) bcShowForcedPasswordChange();
     bcSyncTimeFormatFromServer().catch(() => {});
-    _bcResetIdleTimer();
+    _bcStartIdleTracker();
     return status.user;
   } catch (e) {
     _handleUnauthenticatedRedirect();
@@ -113,36 +113,94 @@ async function requireAuth() {
   }
 }
 
-// ── 3-Minute Inactivity / Idle Auto-Logout ──────────────────
-const BC_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes (180,000 ms)
-let _bcIdleTimer = null;
+// ── 3-Minute Inactivity / Idle Auto-Logout (Timestamp & Background-Safe) ──
+const BC_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes = 180,000 ms
+const BC_IDLE_CHECK_INTERVAL_MS = 3000;   // check every 3 seconds
+const BC_ACTIVITY_THROTTLE_MS = 1000;     // write to localStorage at most once per second
+let _bcLastThrottleWrite = 0;
+let _bcIdleCheckInterval = null;
+let _bcIdleListenersAttached = false;
 
-function _bcResetIdleTimer() {
-  if (_bcIdleTimer) clearTimeout(_bcIdleTimer);
+function _bcIsPublicPage() {
   const path = window.location.pathname.toLowerCase();
-  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
-  if (!isPublic) {
-    _bcIdleTimer = setTimeout(_bcTriggerIdleLogout, BC_IDLE_TIMEOUT_MS);
+  return path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+}
+
+function _bcRecordActivity() {
+  const now = Date.now();
+  if (now - _bcLastThrottleWrite > BC_ACTIVITY_THROTTLE_MS) {
+    _bcLastThrottleWrite = now;
+    try {
+      localStorage.setItem('bc_last_active_timestamp', now.toString());
+    } catch (e) {}
   }
 }
 
+function _bcCheckIdleExpiry() {
+  if (_bcIsPublicPage()) return;
+  try {
+    const raw = localStorage.getItem('bc_last_active_timestamp');
+    const lastActive = raw ? Number(raw) : Date.now();
+    const elapsed = Date.now() - lastActive;
+    if (elapsed >= BC_IDLE_TIMEOUT_MS) {
+      _bcTriggerIdleLogout();
+    }
+  } catch (e) {}
+}
+
 async function _bcTriggerIdleLogout() {
+  _bcStopIdleTracker();
   try { await BCApi.logout(); } catch (e) {}
-  sessionStorage.setItem('bc_logged_out_modal', '1');
+  try {
+    localStorage.removeItem('bc_last_active_timestamp');
+    sessionStorage.setItem('bc_logged_out_modal', '1');
+  } catch (e) {}
   window.location.replace('index.html?logged_out=1');
 }
 
-['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
-  window.addEventListener(evt, _bcResetIdleTimer, { passive: true });
-});
-_bcResetIdleTimer();
+function _bcStartIdleTracker() {
+  if (_bcIsPublicPage()) return;
+  _bcRecordActivity();
+
+  if (!_bcIdleCheckInterval) {
+    _bcIdleCheckInterval = setInterval(_bcCheckIdleExpiry, BC_IDLE_CHECK_INTERVAL_MS);
+  }
+
+  if (!_bcIdleListenersAttached) {
+    _bcIdleListenersAttached = true;
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, _bcRecordActivity, { passive: true });
+    });
+
+    // Background sync: trigger instant check on tab focus / visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        _bcCheckIdleExpiry();
+      }
+    });
+    window.addEventListener('focus', () => {
+      _bcCheckIdleExpiry();
+    });
+    // Cross-tab sync: sync activity if updated in another tab
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'bc_last_active_timestamp') {
+        _bcCheckIdleExpiry();
+      }
+    });
+  }
+}
+
+function _bcStopIdleTracker() {
+  if (_bcIdleCheckInterval) {
+    clearInterval(_bcIdleCheckInterval);
+    _bcIdleCheckInterval = null;
+  }
+}
 
 // ── Browser Navigation Guards (Back/Forward Buttons) ────────
 // 1. Trap Back button on protected pages so it terminates the session and returns to Landing Page
 (function _bcSetupBackNavigationTrap() {
-  const path = window.location.pathname.toLowerCase();
-  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
-  if (!isPublic) {
+  if (!_bcIsPublicPage()) {
     try {
       if (!history.state || history.state.bcGuard !== 1) {
         history.pushState({ bcGuard: 1 }, '', window.location.href);
@@ -152,9 +210,9 @@ _bcResetIdleTimer();
 })();
 
 window.addEventListener('popstate', async (event) => {
-  const path = window.location.pathname.toLowerCase();
-  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
-  if (!isPublic) {
+  if (!_bcIsPublicPage()) {
+    _bcStopIdleTracker();
+    try { localStorage.removeItem('bc_last_active_timestamp'); } catch (e) {}
     try { await BCApi.logout(); } catch (e) {}
     sessionStorage.setItem('bc_logged_out_modal', '1');
     window.location.replace('index.html?logged_out=1');
@@ -163,9 +221,8 @@ window.addEventListener('popstate', async (event) => {
 
 // 2. BFCache & Forward Navigation Guard
 window.addEventListener('pageshow', (event) => {
-  const path = window.location.pathname.toLowerCase();
-  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
-  if (!isPublic) {
+  if (!_bcIsPublicPage()) {
+    _bcCheckIdleExpiry();
     requireAuth();
   }
 });
@@ -190,6 +247,8 @@ function bcInitials(fullName) {
 
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
+  _bcStopIdleTracker();
+  try { localStorage.removeItem('bc_last_active_timestamp'); } catch (e) {}
   try { await BCApi.logout(); } catch (e) {}
   window.location.replace('login.html');
 }
