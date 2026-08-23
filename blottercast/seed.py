@@ -54,8 +54,8 @@ SETTINGS = {
 }
 
 DEMO_USERS = [
-    ("admin", "admin123", "System Administrator", "System Admin", "fileyourname@gmail.com"),
-    ("kapitan", "kapitan123", "Barangay Captain", "Barangay Captain", "kapitan@blottercast.local"),
+    ("admin", "admin123", "System Administrator", "System Admin", "blottercast@gmail.com"),
+    ("kapitan", "kapitan123", "Barangay Captain", "Barangay Captain", "fhalynramos4@gmail.com"),
     ("jdelacuz", "officer123", "J. Dela Cruz", "Desk Officer", "jdelacuz@blottercast.local"),
     ("msantos", "officer123", "M. Santos", "Desk Officer", "msantos@blottercast.local"),
     ("pencoder", "encoder123", "P. Encoder", "Data Encoder", "pencoder@blottercast.local"),
