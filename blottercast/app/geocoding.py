@@ -78,8 +78,8 @@ LOCAL_GAZETTEER = [
         "name": "Pandi Encampment One",
         "aliases": ["pandi encampment one", "pandi encamp one", "encampment one", "encamp one", "pandi encampment", "encampment"],
         "zone": "Zone 7",
-        "lat": 14.885400,
-        "lng": 120.961300,
+        "lat": 14.883059,
+        "lng": 120.963831,
     },
     {
         "name": "Mitay 1",
@@ -141,36 +141,40 @@ LOCAL_GAZETTEER = [
 
 
 def forward_geocode(location_text: str, zone_id: str = None) -> dict | None:
-    """Forward geocodes an address string within Barangay Mapulang Lupa, Pandi, Bulacan.
-    Returns dict(lat=float, lng=float, display_name=str, source=str) or None."""
+    """Forward geocodes an address string.
+    Returns dict(lat=float, lng=float, display_name=str, source=str, is_inside=bool) or None.
+    NEVER silently falls back to zone center coordinates."""
     if not location_text:
         return None
 
     raw_text = str(location_text).strip()
     norm_text = raw_text.lower()
 
-    # Reject obvious mock / test strings
+    # Reject obvious mock / test / gibberish strings
     if len(norm_text) < 4:
         return None
-    mock_keywords = ["test", "mock", "sample", "fake", "dummy", "sdada", "asdf", "qwe", "nanaman", "placeholder"]
+    mock_keywords = ["test", "mock", "sample", "fake", "dummy", "sdada", "asdf", "qwe", "nanaman", "placeholder", "assss", "zzzz"]
     if any(kw in norm_text for kw in mock_keywords):
         return None
 
-    # 1. Check local gazetteer for recognized landmarks / streets / subdivisions / encampments
+    # 1. Check local gazetteer for recognized Mapulang Lupa landmarks / streets / subdivisions / encampments
     for entry in LOCAL_GAZETTEER:
         if entry["name"].lower() in norm_text or any(alias in norm_text for alias in entry["aliases"]):
-            if is_point_inside_boundary(entry["lat"], entry["lng"]):
-                return {
-                    "lat": entry["lat"],
-                    "lng": entry["lng"],
-                    "display_name": f"{entry['name']}, Barangay Mapulang Lupa, Pandi, Bulacan",
-                    "source": "local_gazetteer",
-                }
+            is_in = is_point_inside_boundary(entry["lat"], entry["lng"])
+            return {
+                "lat": entry["lat"],
+                "lng": entry["lng"],
+                "display_name": f"{entry['name']}, Barangay Mapulang Lupa, Pandi, Bulacan",
+                "source": "local_gazetteer",
+                "is_inside": is_in,
+            }
 
-    # 2. Query OpenStreetMap Nominatim with bounded viewbox
-    # Viewbox coordinates for Mapulang Lupa / Pandi: min_lon, max_lat, max_lon, min_lat
+    # 2. Query OpenStreetMap Nominatim: first with Mapulang Lupa context
+    clean_loc = re.sub(r'^(zone\s*\d+[\s,:-]*)', '', raw_text, flags=re.IGNORECASE).strip()
+    if not clean_loc:
+        return None
+
     try:
-        clean_loc = re.sub(r'^(zone\s*\d+[\s,:-]*)', '', raw_text, flags=re.IGNORECASE).strip()
         query = f"{clean_loc}, Mapulang Lupa, Pandi, Bulacan, Philippines"
         params = {
             "q": query,
@@ -183,31 +187,47 @@ def forward_geocode(location_text: str, zone_id: str = None) -> dict | None:
         req = urllib.request.Request(url, headers={"User-Agent": "BlotterCast-Mapulang-Lupa/1.0"})
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            if isinstance(data, list):
-                for item in data:
-                    lat = float(item["lat"])
-                    lng = float(item["lon"])
-                    if is_point_inside_boundary(lat, lng):
-                        return {
-                            "lat": round(lat, 6),
-                            "lng": round(lng, 6),
-                            "display_name": item.get("display_name", clean_loc),
-                            "source": "nominatim_geocoder",
-                        }
-    except Exception as e:
-        # Nominatim network or rate limit failure: gracefully fall back
+            if isinstance(data, list) and len(data) > 0:
+                item = data[0]
+                lat = float(item["lat"])
+                lng = float(item["lon"])
+                is_in = is_point_inside_boundary(lat, lng)
+                return {
+                    "lat": round(lat, 6),
+                    "lng": round(lng, 6),
+                    "display_name": item.get("display_name", clean_loc),
+                    "source": "nominatim_geocoder",
+                    "is_inside": is_in,
+                }
+    except Exception:
         pass
 
-    # 3. Zone-based fallback if zone is authentic
-    from .helpers import ZONE_LANDMARK_DEFINITIONS
-    if zone_id and zone_id in ZONE_LANDMARK_DEFINITIONS:
-        zinfo = ZONE_LANDMARK_DEFINITIONS[zone_id]
-        if is_point_inside_boundary(zinfo["latitude"], zinfo["longitude"]):
-            return {
-                "lat": zinfo["latitude"],
-                "lng": zinfo["longitude"],
-                "display_name": f"{zinfo['name']} ({zone_id}), Barangay Mapulang Lupa, Pandi, Bulacan",
-                "source": "zone_default",
-            }
+    # 3. If not found in bounded Mapulang Lupa, query broader Philippines context to detect outside-boundary locations (e.g. Manila, Malolos)
+    try:
+        query = f"{clean_loc}, Philippines"
+        params = {
+            "q": query,
+            "format": "json",
+            "limit": 1,
+        }
+        url = "https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers={"User-Agent": "BlotterCast-Mapulang-Lupa/1.0"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if isinstance(data, list) and len(data) > 0:
+                item = data[0]
+                lat = float(item["lat"])
+                lng = float(item["lon"])
+                is_in = is_point_inside_boundary(lat, lng)
+                return {
+                    "lat": round(lat, 6),
+                    "lng": round(lng, 6),
+                    "display_name": item.get("display_name", clean_loc),
+                    "source": "nominatim_geocoder",
+                    "is_inside": is_in,
+                }
+    except Exception:
+        pass
 
+    # Never fall back to zone default coordinates!
     return None

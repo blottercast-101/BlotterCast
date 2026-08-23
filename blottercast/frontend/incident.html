@@ -238,7 +238,7 @@
       <div class="grid grid-cols-3 gap-4">
         <div>
           <label class="form-label">Zone</label>
-          <select id="if_zone" class="form-input" required onchange="checkZoneLocationConflict()">
+          <select id="if_zone" class="form-input" required onchange="onZoneDropdownChange()">
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Zone 1">Zone 1 (Residence 3)</option>
             <option value="Zone 2">Zone 2 (Residence 1)</option>
@@ -857,6 +857,19 @@
       showToast(`Switched zone to ${targetZone}`, 'success');
     }
     checkZoneLocationConflict();
+  }
+
+  function onZoneDropdownChange() {
+    // 1. Decoupled from geocoding coordinates:
+    // Changing Zone NEVER injects coordinates or marks outside-boundary locations as inside!
+    checkZoneLocationConflict();
+
+    // 2. If coordinates are already set, re-verify status with the new zone conflict rule
+    const lat = document.getElementById('if_lat').value;
+    const lng = document.getElementById('if_lng').value;
+    if (lat && lng) {
+      updatePickerStatusBadge(Number(lat), Number(lng));
+    }
   }
 
   function resetIncidentFormFields() {
