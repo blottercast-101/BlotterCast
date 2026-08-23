@@ -472,7 +472,7 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Weight</th>
-                <th class="text-right">Actions</th>
+                <th class="text-center w-24">Actions</th>
               </tr>
             </thead>
             <tbody id="incidentTableBody"></tbody>
@@ -830,7 +830,7 @@
           <td class="font-mono text-xs">${item.lat.toFixed(4)}</td>
           <td class="font-mono text-xs">${item.lng.toFixed(4)}</td>
           <td><span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forest-50 text-forest-700 border border-forest-100">${item.weight.toFixed(2)}</span></td>
-          <td class="text-right">
+          <td class="text-center w-24">
             <button onclick="focusIncidentOnMap(${item.id})" class="icon-btn" title="View on Map">
               <span data-icon="view" data-icon-size="16"></span>
             </button>
