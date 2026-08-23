@@ -25,7 +25,7 @@ PERMISSIONS = {
 
 SECURITY_DEFAULTS = {
     "lockout_enabled": True,
-    "session_timeout": 30,
+    "session_timeout": 120,
     "max_failed_logins": 5,
     "min_password_length": 8,
     "password_expiry_days": 90,

@@ -113,9 +113,9 @@ async function requireAuth() {
   }
 }
 
-// ── 3-Minute Inactivity / Idle Auto-Logout (Timestamp & Background-Safe) ──
-const BC_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes = 180,000 ms
-const BC_IDLE_CHECK_INTERVAL_MS = 3000;   // check every 3 seconds
+// ── 2-Hour Inactivity / Idle Auto-Logout (Timestamp & Background-Safe) ──
+const BC_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours = 7,200,000 ms
+const BC_IDLE_CHECK_INTERVAL_MS = 5000;       // check every 5 seconds
 const BC_ACTIVITY_THROTTLE_MS = 1000;     // write to localStorage at most once per second
 let _bcLastThrottleWrite = 0;
 let _bcIdleCheckInterval = null;
