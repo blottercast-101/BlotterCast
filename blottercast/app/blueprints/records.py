@@ -114,7 +114,7 @@ def _incidents():
         # Strict boundary validation if explicit coordinates were passed
         if lat is not None and lng is not None:
             if not is_point_inside_boundary(lat, lng):
-                lat, lng = None, None
+                return json_error("Cannot file incident: Location coordinates fall outside Barangay Mapulang Lupa boundary.", 422)
 
         # Auto-resolve / Forward Geocode if coordinates not supplied
         if lat is None or lng is None:
@@ -175,7 +175,7 @@ def _incidents():
         # Strict boundary validation if explicit coordinates were passed
         if lat is not None and lng is not None:
             if not is_point_inside_boundary(lat, lng):
-                lat, lng = None, None
+                return json_error("Cannot update incident: Location coordinates fall outside Barangay Mapulang Lupa boundary.", 422)
 
         # Auto-resolve / Forward Geocode if coordinates not supplied
         if lat is None or lng is None:

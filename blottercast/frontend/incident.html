@@ -251,7 +251,7 @@
         </div>
         <div class="col-span-2">
           <label class="form-label">Location Detail</label>
-          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="checkZoneLocationConflict()"/>
+          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="onLocationDetailInput()"/>
         </div>
       </div>
 
@@ -276,7 +276,7 @@
             <span class="text-xs font-bold text-forest-800 flex items-center gap-1.5">
               <span data-icon="location" data-icon-size="14"></span> Geocoded Pin & Boundary
             </span>
-            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">No Pin Selected</span>
+            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1">
@@ -295,6 +295,16 @@
             <span class="font-mono text-xs font-semibold text-forest-800" id="if_coordsPreview">Lat: --, Lng: --</span>
           </div>
         </div>
+
+        <!-- Strict Boundary Geofence Error Banner -->
+        <div id="if_boundaryErrorBanner" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2.5 animate-fadeIn shadow-sm">
+          <span class="text-rose-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
+          <div>
+            <strong class="font-bold text-rose-950 block" id="if_boundaryErrorTitle">Outside Barangay Jurisdiction</strong>
+            <span id="if_boundaryErrorMsg" class="text-rose-800">This location is outside Barangay Mapulang Lupa. Incident reports can only be filed within barangay jurisdiction.</span>
+          </div>
+        </div>
+
         <input type="hidden" id="if_lat"/>
         <input type="hidden" id="if_lng"/>
       </div>
@@ -333,7 +343,7 @@
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" onclick="closeModal('incidentModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveIncident()" class="btn-primary">Save Report</button>
+        <button type="button" id="btnSaveIncident" onclick="saveIncident()" class="btn-primary">Save Report</button>
       </div>
     </form>
   </div>
@@ -479,6 +489,19 @@
   let pickerMarker = null;
   let pickerBoundaryLayer = null;
   let pickerBoundaryGeojson = null;
+  let isLocationVerifiedInBoundary = false;
+  let isGeocoded = false;
+
+  function setBoundaryStyle(isError = false) {
+    if (pickerBoundaryLayer) {
+      pickerBoundaryLayer.setStyle({
+        color: isError ? '#e11d48' : '#23703c',
+        weight: isError ? 3.5 : 2.5,
+        fillColor: isError ? '#f43f5e' : '#4fa868',
+        fillOpacity: isError ? 0.18 : 0.12
+      });
+    }
+  }
 
   async function initPickerMap() {
     if (pickerMap) {
@@ -525,11 +548,15 @@
     if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (Number(lat) === 0 && Number(lng) === 0)) {
       document.getElementById('if_lat').value = '';
       document.getElementById('if_lng').value = '';
+      isLocationVerifiedInBoundary = false;
+      isGeocoded = false;
       updatePickerStatusBadge(null, null);
       if (pickerMarker && pickerMap) {
         pickerMap.removeLayer(pickerMarker);
         pickerMarker = null;
       }
+      setBoundaryStyle(false);
+      updateSubmitButtonState();
       return;
     }
 
@@ -555,39 +582,99 @@
     }
 
     updatePickerStatusBadge(numLat, numLng);
+    updateSubmitButtonState();
   }
 
   function isPickerPointInBoundary(lat, lng) {
-    if (!pickerBoundaryGeojson) return true;
+    if (!pickerBoundaryGeojson) return false;
     try {
-      const pt = turf.point([lng, lat]);
+      const pt = turf.point([Number(lng), Number(lat)]);
       return turf.booleanPointInPolygon(pt, pickerBoundaryGeojson);
     } catch (e) {
-      return true;
+      return false;
     }
   }
 
   function updatePickerStatusBadge(lat, lng) {
     const badge = document.getElementById('if_geoBadge');
     const preview = document.getElementById('if_coordsPreview');
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
+    const boundaryMsg = document.getElementById('if_boundaryErrorMsg');
     if (!badge) return;
 
     if (lat == null || lng == null) {
       badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
-      badge.textContent = 'No Pin Selected';
+      badge.textContent = '⚪ Unverified Location';
       if (preview) preview.textContent = 'Lat: --, Lng: --';
+      if (boundaryBanner) boundaryBanner.classList.add('hidden');
+      isLocationVerifiedInBoundary = false;
+      setBoundaryStyle(false);
       return;
     }
 
     const inBounds = isPickerPointInBoundary(lat, lng);
     if (inBounds) {
+      isLocationVerifiedInBoundary = true;
+      isGeocoded = true;
       badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
       badge.textContent = '✓ Inside Boundary';
+      if (boundaryBanner) boundaryBanner.classList.add('hidden');
+      setBoundaryStyle(false);
     } else {
+      isLocationVerifiedInBoundary = false;
       badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
-      badge.textContent = '⚠ Outside Boundary';
+      badge.textContent = '⚠️ Outside Boundary / Non-Jurisdiction';
+      if (boundaryBanner && boundaryTitle && boundaryMsg) {
+        boundaryTitle.textContent = 'Outside Barangay Jurisdiction';
+        boundaryMsg.textContent = 'This location is outside Barangay Mapulang Lupa boundary. Incident reports can only be filed within barangay jurisdiction.';
+        boundaryBanner.classList.remove('hidden');
+      }
+      setBoundaryStyle(true);
     }
     if (preview) preview.textContent = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+  }
+
+  function onLocationDetailInput() {
+    checkZoneLocationConflict();
+
+    // 1. Immediately invalidate previous geocoded pin & coords
+    isLocationVerifiedInBoundary = false;
+    isGeocoded = false;
+    document.getElementById('if_lat').value = '';
+    document.getElementById('if_lng').value = '';
+
+    // 2. Reset status badge to unverified
+    const badge = document.getElementById('if_geoBadge');
+    if (badge) {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      badge.textContent = '⚪ Unverified Location';
+    }
+    const preview = document.getElementById('if_coordsPreview');
+    if (preview) preview.textContent = 'Lat: --, Lng: --';
+
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    if (boundaryBanner) boundaryBanner.classList.add('hidden');
+
+    // 3. Remove pin marker if currently placed
+    if (pickerMarker && pickerMap) {
+      pickerMap.removeLayer(pickerMarker);
+      pickerMarker = null;
+    }
+    setBoundaryStyle(false);
+    updateSubmitButtonState();
+  }
+
+  function updateSubmitButtonState() {
+    const btn = document.getElementById('btnSaveIncident');
+    if (!btn) return;
+    if (!isLocationVerifiedInBoundary) {
+      btn.classList.add('opacity-75');
+      btn.title = 'Location must be verified within Barangay boundary before saving.';
+    } else {
+      btn.classList.remove('opacity-75');
+      btn.removeAttribute('title');
+    }
   }
 
   async function geocodeTypedAddress() {
@@ -607,9 +694,37 @@
       if (data && data.ok && data.lat && data.lng) {
         showPickerMap();
         setPickerCoordinates(data.lat, data.lng, true);
-        showToast(`Located: ${data.display_name || loc}`, 'success');
+        if (isLocationVerifiedInBoundary) {
+          showToast(`Located: ${data.display_name || loc}`, 'success');
+        } else {
+          showToast('Location is outside Barangay Mapulang Lupa boundary.', 'warning');
+        }
       } else {
-        showToast(data.message || 'Location could not be mapped inside the barangay boundary.', 'warning');
+        // Unresolved / Gibberish
+        isLocationVerifiedInBoundary = false;
+        isGeocoded = false;
+        document.getElementById('if_lat').value = '';
+        document.getElementById('if_lng').value = '';
+        if (pickerMarker && pickerMap) {
+          pickerMap.removeLayer(pickerMarker);
+          pickerMarker = null;
+        }
+        const badge = document.getElementById('if_geoBadge');
+        if (badge) {
+          badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+          badge.textContent = '❌ Invalid Location';
+        }
+        const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+        const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
+        const boundaryMsg = document.getElementById('if_boundaryErrorMsg');
+        if (boundaryBanner && boundaryTitle && boundaryMsg) {
+          boundaryTitle.textContent = 'Unable to Verify Location';
+          boundaryMsg.textContent = data.message || 'Could not find a valid street or landmark for this address within Barangay Mapulang Lupa. Please use the mini-map to drop a pin or enter a recognized street.';
+          boundaryBanner.classList.remove('hidden');
+        }
+        setBoundaryStyle(true);
+        updateSubmitButtonState();
+        showToast(data.message || 'Location could not be verified inside barangay boundary.', 'warning');
       }
     } catch (err) {
       showToast('Geocoding request failed.', 'error');
@@ -750,11 +865,17 @@
     document.getElementById('incidentForm').reset();
     document.getElementById('if_reportNo').value = '';
     setPickerCoordinates(null, null);
+    isLocationVerifiedInBoundary = false;
+    isGeocoded = false;
     currentZoneConflict = null;
     const banner = document.getElementById('if_zoneConflictBanner');
     if (banner) banner.classList.add('hidden');
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    if (boundaryBanner) boundaryBanner.classList.add('hidden');
     const container = document.getElementById('incPickerMapContainer');
     if (container) container.classList.add('hidden');
+    setBoundaryStyle(false);
+    updateSubmitButtonState();
     resetFormDropdowns('incidentForm');
   }
 
@@ -837,6 +958,13 @@
     if (!vals.status) { await bcAlert('Please select the Status.'); return; }
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
+
+    // Hard Submission Guard: Strict Point-in-Polygon Geofence Validation
+    if (!isLocationVerifiedInBoundary || !vals.lat || !vals.lng) {
+      await bcAlert('Cannot file incident report: Location is outside the barangay boundary or unverified.\n\nPlease click "Geocode Location" or place a marker inside the green boundary on the mini-map.');
+      showPickerMap();
+      return;
+    }
 
     vals.location = bcStripZonePrefix(vals.location);
     try {
