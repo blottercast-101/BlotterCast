@@ -343,77 +343,82 @@ def _complete_login(user, audit_note):
 
 
 def _login():
-    data = request.get_json(silent=True) or {}
-    username = (data.get("username") or "").strip()
-    password = data.get("password") or ""
-    if not username or not password:
-        return json_error("Username and password required")
+    try:
+        data = request.get_json(silent=True) or {}
+        username = (data.get("username") or "").strip()
+        password = data.get("password") or ""
+        if not username or not password:
+            return json_error("Username and password required")
 
-    settings = get_security_settings()
-    user = User.query.filter_by(username=username).first()
+        settings = get_security_settings()
+        user = User.query.filter_by(username=username).first()
 
-    if user and settings["lockout_enabled"] and user.locked_until and user.locked_until > datetime.utcnow():
-        minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1)
-        return json_error(
-            f"This account is locked due to too many failed login attempts. "
-            f"Try again in {minutes_left} minute(s), or contact an administrator.", 403
-        )
+        if user and settings["lockout_enabled"] and user.locked_until and user.locked_until > datetime.utcnow():
+            minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1)
+            return json_error(
+                f"This account is locked due to too many failed login attempts. "
+                f"Try again in {minutes_left} minute(s), or contact an administrator.", 403
+            )
 
-    if not user or not _check_password(password, user.password):
-        if user and settings["lockout_enabled"]:
-            user.failed_attempts = (user.failed_attempts or 0) + 1
-            if user.failed_attempts >= settings["max_failed_logins"]:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=15)
-                user.failed_attempts = 0
+        if not user or not _check_password(password, user.password):
+            if user and settings["lockout_enabled"]:
+                user.failed_attempts = (user.failed_attempts or 0) + 1
+                if user.failed_attempts >= settings["max_failed_logins"]:
+                    user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    user.failed_attempts = 0
+                    db.session.commit()
+                    log_audit(user.username, "Locked", "System", "Account locked after too many failed login attempts")
+                    return json_error("Too many failed login attempts. This account has been locked for 15 minutes.", 403)
                 db.session.commit()
-                log_audit(user.username, "Locked", "System", "Account locked after too many failed login attempts")
-                return json_error("Too many failed login attempts. This account has been locked for 15 minutes.", 403)
+            return json_error("Invalid username or password", 401)
+
+        if user.status.upper() == "SUSPENDED":
+            return json_error("This account has been suspended. Please contact an administrator.", 403)
+
+        user.failed_attempts = 0
+        user.locked_until = None
+
+        # Master Security Switch: 2FA is controlled globally or per-account
+        is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
+
+        # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
+        if not is_2fa_active:
             db.session.commit()
-        return json_error("Invalid username or password", 401)
+            return _complete_login(user, "Successful login (2FA Master Switch OFF)")
 
-    if user.status.upper() == "SUSPENDED":
-        return json_error("This account has been suspended. Please contact an administrator.", 403)
+        if not user.email:
+            return json_error(
+                "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
+                "Please contact a System Administrator.", 403
+            )
 
-    user.failed_attempts = 0
-    user.locked_until = None
-
-    # Master Security Switch: 2FA is controlled globally or per-account
-    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
-
-    # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
-    if not is_2fa_active:
         db.session.commit()
-        return _complete_login(user, "Successful login (2FA Master Switch OFF)")
 
-    if not user.email:
-        return json_error(
-            "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
-            "Please contact a System Administrator.", 403
-        )
+        _issue_and_send_otp(user)
 
-    db.session.commit()
+        session.clear()
+        session["mfa_pending_user_id"] = user.id
+        session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
-    _issue_and_send_otp(user)
+        pre_auth_token = _generate_pre_auth_token(user.id)
+        log_audit(user.username, "Login", "System", "Password verified, MFA code sent (Master Switch ON)")
 
-    session.clear()
-    session["mfa_pending_user_id"] = user.id
-    session["mfa_pending_at"] = datetime.utcnow().timestamp()
-
-    pre_auth_token = _generate_pre_auth_token(user.id)
-    log_audit(user.username, "Login", "System", "Password verified, MFA code sent (Master Switch ON)")
-
-    return jsonify({
-        "ok": True,
-        "mfaRequired": True,
-        "mfa_required": True,
-        "user_id": user.id,
-        "pre_auth_token": pre_auth_token,
-        "maskedEmail": _mask_email(user.email),
-        "masked_email": _mask_email(user.email),
-        "enforcedGlobally": True,
-        "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
-        "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
-    })
+        return jsonify({
+            "ok": True,
+            "mfaRequired": True,
+            "mfa_required": True,
+            "user_id": user.id,
+            "pre_auth_token": pre_auth_token,
+            "maskedEmail": _mask_email(user.email),
+            "masked_email": _mask_email(user.email),
+            "enforcedGlobally": True,
+            "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
+            "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(f"Database error during login: {e}")
+        return json_error(f"Login failed: {str(e)}", 500)
 
 
 def _pending_mfa_user(data=None):
@@ -448,38 +453,43 @@ def _pending_mfa_user(data=None):
 
 
 def _verify_otp():
-    data = request.get_json(silent=True) or {}
-    user = _pending_mfa_user(data)
-    if not user:
-        return json_error("Your sign-in attempt has expired. Please log in again.", 401)
+    try:
+        data = request.get_json(silent=True) or {}
+        user = _pending_mfa_user(data)
+        if not user:
+            return json_error("Your sign-in attempt has expired. Please log in again.", 401)
 
-    code = (data.get("code") or "").strip()
-    if not code:
-        return json_error("Enter the verification code sent to your email")
+        code = (data.get("code") or "").strip()
+        if not code:
+            return json_error("Enter the verification code sent to your email")
 
-    otp = (
-        OtpCode.query.filter_by(user_id=user.id, purpose="login", consumed_at=None)
-        .order_by(OtpCode.id.desc()).first()
-    )
-    if not otp or otp.expires_at < datetime.utcnow():
-        return json_error("This code has expired. Request a new one.", 400)
+        otp = (
+            OtpCode.query.filter_by(user_id=user.id, purpose="login", consumed_at=None)
+            .order_by(OtpCode.id.desc()).first()
+        )
+        if not otp or otp.expires_at < datetime.utcnow():
+            return json_error("This code has expired. Request a new one.", 400)
 
-    max_attempts = current_app.config["MFA_MAX_ATTEMPTS"]
-    if otp.attempts >= max_attempts:
-        return json_error("Too many incorrect attempts. Request a new code.", 400)
-
-    if not _check_otp(code, otp.code_hash):
-        otp.attempts += 1
-        db.session.commit()
-        remaining = max_attempts - otp.attempts
-        if remaining <= 0:
+        max_attempts = current_app.config["MFA_MAX_ATTEMPTS"]
+        if otp.attempts >= max_attempts:
             return json_error("Too many incorrect attempts. Request a new code.", 400)
-        return json_error(f"Incorrect code. {remaining} attempt(s) remaining.", 400)
 
-    otp.consumed_at = datetime.utcnow()
-    db.session.commit()
+        if not _check_otp(code, otp.code_hash):
+            otp.attempts += 1
+            db.session.commit()
+            remaining = max_attempts - otp.attempts
+            if remaining <= 0:
+                return json_error("Too many incorrect attempts. Request a new code.", 400)
+            return json_error(f"Incorrect code. {remaining} attempt(s) remaining.", 400)
 
-    return _complete_login(user, "Successful login (MFA verified)")
+        otp.consumed_at = datetime.utcnow()
+        db.session.commit()
+
+        return _complete_login(user, "Successful login (MFA verified)")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(f"Database error during OTP verification: {e}")
+        return json_error(f"OTP verification failed: {str(e)}", 500)
 
 
 def _resend_otp():

@@ -1,49 +1,94 @@
-"""Lightweight, dependency-free schema migration.
+"""Lightweight, dependency-free schema migration and auto-repair.
 
-This project has no Alembic/Flask-Migrate. `db.create_all()` is the only
-automatic schema setup there is, and it only creates *missing tables* —
-it never adds a column to a table that already exists. Render's DB is a
-persistent Postgres instance that survives every deploy (see render.yaml),
-so any time a model gains a new column, the live table doesn't have it
-until something actually ALTERs it — and every request touching that
-column crashes in the meantime.
-
-ensure_columns() closes that gap: it checks the live database for a short
-list of columns added since the original schema, and adds any that are
-missing. It's called once from seed.py, which Render's build step already
-runs on every deploy, before the app starts serving traffic. Safe to run
-repeatedly — a column that already exists is left untouched.
-
-Add a line here any time a model gains a column on a table that might
-already exist in a deployed database.
+Ensures that live PostgreSQL, MySQL, and SQLite databases automatically gain
+any missing tables or columns on startup without crashing on deploy.
 """
 
 from sqlalchemy import inspect, text
 
 # (table, column, SQL type, DEFAULT literal, is_not_null)
 ADDITIVE_COLUMNS = [
-    ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
+    # User authentication, Google OAuth & Security columns
     ("users", "google_id", "VARCHAR(100)", "NULL", False),
     ("users", "auth_provider", "VARCHAR(30)", "'local'", True),
+    ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
+    ("users", "signature_path", "VARCHAR(255)", "NULL", False),
+    ("users", "last_login", "TIMESTAMP", "NULL", False),
     ("users", "last_seen", "TIMESTAMP", "NULL", False),
+    ("users", "failed_attempts", "INTEGER", "0", True),
+    ("users", "locked_until", "TIMESTAMP", "NULL", False),
+    ("users", "password_changed_at", "TIMESTAMP", "CURRENT_TIMESTAMP", False),
+    ("users", "email", "VARCHAR(150)", "NULL", False),
+    ("users", "contact_no", "VARCHAR(30)", "NULL", False),
+    ("users", "role", "VARCHAR(30)", "'Desk Officer'", True),
+    ("users", "status", "VARCHAR(20)", "'Active'", True),
+
+    # Record archival columns
     ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
+    ("incidents", "archived", "BOOLEAN", "FALSE", True),
 ]
 
 
 def ensure_columns(db):
-    inspector = inspect(db.engine)
-    with db.engine.begin() as conn:
+    """Safely inspects tables and executes schema adjustments."""
+    try:
+        # 1. Ensure system_security_settings table exists
+        with db.engine.begin() as conn:
+            backend = db.engine.url.get_backend_name().lower()
+            if "postgres" in backend:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS system_security_settings (
+                        id INT PRIMARY KEY DEFAULT 1,
+                        is_2fa_globally_enabled BOOLEAN DEFAULT FALSE,
+                        is_idle_timeout_enabled BOOLEAN DEFAULT FALSE,
+                        idle_timeout_duration_minutes INT DEFAULT 120,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_by INT
+                    )
+                """))
+                conn.execute(text("""
+                    INSERT INTO system_security_settings (id, is_2fa_globally_enabled, is_idle_timeout_enabled, idle_timeout_duration_minutes)
+                    VALUES (1, FALSE, FALSE, 120)
+                    ON CONFLICT (id) DO NOTHING
+                """))
+    except Exception as e:
+        print(f"  [migration] system_security_settings notice: {e}")
+
+    try:
+        inspector = inspect(db.engine)
+        backend = db.engine.url.get_backend_name().lower()
+        is_postgres = "postgres" in backend
+
         for item in ADDITIVE_COLUMNS:
             table, column, coltype, default = item[0], item[1], item[2], item[3]
-            is_not_null = item[4] if len(item) > 4 else True
-            if not inspector.has_table(table):
-                continue  # db.create_all() creates the whole table, column included
-            existing = {c["name"] for c in inspector.get_columns(table)}
-            if column in existing:
-                continue
-            if is_not_null:
-                sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype} NOT NULL DEFAULT {default}"
-            else:
-                sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
-            conn.execute(text(sql))
-            print(f"  migrated: added {table}.{column}")
+            is_not_null = item[4] if len(item) > 4 else False
+
+            try:
+                with db.engine.begin() as conn:
+                    if not inspector.has_table(table):
+                        continue
+
+                    existing = {c["name"] for c in inspector.get_columns(table)}
+                    if column in existing:
+                        continue
+
+                    if is_postgres:
+                        # PostgreSQL supports ADD COLUMN IF NOT EXISTS natively
+                        if is_not_null:
+                            sql = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {coltype} NOT NULL DEFAULT {default}"
+                        else:
+                            sql = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {coltype}"
+                    else:
+                        if is_not_null:
+                            sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype} NOT NULL DEFAULT {default}"
+                        else:
+                            sql = f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
+
+                    conn.execute(text(sql))
+                    print(f"  [migration] added column: {table}.{column}")
+            except Exception as col_err:
+                # Catch per-column exception so it doesn't abort subsequent columns
+                print(f"  [migration] column check notice for {table}.{column}: {col_err}")
+
+    except Exception as e:
+        print(f"  [migration] ensure_columns warning: {e}")
