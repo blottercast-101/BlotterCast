@@ -4,7 +4,7 @@
     "name": "Mapulang Lupa",
     "municipality": "Pandi",
     "province": "Bulacan",
-    "note": "Extended natural boundary polygon of Barangay Mapulang Lupa, following the northern river/waterway perimeter, Silangan Corridor, and southern perimeter along Pandi-Angat Road and Mag-asawang Sapa Road."
+    "note": "Barangay Mapulang Lupa boundary polygon with trimmed northeast perimeter along the road crossing and curved riverbank."
   },
   "geometry": {
     "type": "Polygon",
@@ -17,11 +17,10 @@
         [120.961500, 14.888400],
         [120.963500, 14.889300],
         [120.965800, 14.889600],
-        [120.968500, 14.889200],
-        [120.971500, 14.888000],
-        [120.973500, 14.886800],
-        [120.974500, 14.885000],
-        [120.974200, 14.882500],
+        [120.968000, 14.887000],
+        [120.969500, 14.885500],
+        [120.971000, 14.884000],
+        [120.972500, 14.882500],
         [120.973000, 14.880200],
         [120.971200, 14.878200],
         [120.968800, 14.876800],
