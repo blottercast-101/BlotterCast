@@ -112,12 +112,18 @@ def _create():
     username = (d.get("username") or "").strip()
     full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
     password = d.get("password") or ""
+    role = (d.get("role") or "Desk Officer").strip()
     email = (d.get("email") or "").strip()
     contact = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     if not username or not full_name or not password:
         return json_error("Name, username, and password are required")
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
+
+    # Guard: Only Desk Officer and Data Encoder roles may be created via user management
+    normalized_role = role.upper()
+    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN"} or role not in {"Desk Officer", "Data Encoder"}:
+        return json_error("Creating accounts with 'System Admin' or 'Barangay Captain' roles is forbidden. Only Desk Officer and Data Encoder accounts can be created.", 403)
 
     min_len = get_security_settings()["min_password_length"]
     if len(password) < min_len:

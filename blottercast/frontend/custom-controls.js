@@ -90,12 +90,19 @@
       '<svg class="bc-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     wrap.appendChild(trigger);
 
+    function isPlaceholderOption(opt) {
+      if (!opt) return true;
+      const text = (opt.textContent || '').trim();
+      const textLower = text.toLowerCase();
+      return opt.hidden || opt.disabled || !opt.value || textLower === '-select-' || textLower === 'select...' || textLower === 'select…';
+    }
+
     function syncTrigger() {
       const opt = select.options[select.selectedIndex];
       const valSpan = trigger.querySelector('.bc-select-value');
       const text = opt ? (opt.textContent || '').trim() : '';
       valSpan.textContent = text || '-Select-';
-      const isPlaceholder = !opt || opt.disabled || !opt.value || text === '-Select-' || text === 'Select…' || text.toLowerCase() === '-select-';
+      const isPlaceholder = isPlaceholderOption(opt);
       valSpan.classList.toggle('bc-select-placeholder', isPlaceholder);
       trigger.disabled = select.disabled;
       trigger.classList.toggle('bc-select-disabled', select.disabled);
@@ -125,22 +132,21 @@
       const panel = document.createElement('div');
       panel.className = 'bc-select-panel';
       Array.from(select.options).forEach((opt, i) => {
-        if (opt.hidden) return;
+        // Exclude placeholders like -Select-, disabled headers, or hidden options from the open dropdown
+        if (isPlaceholderOption(opt)) return;
+
         const item = document.createElement('div');
         item.className = 'bc-select-option';
-        if (opt.disabled) item.classList.add('bc-select-option-disabled');
         if (i === select.selectedIndex) item.classList.add('bc-select-option-active');
         item.textContent = opt.textContent;
-        if (!opt.disabled) {
-          item.addEventListener('click', () => {
-            select.selectedIndex = i;
-            syncTrigger();
-            select.dispatchEvent(new Event('input', { bubbles: true }));
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            closeActivePopover();
-            trigger.focus();
-          });
-        }
+        item.addEventListener('click', () => {
+          select.selectedIndex = i;
+          syncTrigger();
+          select.dispatchEvent(new Event('input', { bubbles: true }));
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          closeActivePopover();
+          trigger.focus();
+        });
         panel.appendChild(item);
       });
       if (!panel.children.length) {

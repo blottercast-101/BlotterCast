@@ -141,6 +141,11 @@ def _create():
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
 
+    # Guard: Only Desk Officer and Data Encoder roles may be created via user management
+    normalized_role = role.upper()
+    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN"} or role not in {"Desk Officer", "Data Encoder"}:
+        return json_error("Creating accounts with 'System Admin' or 'Barangay Captain' roles is forbidden. Only Desk Officer and Data Encoder accounts can be created.", 403)
+
     min_len = get_security_settings()["min_password_length"]
     if len(password) < min_len:
         return json_error(f"Password must be at least {min_len} characters long")

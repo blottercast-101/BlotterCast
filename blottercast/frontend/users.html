@@ -194,9 +194,7 @@
       <div>
         <label class="form-label">Role</label>
         <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)" required>
-          <option value="" selected disabled>-Select-</option>
-          <option value="System Admin">System Admin</option>
-          <option value="Barangay Captain">Barangay Captain</option>
+          <option value="" disabled selected hidden>-Select-</option>
           <option value="Desk Officer">Desk Officer</option>
           <option value="Data Encoder">Data Encoder</option>
         </select>
@@ -425,6 +423,11 @@ function openAddUser() {
   document.getElementById('userModalTitle').textContent = 'Add New User';
   document.getElementById('userForm').reset();
   resetFormDropdowns('userForm');
+  document.getElementById('uf_role').innerHTML = `
+    <option value="" disabled selected hidden>-Select-</option>
+    <option value="Desk Officer">Desk Officer</option>
+    <option value="Data Encoder">Data Encoder</option>
+  `;
   document.getElementById('uf_username').disabled = false;
   document.getElementById('uf_password_wrap').classList.remove('hidden');
   document.getElementById('uf_password').value = '';
@@ -442,6 +445,16 @@ function editUser(id) {
   document.getElementById('uf_username').disabled = true;
   document.getElementById('uf_email').value = u.email;
   document.getElementById('uf_contact').value = u.contact || '';
+  
+  let roleOpts = `<option value="" disabled hidden>-Select-</option>`;
+  if (u.role === 'System Admin' || u.role === 'Barangay Captain') {
+    roleOpts += `<option value="${u.role}">${u.role}</option>`;
+  }
+  roleOpts += `
+    <option value="Desk Officer">Desk Officer</option>
+    <option value="Data Encoder">Data Encoder</option>
+  `;
+  document.getElementById('uf_role').innerHTML = roleOpts;
   document.getElementById('uf_role').value = u.role;
   
   // Password cannot be edited by admin; users change their own password
@@ -516,6 +529,10 @@ async function saveUser() {
     password: document.getElementById('uf_password').value.trim(),
   };
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
+  if (!vals.role) { await bcAlert('Please select a valid role.'); return; }
+  if (!editUserId && (vals.role === 'System Admin' || vals.role === 'Barangay Captain')) {
+    await bcAlert('Creating System Admin or Barangay Captain accounts is not allowed.'); return;
+  }
   if (vals.name && !bcIsValidName(vals.name)) { await bcAlert('Full Name should only contain letters (no numbers).'); return; }
   if (vals.email && !bcIsValidEmail(vals.email)) { await bcAlert('Please enter a valid email address.'); return; }
   if (vals.email && usersData.some(u => u.id !== editUserId && u.email.toLowerCase() === vals.email.toLowerCase())) {
