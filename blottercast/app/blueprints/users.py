@@ -10,7 +10,7 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 from ..extensions import db
-from ..models import AuditLog, User
+from ..models import AuditLog, NotificationRead, OtpCode, User
 from ..permissions import get_security_settings, json_error, log_audit, login_required, permission_required
 
 bp = Blueprint("users", __name__)
@@ -44,7 +44,7 @@ def users_router():
             return _update()
         if action == "toggle_status" and method == "POST":
             return _toggle_status()
-        if action == "delete" and method == "DELETE":
+        if (action == "delete" and method in ("DELETE", "POST")) or (method == "DELETE" and action in ("", "delete")):
             return _delete()
         if action == "upload_signature" and method == "POST":
             return _upload_signature()
@@ -225,21 +225,48 @@ def _toggle_status():
 
 
 def _delete():
-    uid = _get_target_user_id()
-    if not uid:
-        return json_error("id required")
-    if session.get("user_id") == uid:
-        return json_error("You cannot delete your own account while logged in")
-    user = db.session.get(User, uid)
-    if not user:
-        return json_error("User not found", 404)
-    if user.role in PROTECTED_ROLES:
-        return json_error(f"{user.role} accounts are protected and cannot be deleted.", 400)
-    username = user.username
-    db.session.delete(user)
-    db.session.commit()
-    log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
-    return jsonify({"ok": True})
+    try:
+        uid = _get_target_user_id()
+        if not uid:
+            return json_error("id required", 400)
+        if session.get("user_id") == uid:
+            return json_error("You cannot delete your own account while logged in", 400)
+        user = db.session.get(User, uid)
+        if not user:
+            return json_error("User not found", 404)
+        if user.role in PROTECTED_ROLES:
+            return json_error(f"{user.role} accounts are protected and cannot be deleted.", 400)
+        
+        username = user.username
+
+        # 1. Clean up user's signature file if one exists
+        if user.signature_path:
+            try:
+                sig_file = os.path.join(current_app.static_folder, user.signature_path)
+                if os.path.isfile(sig_file):
+                    os.remove(sig_file)
+            except Exception as e:
+                current_app.logger.warning(f"Failed to remove signature file on user delete: {e}")
+
+        # 2. Safely remove child foreign key dependencies within the transaction
+        OtpCode.query.filter_by(user_id=uid).delete()
+        NotificationRead.query.filter_by(user_id=uid).delete()
+
+        # 3. Hard-delete user record safely
+        db.session.delete(user)
+        db.session.commit()
+
+        # 4. Safely log audit event
+        try:
+            log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
+        except Exception as e:
+            current_app.logger.warning(f"Audit log failed on user delete: {e}")
+
+        return jsonify({"ok": True, "success": True, "message": f"User '{username}' deleted successfully."})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(f"Failed to delete user: {e}")
+        return json_error(f"Failed to delete user: {str(e)}", 500)
 
 
 def _upload_signature():

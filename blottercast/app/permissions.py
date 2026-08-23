@@ -48,7 +48,7 @@ def get_security_settings() -> dict:
 
 
 def json_error(message: str, status: int = 400):
-    return jsonify({"error": message}), status
+    return jsonify({"error": message, "message": message, "success": False, "ok": False}), status
 
 
 def login_required(view):
