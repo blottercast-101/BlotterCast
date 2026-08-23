@@ -390,18 +390,19 @@
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
+            <div id="heatmapLegendContainer" class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
+              <span class="font-semibold text-forest-800 mr-1">Zone Density:</span>
               <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#10B981;"></div><span>Low (1–24)</span>
+                <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText">Low</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#FACC15;"></div><span>Medium (25–49)</span>
+                <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText">Medium</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#FB923C;"></div><span>Elevated (50–100)</span>
+                <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText">Elevated</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#EF4444;"></div><span>High (101+)</span>
+                <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText">High</span>
               </div>
             </div>
           </div>
@@ -513,21 +514,118 @@
       return `<span class="cat-badge" style="background:${style.bg}; color:${style.color}; border:1px solid ${style.border};">${category}</span>`;
     }
 
-    const getOccurrenceDensityTier = (incidentCount) => {
-      if (incidentCount >= 101) {
-        return { label: 'High', color: '#EF4444', border: '#DC2626', opacity: 0.50, badgeClass: 'bg-red-500 text-white' };
+    const computeDynamicDensityTiers = (zoneCounts) => {
+      const counts = Object.values(zoneCounts || {});
+      const maxCount = counts.length > 0 ? Math.max(...counts, 0) : 0;
+
+      // If no incidents exist
+      if (maxCount === 0) {
+        return {
+          maxCount: 0,
+          getTier: () => ({
+            label: 'No Incidents',
+            color: '#E2E8F0',
+            border: '#94A3B8',
+            opacity: 0.20,
+            fillOpacity: 0.20,
+            badgeClass: 'bg-slate-100 text-slate-700'
+          }),
+          ranges: { low: '0', medium: '0', elevated: '0', high: '0' }
+        };
       }
-      if (incidentCount >= 50) {
-        return { label: 'Elevated', color: '#FB923C', border: '#EA580C', opacity: 0.45, badgeClass: 'bg-orange-400 text-white' };
+
+      // Calculate dynamic step thresholds (25%, 50%, 75% of maxCount)
+      let lowLimit, medLimit, eleLimit;
+      if (maxCount <= 3) {
+        lowLimit = 1;
+        medLimit = Math.min(2, maxCount);
+        eleLimit = Math.min(3, maxCount);
+      } else {
+        lowLimit = Math.max(1, Math.round(maxCount * 0.25));
+        medLimit = Math.max(lowLimit + 1, Math.round(maxCount * 0.50));
+        eleLimit = Math.max(medLimit + 1, Math.round(maxCount * 0.75));
       }
-      if (incidentCount >= 25) {
-        return { label: 'Medium', color: '#FACC15', border: '#CA8A04', opacity: 0.40, badgeClass: 'bg-yellow-400 text-gray-900' };
-      }
-      if (incidentCount >= 1) {
-        return { label: 'Low', color: '#10B981', border: '#059669', opacity: 0.35, badgeClass: 'bg-emerald-500 text-white' };
-      }
-      return { label: 'Zero Activity', color: '#E2E8F0', border: '#94A3B8', opacity: 0.20, badgeClass: 'bg-slate-100 text-slate-700' };
+
+      const getTier = (count) => {
+        if (count === 0 || count == null) {
+          return {
+            label: 'None',
+            color: '#E2E8F0',
+            border: '#94A3B8',
+            opacity: 0.20,
+            fillOpacity: 0.20,
+            badgeClass: 'bg-slate-100 text-slate-700'
+          };
+        }
+        if (count > eleLimit) {
+          return {
+            label: 'High',
+            color: '#EF4444',
+            border: '#DC2626',
+            opacity: 0.50,
+            fillOpacity: 0.50,
+            badgeClass: 'bg-red-500 text-white'
+          };
+        }
+        if (count > medLimit) {
+          return {
+            label: 'Elevated',
+            color: '#FB923C',
+            border: '#EA580C',
+            opacity: 0.45,
+            fillOpacity: 0.45,
+            badgeClass: 'bg-orange-400 text-white'
+          };
+        }
+        if (count > lowLimit) {
+          return {
+            label: 'Medium',
+            color: '#FACC15',
+            border: '#CA8A04',
+            opacity: 0.40,
+            fillOpacity: 0.40,
+            badgeClass: 'bg-yellow-400 text-gray-900'
+          };
+        }
+        return {
+          label: 'Low',
+          color: '#10B981',
+          border: '#059669',
+          opacity: 0.35,
+          fillOpacity: 0.35,
+          badgeClass: 'bg-emerald-500 text-white'
+        };
+      };
+
+      const ranges = {
+        low: `1 – ${lowLimit}`,
+        medium: lowLimit < medLimit ? `${lowLimit + 1} – ${medLimit}` : `${medLimit}`,
+        elevated: medLimit < eleLimit ? `${medLimit + 1} – ${eleLimit}` : `${eleLimit}`,
+        high: eleLimit < maxCount ? `${eleLimit + 1} – ${maxCount}` : `${maxCount}+`
+      };
+
+      return {
+        maxCount,
+        lowLimit,
+        medLimit,
+        eleLimit,
+        getTier,
+        ranges
+      };
     };
+
+    function updateLegendUI(tierEngine) {
+      if (!tierEngine || !tierEngine.ranges) return;
+      const r = tierEngine.ranges;
+      const lowEl = document.getElementById('legendLowText');
+      const medEl = document.getElementById('legendMedText');
+      const eleEl = document.getElementById('legendEleText');
+      const highEl = document.getElementById('legendHighText');
+      if (lowEl) lowEl.textContent = `Low (${r.low})`;
+      if (medEl) medEl.textContent = `Medium (${r.medium})`;
+      if (eleEl) eleEl.textContent = `Elevated (${r.elevated})`;
+      if (highEl) highEl.textContent = `High (${r.high})`;
+    }
 
     function getZoneIncidentCounts(data) {
       const counts = {};
@@ -540,18 +638,15 @@
     }
 
     function createIncidentPopupContent(item, zoneCount = 1, tier = null) {
-      if (!tier) {
-        tier = getOccurrenceDensityTier(zoneCount);
-      }
       return `
         <div class="incident-popup-box">
           <div class="popup-header flex items-center justify-between gap-2 border-b pb-2 mb-2">
             <div>
               <span class="popup-title font-bold text-forest-900 block text-sm">Incident #${item.id}</span>
-              <span class="text-xs font-semibold text-forest-700">${item.zone} — ${zoneCount} Incident${zoneCount > 1 ? 's' : ''} (${tier.label})</span>
+              <span class="text-xs font-semibold text-forest-700">${item.zone} — ${zoneCount} Incident${zoneCount !== 1 ? 's' : ''} (${tier ? tier.label : 'Low'})</span>
             </div>
             <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${tier.badgeClass}">${tier.label}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${tier ? tier.badgeClass : 'bg-emerald-500 text-white'}">${tier ? tier.label : 'Low'}</span>
               ${getCategoryBadge(item.category)}
             </div>
           </div>
@@ -846,34 +941,32 @@
       }
     }
 
-    function getZonePolygonStyle(feature, zoneCounts) {
+    function getZonePolygonStyle(feature, tierEngine, zoneCounts) {
       const zoneId = feature.properties.zone;
       const count = zoneCounts[zoneId] || 0;
-      const tier = getOccurrenceDensityTier(count);
+      const tier = tierEngine.getTier(count);
       return {
         fillColor: tier.color,
-        fillOpacity: tier.opacity,
+        fillOpacity: tier.fillOpacity || tier.opacity,
         color: tier.border,
         weight: 1.5,
         dashArray: '4',
       };
     }
 
-    function renderZoneChoropleth(data) {
+    function renderZoneChoropleth(data, tierEngine, zoneCounts) {
       if (zonesLayer) {
         map.removeLayer(zonesLayer);
         zonesLayer = null;
       }
       if (!zonesGeojson) return;
 
-      const zoneCounts = getZoneIncidentCounts(data);
-
       zonesLayer = L.geoJSON(zonesGeojson, {
-        style: (feature) => getZonePolygonStyle(feature, zoneCounts),
+        style: (feature) => getZonePolygonStyle(feature, tierEngine, zoneCounts),
         onEachFeature: (feature, layer) => {
           const zProps = feature.properties;
           const count = zoneCounts[zProps.zone] || 0;
-          const tier = getOccurrenceDensityTier(count);
+          const tier = tierEngine.getTier(count);
 
           // Tooltip on hover
           layer.bindTooltip(`
@@ -965,23 +1058,21 @@
       }).addTo(map);
     }
 
-    function renderMarkers(data) {
+    function renderMarkers(data, tierEngine, zoneCounts) {
       markerLayer.clearLayers();
       markerMap.clear();
       if (!showMarkers.checked) return;
 
-      const zoneCounts = getZoneIncidentCounts(data);
-
       // Only render markers for authentic verified coordinates within the barangay boundary
       data.filter(item => !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
         const zoneCount = zoneCounts[item.zone] || 1;
-        const tier = getOccurrenceDensityTier(zoneCount);
+        const tier = tierEngine ? tierEngine.getTier(zoneCount) : null;
 
         const marker = L.circleMarker([item.lat, item.lng], {
           radius: 7,
           color: '#ffffff',
           weight: 2,
-          fillColor: tier.color,
+          fillColor: tier ? tier.color : '#10B981',
           fillOpacity: 0.95
         }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
 
@@ -1185,9 +1276,14 @@
     function updateHeatMapPage() {
       const mappedOnly = getFilteredIncidents(true);
       const allFiltered = getFilteredIncidents(false);
-      renderZoneChoropleth(mappedOnly);
+
+      const zoneCounts = getZoneIncidentCounts(mappedOnly);
+      const tierEngine = computeDynamicDensityTiers(zoneCounts);
+
+      updateLegendUI(tierEngine);
+      renderZoneChoropleth(mappedOnly, tierEngine, zoneCounts);
       renderHeatMap(mappedOnly);
-      renderMarkers(mappedOnly);
+      renderMarkers(mappedOnly, tierEngine, zoneCounts);
       renderSummary(mappedOnly);
       renderTable(allFiltered);
     }
