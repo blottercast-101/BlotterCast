@@ -673,7 +673,7 @@
     try {
       const s = await BCApi.publicStats();
       document.getElementById('heroStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
-      document.getElementById('heroStatRecords').textContent = (s.overallRecords != null ? s.overallRecords + '+' : '—');
+      document.getElementById('heroStatRecords').textContent = (s.overallRecords != null ? s.overallRecords : '—');
       document.getElementById('heroStatZones').textContent = s.zonesMonitored ?? '—';
     } catch (err) {
       // Leave the placeholders in place rather than showing stale numbers.

@@ -1043,7 +1043,7 @@
     try {
       const s = await BCApi.publicStats();
       document.getElementById('loginStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
-      document.getElementById('loginStatRecords').textContent = (s.overallRecords != null ? s.overallRecords + '+' : '—');
+      document.getElementById('loginStatRecords').textContent = (s.overallRecords != null ? s.overallRecords : '—');
       document.getElementById('loginStatZones').textContent = s.zonesMonitored ?? '—';
 
       const sysUp = s.systemStatus && s.systemStatus.database && s.systemStatus.core;
