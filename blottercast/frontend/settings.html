@@ -147,6 +147,54 @@
           </div>
         </div>
       </div>
+
+      <!-- Security Settings Section (Admin Master Control) -->
+      <div class="settings-section" id="sec-master-section" data-perm="system_settings">
+        <div class="flex items-center gap-2 mb-4">
+          <h3 class="text-base font-semibold text-forest-900 m-0">Security &amp; Authentication</h3>
+          <span class="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">
+            Admin Master Control
+          </span>
+        </div>
+        
+        <div class="space-y-3">
+          <!-- Master 2FA Switch -->
+          <div class="flex items-center justify-between p-4 bg-forest-50/60 rounded-xl border border-forest-100">
+            <div>
+              <p class="text-sm font-semibold text-forest-900">Enforce 2FA for All Accounts</p>
+              <p class="text-xs text-forest-500">Require Two-Factor Authentication across all roles during login.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="twoFaMasterToggle"
+                data-setting="is_2fa_globally_enabled"
+                onchange="onSecurityToggleChange('is_2fa_globally_enabled', this.checked)"
+                class="sr-only peer"
+              />
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <!-- Master Idle Timeout Switch -->
+          <div class="flex items-center justify-between p-4 bg-forest-50/60 rounded-xl border border-forest-100">
+            <div>
+              <p class="text-sm font-semibold text-forest-900">Session Inactivity Auto-Logout (2 Hours)</p>
+              <p class="text-xs text-forest-500">Automatically logs out inactive users after 120 minutes of inactivity.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="idleTimeoutMasterToggle"
+                data-setting="is_idle_timeout_enabled"
+                onchange="onSecurityToggleChange('is_idle_timeout_enabled', this.checked)"
+                class="sr-only peer"
+              />
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- NOTIFICATIONS -->
@@ -389,20 +437,33 @@ window.addEventListener('bc-time-format-changed', (e) => {
   loadBackupHistory().catch(() => {});
 });
 
+async function onSecurityToggleChange(key, isChecked) {
+  try {
+    await BCApi.adminSecuritySettingsUpdate({ [key]: isChecked });
+    showToast(`Master Security setting updated: ${isChecked ? 'Enabled' : 'Disabled'}`);
+  } catch (err) {
+    showToast('Failed to update master security setting: ' + err.message, 'error');
+  }
+}
+
 function applySettings(values) {
+  if (!values) return;
   document.querySelectorAll('[data-setting]').forEach(el => {
+    if (!el) return;
     const key = el.dataset.setting;
     if (!(key in values)) return;
     const val = values[key];
-    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
-      const on = val === '1' || val === 'true';
-      el.classList.toggle('on', on);
-      el.classList.toggle('off', !on);
+    const isTrue = val === '1' || val === 'true' || val === true || val === 1;
+
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      el.checked = isTrue;
+    } else if (el.tagName === 'BUTTON' && el.classList?.contains('toggle-switch')) {
+      el.classList?.toggle('on', isTrue);
+      el.classList?.toggle('off', !isTrue);
     } else if (el.tagName === 'SELECT') {
-      // match by value first, fall back to matching visible text
-      if ([...el.options].some(o => o.value === val)) el.value = val;
+      if ([...el.options].some(o => o.value === String(val))) el.value = String(val);
       else {
-        const opt = [...el.options].find(o => o.textContent.trim() === val);
+        const opt = [...el.options].find(o => o.textContent.trim() === String(val));
         if (opt) el.value = opt.value;
       }
     } else {
@@ -418,9 +479,12 @@ function applySettings(values) {
 function collectSettings() {
   const out = {};
   document.querySelectorAll('[data-setting]').forEach(el => {
+    if (!el) return;
     const key = el.dataset.setting;
-    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
-      out[key] = el.classList.contains('on') ? '1' : '0';
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      out[key] = el.checked ? '1' : '0';
+    } else if (el.tagName === 'BUTTON' && el.classList?.contains('toggle-switch')) {
+      out[key] = el.classList?.contains('on') ? '1' : '0';
     } else {
       out[key] = el.value;
     }
@@ -601,22 +665,26 @@ async function saveMyPassword() {
 
 async function loadMySecurity() {
   try {
-    const { mfaEnabled } = await BCApi.mySecurity();
+    const res = await BCApi.mySecurity();
     const btn = document.getElementById('mfaToggleBtn');
-    btn.classList.toggle('on', mfaEnabled);
-    btn.classList.toggle('off', !mfaEnabled);
+    if (btn && res) {
+      const mfaEnabled = Boolean(res.mfaEnabled);
+      btn.classList?.toggle('on', mfaEnabled);
+      btn.classList?.toggle('off', !mfaEnabled);
+    }
   } catch (err) {
-    showToast('Could not load your security setting: ' + err.message, 'error');
+    // Non-fatal if personal 2FA toggle element is not rendered
   }
 }
 async function toggleMyMfa() {
   const btn = document.getElementById('mfaToggleBtn');
-  const enabling = btn.classList.contains('off'); // about to turn on
+  if (!btn) return;
+  const enabling = btn.classList?.contains('off'); // about to turn on
   btn.disabled = true;
   try {
     await BCApi.toggleMyMfa(enabling);
-    btn.classList.toggle('on', enabling);
-    btn.classList.toggle('off', !enabling);
+    btn.classList?.toggle('on', enabling);
+    btn.classList?.toggle('off', !enabling);
     showToast(enabling
       ? 'Two-factor authentication turned on for your account. You\'ll get a code by email starting with your next login.'
       : 'Two-factor authentication turned off for your account. You can sign in with just your password from now on.');
@@ -645,8 +713,12 @@ async function toggleMyMfa() {
   }
 
   try {
-    const values = await BCApi.settingsList();
-    applySettings(values);
+    const [values, secValues] = await Promise.all([
+      BCApi.settingsList().catch(() => ({})),
+      BCApi.adminSecuritySettingsGet().catch(() => ({})),
+    ]);
+    const mergedValues = Object.assign({}, values, secValues);
+    applySettings(mergedValues);
     await loadBackupHistory();
     // If it's been long enough since the last backup (per Backup Frequency
     // below), this silently runs one now instead of waiting for someone to
