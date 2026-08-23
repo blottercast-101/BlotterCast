@@ -290,6 +290,14 @@ const BCApi = {
     if (!res.ok) throw new Error('ML service unavailable');
     return res.json();
   },
+  async mlPredict(payload) {
+    const res = await fetch(`${BC_API}/api/ml_proxy.php?action=predict`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify(payload || {}),
+    });
+    if (!res.ok) throw new Error('ML prediction failed');
+    return res.json();
+  },
   async mlHealth() {
     try {
       const res = await fetch(`${BC_API}/api/ml_proxy.php?action=health`, { credentials: 'include', signal: AbortSignal.timeout(2500) });

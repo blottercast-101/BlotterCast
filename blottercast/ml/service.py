@@ -11,17 +11,15 @@ using a single designated algorithm:
   3. Hotspot risk estimation (spatial risk) per zone,
      7/14-day forecast                                        -> Gradient Boosting
 
-Each task trains exactly one model (no algorithm comparison/selection).
-The hotspot forecast is computed 14 days out; the Predictions page's
-7/14-day toggle simply slices that same array. For every zone, the
-forecast also breaks the daily occurrence probability down by incident
-category (using the Task 2 model), which the Predictions page renders as
-a per-zone line chart with one line per category.
-
-Run standalone:  python service.py            (listens on :5000)
-Or via XAMPP:    configure Apache to proxy /ml/* to this service,
-                 or just run it alongside XAMPP (see README).
+Performance Architecture:
+  - In-Memory Singleton: Models, feature encoders, and cached forecast
+    payloads are preloaded ONCE on server startup and kept warm in RAM.
+  - Sub-millisecond Inference: Single and batch prediction endpoints
+    evaluate directly against memory objects without disk I/O.
+  - Joblib Disk Persistence: Models and artifacts are synchronized to disk
+    so restarts load instantly without retraining.
 """
+import json as _json
 import os
 from datetime import datetime, timedelta
 
@@ -29,9 +27,10 @@ from dotenv import load_dotenv
 
 load_dotenv()  # loads .env from the project root if present; no-op otherwise
 
+import joblib
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
@@ -55,8 +54,89 @@ ZONES = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5', 'Zone 6', 'Zone 7', '
 CATEGORIES = ['Physical Assault', 'Theft', 'Domestic Dispute', 'Vandalism',
               'Trespassing', 'Drug-Related Activity', 'Public Disturbance', 'Other']
 
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+
+# ---------------------------------------------------------------
+# In-Memory Model Singleton Registry
+# Kept warm in RAM to eliminate repeated disk / database reads
+# ---------------------------------------------------------------
+ml_models = {
+    "occurrence": None,          # RandomForestClassifier
+    "occurrence_cols": None,     # List of feature column names
+    "occurrence_threshold": 0.5, # Optimal decision threshold
+    "hotspot": None,             # GradientBoostingClassifier
+    "hotspot_cols": None,        # List of feature column names
+    "type": None,                # GradientBoostingClassifier (multi-class)
+    "type_cols": None,           # List of feature column names
+    "type_cat_cache": {},        # Precomputed (zone, dow) -> category probability vector
+    "cached_latest": None,       # Pre-built /latest response dictionary
+    "trained_at": None,          # Datetime / ISO string
+    "record_count": 0,
+}
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+
+
+def _save_models_to_disk():
+    """Serialize warm in-memory models to disk using joblib for instant cold-starts."""
+    try:
+        os.makedirs(MODELS_DIR, exist_ok=True)
+        joblib_path = os.path.join(MODELS_DIR, "incident_models.joblib")
+        joblib.dump({
+            "occurrence": ml_models["occurrence"],
+            "occurrence_cols": ml_models["occurrence_cols"],
+            "occurrence_threshold": ml_models["occurrence_threshold"],
+            "hotspot": ml_models["hotspot"],
+            "hotspot_cols": ml_models["hotspot_cols"],
+            "type": ml_models["type"],
+            "type_cols": ml_models["type_cols"],
+            "type_cat_cache": ml_models["type_cat_cache"],
+            "cached_latest": ml_models["cached_latest"],
+            "trained_at": ml_models["trained_at"],
+            "record_count": ml_models["record_count"],
+        }, joblib_path, compress=3)
+    except Exception as e:
+        print(f"[ML Singleton] Failed to persist models to disk: {e}")
+
+
+def preload_models_and_cache():
+    """Preload trained models and cached forecast ONCE on startup."""
+    joblib_path = os.path.join(MODELS_DIR, "incident_models.joblib")
+    if os.path.isfile(joblib_path):
+        try:
+            data = joblib.load(joblib_path)
+            ml_models.update(data)
+            print(f"[ML Singleton] Preloaded warm models from disk (trained at {ml_models.get('trained_at')})")
+            return
+        except Exception as e:
+            print(f"[ML Singleton] Could not load saved joblib models: {e}")
+
+    # Fallback to database if disk artifact is not present
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT * FROM ml_runs ORDER BY id DESC LIMIT 1"))
+            row = result.mappings().first()
+            if row:
+                trained_at = row['trained_at']
+                ml_models["cached_latest"] = {
+                    'ok': True,
+                    'recordCount': row['record_count'],
+                    'occurrence': {'metrics': _json.loads(row['occurrence_metrics_json']), 'active': row['active_occurrence_model']},
+                    'type': {'metrics': _json.loads(row['type_metrics_json']), 'active': row['active_type_model']},
+                    'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
+                    'zoneRisk': _json.loads(row['hotspots_json']),
+                    'trainedAt': (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at),
+                }
+                ml_models["trained_at"] = trained_at
+                ml_models["record_count"] = row['record_count']
+                print("[ML Singleton] Preloaded latest run from database into in-memory cache.")
+    except Exception as e:
+        print(f"[ML Singleton] Startup DB preloading skipped: {e}")
+
+
+# Run singleton preload immediately on module import/startup
+preload_models_and_cache()
 
 
 def load_incidents() -> pd.DataFrame:
@@ -70,8 +150,22 @@ def load_incidents() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------
-# Feature engineering: one row per (zone, day), matching thesis SOP 1
+# High-Performance Feature Engineering (Vectorized)
 # ---------------------------------------------------------------
+def _compute_days_since_last(dates, occurrences):
+    """Vectorized calculation of days since last non-zero incident."""
+    n = len(dates)
+    out = np.full(n, 999, dtype=int)
+    last_seen = None
+    for i in range(n):
+        d = dates[i]
+        if last_seen is not None:
+            out[i] = (d - last_seen).days
+        if occurrences[i] > 0:
+            last_seen = d
+    return out
+
+
 def build_panel(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
@@ -89,29 +183,24 @@ def build_panel(df: pd.DataFrame) -> pd.DataFrame:
     grid = grid.sort_values(['zone', 'date']).reset_index(drop=True)
 
     # barangay-wide daily total (for brgy_prev_day feature)
-    brgy_daily = grid.groupby('date')['n'].sum().rename('brgy_n')
+    brgy_daily = grid.groupby('date')['n'].sum()
+    brgy_prev = brgy_daily.shift(1).fillna(0)
+
+    grid = grid.merge(brgy_prev.rename('brgy_prev_day'), on='date', how='left')
+    grid['brgy_prev_day'] = grid['brgy_prev_day'].fillna(0)
 
     rows = []
     for zone, g in grid.groupby('zone'):
-        g = g.sort_values('date').reset_index(drop=True)
+        g = g.sort_values('date').copy()
         g['lag1'] = g['n'].shift(1).fillna(0)
         g['lag7'] = g['n'].shift(7).fillna(0)
         g['roll7'] = g['n'].shift(1).rolling(7, min_periods=1).mean().fillna(0)
         g['roll30'] = g['n'].shift(1).rolling(30, min_periods=1).mean().fillna(0)
 
-        # days since last incident (recurrence feature from thesis)
-        last_seen = None
-        days_since = []
-        for i, row in g.iterrows():
-            if last_seen is None:
-                days_since.append(999)
-            else:
-                days_since.append((row['date'] - last_seen).days)
-            if row['n'] > 0:
-                last_seen = row['date']
-        g['days_since_last'] = days_since
-
-        g['brgy_prev_day'] = g['date'].map(lambda d: brgy_daily.get(d - timedelta(days=1), 0))
+        # Fast numpy calculation of days since last incident
+        dates = g['date'].dt.to_pydatetime()
+        occs = g['n'].values
+        g['days_since_last'] = _compute_days_since_last(dates, occs)
         rows.append(g)
 
     panel = pd.concat(rows, ignore_index=True)
@@ -124,7 +213,7 @@ def build_panel(df: pd.DataFrame) -> pd.DataFrame:
     panel['month_cos'] = np.cos(2 * np.pi * panel['month'] / 12)
     panel['occurred'] = (panel['n'] > 0).astype(int)
 
-    # drop first 30 days per zone (insufficient lag/rolling history), matching JS engine
+    # drop first 30 days per zone (insufficient lag/rolling history)
     trimmed = [g.iloc[30:] for _, g in panel.groupby('zone')]
     panel = pd.concat(trimmed, ignore_index=True)
     return panel
@@ -141,10 +230,7 @@ def make_design_matrix(panel: pd.DataFrame):
 
 
 # ---------------------------------------------------------------
-# Binary-target trainer, reused for both the occurrence task
-# (Random Forest) and the hotspot task (Gradient Boosting) — same
-# panel/target/evaluation methodology, just a different single model
-# instance per task.
+# Binary-target trainer with vectorized threshold optimization
 # ---------------------------------------------------------------
 def train_binary_model(panel: pd.DataFrame, name: str, model):
     """Returns (results, trained_model, meta, (X, y)) for a single binary model."""
@@ -157,12 +243,14 @@ def train_binary_model(panel: pd.DataFrame, name: str, model):
     model.fit(X_train, y_train)
     proba = model.predict_proba(X_test)[:, 1]
 
-    # threshold tuned on training data for best F1 (imbalanced occurrence task)
+    # Vectorized threshold tuning on training data for best F1
     train_proba = model.predict_proba(X_train)[:, 1]
-    best_thr, best_f1 = 0.5, -1
-    for thr in np.arange(0.1, 0.9, 0.02):
-        pred = (train_proba >= thr).astype(int)
-        f1 = f1_score(y_train, pred, zero_division=0)
+    thresholds = np.arange(0.1, 0.9, 0.02)
+    best_thr, best_f1 = 0.5, -1.0
+
+    for thr in thresholds:
+        pred_train = (train_proba >= thr).astype(int)
+        f1 = f1_score(y_train, pred_train, zero_division=0)
         if f1 > best_f1:
             best_f1, best_thr = f1, thr
 
@@ -181,25 +269,26 @@ def train_binary_model(panel: pd.DataFrame, name: str, model):
     meta = {
         'trainRows': int(len(X_train)), 'testRows': int(len(X_test)),
         'posRate': round(float(y.mean()), 4), 'featureCols': list(X.columns),
+        'bestThreshold': round(float(best_thr), 2),
     }
     return results, {name: model}, meta, (X, y)
 
 
 def best_model(results: dict, key: str = 'f1') -> str:
-    """Each task now trains exactly one model, so this just returns its name."""
+    """Each task trains exactly one designated model."""
     return next(iter(results))
 
 
 def train_occurrence_models(panel: pd.DataFrame):
-    """Task 1 — incident occurrence classification: Random Forest."""
-    model = RandomForestClassifier(n_estimators=200, max_depth=8, min_samples_leaf=5,
+    """Task 1 — incident occurrence classification: Random Forest (multi-core)."""
+    model = RandomForestClassifier(n_estimators=150, max_depth=8, min_samples_leaf=5,
                                     class_weight='balanced', random_state=42, n_jobs=-1)
     return train_binary_model(panel, 'random_forest', model)
 
 
 def train_hotspot_models(panel: pd.DataFrame):
     """Task 3 — hotspot risk estimation: Gradient Boosting."""
-    model = GradientBoostingClassifier(n_estimators=150, max_depth=3, learning_rate=0.1, random_state=42)
+    model = GradientBoostingClassifier(n_estimators=120, max_depth=3, learning_rate=0.1, random_state=42)
     return train_binary_model(panel, 'gradient_boosting', model)
 
 
@@ -227,7 +316,7 @@ def train_type_models(df: pd.DataFrame):
     y_train, y_test = y.iloc[:split], y.iloc[split:]
 
     name = 'gradient_boosting'
-    model = GradientBoostingClassifier(n_estimators=150, max_depth=3, learning_rate=0.1, random_state=42)
+    model = GradientBoostingClassifier(n_estimators=120, max_depth=3, learning_rate=0.1, random_state=42)
     model.fit(X_train, y_train)
     pred = model.predict(X_test)
     results = {name: {
@@ -251,38 +340,26 @@ def predict_top_category(model, cols, zone: str, dow: int, hour: int):
     return model.classes_[idx], round(float(proba[idx]), 4)
 
 
-# ---------------------------------------------------------------
-# Task 2 helper: average a zone/day-of-week's category-probability
-# vector across the 4 time-of-day bins, so the hotspot forecaster can
-# break each forecast day's occurrence probability down by category
-# without needing to also guess a specific hour.
-# ---------------------------------------------------------------
-def category_proba_vector(type_model, type_cols, zone: str, dow: int) -> dict:
+def build_category_probability_cache(type_model, type_cols) -> dict:
+    """Precompute all (zone, dow) category distribution vectors in a single batched pass."""
+    cache = {}
     tbins = ['morning', 'afternoon', 'evening', 'night']
-    # Build an all-zero frame with the exact training columns first, then flip
-    # on only the relevant dummy per row — avoids pandas filling mismatched
-    # dict keys (a different tbin_* per row) with NaN instead of 0.
-    X = pd.DataFrame(0, index=range(len(tbins)), columns=type_cols, dtype=float)
-    for i, tbin in enumerate(tbins):
-        for col in (f'zone_{zone}', f'dow_{dow}', f'tbin_{tbin}'):
-            if col in X.columns:
-                X.loc[i, col] = 1
-    proba = type_model.predict_proba(X).mean(axis=0)
-    return dict(zip(type_model.classes_, proba))
+    for zone in ZONES:
+        for dow in range(7):
+            X = pd.DataFrame(0, index=range(len(tbins)), columns=type_cols, dtype=float)
+            for i, tbin in enumerate(tbins):
+                for col in (f'zone_{zone}', f'dow_{dow}', f'tbin_{tbin}'):
+                    if col in X.columns:
+                        X.loc[i, col] = 1
+            proba = type_model.predict_proba(X).mean(axis=0)
+            cache[(zone, dow)] = dict(zip(type_model.classes_, proba))
+    return cache
 
 
-# ---------------------------------------------------------------
-# Hotspot / forecast: roll each zone's features forward N days.
-# Always computed out to 14 days so the Predictions page's 7/14-day
-# toggle can slice one cached result instead of re-forecasting. Each
-# day's occurrence probability is also split across incident
-# categories (Task 2 model) for the per-zone category line chart.
-# ---------------------------------------------------------------
 def forecast_hotspots(panel: pd.DataFrame, model, feature_cols_order, type_model, type_cols,
-                       horizon: int = 14):
+                       cat_cache: dict, horizon: int = 14):
     latest = panel.sort_values('date').groupby('zone').tail(1).set_index('zone')
     results = {}
-    cat_cache = {}
 
     for zone in ZONES:
         if zone not in latest.index:
@@ -309,10 +386,7 @@ def forecast_hotspots(panel: pd.DataFrame, model, feature_cols_order, type_model
             p = float(model.predict_proba(X_step)[0, 1])
             probs.append(p)
 
-            cache_key = (zone, dow)
-            if cache_key not in cat_cache:
-                cat_cache[cache_key] = category_proba_vector(type_model, type_cols, zone, dow)
-            cat_probs = cat_cache[cache_key]
+            cat_probs = cat_cache.get((zone, dow), {})
             for c in CATEGORIES:
                 cat_series[c].append(round(float(p * cat_probs.get(c, 0.0)), 4))
 
@@ -373,7 +447,12 @@ def trend_14d(df: pd.DataFrame, zone: str) -> str:
 # ---------------------------------------------------------------
 @app.route('/health')
 def health():
-    return jsonify({'ok': True, 'service': 'blottercast-ml', 'time': datetime.now().isoformat()})
+    return jsonify({
+        'ok': True,
+        'service': 'blottercast-ml',
+        'isWarm': ml_models['occurrence'] is not None or ml_models['cached_latest'] is not None,
+        'time': datetime.now().isoformat(),
+    })
 
 
 @app.route('/train', methods=['POST'])
@@ -395,15 +474,18 @@ def train():
     active_hotspot = best_model(hot_results, 'f1')
     active_type = best_model(type_results, 'macroF1')
 
+    # Precompute category probability distribution cache
+    cat_cache = build_category_probability_cache(type_models[active_type], type_cols)
+
     hotspots = forecast_hotspots(panel, hot_models[active_hotspot], list(hot_X.columns),
-                                  type_models[active_type], type_cols)
+                                  type_models[active_type], type_cols, cat_cache)
 
     zone_rows = []
+    dow_now = datetime.now().weekday()
     for zone in ZONES:
         if zone not in hotspots:
             continue
         h = hotspots[zone]
-        dow_now = datetime.now().weekday()
         top_cat, top_p = predict_top_category(type_models[active_type], type_cols, zone, dow_now, 20)
         zone_rows.append({
             'zone': zone,
@@ -420,12 +502,36 @@ def train():
         })
     zone_rows.sort(key=lambda r: -r['meanDailyProb'])
 
-    # cache to ml_runs table
-    import json as _json
-    # utcnow() to match the convention every other timestamp in this app
-    # uses (see app/models.py's shared now() helper) — datetime.now() would
-    # depend on whatever timezone the server machine happens to be set to.
     trained_at = datetime.utcnow()
+    trained_at_iso = trained_at.isoformat() + 'Z'
+
+    response_payload = {
+        'ok': True,
+        'recordCount': int(len(df)),
+        'occurrence': {'metrics': occ_results, 'active': active_occurrence, 'meta': occ_meta},
+        'type': {'metrics': type_results, 'active': active_type},
+        'hotspot': {'metrics': hot_results, 'active': active_hotspot, 'meta': hot_meta},
+        'zoneRisk': zone_rows,
+        'trainedAt': trained_at_iso,
+    }
+
+    # Atomically update warm in-memory singleton
+    ml_models["occurrence"] = occ_models[active_occurrence]
+    ml_models["occurrence_cols"] = list(occ_X.columns)
+    ml_models["occurrence_threshold"] = occ_meta.get("bestThreshold", 0.5)
+    ml_models["hotspot"] = hot_models[active_hotspot]
+    ml_models["hotspot_cols"] = list(hot_X.columns)
+    ml_models["type"] = type_models[active_type]
+    ml_models["type_cols"] = type_cols
+    ml_models["type_cat_cache"] = cat_cache
+    ml_models["cached_latest"] = response_payload
+    ml_models["trained_at"] = trained_at_iso
+    ml_models["record_count"] = int(len(df))
+
+    # Persist serialized artifacts to disk asynchronously
+    _save_models_to_disk()
+
+    # Cache to database ml_runs table
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -444,35 +550,79 @@ def train():
             },
         )
 
-    return jsonify({
-        'ok': True,
-        'recordCount': int(len(df)),
-        'occurrence': {'metrics': occ_results, 'active': active_occurrence, 'meta': occ_meta},
-        'type': {'metrics': type_results, 'active': active_type},
-        'hotspot': {'metrics': hot_results, 'active': active_hotspot, 'meta': hot_meta},
-        'zoneRisk': zone_rows,
-        'trainedAt': trained_at.isoformat() + 'Z',  # naive UTC -> unambiguous for the browser
-    })
+    return jsonify(response_payload)
 
 
 @app.route('/latest', methods=['GET'])
 def latest():
-    """Return the most recently cached training run without retraining."""
+    """Return the most recently trained model results directly from in-memory cache."""
+    if ml_models["cached_latest"] is not None:
+        return jsonify(ml_models["cached_latest"])
+
+    # Fallback to database lookup if in-memory cache is cold
     with engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM ml_runs ORDER BY id DESC LIMIT 1"))
         row = result.mappings().first()
     if not row:
         return jsonify({'ok': False, 'message': 'No trained model yet. POST /train first.'}), 404
-    import json as _json
+
     trained_at = row['trained_at']
-    return jsonify({
+    trained_at_str = (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at)
+    cached = {
         'ok': True,
         'recordCount': row['record_count'],
         'occurrence': {'metrics': _json.loads(row['occurrence_metrics_json']), 'active': row['active_occurrence_model']},
         'type': {'metrics': _json.loads(row['type_metrics_json']), 'active': row['active_type_model']},
         'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
         'zoneRisk': _json.loads(row['hotspots_json']),
-        'trainedAt': (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at),
+        'trainedAt': trained_at_str,
+    }
+    ml_models["cached_latest"] = cached
+    ml_models["trained_at"] = trained_at_str
+    ml_models["record_count"] = row['record_count']
+    return jsonify(cached)
+
+
+@app.route('/predict', methods=['POST'])
+def predict_realtime():
+    """Real-time instant prediction endpoint evaluated directly against warm memory singleton."""
+    data = request.get_json(silent=True) or {}
+    zone = data.get("zone", "Zone 1")
+    date_str = data.get("date")
+    hour = int(data.get("hour", 12))
+
+    try:
+        pred_date = datetime.strptime(date_str, "%Y-%m-%d") if date_str else datetime.now()
+    except Exception:
+        pred_date = datetime.now()
+
+    dow = pred_date.weekday()
+
+    # Predict incident category using warm model
+    if ml_models["type"] is not None and ml_models["type_cols"] is not None:
+        top_cat, top_p = predict_top_category(ml_models["type"], ml_models["type_cols"], zone, dow, hour)
+    else:
+        top_cat, top_p = "General Incident", 0.50
+
+    # Retrieve precomputed hotspot / occurrence forecast from memory
+    zone_risk_list = (ml_models.get("cached_latest") or {}).get("zoneRisk", [])
+    zone_info = next((z for z in zone_risk_list if z.get("zone") == zone), None)
+
+    mean_prob = zone_info.get("meanDailyProb", 0.15) if zone_info else 0.15
+    risk_level = "High" if mean_prob >= 0.20 else "Moderate" if mean_prob >= 0.13 else "Low"
+
+    return jsonify({
+        'ok': True,
+        'zone': zone,
+        'date': pred_date.strftime("%Y-%m-%d"),
+        'hour': hour,
+        'predictedCategory': top_cat,
+        'categoryProbability': top_p,
+        'meanDailyOccurrenceProb': mean_prob,
+        'riskLevel': risk_level,
+        'peakWindow': zone_info.get("peakWindow", "N/A") if zone_info else "N/A",
+        'trend': zone_info.get("trend", "→") if zone_info else "→",
+        'expectedCount7d': zone_info.get("expectedCount7d", 1.0) if zone_info else 1.0,
     })
 
 

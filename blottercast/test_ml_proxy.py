@@ -1,7 +1,7 @@
 """End-to-end test of the ml_proxy blueprint against the REAL ml/service.py
 subprocess (not mocked) -- covers auto-spawn, RBAC, and forwarding."""
 import os
-os.environ.setdefault("ML_SERVICE_URL", "http://localhost:5001")
+os.environ.setdefault("ML_SERVICE_URL", "http://127.0.0.1:5001")
 
 from app import create_app
 from test_mfa_helper import login as mfa_login
@@ -35,9 +35,9 @@ logout()
 print("=== desk officer: can view (auto-spawns), cannot train ===")
 login("jdelacuz", "officer123")
 r = c.get("/api/ml_proxy.php?action=latest")
-print("latest (pre-train):", r.status_code, r.get_json())
+print("latest (pre-train) status:", r.status_code)
 r = c.post("/api/ml_proxy.php?action=train", json={})
-print("train as desk officer (should be 403):", r.status_code, r.get_json())
+print("train as desk officer (should be 403):", r.status_code)
 assert r.status_code == 403
 logout()
 
@@ -55,10 +55,26 @@ r = c.get("/api/ml_proxy.php?action=health")
 print(r.status_code, r.get_json())
 assert r.get_json().get("ok") is True
 
-print("=== latest (post-train, cached) ===")
+print("=== latest (post-train, cached in-memory singleton) ===")
+import time
+t0 = time.perf_counter()
 r = c.get("/api/ml_proxy.php?action=latest")
+t_elapsed_ms = (time.perf_counter() - t0) * 1000
 data = r.get_json()
-print(r.status_code, "trainedAt:", data.get("trainedAt"), "recordCount:", data.get("recordCount"))
+print(f"Status: {r.status_code}, trainedAt: {data.get('trainedAt')}, recordCount: {data.get('recordCount')}, latency: {t_elapsed_ms:.2f}ms")
+assert r.status_code == 200
 assert data.get("trainedAt"), "latest trainedAt should not be null"
 
+print("=== predict (in-memory real-time inference) ===")
+t0 = time.perf_counter()
+r = c.post("/api/ml_proxy.php?action=predict", json={"zone": "Zone 1", "hour": 20})
+t_pred_ms = (time.perf_counter() - t0) * 1000
+pdata = r.get_json()
+print(f"Predict Status: {r.status_code}, category: {pdata.get('predictedCategory')}, risk: {pdata.get('riskLevel')}, latency: {t_pred_ms:.2f}ms")
+assert r.status_code == 200
+assert pdata.get("ok") is True
+assert "predictedCategory" in pdata
+assert "riskLevel" in pdata
+
 print("\nALL ML PROXY TESTS PASSED")
+
