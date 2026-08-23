@@ -391,17 +391,17 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#4ade80;"></div><span>Low</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#10B981;"></div><span>Low (1–24)</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#facc15;"></div><span>Medium</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#FACC15;"></div><span>Medium (25–49)</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#fb923c;"></div><span>Elevated</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#FB923C;"></div><span>Elevated (50–100)</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#ef4444;"></div><span>High</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#EF4444;"></div><span>High (101+)</span>
               </div>
             </div>
           </div>
@@ -513,12 +513,44 @@
       return `<span class="cat-badge" style="background:${style.bg}; color:${style.color}; border:1px solid ${style.border};">${category}</span>`;
     }
 
-    function createIncidentPopupContent(item) {
+    const getOccurrenceDensityTier = (incidentCount) => {
+      if (incidentCount >= 101) {
+        return { label: 'High', color: '#EF4444', badgeClass: 'bg-red-500 text-white' };
+      }
+      if (incidentCount >= 50) {
+        return { label: 'Elevated', color: '#FB923C', badgeClass: 'bg-orange-400 text-white' };
+      }
+      if (incidentCount >= 25) {
+        return { label: 'Medium', color: '#FACC15', badgeClass: 'bg-yellow-400 text-gray-900' };
+      }
+      return { label: 'Low', color: '#10B981', badgeClass: 'bg-emerald-500 text-white' };
+    };
+
+    function getZoneIncidentCounts(data) {
+      const counts = {};
+      (data || []).forEach(item => {
+        if (item.zone) {
+          counts[item.zone] = (counts[item.zone] || 0) + 1;
+        }
+      });
+      return counts;
+    }
+
+    function createIncidentPopupContent(item, zoneCount = 1, tier = null) {
+      if (!tier) {
+        tier = getOccurrenceDensityTier(zoneCount);
+      }
       return `
         <div class="incident-popup-box">
-          <div class="popup-header">
-            <span class="popup-title">Incident #${item.id}</span>
-            ${getCategoryBadge(item.category)}
+          <div class="popup-header flex items-center justify-between gap-2 border-b pb-2 mb-2">
+            <div>
+              <span class="popup-title font-bold text-forest-900 block text-sm">Incident #${item.id}</span>
+              <span class="text-xs font-semibold text-forest-700">${item.zone} — ${zoneCount} Incident${zoneCount > 1 ? 's' : ''} (${tier.label})</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${tier.badgeClass}">${tier.label}</span>
+              ${getCategoryBadge(item.category)}
+            </div>
           </div>
           <div class="popup-body">
             <div class="popup-row">
@@ -836,10 +868,10 @@
         maxZoom: 17,
         minOpacity: 0.35,
         gradient: {
-          0.20: '#4ade80',
-          0.45: '#facc15',
-          0.65: '#fb923c',
-          0.85: '#ef4444'
+          0.2: '#10B981', // Green (Low: 1–24)
+          0.5: '#FACC15', // Yellow (Medium: 25–49)
+          0.8: '#FB923C', // Orange (Elevated: 50–100)
+          1.0: '#EF4444'  // Red (High: 101+)
         }
       }).addTo(map);
     }
@@ -849,15 +881,20 @@
       markerMap.clear();
       if (!showMarkers.checked) return;
 
+      const zoneCounts = getZoneIncidentCounts(data);
+
       // Only render markers for authentic verified coordinates within the barangay boundary
       data.filter(item => !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
+        const zoneCount = zoneCounts[item.zone] || 1;
+        const tier = getOccurrenceDensityTier(zoneCount);
+
         const marker = L.circleMarker([item.lat, item.lng], {
-          radius: 6,
+          radius: 7,
           color: '#ffffff',
           weight: 2,
-          fillColor: '#123d22',
+          fillColor: tier.color,
           fillOpacity: 0.95
-        }).bindPopup(createIncidentPopupContent(item));
+        }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
 
         marker.on('click', () => {
           triggerMarkerPulse(item.lat, item.lng);
