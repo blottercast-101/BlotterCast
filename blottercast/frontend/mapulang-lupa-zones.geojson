@@ -1,105 +1,18 @@
 {
   "type": "FeatureCollection",
   "name": "Mapulang Lupa Zones",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
   "features": [
     {
       "type": "Feature",
       "properties": {
+        "zone_id": "Zone 1",
         "zone": "Zone 1",
+        "zone_number": 1,
         "name": "Residence 3",
         "landmark": "Residence 3",
-        "center": [14.881000, 120.969500]
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [120.968800, 14.876800],
-            [120.971200, 14.878200],
-            [120.973000, 14.880200],
-            [120.972500, 14.882500],
-            [120.971000, 14.884000],
-            [120.967500, 14.883500],
-            [120.967500, 14.880500],
-            [120.968800, 14.876800]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "zone": "Zone 2",
-        "name": "Residence 1",
-        "landmark": "Residence 1",
-        "center": [14.881800, 120.960200]
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [120.955500, 14.881000],
-            [120.956500, 14.879000],
-            [120.958500, 14.877500],
-            [120.962000, 14.876500],
-            [120.962000, 14.880800],
-            [120.961500, 14.883800],
-            [120.955500, 14.881000]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "zone": "Zone 3",
-        "name": "Pandi Village 2 (Atlantica)",
-        "landmark": "Pandi Village 2 (Atlantica)",
-        "center": [14.879500, 120.966800]
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [120.962000, 14.876500],
-            [120.965500, 14.876200],
-            [120.968800, 14.876800],
-            [120.967500, 14.880500],
-            [120.962000, 14.880800],
-            [120.962000, 14.876500]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "zone": "Zone 4",
-        "name": "Mitay 1",
-        "landmark": "Mitay 1",
-        "center": [14.883500, 120.964800]
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [120.961500, 14.883800],
-            [120.964500, 14.886000],
-            [120.967500, 14.883500],
-            [120.967500, 14.880500],
-            [120.962000, 14.880800],
-            [120.961500, 14.883800]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "zone": "Zone 5",
-        "name": "Sitio Gubat",
-        "landmark": "Sitio Gubat",
-        "center": [14.885800, 120.966500]
+        "sector": "North-East",
+        "center": [14.886800, 120.968000]
       },
       "geometry": {
         "type": "Polygon",
@@ -109,8 +22,8 @@
             [120.968000, 14.887000],
             [120.969500, 14.885500],
             [120.971000, 14.884000],
-            [120.967500, 14.883500],
-            [120.964500, 14.886000],
+            [120.969000, 14.883500],
+            [120.965000, 14.885500],
             [120.965800, 14.889600]
           ]
         ]
@@ -119,10 +32,13 @@
     {
       "type": "Feature",
       "properties": {
-        "zone": "Zone 6",
-        "name": "Bangko St.",
-        "landmark": "Bangko St.",
-        "center": [14.884200, 120.962500]
+        "zone_id": "Zone 2",
+        "zone": "Zone 2",
+        "zone_number": 2,
+        "name": "Residence 1",
+        "landmark": "Residence 1",
+        "sector": "West",
+        "center": [14.882500, 120.958000]
       },
       "geometry": {
         "type": "Polygon",
@@ -130,8 +46,8 @@
           [
             [120.955500, 14.881000],
             [120.956200, 14.883500],
-            [120.957500, 14.886000],
-            [120.961500, 14.883800],
+            [120.961000, 14.884500],
+            [120.961000, 14.880000],
             [120.955500, 14.881000]
           ]
         ]
@@ -140,23 +56,131 @@
     {
       "type": "Feature",
       "properties": {
-        "zone": "Zone 7",
-        "name": "Barangka St.",
-        "landmark": "Barangka St. / Pandi Encampment One",
-        "center": [14.885200, 120.964000]
+        "zone_id": "Zone 3",
+        "zone": "Zone 3",
+        "zone_number": 3,
+        "name": "Pandi Village 2 (Atlantica)",
+        "landmark": "Pandi Village 2 (Atlantica)",
+        "sector": "East",
+        "center": [14.880500, 120.970000]
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
+            [120.971000, 14.884000],
+            [120.972500, 14.882500],
+            [120.973000, 14.880200],
+            [120.971200, 14.878200],
+            [120.968800, 14.876800],
+            [120.969000, 14.880000],
+            [120.969000, 14.883500],
+            [120.971000, 14.884000]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Zone 4",
+        "zone": "Zone 4",
+        "zone_number": 4,
+        "name": "Mitay 1",
+        "landmark": "Mitay 1",
+        "sector": "North",
+        "center": [14.886800, 120.961000]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [120.956200, 14.883500],
             [120.957500, 14.886000],
             [120.959200, 14.887200],
             [120.961500, 14.888400],
             [120.963500, 14.889300],
             [120.965800, 14.889600],
-            [120.964500, 14.886000],
-            [120.961500, 14.883800],
-            [120.957500, 14.886000]
+            [120.965000, 14.885500],
+            [120.961000, 14.884500],
+            [120.956200, 14.883500]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Zone 5",
+        "zone": "Zone 5",
+        "zone_number": 5,
+        "name": "Sitio Gubat",
+        "landmark": "Barangay Center / Sitio Gubat",
+        "sector": "Central Core",
+        "center": [14.882500, 120.965000]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [120.961000, 14.884500],
+            [120.965000, 14.885500],
+            [120.969000, 14.883500],
+            [120.969000, 14.880000],
+            [120.965000, 14.879000],
+            [120.961000, 14.880000],
+            [120.961000, 14.884500]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Zone 6",
+        "zone": "Zone 6",
+        "zone_number": 6,
+        "name": "Bangko St.",
+        "landmark": "Bangko St.",
+        "sector": "South-East",
+        "center": [14.878000, 120.967000]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [120.968800, 14.876800],
+            [120.965500, 14.876200],
+            [120.962000, 14.876500],
+            [120.965000, 14.879000],
+            [120.969000, 14.880000],
+            [120.968800, 14.876800]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Zone 7",
+        "zone": "Zone 7",
+        "zone_number": 7,
+        "name": "Barangka St.",
+        "landmark": "Barangka St. / Pandi Encampment One",
+        "sector": "South-West",
+        "center": [14.878500, 120.960000]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [120.962000, 14.876500],
+            [120.958500, 14.877500],
+            [120.956500, 14.879000],
+            [120.955500, 14.881000],
+            [120.961000, 14.880000],
+            [120.965000, 14.879000],
+            [120.962000, 14.876500]
           ]
         ]
       }
