@@ -893,6 +893,8 @@
       btn.classList.remove('loading');
       alertMsg.textContent = err.message || 'Could not reset your password. Please try again.';
       alertEl.classList.add('show');
+      npEl.value = '';
+      cpEl.value = '';
       npEl.focus();
     }
   }

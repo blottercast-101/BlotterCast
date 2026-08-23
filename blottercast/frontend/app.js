@@ -399,7 +399,11 @@ function bcShowForcedPasswordChange() {
       document.body.style.overflow = '';
       showToast('Password updated. You\'re all set!');
     } catch (err) {
-      errEl.textContent = err.message; errEl.classList.remove('hidden');
+      errEl.textContent = err.message || 'Failed to change password.';
+      errEl.classList.remove('hidden');
+      document.getElementById('bcPw_new').value = '';
+      document.getElementById('bcPw_confirm').value = '';
+      document.getElementById('bcPw_new').focus();
     }
   };
 }

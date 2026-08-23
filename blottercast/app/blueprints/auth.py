@@ -11,7 +11,7 @@ from sqlalchemy import func
 
 from ..email import send_otp_email
 from ..extensions import db
-from ..models import OtpCode, User
+from ..models import OtpCode, PasswordHistory, User
 from ..permissions import get_security_settings, json_error, log_audit, login_required
 
 bp = Blueprint("auth", __name__)
@@ -47,6 +47,58 @@ def _check_password(raw: str, hashed: str) -> bool:
 
 def _hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+# ---------------------------------------------------------------
+# Password History & Reuse Prevention
+# ---------------------------------------------------------------
+PASSWORD_HISTORY_LIMIT = 5
+PASSWORD_REUSE_ERROR = (
+    "You cannot reuse your current or previously used password. Please choose a new, different password."
+)
+
+
+def _check_password_reuse(user_id: int, current_hash: str, candidate_password: str) -> bool:
+    """Checks whether candidate_password matches the active password hash or any
+    of the last 5 stored password history records for this user. Returns True if reused."""
+    if current_hash and _check_password(candidate_password, current_hash):
+        return True
+
+    if user_id:
+        try:
+            histories = (
+                PasswordHistory.query.filter_by(user_id=user_id)
+                .order_by(PasswordHistory.id.desc())
+                .limit(PASSWORD_HISTORY_LIMIT)
+                .all()
+            )
+            for h in histories:
+                if h.password_hash and _check_password(candidate_password, h.password_hash):
+                    return True
+        except Exception as e:
+            current_app.logger.warning(f"Password history query notice: {e}")
+
+    return False
+
+
+def _record_password_history(user_id: int, old_hash: str) -> None:
+    """Saves old_hash to PasswordHistory and prunes records beyond PASSWORD_HISTORY_LIMIT."""
+    if not old_hash or not user_id:
+        return
+    try:
+        db.session.add(PasswordHistory(user_id=user_id, password_hash=old_hash))
+        db.session.flush()
+
+        all_hist = (
+            PasswordHistory.query.filter_by(user_id=user_id)
+            .order_by(PasswordHistory.id.desc())
+            .all()
+        )
+        if len(all_hist) > PASSWORD_HISTORY_LIMIT:
+            for extra in all_hist[PASSWORD_HISTORY_LIMIT:]:
+                db.session.delete(extra)
+    except Exception as e:
+        current_app.logger.warning(f"Password history recording notice: {e}")
 
 
 # ---------------------------------------------------------------
@@ -574,6 +626,13 @@ def _reset_password():
     if len(new_password) < settings["min_password_length"]:
         return json_error(f"New password must be at least {settings['min_password_length']} characters long")
 
+    # Password Reuse Prevention Check
+    if _check_password_reuse(user.id, user.password, new_password):
+        return json_error(PASSWORD_REUSE_ERROR, 400)
+
+    # Save previous password hash into history before updating
+    _record_password_history(user.id, user.password)
+
     user.password = _hash_password(new_password)
     user.password_changed_at = datetime.utcnow()
     user.failed_attempts = 0
@@ -651,6 +710,13 @@ def _change_password_impl():
     settings = get_security_settings()
     if len(new_password) < settings["min_password_length"]:
         return json_error(f"New password must be at least {settings['min_password_length']} characters long")
+
+    # Password Reuse Prevention Check
+    if _check_password_reuse(user.id, user.password, new_password):
+        return json_error(PASSWORD_REUSE_ERROR, 400)
+
+    # Save previous password hash into history before updating
+    _record_password_history(user.id, user.password)
 
     user.password = _hash_password(new_password)
     user.password_changed_at = datetime.utcnow()

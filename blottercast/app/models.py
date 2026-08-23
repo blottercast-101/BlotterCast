@@ -150,6 +150,31 @@ class OtpCode(db.Model):
             setattr(self, k, v)
 
 
+class PasswordHistory(db.Model):
+    __tablename__ = "password_history"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=now, index=True)
+
+    def __init__(
+        self,
+        user_id=None,
+        password_hash=None,
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if user_id is not None:
+            self.user_id = user_id
+        if password_hash is not None:
+            self.password_hash = password_hash
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
     id = db.Column(db.Integer, primary_key=True)

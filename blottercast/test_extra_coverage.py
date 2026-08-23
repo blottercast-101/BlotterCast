@@ -20,6 +20,15 @@ def logout():
 
 # ------------------------------------------------------------------
 print("=== PASSWORD CHANGE FLOW ===")
+with app.app_context():
+    from app.blueprints.auth import _hash_password
+    from app.models import PasswordHistory
+    u = User.query.filter_by(username="msantos").first()
+    if u:
+        u.password = _hash_password("officer123")
+        PasswordHistory.query.filter_by(user_id=u.id).delete()
+        db.session.commit()
+
 login("msantos", "officer123")
 
 r = c.post("/api/auth.php?action=change_password",
@@ -32,10 +41,22 @@ r = c.post("/api/auth.php?action=change_password",
 print("too-short new password:", r.status_code, r.get_json())
 assert r.status_code == 400 or r.status_code == 422 or "error" in r.get_json()
 
+# Password reuse test: attempting to reuse current password should fail
+r = c.post("/api/auth.php?action=change_password",
+           json={"currentPassword": "officer123", "newPassword": "officer123"})
+print("reuse current password:", r.status_code, r.get_json())
+assert r.status_code == 400
+
 r = c.post("/api/auth.php?action=change_password",
            json={"currentPassword": "officer123", "newPassword": "newpass123"})
 print("valid change:", r.status_code, r.get_json())
 assert r.status_code == 200 and r.get_json()["ok"]
+
+# Password reuse test: attempting to reuse old historical password should fail
+r = c.post("/api/auth.php?action=change_password",
+           json={"currentPassword": "newpass123", "newPassword": "officer123"})
+print("reuse historical password:", r.status_code, r.get_json())
+assert r.status_code == 400
 
 logout()
 r = c.post("/api/auth.php?action=login", json={"username": "msantos", "password": "officer123"})
@@ -46,6 +67,14 @@ r = c.post("/api/auth.php?action=login", json={"username": "msantos", "password"
 print("new password login:", r.status_code, r.get_json())
 assert r.status_code == 200
 logout()
+
+# Reset msantos back for subsequent test runs
+with app.app_context():
+    u = User.query.filter_by(username="msantos").first()
+    if u:
+        u.password = _hash_password("officer123")
+        PasswordHistory.query.filter_by(user_id=u.id).delete()
+        db.session.commit()
 
 # ------------------------------------------------------------------
 print("\n=== SESSION TIMEOUT EXPIRY ===")

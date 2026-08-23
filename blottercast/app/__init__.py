@@ -10,9 +10,10 @@ FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 def _auto_migrate_schema(app):
     """Automatically patches database schema on application startup across all environments
-    (SQLite, PostgreSQL on Render, MySQL) so newly added columns exist."""
+    (SQLite, PostgreSQL on Render, MySQL) so newly added tables and columns exist."""
     with app.app_context():
         try:
+            db.create_all()
             from .migrate import ensure_columns
             ensure_columns(db)
         except Exception as e:

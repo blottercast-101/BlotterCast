@@ -205,6 +205,7 @@
           <div><label class="form-label">New Password</label><input type="password" id="acct_newPw" class="form-input"/></div>
           <div><label class="form-label">Confirm New Password</label><input type="password" id="acct_confirmPw" class="form-input"/></div>
         </div>
+        <div id="acct_pw_error" class="text-xs text-red-600 font-semibold mt-3 p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
         <div class="flex justify-end mt-4">
           <button onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
         </div>
@@ -544,19 +545,48 @@ async function saveMyAccount() {
   }
 }
 async function saveMyPassword() {
-  const current = document.getElementById('acct_currentPw').value;
-  const next = document.getElementById('acct_newPw').value;
-  const confirm = document.getElementById('acct_confirmPw').value;
-  if (!current || !next) { showToast('Fill in both your current and new password.', 'error'); return; }
-  if (next !== confirm) { showToast('New password and confirmation do not match.', 'error'); return; }
+  const currentEl = document.getElementById('acct_currentPw');
+  const nextEl = document.getElementById('acct_newPw');
+  const confirmEl = document.getElementById('acct_confirmPw');
+  const errEl = document.getElementById('acct_pw_error');
+
+  if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+  nextEl.classList.remove('border-red-500');
+
+  const current = currentEl.value;
+  const next = nextEl.value;
+  const confirm = confirmEl.value;
+
+  if (!current || !next) {
+    const msg = 'Fill in both your current and new password.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    showToast(msg, 'error');
+    return;
+  }
+  if (next !== confirm) {
+    const msg = 'New password and confirmation do not match.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    showToast(msg, 'error');
+    return;
+  }
   try {
     await BCApi.changePassword(current, next);
-    document.getElementById('acct_currentPw').value = '';
-    document.getElementById('acct_newPw').value = '';
-    document.getElementById('acct_confirmPw').value = '';
-    showToast('Password changed.');
+    currentEl.value = '';
+    nextEl.value = '';
+    confirmEl.value = '';
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+    showToast('Password changed successfully.');
   } catch (err) {
-    showToast(err.message, 'error');
+    const msg = err.message || 'Failed to change password.';
+    if (errEl) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+    nextEl.classList.add('border-red-500');
+    nextEl.value = '';
+    confirmEl.value = '';
+    nextEl.focus();
+    showToast(msg, 'error');
   }
 }
 

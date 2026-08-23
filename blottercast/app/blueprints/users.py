@@ -10,7 +10,7 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 from ..extensions import db
-from ..models import AuditLog, NotificationRead, OtpCode, User
+from ..models import AuditLog, NotificationRead, OtpCode, PasswordHistory, User
 from ..permissions import get_security_settings, json_error, log_audit, login_required, permission_required
 
 bp = Blueprint("users", __name__)
@@ -251,6 +251,7 @@ def _delete():
         # 2. Safely remove child foreign key dependencies within the transaction
         OtpCode.query.filter_by(user_id=uid).delete()
         NotificationRead.query.filter_by(user_id=uid).delete()
+        PasswordHistory.query.filter_by(user_id=uid).delete()
 
         # 3. Hard-delete user record safely
         db.session.delete(user)
