@@ -877,7 +877,9 @@
 
       const subtitleEl = document.getElementById('tableSubtitle');
       if (subtitleEl) {
-        if (unmappedCount > 0) {
+        if (allFilteredData.length === 0) {
+          subtitleEl.textContent = 'No incident records recorded in the system.';
+        } else if (unmappedCount > 0) {
           subtitleEl.innerHTML = `Only incidents inside the loaded barangay boundary are displayed on the map canvas (<strong class="text-amber-800 font-semibold">${unmappedCount} unmapped record${unmappedCount > 1 ? 's' : ''}</strong> excluded from map view).`;
         } else {
           subtitleEl.textContent = `All ${mappedCount} filtered incidents are mapped within the loaded barangay boundary.`;
@@ -897,7 +899,7 @@
       if (!allFilteredData.length) {
         incidentTableBody.innerHTML = `
           <tr>
-            <td colspan="8" class="text-center py-6 text-forest-400 text-sm">No incident data matching the selected filter.</td>
+            <td colspan="8" class="text-center py-8 text-forest-400 text-sm font-medium">No incident records recorded in the system.</td>
           </tr>
         `;
         return;
