@@ -238,7 +238,7 @@
       <div class="grid grid-cols-3 gap-4">
         <div>
           <label class="form-label">Zone</label>
-          <select id="if_zone" class="form-input" required>
+          <select id="if_zone" class="form-input" required onchange="checkZoneLocationConflict()">
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Zone 1">Zone 1 (Residence 3)</option>
             <option value="Zone 2">Zone 2 (Residence 1)</option>
@@ -251,8 +251,22 @@
         </div>
         <div class="col-span-2">
           <label class="form-label">Location Detail</label>
-          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…"/>
+          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="checkZoneLocationConflict()"/>
         </div>
+      </div>
+
+      <!-- Zone vs Location Conflict Warning Banner -->
+      <div id="if_zoneConflictBanner" class="hidden p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3 animate-fadeIn shadow-sm">
+        <div class="flex items-start gap-2.5">
+          <span class="text-amber-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
+          <div>
+            <strong class="font-bold text-amber-950 block">Zone & Location Mismatch Detected</strong>
+            <span id="if_zoneConflictMsg" class="text-amber-800">The entered location matches another zone.</span>
+          </div>
+        </div>
+        <button type="button" onclick="quickFixZoneConflict()" id="btnQuickFixZone" class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded text-xs transition-colors shadow-sm">
+          Switch Zone
+        </button>
       </div>
 
       <!-- Geographic Forward Geocoding & Interactive Pin Picker -->
@@ -630,12 +644,115 @@
     }
   }
 
+  const ZONE_MATCH_RULES = [
+    {
+      zone: 'Zone 1',
+      landmark: 'Residence 3',
+      keywords: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3'],
+    },
+    {
+      zone: 'Zone 2',
+      landmark: 'Residence 1',
+      keywords: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1'],
+    },
+    {
+      zone: 'Zone 3',
+      landmark: 'Pandi Village 2 (Atlantica)',
+      keywords: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2', 'sitio bata', 'bata'],
+    },
+    {
+      zone: 'Zone 4',
+      landmark: 'Mitay 1',
+      keywords: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'],
+    },
+    {
+      zone: 'Zone 5',
+      landmark: 'Sitio Gubat',
+      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'silangan'],
+    },
+    {
+      zone: 'Zone 6',
+      landmark: 'Bangko St.',
+      keywords: ['bangko st', 'bangko street', 'bangko', 'kalye bangko'],
+    },
+    {
+      zone: 'Zone 7',
+      landmark: 'Barangka St. / Pandi Encampment One',
+      keywords: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one'],
+    },
+  ];
+
+  let currentZoneConflict = null;
+
+  function checkZoneLocationConflict() {
+    const selectedZone = document.getElementById('if_zone').value;
+    const locationText = (document.getElementById('if_location').value || '').toLowerCase().trim();
+    const banner = document.getElementById('if_zoneConflictBanner');
+    const msgEl = document.getElementById('if_zoneConflictMsg');
+    const fixBtn = document.getElementById('btnQuickFixZone');
+
+    if (!selectedZone || !locationText || locationText.length < 3) {
+      currentZoneConflict = null;
+      if (banner) banner.classList.add('hidden');
+      return null;
+    }
+
+    let detectedRule = null;
+    let matchedKeyword = '';
+
+    for (const rule of ZONE_MATCH_RULES) {
+      for (const kw of rule.keywords) {
+        if (locationText.includes(kw)) {
+          detectedRule = rule;
+          matchedKeyword = kw;
+          break;
+        }
+      }
+      if (detectedRule) break;
+    }
+
+    if (detectedRule && detectedRule.zone !== selectedZone) {
+      currentZoneConflict = {
+        selectedZone,
+        detectedZone: detectedRule.zone,
+        landmark: detectedRule.landmark,
+        matchedKeyword,
+      };
+
+      if (banner && msgEl && fixBtn) {
+        msgEl.innerHTML = `<strong class="text-amber-950 font-semibold">"${matchedKeyword.toUpperCase()}"</strong> belongs to <strong class="text-amber-950 font-semibold">${detectedRule.zone} (${detectedRule.landmark})</strong>, but you selected <strong class="text-amber-950 font-semibold">${selectedZone}</strong>. Please verify or switch zone.`;
+        fixBtn.textContent = `Switch to ${detectedRule.zone}`;
+        banner.classList.remove('hidden');
+      }
+      return currentZoneConflict;
+    } else {
+      currentZoneConflict = null;
+      if (banner) banner.classList.add('hidden');
+      return null;
+    }
+  }
+
+  function quickFixZoneConflict() {
+    if (!currentZoneConflict) return;
+    const targetZone = currentZoneConflict.detectedZone;
+    const zoneSelect = document.getElementById('if_zone');
+    if (zoneSelect) {
+      zoneSelect.value = targetZone;
+      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(zoneSelect);
+      showToast(`Switched zone to ${targetZone}`, 'success');
+    }
+    checkZoneLocationConflict();
+  }
+
   function resetIncidentFormFields() {
     incEditId = null;
     document.getElementById('incModalTitle').textContent = 'New Incident Report';
     document.getElementById('incidentForm').reset();
     document.getElementById('if_reportNo').value = '';
     setPickerCoordinates(null, null);
+    currentZoneConflict = null;
+    const banner = document.getElementById('if_zoneConflictBanner');
+    if (banner) banner.classList.add('hidden');
     const container = document.getElementById('incPickerMapContainer');
     if (container) container.classList.add('hidden');
     resetFormDropdowns('incidentForm');
@@ -680,10 +797,24 @@
       if (container) container.classList.add('hidden');
     }
 
+    checkZoneLocationConflict();
     openModal('incidentModal');
   }
 
   async function saveIncident() {
+    const conflict = checkZoneLocationConflict();
+    if (conflict) {
+      const switchZone = await bcConfirm(
+        `Location & Zone Mismatch Detected:\n\nThe address entered "${conflict.matchedKeyword.toUpperCase()}" belongs to ${conflict.detectedZone} (${conflict.landmark}), but you have selected ${conflict.selectedZone}.\n\nWould you like to automatically switch the Zone to ${conflict.detectedZone} before saving?`,
+        { title: 'Zone Conflict Warning', okLabel: `Switch to ${conflict.detectedZone} & Save`, cancelLabel: 'Keep & Save Anyway', danger: false }
+      );
+      if (switchZone) {
+        document.getElementById('if_zone').value = conflict.detectedZone;
+        if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(document.getElementById('if_zone'));
+        checkZoneLocationConflict();
+      }
+    }
+
     const vals = {
       reportNo: incEditId ? document.getElementById('if_reportNo').value.trim() : '',
       date: document.getElementById('if_dateReported').value,
