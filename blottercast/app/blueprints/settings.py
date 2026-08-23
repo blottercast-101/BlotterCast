@@ -84,14 +84,17 @@ def settings_router():
 @login_required
 @permission_required("system_settings")
 def admin_security_settings():
+    from ..models import SystemSecuritySetting
     from ..permissions import get_security_settings
     if request.method == "GET":
         settings = get_security_settings()
         return jsonify({
             "ok": True,
             "status": "success",
+            "is_2fa_globally_enabled": settings.get("is_2fa_globally_enabled", False),
             "enforce_2fa_all_users": settings.get("enforce_2fa_all_users", False),
-            "idle_timeout_enabled": settings.get("idle_timeout_enabled", True),
+            "is_idle_timeout_enabled": settings.get("is_idle_timeout_enabled", False),
+            "idle_timeout_enabled": settings.get("idle_timeout_enabled", False),
             "idle_timeout_duration_minutes": settings.get("idle_timeout_duration_minutes", 120),
             "session_timeout": settings.get("session_timeout", 120),
             "lockout_enabled": settings.get("lockout_enabled", True),
@@ -105,9 +108,30 @@ def admin_security_settings():
     if not data:
         return json_error("No settings provided to update", 400)
 
+    # 1. Update or create the single-row SystemSecuritySetting record
+    sec_row = db.session.get(SystemSecuritySetting, 1)
+    if not sec_row:
+        sec_row = SystemSecuritySetting(id=1)
+        db.session.add(sec_row)
+
+    if "is_2fa_globally_enabled" in data or "enforce_2fa_all_users" in data:
+        val = data.get("is_2fa_globally_enabled", data.get("enforce_2fa_all_users"))
+        sec_row.is_2fa_globally_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+    if "is_idle_timeout_enabled" in data or "idle_timeout_enabled" in data:
+        val = data.get("is_idle_timeout_enabled", data.get("idle_timeout_enabled"))
+        sec_row.is_idle_timeout_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+    if "idle_timeout_duration_minutes" in data or "session_timeout" in data:
+        val = data.get("idle_timeout_duration_minutes", data.get("session_timeout", 120))
+        sec_row.idle_timeout_duration_minutes = max(1, int(val))
+    sec_row.updated_by = session.get("user_id")
+    sec_row.updated_at = datetime.utcnow()
+
+    # 2. Synchronize with key-value system_settings
     updated_count = 0
     mapping = {
+        "is_2fa_globally_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
         "enforce_2fa_all_users": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "is_idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
         "idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
         "idle_timeout_duration_minutes": lambda v: str(max(1, int(v))),
         "session_timeout": lambda v: str(max(1, int(v))),
@@ -127,28 +151,37 @@ def admin_security_settings():
                 db.session.add(SystemSetting(setting_key=key, setting_value=val_str))
             updated_count += 1
 
-            # Sync session_timeout and idle_timeout_duration_minutes
-            if key == "idle_timeout_duration_minutes" and "session_timeout" not in data:
-                st_row = SystemSetting.query.get("session_timeout")
-                if st_row:
-                    st_row.setting_value = val_str
-                else:
-                    db.session.add(SystemSetting(setting_key="session_timeout", setting_value=val_str))
-            elif key == "session_timeout" and "idle_timeout_duration_minutes" not in data:
-                id_row = SystemSetting.query.get("idle_timeout_duration_minutes")
-                if id_row:
-                    id_row.setting_value = val_str
-                else:
-                    db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=val_str))
+            # Sync aliases
+            if key in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
+                for alias in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+            elif key in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
+                for alias in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+            elif key in ("idle_timeout_duration_minutes", "session_timeout"):
+                for alias in ("idle_timeout_duration_minutes", "session_timeout"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
 
     db.session.commit()
-    log_audit(session.get("username"), "Updated", "Security", f"Admin security settings updated ({updated_count} fields)")
+    log_audit(session.get("username"), "Updated", "Security", f"Admin master security settings updated ({updated_count} fields)")
 
     settings = get_security_settings()
     return jsonify({
         "ok": True,
         "success": True,
-        "message": "System-wide security settings updated successfully.",
+        "message": "System-wide master security settings updated successfully.",
         "settings": settings,
     })
 

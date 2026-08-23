@@ -24,11 +24,13 @@ PERMISSIONS = {
 }
 
 SECURITY_DEFAULTS = {
-    "lockout_enabled": True,
-    "session_timeout": 120,
-    "idle_timeout_enabled": True,
-    "idle_timeout_duration_minutes": 120,
+    "is_2fa_globally_enabled": False,
     "enforce_2fa_all_users": False,
+    "is_idle_timeout_enabled": False,
+    "idle_timeout_enabled": False,
+    "idle_timeout_duration_minutes": 120,
+    "session_timeout": 120,
+    "lockout_enabled": True,
     "max_failed_logins": 5,
     "min_password_length": 8,
     "password_expiry_days": 90,
@@ -40,22 +42,40 @@ def role_can(role: str, permission: str) -> bool:
 
 
 def get_security_settings() -> dict:
+    from .models import SystemSecuritySetting
     out = dict(SECURITY_DEFAULTS)
-    rows = SystemSetting.query.filter(SystemSetting.setting_key.in_(out.keys())).all()
-    for r in rows:
-        if r.setting_key in ("lockout_enabled", "idle_timeout_enabled", "enforce_2fa_all_users"):
-            out[r.setting_key] = str(r.setting_value).lower() in ("1", "true", "yes", "on", "t")
-        else:
-            try:
-                out[r.setting_key] = int(r.setting_value)
-            except (ValueError, TypeError):
-                pass
 
-    # Keep session_timeout and idle_timeout_duration_minutes synchronized
-    if "idle_timeout_duration_minutes" in out and out["idle_timeout_duration_minutes"] > 0:
-        out["session_timeout"] = out["idle_timeout_duration_minutes"]
-    elif "session_timeout" in out and out["session_timeout"] > 0:
-        out["idle_timeout_duration_minutes"] = out["session_timeout"]
+    try:
+        rows = SystemSetting.query.filter(SystemSetting.setting_key.in_(out.keys())).all()
+        for r in rows:
+            if r.setting_key in ("lockout_enabled", "idle_timeout_enabled", "is_idle_timeout_enabled", "enforce_2fa_all_users", "is_2fa_globally_enabled"):
+                val_bool = str(r.setting_value).lower() in ("1", "true", "yes", "on", "t")
+                out[r.setting_key] = val_bool
+            else:
+                try:
+                    out[r.setting_key] = int(r.setting_value)
+                except (ValueError, TypeError):
+                    pass
+    except Exception:
+        pass
+
+    # SystemSecuritySetting table (single row with id=1) is the master ground truth
+    try:
+        sec_row = db.session.get(SystemSecuritySetting, 1)
+        if sec_row:
+            out["is_2fa_globally_enabled"] = bool(sec_row.is_2fa_globally_enabled)
+            out["enforce_2fa_all_users"] = bool(sec_row.is_2fa_globally_enabled)
+            out["is_idle_timeout_enabled"] = bool(sec_row.is_idle_timeout_enabled)
+            out["idle_timeout_enabled"] = bool(sec_row.is_idle_timeout_enabled)
+            out["idle_timeout_duration_minutes"] = int(sec_row.idle_timeout_duration_minutes)
+            out["session_timeout"] = int(sec_row.idle_timeout_duration_minutes)
+    except Exception:
+        pass
+
+    # Ensure aliases are 100% in sync
+    out["enforce_2fa_all_users"] = out["is_2fa_globally_enabled"]
+    out["idle_timeout_enabled"] = out["is_idle_timeout_enabled"]
+    out["session_timeout"] = out["idle_timeout_duration_minutes"]
 
     return out
 

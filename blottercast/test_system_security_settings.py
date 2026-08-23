@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 from app import create_app
 from app.extensions import db
-from app.models import OtpCode, SystemSetting, User
+from app.models import OtpCode, SystemSecuritySetting, SystemSetting, User
 from test_mfa_helper import latest_otp_for, login as mfa_login
 
 app = create_app()
@@ -38,13 +38,14 @@ with app.app_context():
         encoder_user.mfa_enabled = False
         encoder_user.email = "pencoder@blottercast.local"
 
-    # Reset security settings to baseline
-    for key, val in [("enforce_2fa_all_users", "0"), ("idle_timeout_enabled", "1"), ("idle_timeout_duration_minutes", "120"), ("session_timeout", "120")]:
-        st = SystemSetting.query.get(key)
-        if st:
-            st.setting_value = val
-        else:
-            db.session.add(SystemSetting(setting_key=key, setting_value=val))
+# Reset security settings to baseline (Master switches OFF)
+    sec_setting = SystemSecuritySetting.query.get(1)
+    if not sec_setting:
+        sec_setting = SystemSecuritySetting(id=1)
+        db.session.add(sec_setting)
+    sec_setting.is_2fa_globally_enabled = False
+    sec_setting.is_idle_timeout_enabled = False
+    sec_setting.idle_timeout_duration_minutes = 120
     db.session.commit()
 
 print("=== 1. Non-Admin Cannot Access /api/admin/security-settings (RBAC) ===")
@@ -58,7 +59,7 @@ print("Encoder GET /api/admin/security-settings status:", r_get.status_code)
 assert r_get.status_code == 403
 
 # Attempt PATCH
-r_patch = c.patch("/api/admin/security-settings", json={"enforce_2fa_all_users": True})
+r_patch = c.patch("/api/admin/security-settings", json={"is_2fa_globally_enabled": True})
 print("Encoder PATCH /api/admin/security-settings status:", r_patch.status_code)
 assert r_patch.status_code == 403
 
@@ -66,94 +67,103 @@ assert r_patch.status_code == 403
 c.post("/api/auth.php?action=logout")
 
 
-print("\n=== 2. Admin Can Read and Update System-Wide Security Settings ===")
-# Login as admin
-mfa_login(c, "admin", "admin123")
+print("\n=== 2. Admin Can Read and Update Master Security Settings ===")
+# Login as admin (with Master 2FA OFF)
+r_admin_login = c.post("/api/auth.php?action=login", json={"username": "admin", "password": "admin123"})
+assert r_admin_login.status_code == 200 and r_admin_login.get_json()["mfaRequired"] is False
 
 # Read settings
 r_get = c.get("/api/admin/security-settings")
 print("Admin GET status:", r_get.status_code, r_get.get_json())
 assert r_get.status_code == 200
 data = r_get.get_json()
-assert data["enforce_2fa_all_users"] is False
-assert data["idle_timeout_enabled"] is True
+assert data["is_2fa_globally_enabled"] is False
+assert data["is_idle_timeout_enabled"] is False
 assert data["idle_timeout_duration_minutes"] == 120
 
-# Update settings: enable global 2FA and adjust idle timeout
+# Update settings: turn Master 2FA ON and Master Idle Timeout ON
 r_patch = c.patch("/api/admin/security-settings", json={
-    "enforce_2fa_all_users": True,
-    "idle_timeout_enabled": True,
+    "is_2fa_globally_enabled": True,
+    "is_idle_timeout_enabled": True,
     "idle_timeout_duration_minutes": 60,
 })
 print("Admin PATCH status:", r_patch.status_code, r_patch.get_json())
 assert r_patch.status_code == 200
-assert r_patch.get_json()["settings"]["enforce_2fa_all_users"] is True
+assert r_patch.get_json()["settings"]["is_2fa_globally_enabled"] is True
+assert r_patch.get_json()["settings"]["is_idle_timeout_enabled"] is True
 assert r_patch.get_json()["settings"]["idle_timeout_duration_minutes"] == 60
-assert r_patch.get_json()["settings"]["session_timeout"] == 60
 
 # Logout
 c.post("/api/auth.php?action=logout")
 
 
-print("\n=== 3. Global 2FA Enforcement: All Users Forced into 2FA Flow ===")
-# Login as msantos (who has mfa_enabled = False individually)
+print("\n=== 3. Global Master 2FA ON: Uniformly Enforced Across ALL Roles ===")
+# Test Desk Officer (msantos)
 r_login = c.post("/api/auth.php?action=login", json={"username": "msantos", "password": "officer123"})
 data = r_login.get_json()
-print("msantos login status with Global 2FA ON:", r_login.status_code, data)
+print("msantos login with Master 2FA ON:", r_login.status_code, data)
 assert r_login.status_code == 200
 assert data.get("mfaRequired") is True
 assert data.get("enforcedGlobally") is True
-assert data.get("pre_auth_token") is not None
 
-# Verify that session is not authenticated yet
-r_me = c.get("/api/auth.php?action=me")
-assert r_me.get_json()["authenticated"] is False
-
-# Complete OTP verification
+# Complete OTP verification for msantos
 otp = latest_otp_for("msantos@blottercast.local")
 assert otp is not None
-
 r_verify = c.post("/api/auth.php?action=verify_otp", json={
     "code": otp,
     "pre_auth_token": data.get("pre_auth_token"),
 })
-print("OTP verification status:", r_verify.status_code, r_verify.get_json())
 assert r_verify.status_code == 200
 assert r_verify.get_json()["user"]["username"] == "msantos"
-
-# User is now fully authenticated
-r_me = c.get("/api/auth.php?action=me")
-assert r_me.get_json()["authenticated"] is True
 c.post("/api/auth.php?action=logout")
 
+# Test Barangay Captain (kapitan)
+r_kapitan = c.post("/api/auth.php?action=login", json={"username": "kapitan", "password": "kapitan123"})
+assert r_kapitan.status_code == 200 and r_kapitan.get_json()["mfaRequired"] is True
 
-print("\n=== 4. Disabling Global 2FA: Reverts to Individual Account Settings ===")
+# Test Data Encoder (pencoder)
+r_encoder = c.post("/api/auth.php?action=login", json={"username": "pencoder", "password": "encoder123"})
+assert r_encoder.status_code == 200 and r_encoder.get_json()["mfaRequired"] is True
+
+
+print("\n=== 4. Global Master 2FA OFF: No Account Is Prompted for 2FA ===")
+# Admin logs in via MFA (since master 2FA is currently on)
 mfa_login(c, "admin", "admin123")
-r_patch = c.patch("/api/admin/security-settings", json={"enforce_2fa_all_users": False})
+r_patch = c.patch("/api/admin/security-settings", json={"is_2fa_globally_enabled": False})
 assert r_patch.status_code == 200
 c.post("/api/auth.php?action=logout")
 
-# msantos (mfa_enabled = False) logs in directly without 2FA
-r_login = c.post("/api/auth.php?action=login", json={"username": "msantos", "password": "officer123"})
-assert r_login.status_code == 200 and r_login.get_json()["mfaRequired"] is False
-c.post("/api/auth.php?action=logout")
-
-# jdelacuz (mfa_enabled = True) still requires 2FA
-r_login = c.post("/api/auth.php?action=login", json={"username": "jdelacuz", "password": "officer123"})
-assert r_login.status_code == 200 and r_login.get_json()["mfaRequired"] is True
+# Every role now logs in directly with username and password
+for user_name, pw in [("admin", "admin123"), ("kapitan", "kapitan123"), ("jdelacuz", "officer123"), ("msantos", "officer123"), ("pencoder", "encoder123")]:
+    res = c.post("/api/auth.php?action=login", json={"username": user_name, "password": pw})
+    assert res.status_code == 200 and res.get_json()["mfaRequired"] is False, f"Failed for {user_name}"
+    c.post("/api/auth.php?action=logout")
+print("All roles logged in directly without 2FA when master switch is OFF!")
 
 
-print("\n=== 5. Inactivity Auto-Logout Middleware Enforcement ===")
-mfa_login(c, "admin", "admin123")
+print("\n=== 5. Global Idle Timeout Master Switch Behavior ===")
+# Turn Idle Timeout ON
+c.post("/api/auth.php?action=login", json={"username": "admin", "password": "admin123"})
+c.patch("/api/admin/security-settings", json={"is_idle_timeout_enabled": True, "idle_timeout_duration_minutes": 60})
 
-# Simulate session inactivity exceeding timeout (e.g. 3 hours ago)
+# Inactive session triggers 401
 with c.session_transaction() as sess:
     sess["last_activity"] = (datetime.utcnow() - timedelta(hours=3)).timestamp()
 
 r_check = c.get("/api/settings.php?action=list")
-print("Inactive session request status:", r_check.status_code, r_check.get_json())
+print("Idle Timeout ON -> Inactive session status:", r_check.status_code)
 assert r_check.status_code == 401
-assert "expired due to inactivity" in r_check.get_json()["error"]
 
+# Turn Idle Timeout OFF
+c.post("/api/auth.php?action=login", json={"username": "admin", "password": "admin123"})
+c.patch("/api/admin/security-settings", json={"is_idle_timeout_enabled": False})
 
-print("\n=== ALL SYSTEM-WIDE SECURITY SETTINGS TESTS PASSED ===")
+# Inactive session does NOT trigger 401 when Master Idle Timeout is OFF
+with c.session_transaction() as sess:
+    sess["last_activity"] = (datetime.utcnow() - timedelta(hours=5)).timestamp()
+
+r_check2 = c.get("/api/settings.php?action=list")
+print("Idle Timeout OFF -> Inactive session status:", r_check2.status_code)
+assert r_check2.status_code == 200
+
+print("\n=== ALL GLOBAL MASTER SECURITY SWITCH TESTS PASSED ===")

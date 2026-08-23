@@ -200,6 +200,36 @@ class AuditLog(db.Model):
             setattr(self, k, v)
 
 
+class SystemSecuritySetting(db.Model):
+    __tablename__ = "system_security_settings"
+    id = db.Column(db.Integer, primary_key=True, default=1)
+    is_2fa_globally_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    is_idle_timeout_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    idle_timeout_duration_minutes = db.Column(db.Integer, nullable=False, default=120)
+    updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+    updated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    updater = db.relationship("User", foreign_keys=[updated_by], lazy="joined")
+
+    def __init__(
+        self,
+        id=1,
+        is_2fa_globally_enabled=False,
+        is_idle_timeout_enabled=False,
+        idle_timeout_duration_minutes=120,
+        updated_by=None,
+        **kwargs,
+    ):
+        super().__init__()
+        self.id = id
+        self.is_2fa_globally_enabled = bool(is_2fa_globally_enabled)
+        self.is_idle_timeout_enabled = bool(is_idle_timeout_enabled)
+        self.idle_timeout_duration_minutes = int(idle_timeout_duration_minutes)
+        self.updated_by = updated_by
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
 class SystemSetting(db.Model):
     __tablename__ = "system_settings"
     setting_key = db.Column(db.String(100), primary_key=True)

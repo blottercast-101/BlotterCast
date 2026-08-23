@@ -7,8 +7,8 @@ import React, { useState, useEffect } from 'react';
  */
 export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
   const [settings, setSettings] = useState({
-    enforce_2fa_all_users: false,
-    idle_timeout_enabled: true,
+    is_2fa_globally_enabled: false,
+    is_idle_timeout_enabled: false,
     idle_timeout_duration_minutes: 120,
     lockout_enabled: true,
     max_failed_logins: 5,
@@ -34,8 +34,8 @@ export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
         }
         const data = await res.json();
         setSettings({
-          enforce_2fa_all_users: Boolean(data.enforce_2fa_all_users),
-          idle_timeout_enabled: Boolean(data.idle_timeout_enabled),
+          is_2fa_globally_enabled: Boolean(data.is_2fa_globally_enabled ?? data.enforce_2fa_all_users),
+          is_idle_timeout_enabled: Boolean(data.is_idle_timeout_enabled ?? data.idle_timeout_enabled),
           idle_timeout_duration_minutes: Number(data.idle_timeout_duration_minutes || 120),
           lockout_enabled: Boolean(data.lockout_enabled),
           max_failed_logins: Number(data.max_failed_logins || 5),
@@ -128,15 +128,15 @@ export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
               Require 2FA for All Accounts
             </label>
             <p className="text-xs text-forest-500">
-              When enabled, all users must complete Two-Factor Authentication (OTP email verification) during login.
+              When enabled, all users across all roles must complete Two-Factor Authentication (OTP email verification) during login. When disabled, users log in directly.
             </p>
           </div>
           <button
             type="button"
             id="toggle-2fa"
-            onClick={() => handleToggle('enforce_2fa_all_users')}
+            onClick={() => handleToggle('is_2fa_globally_enabled')}
             className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-              settings.enforce_2fa_all_users ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
+              settings.is_2fa_globally_enabled ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
@@ -150,15 +150,15 @@ export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
               Session Inactivity Auto-Logout
             </label>
             <p className="text-xs text-forest-500">
-              Automatically log out inactive users after 2 hours of inactivity across all active sessions.
+              When enabled, automatically logs out inactive users across all roles after the inactivity duration. When disabled, sessions remain active.
             </p>
           </div>
           <button
             type="button"
             id="toggle-idle"
-            onClick={() => handleToggle('idle_timeout_enabled')}
+            onClick={() => handleToggle('is_idle_timeout_enabled')}
             className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-              settings.idle_timeout_enabled ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
+              settings.is_idle_timeout_enabled ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />

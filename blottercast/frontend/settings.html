@@ -212,16 +212,6 @@
       </div>
 
       <div class="settings-section">
-        <h3>Two-Factor Authentication</h3>
-        <div class="space-y-0">
-          <div class="toggle-row">
-            <div><div class="toggle-label">Require a code by email at sign-in</div><div class="toggle-desc" id="mfaToggleDesc">Applies only to your own account, from your next login onward.</div></div>
-            <button id="mfaToggleBtn" class="toggle-switch off" onclick="toggleMyMfa()"><span class="sr-only">Toggle two-factor authentication</span></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
         <h3>Display Preferences</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -235,22 +225,22 @@
       </div>
       <div id="tab-security-admin-only" data-perm="system_settings">
       <div class="settings-section">
-        <h3>System-Wide Security Policies (Admin Only)</h3>
-        <p class="text-xs text-forest-400 mb-4" style="margin-top:-0.5rem;">Global security configurations that apply automatically across all accounts and roles.</p>
+        <h3>Global Master Security Switch (Admin Only)</h3>
+        <p class="text-xs text-forest-400 mb-4" style="margin-top:-0.5rem;">System-wide master switches that uniformly control authentication and session policies across all roles.</p>
         <div class="space-y-0">
           <div class="toggle-row">
             <div>
-              <div class="toggle-label font-semibold text-forest-800">Require 2FA for All Accounts</div>
-              <div class="toggle-desc">When enabled, all users must complete Two-Factor Authentication during login.</div>
+              <div class="toggle-label font-semibold text-forest-800">Global 2FA Enforcement (Master Switch)</div>
+              <div class="toggle-desc">When enabled, 2FA OTP verification is strictly required for all user roles during login. When disabled, users log in directly with their credentials.</div>
             </div>
-            <button class="toggle-switch off" data-setting="enforce_2fa_all_users" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+            <button class="toggle-switch off" data-setting="is_2fa_globally_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
           <div class="toggle-row">
             <div>
-              <div class="toggle-label font-semibold text-forest-800">Session Inactivity Auto-Logout</div>
-              <div class="toggle-desc">Automatically log out inactive users after 2 hours of inactivity across all active sessions.</div>
+              <div class="toggle-label font-semibold text-forest-800">Global Idle Auto-Logout (Master Switch)</div>
+              <div class="toggle-desc">When enabled, all active user sessions across all roles auto-logout after 2 hours of inactivity. When disabled, sessions remain active.</div>
             </div>
-            <button class="toggle-switch on" data-setting="idle_timeout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+            <button class="toggle-switch off" data-setting="is_idle_timeout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
           <div class="toggle-row">
             <div>

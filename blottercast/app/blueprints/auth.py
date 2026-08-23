@@ -265,25 +265,15 @@ def _google_login():
     user.failed_attempts = 0
     user.locked_until = None
 
-    # Check if 2FA is active on the account (Settings -> Security) or enforced system-wide
+    # Master Security Switch: 2FA is controlled globally by the System Administrator
     settings = get_security_settings()
-    global_2fa_enforced = bool(settings.get("enforce_2fa_all_users", False))
-    is_2fa_active = global_2fa_enforced
-    if not is_2fa_active:
-        if hasattr(user, "is_2fa_enabled") and user.is_2fa_enabled:
-            is_2fa_active = True
-        elif getattr(user, "mfa_enabled", None) is not None:
-            raw_mfa = user.mfa_enabled
-            if isinstance(raw_mfa, str):
-                is_2fa_active = raw_mfa.lower() in ("1", "true", "t", "yes", "on", "enabled")
-            else:
-                is_2fa_active = bool(raw_mfa)
+    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
 
-    # Enforce Two-Factor Authentication (2FA) if enabled or globally enforced
+    # Enforce Two-Factor Authentication (2FA) if master switch is enabled
     if is_2fa_active:
         if not user.email:
             return json_error(
-                "Two-Factor Authentication is required, but this account has no email on file for OTP verification. "
+                "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
                 "Please contact a System Administrator.", 403
             )
         db.session.commit()
@@ -294,7 +284,7 @@ def _google_login():
         session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
         pre_auth_token = _generate_pre_auth_token(user.id)
-        log_audit(user.username, "Login", "System", f"Google OAuth verified, MFA code sent (Global={global_2fa_enforced})")
+        log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent (Master Switch ON)")
 
         return jsonify({
             "ok": True,
@@ -304,14 +294,14 @@ def _google_login():
             "pre_auth_token": pre_auth_token,
             "maskedEmail": _mask_email(user.email),
             "masked_email": _mask_email(user.email),
-            "enforcedGlobally": global_2fa_enforced,
+            "enforcedGlobally": True,
             "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
             "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
         })
 
-    # If 2FA is not enabled, directly complete sign-in
+    # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
     db.session.commit()
-    return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA disabled for this account)")
+    return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA Master Switch OFF)")
 
 
 def _complete_login(user, audit_note):
@@ -380,17 +370,17 @@ def _login():
     user.failed_attempts = 0
     user.locked_until = None
 
-    global_2fa_enforced = bool(settings.get("enforce_2fa_all_users", False))
-    is_2fa_active = global_2fa_enforced or user.is_2fa_enabled
+    # Master Security Switch: 2FA is controlled globally by the System Administrator
+    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
 
-    # If 2FA is not active on this account, directly complete sign-in
+    # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
     if not is_2fa_active:
         db.session.commit()
-        return _complete_login(user, "Successful login (2FA disabled for this account)")
+        return _complete_login(user, "Successful login (2FA Master Switch OFF)")
 
     if not user.email:
         return json_error(
-            "Two-Factor Authentication is required, but this account has no email on file for OTP verification. "
+            "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
             "Please contact a System Administrator.", 403
         )
 
@@ -403,7 +393,7 @@ def _login():
     session["mfa_pending_at"] = datetime.utcnow().timestamp()
 
     pre_auth_token = _generate_pre_auth_token(user.id)
-    log_audit(user.username, "Login", "System", f"Password verified, MFA code sent (Global={global_2fa_enforced})")
+    log_audit(user.username, "Login", "System", "Password verified, MFA code sent (Master Switch ON)")
 
     return jsonify({
         "ok": True,
@@ -413,7 +403,7 @@ def _login():
         "pre_auth_token": pre_auth_token,
         "maskedEmail": _mask_email(user.email),
         "masked_email": _mask_email(user.email),
-        "enforcedGlobally": global_2fa_enforced,
+        "enforcedGlobally": True,
         "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
         "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
     })

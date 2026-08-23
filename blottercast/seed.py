@@ -15,7 +15,7 @@ import bcrypt
 from app import create_app
 from app.extensions import db
 from app.migrate import ensure_columns
-from app.models import Incident, Notification, SystemSetting, User, Zone
+from app.models import Incident, Notification, SystemSecuritySetting, SystemSetting, User, Zone
 
 # Authentic geographical coordinates and landmark mappings for Barangay Mapulang Lupa, Pandi, Bulacan
 # All coordinates are verified to fall strictly inside the official GeoJSON polygon boundary.
@@ -254,6 +254,16 @@ def run(force_reset: bool = False):
                 db.session.add(SystemSetting(setting_key=key, setting_value=value))
             elif key == "session_timeout":
                 existing_setting.setting_value = value
+
+        # 2b. Master Security Settings
+        sec_setting = SystemSecuritySetting.query.get(1)
+        if not sec_setting:
+            db.session.add(SystemSecuritySetting(
+                id=1,
+                is_2fa_globally_enabled=False,
+                is_idle_timeout_enabled=False,
+                idle_timeout_duration_minutes=120,
+            ))
 
         # 3. Demo Users
         for username, password, full_name, role, email in DEMO_USERS:
