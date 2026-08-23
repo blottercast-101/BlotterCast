@@ -100,12 +100,15 @@ export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-forest-100 shadow-sm p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-forest-900 tracking-tight">System-Wide Security Settings</h2>
-        <p className="text-sm text-forest-500 mt-1">
-          Global policies enforced across all user roles (Admin, Staff, Desk Officers). Strictly restricted to System Administrators.
-        </p>
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-6 max-w-4xl mx-auto">
+      {/* Header with Aligned Badge */}
+      <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+        <h2 className="text-lg font-serif font-bold text-[#1b4332]">
+          Security &amp; Authentication
+        </h2>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+          Admin Master Control
+        </span>
       </div>
 
       {error && (
@@ -115,54 +118,58 @@ export function SecuritySettings({ apiBase = '/api', onSaveSuccess }) {
       )}
 
       {successMessage && (
-        <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm font-medium">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
           {successMessage}
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Global 2FA Policy */}
-        <div className="flex items-start justify-between p-4 rounded-xl bg-forest-50/50 border border-forest-100/80">
-          <div className="space-y-0.5 max-w-xl">
-            <label className="text-sm font-bold text-forest-800 cursor-pointer" htmlFor="toggle-2fa">
-              Require 2FA for All Accounts
-            </label>
-            <p className="text-xs text-forest-500">
-              When enabled, all users across all roles must complete Two-Factor Authentication (OTP email verification) during login. When disabled, users log in directly.
-            </p>
-          </div>
-          <button
-            type="button"
-            id="toggle-2fa"
-            onClick={() => handleToggle('is_2fa_globally_enabled')}
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-              settings.is_2fa_globally_enabled ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
-            }`}
-          >
-            <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
-          </button>
-        </div>
+        <div className="space-y-4">
+          {/* Master 2FA Toggle Card */}
+          <div className="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-gray-800">
+                Enforce 2FA for All Accounts
+              </p>
+              <p className="text-xs text-gray-500">
+                Require Two-Factor Authentication across all roles during login.
+              </p>
+            </div>
 
-        {/* Global Inactivity Auto-Logout */}
-        <div className="flex items-start justify-between p-4 rounded-xl bg-forest-50/50 border border-forest-100/80">
-          <div className="space-y-0.5 max-w-xl">
-            <label className="text-sm font-bold text-forest-800 cursor-pointer" htmlFor="toggle-idle">
-              Session Inactivity Auto-Logout
+            {/* Pure Toggle Switch (No visible checkbox / no checkmark) */}
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={Boolean(settings.is_2fa_globally_enabled)}
+                onChange={(e) => handleToggle('is_2fa_globally_enabled', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6 shadow-inner"></div>
             </label>
-            <p className="text-xs text-forest-500">
-              When enabled, automatically logs out inactive users across all roles after the inactivity duration. When disabled, sessions remain active.
-            </p>
           </div>
-          <button
-            type="button"
-            id="toggle-idle"
-            onClick={() => handleToggle('is_idle_timeout_enabled')}
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-              settings.is_idle_timeout_enabled ? 'bg-forest-600 justify-end' : 'bg-gray-300 justify-start'
-            }`}
-          >
-            <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
-          </button>
+
+          {/* Master Idle Timeout Toggle Card */}
+          <div className="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-gray-800">
+                Session Inactivity Auto-Logout (2 Hours)
+              </p>
+              <p className="text-xs text-gray-500">
+                Automatically logs out inactive users after 120 minutes of inactivity.
+              </p>
+            </div>
+
+            {/* Pure Toggle Switch */}
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={Boolean(settings.is_idle_timeout_enabled)}
+                onChange={(e) => handleToggle('is_idle_timeout_enabled', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6 shadow-inner"></div>
+            </label>
+          </div>
         </div>
 
         {/* Duration & Threshold Inputs */}

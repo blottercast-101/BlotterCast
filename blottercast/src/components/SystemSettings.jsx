@@ -155,54 +155,6 @@ export default function SystemSettings({ userRole = 'System Admin' }) {
           </div>
         </div>
       </div>
-
-      {/* Security Settings Section (Admin Master Control) */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mt-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-base font-semibold text-gray-800">Security &amp; Authentication</h3>
-          <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
-            Admin Master Control
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          {/* Master 2FA Switch */}
-          <div className="flex items-center justify-between p-4 bg-gray-50/70 rounded-xl border border-gray-100">
-            <div>
-              <p className="text-sm font-medium text-gray-800">Enforce 2FA for All Accounts</p>
-              <p className="text-xs text-gray-500">Require Two-Factor Authentication across all roles during login.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="twoFaMasterToggle"
-                checked={Boolean(securitySettings.is_2fa_globally_enabled)}
-                onChange={(e) => handleToggleSecurity('is_2fa_globally_enabled', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-
-          {/* Master Idle Timeout Switch */}
-          <div className="flex items-center justify-between p-4 bg-gray-50/70 rounded-xl border border-gray-100">
-            <div>
-              <p className="text-sm font-medium text-gray-800">Session Inactivity Auto-Logout (2 Hours)</p>
-              <p className="text-xs text-gray-500">Automatically logs out inactive users after 120 minutes of inactivity.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="idleTimeoutMasterToggle"
-                checked={Boolean(securitySettings.is_idle_timeout_enabled)}
-                onChange={(e) => handleToggleSecurity('is_idle_timeout_enabled', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
