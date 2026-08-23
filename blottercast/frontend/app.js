@@ -57,7 +57,7 @@ document.addEventListener('input', (e) => {
   else if (el.matches('[data-digits-only]')) bcStripDisallowedChars(el, /[^0-9]/g);
 });
 
-// ── Auth guard: redirect to login if session is missing ────
+// ── Auth guard: redirect to landing page if session is missing ────
 // Also enforces role-based page access (permissions.js) and hides
 // sidebar links the current role isn't permitted to use.
 let _bcAuthGuardRunning = false;
@@ -69,8 +69,8 @@ function _handleUnauthenticatedRedirect() {
       el.style.pointerEvents = 'none';
     });
   } catch (e) {}
-  sessionStorage.setItem('bc_logged_out_alert', '1');
-  window.location.replace('login.html?logged_out=1');
+  sessionStorage.setItem('bc_logged_out_modal', '1');
+  window.location.replace('index.html?logged_out=1');
 }
 
 async function requireAuth() {
@@ -103,6 +103,7 @@ async function requireAuth() {
     }
     if (status.user.mustChangePassword) bcShowForcedPasswordChange();
     bcSyncTimeFormatFromServer().catch(() => {});
+    _bcResetIdleTimer();
     return status.user;
   } catch (e) {
     _handleUnauthenticatedRedirect();
@@ -112,14 +113,59 @@ async function requireAuth() {
   }
 }
 
-// BFCache (Back/Forward Cache) and PopState auth re-verification
-window.addEventListener('pageshow', (event) => {
-  if (event.persisted && !window.location.pathname.endsWith('login.html')) {
-    requireAuth();
+// ── 3-Minute Inactivity / Idle Auto-Logout ──────────────────
+const BC_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes (180,000 ms)
+let _bcIdleTimer = null;
+
+function _bcResetIdleTimer() {
+  if (_bcIdleTimer) clearTimeout(_bcIdleTimer);
+  const path = window.location.pathname.toLowerCase();
+  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+  if (!isPublic) {
+    _bcIdleTimer = setTimeout(_bcTriggerIdleLogout, BC_IDLE_TIMEOUT_MS);
+  }
+}
+
+async function _bcTriggerIdleLogout() {
+  try { await BCApi.logout(); } catch (e) {}
+  sessionStorage.setItem('bc_logged_out_modal', '1');
+  window.location.replace('index.html?logged_out=1');
+}
+
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+  window.addEventListener(evt, _bcResetIdleTimer, { passive: true });
+});
+_bcResetIdleTimer();
+
+// ── Browser Navigation Guards (Back/Forward Buttons) ────────
+// 1. Trap Back button on protected pages so it terminates the session and returns to Landing Page
+(function _bcSetupBackNavigationTrap() {
+  const path = window.location.pathname.toLowerCase();
+  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+  if (!isPublic) {
+    try {
+      if (!history.state || history.state.bcGuard !== 1) {
+        history.pushState({ bcGuard: 1 }, '', window.location.href);
+      }
+    } catch (e) {}
+  }
+})();
+
+window.addEventListener('popstate', async (event) => {
+  const path = window.location.pathname.toLowerCase();
+  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+  if (!isPublic) {
+    try { await BCApi.logout(); } catch (e) {}
+    sessionStorage.setItem('bc_logged_out_modal', '1');
+    window.location.replace('index.html?logged_out=1');
   }
 });
-window.addEventListener('popstate', () => {
-  if (!window.location.pathname.endsWith('login.html')) {
+
+// 2. BFCache & Forward Navigation Guard
+window.addEventListener('pageshow', (event) => {
+  const path = window.location.pathname.toLowerCase();
+  const isPublic = path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+  if (!isPublic) {
     requireAuth();
   }
 });
