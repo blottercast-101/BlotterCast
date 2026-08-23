@@ -113,7 +113,7 @@
     <header class="sticky top-0 z-20 bg-white border-b border-forest-100 px-8 py-4 flex items-center justify-between shadow-sm">
       <div>
         <h1 class="font-display text-2xl text-forest-800">Dashboard</h1>
-        <p class="text-forest-500 text-sm">Welcome back, Juan. Here's today's overview.</p>
+        <p id="dashboardGreeting" data-user-greeting class="text-forest-500 text-sm">Welcome back! Here's today's overview.</p>
       </div>
       <div class="flex items-center gap-4">
         <div class="relative">
@@ -295,6 +295,13 @@
 
     (async function () {
       const user = await requireAuth();
+      if (user) {
+        const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
+        const greeting = document.getElementById('dashboardGreeting');
+        if (greeting) {
+          greeting.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+        }
+      }
       refreshNotifBadge();
       // Auto-backup check: only System Admin has system_settings
       if (user && typeof roleCan === 'function' && roleCan(user.role, 'system_settings')) {

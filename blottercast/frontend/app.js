@@ -75,15 +75,28 @@ async function requireAuth() {
     const nameEl = document.querySelector('[data-user-name]');
     const roleEl = document.querySelector('[data-user-role]');
     const avatarEl = document.querySelector('[data-user-avatar]');
+    const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
     if (nameEl) nameEl.textContent = status.user.full_name;
     if (roleEl) roleEl.textContent = status.user.role;
     if (avatarEl) avatarEl.textContent = bcInitials(status.user.full_name);
+    if (greetingEl) {
+      const firstName = bcFirstName(status.user.full_name || status.user.firstName || status.user.first_name);
+      greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+    }
     if (status.user.mustChangePassword) bcShowForcedPasswordChange();
     return status.user;
   } catch (e) {
     window.location.href = 'login.html';
     return null;
   }
+}
+
+// Extracts the first name from a full name string, e.g. "Freya Lynn Ramos" -> "Freya",
+// or falls back gracefully to "User" if missing or empty.
+function bcFirstName(fullName) {
+  if (!fullName || typeof fullName !== 'string') return 'User';
+  const words = fullName.trim().split(/\s+/).filter(Boolean);
+  return words[0] || 'User';
 }
 
 // Initials shown in the sidebar avatar circle, e.g. "Juan Dela Cruz" -> "JD"
