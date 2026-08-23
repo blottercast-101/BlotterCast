@@ -189,6 +189,7 @@ def auth_router():
 
         return json_error("Unknown action", 404)
     except Exception as e:
+        db.session.rollback()
         current_app.logger.exception(f"Error in auth_router '{request.args.get('action')}': {e}")
         return json_error("Internal server error", 500)
 
@@ -242,66 +243,72 @@ def _google_login():
     google_sub = str(token_info.get("sub") or "").strip()
     clean_email = str(email or "").strip().lower()
 
-    user = None
-    if google_sub:
-        user = User.query.filter_by(google_id=google_sub).first()
-    if not user and clean_email:
-        user = User.query.filter(func.lower(func.trim(User.email)) == clean_email).first()
+    try:
+        user = None
+        if google_sub:
+            user = User.query.filter_by(google_id=google_sub).first()
+        if not user and clean_email:
+            user = User.query.filter(func.lower(func.trim(User.email)) == clean_email).first()
 
-    if not user:
-        return json_error(
-            "No BlotterCast account is associated with this Google email address. "
-            "Please contact an administrator to create or link your account.", 401
-        )
-
-    # Link google_id if not already saved
-    if google_sub and user.google_id != google_sub:
-        user.google_id = google_sub
-        db.session.commit()
-
-    if user.status.upper() == "SUSPENDED":
-        return json_error("This account has been suspended. Please contact an administrator.", 403)
-
-    user.failed_attempts = 0
-    user.locked_until = None
-
-    # Master Security Switch: 2FA is controlled globally by the System Administrator
-    settings = get_security_settings()
-    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
-
-    # Enforce Two-Factor Authentication (2FA) if master switch is enabled
-    if is_2fa_active:
-        if not user.email:
+        if not user:
             return json_error(
-                "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
-                "Please contact a System Administrator.", 403
+                "No BlotterCast account is associated with this Google email address. "
+                "Please contact an administrator to create or link your account.", 401
             )
+
+        # Link google_id if not already saved
+        if google_sub and user.google_id != google_sub:
+            user.google_id = google_sub
+            db.session.commit()
+
+        if user.status.upper() == "SUSPENDED":
+            return json_error("This account has been suspended. Please contact an administrator.", 403)
+
+        user.failed_attempts = 0
+        user.locked_until = None
+
+        # Master Security Switch: 2FA is controlled globally or per-account
+        settings = get_security_settings()
+        is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
+
+        # Enforce Two-Factor Authentication (2FA) if master switch is enabled
+        if is_2fa_active:
+            if not user.email:
+                return json_error(
+                    "Two-Factor Authentication is required system-wide, but this account has no email on file for OTP verification. "
+                    "Please contact a System Administrator.", 403
+                )
+            db.session.commit()
+            _issue_and_send_otp(user, purpose="login")
+
+            session.clear()
+            session["mfa_pending_user_id"] = user.id
+            session["mfa_pending_at"] = datetime.utcnow().timestamp()
+
+            pre_auth_token = _generate_pre_auth_token(user.id)
+            log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent (Master Switch ON)")
+
+            return jsonify({
+                "ok": True,
+                "mfaRequired": True,
+                "mfa_required": True,
+                "user_id": user.id,
+                "pre_auth_token": pre_auth_token,
+                "maskedEmail": _mask_email(user.email),
+                "masked_email": _mask_email(user.email),
+                "enforcedGlobally": True,
+                "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
+                "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
+            })
+
+        # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
         db.session.commit()
-        _issue_and_send_otp(user, purpose="login")
+        return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA Master Switch OFF)")
 
-        session.clear()
-        session["mfa_pending_user_id"] = user.id
-        session["mfa_pending_at"] = datetime.utcnow().timestamp()
-
-        pre_auth_token = _generate_pre_auth_token(user.id)
-        log_audit(user.username, "Login", "System", "Google OAuth verified, MFA code sent (Master Switch ON)")
-
-        return jsonify({
-            "ok": True,
-            "mfaRequired": True,
-            "mfa_required": True,
-            "user_id": user.id,
-            "pre_auth_token": pre_auth_token,
-            "maskedEmail": _mask_email(user.email),
-            "masked_email": _mask_email(user.email),
-            "enforcedGlobally": True,
-            "expiresInSeconds": current_app.config["MFA_CODE_EXPIRY_MINUTES"] * 60,
-            "resendCooldownSeconds": current_app.config["MFA_RESEND_COOLDOWN_SECONDS"],
-        })
-
-    # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
-    db.session.commit()
-    return _complete_login(user, f"Successful Google OAuth login ({email}) (2FA Master Switch OFF)")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(f"Database error during Google login: {e}")
+        return json_error(f"Google login failed: {str(e)}", 500)
 
 
 def _complete_login(user, audit_note):
@@ -370,8 +377,8 @@ def _login():
     user.failed_attempts = 0
     user.locked_until = None
 
-    # Master Security Switch: 2FA is controlled globally by the System Administrator
-    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False))
+    # Master Security Switch: 2FA is controlled globally or per-account
+    is_2fa_active = bool(settings.get("is_2fa_globally_enabled", False) or settings.get("enforce_2fa_all_users", False) or getattr(user, "is_2fa_enabled", False))
 
     # If 2FA Master Switch is OFF, directly complete sign-in without 2FA
     if not is_2fa_active:

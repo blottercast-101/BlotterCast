@@ -55,6 +55,14 @@ def create_app(config_class=Config):
     app.register_blueprint(ml_proxy_bp)
     app.register_blueprint(blotter_import_bp)
 
+    @app.teardown_request
+    def check_teardown(exception=None):
+        if exception:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+
     @app.after_request
     def add_security_and_cache_headers(response):
         """Disable caching on API endpoints and HTML pages to ensure sensitive
