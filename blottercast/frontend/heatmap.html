@@ -455,11 +455,12 @@
       </div>
 
       <div class="card overflow-hidden">
-        <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between gap-3">
+        <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 class="font-display text-lg text-forest-800">Incident Location Summary</h2>
-            <p class="text-sm text-forest-500">Only incidents inside the loaded barangay boundary are displayed</p>
+            <p id="tableSubtitle" class="text-sm text-forest-500">Only incidents inside the loaded barangay boundary are displayed on the map canvas</p>
           </div>
+          <div id="unmappedSummaryBadge" class="hidden"></div>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -563,7 +564,9 @@
 
     function updateIncidentBoundaryStatuses() {
       incidents.forEach(item => {
-        item.isInsideBoundary = item.hasValidCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
+        const valid = item.hasValidCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
+        item.isInsideBoundary = valid;
+        item.isUnmapped = !valid;
       });
     }
 
@@ -591,6 +594,7 @@
           hasValidCoords: hasCoords,
           weight: WEIGHTS[r.priority] || 0.6,
           isInsideBoundary: false,
+          isUnmapped: true,
         };
       });
       updateIncidentBoundaryStatuses();
@@ -662,7 +666,7 @@
         const periodMatch = period === 'all' ? true : (period === 'month' ? (item.period === 'month' || item.period === 'week') : item.period === period);
         const categoryMatch = category === 'all' ? true : item.category === category;
         if (!periodMatch || !categoryMatch) return false;
-        if (onlyMapped) return item.isInsideBoundary;
+        if (onlyMapped) return !item.isUnmapped;
         return true;
       });
     }
@@ -680,7 +684,7 @@
 
       // Only plot points that strictly fall inside the boundary with valid coordinates
       const heatPoints = data
-        .filter(item => item.isInsideBoundary && item.lat != null && item.lng != null)
+        .filter(item => !item.isUnmapped && item.lat != null && item.lng != null)
         .map(item => [item.lat, item.lng, item.weight]);
 
       heatLayer = L.heatLayer(heatPoints, {
@@ -703,7 +707,7 @@
       if (!showMarkers.checked) return;
 
       // Only render markers for authentic verified coordinates within the barangay boundary
-      data.filter(item => item.isInsideBoundary && item.lat != null && item.lng != null).forEach(item => {
+      data.filter(item => !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
         const marker = L.circleMarker([item.lat, item.lng], {
           radius: 6,
           color: '#ffffff',
@@ -761,9 +765,9 @@
 
     function focusIncidentOnMap(id) {
       const item = incidents.find(r => r.id === id);
-      if (!item || !item.isInsideBoundary || item.lat == null || item.lng == null) {
+      if (!item || item.isUnmapped || item.lat == null || item.lng == null) {
         if (typeof showToast === 'function') {
-          showToast('Incident location is unmapped or outside the barangay boundary.', 'warning');
+          showToast('Cannot locate on map: location is outside barangay boundary or unmapped.', 'warning');
         }
         return;
       }
@@ -837,6 +841,28 @@
     function renderTable(allFilteredData) {
       incidentTableBody.innerHTML = '';
 
+      const unmappedCount = allFilteredData.filter(i => i.isUnmapped).length;
+      const mappedCount = allFilteredData.filter(i => !i.isUnmapped).length;
+
+      const subtitleEl = document.getElementById('tableSubtitle');
+      if (subtitleEl) {
+        if (unmappedCount > 0) {
+          subtitleEl.innerHTML = `Only incidents inside the loaded barangay boundary are displayed on the map canvas (<strong class="text-amber-700 font-semibold">${unmappedCount} unmapped record${unmappedCount > 1 ? 's' : ''}</strong> excluded from map view).`;
+        } else {
+          subtitleEl.textContent = `All ${mappedCount} filtered incidents are mapped within the loaded barangay boundary.`;
+        }
+      }
+
+      const unmappedBadge = document.getElementById('unmappedSummaryBadge');
+      if (unmappedBadge) {
+        if (unmappedCount > 0) {
+          unmappedBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+          unmappedBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> ${unmappedCount} Unmapped / Outside Boundary`;
+        } else {
+          unmappedBadge.className = 'hidden';
+        }
+      }
+
       if (!allFilteredData.length) {
         incidentTableBody.innerHTML = `
           <tr>
@@ -853,13 +879,13 @@
           tr.classList.add('active-incident-row');
         }
 
-        const coordsContent = item.isInsideBoundary && item.lat != null && item.lng != null
+        const coordsContent = !item.isUnmapped && item.lat != null && item.lng != null
           ? `<td class="font-mono text-xs">${item.lat.toFixed(5)}</td><td class="font-mono text-xs">${item.lng.toFixed(5)}</td>`
           : `<td colspan="2" class="text-xs text-amber-700"><span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 border border-amber-200 font-medium">Unmapped / Outside Boundary</span></td>`;
 
-        const actionBtn = item.isInsideBoundary && item.lat != null && item.lng != null
+        const actionBtn = !item.isUnmapped && item.lat != null && item.lng != null
           ? `<button onclick="focusIncidentOnMap(${item.id})" class="icon-btn" title="View on Map"><span data-icon="view" data-icon-size="16"></span></button>`
-          : `<button disabled class="icon-btn opacity-30 cursor-not-allowed" title="Cannot view on map: Coordinates are outside barangay boundary"><span data-icon="view" data-icon-size="16"></span></button>`;
+          : `<button disabled class="icon-btn opacity-30 cursor-not-allowed text-gray-400" title="Cannot locate on map: location is outside barangay boundary or unmapped"><span data-icon="view" data-icon-size="16"></span></button>`;
 
         tr.innerHTML = `
           <td class="font-semibold text-forest-700">#${item.id}</td>
