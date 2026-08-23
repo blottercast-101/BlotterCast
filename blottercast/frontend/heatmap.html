@@ -525,12 +525,20 @@
               <span class="popup-val">${item.date}</span>
             </div>
             <div class="popup-row">
-              <span class="popup-label">Location:</span>
+              <span class="popup-label">Zone:</span>
+              <span class="popup-val font-semibold text-forest-700">${item.zone}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Location Detail:</span>
+              <span class="popup-val">${item.locationDetail || '—'}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Full Location:</span>
               <span class="popup-val">${item.location}</span>
             </div>
             <div class="popup-row">
               <span class="popup-label">Coordinates:</span>
-              <span class="popup-val font-mono">${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</span>
+              <span class="popup-val font-mono">${item.lat != null ? item.lat.toFixed(5) : '—'}, ${item.lng != null ? item.lng.toFixed(5) : '—'}</span>
             </div>
             <div class="popup-row popup-weight-row">
               <span class="popup-label">Incident Weight:</span>
@@ -541,24 +549,51 @@
       `;
     }
 
+    // Point-in-Polygon Boundary Validator using Turf.js
+    function isPointInsideBarangayBoundary(lat, lng) {
+      if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return false;
+      if (!boundaryGeojson) return true; // before boundary finishes loading
+      try {
+        const point = turf.point([lng, lat]);
+        return turf.booleanPointInPolygon(point, boundaryGeojson);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateIncidentBoundaryStatuses() {
+      incidents.forEach(item => {
+        item.isInsideBoundary = item.hasValidCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
+      });
+    }
+
     async function loadIncidents() {
       await requireAuth();
       const raw = await BCApi.heatmap();
       const now = new Date(); now.setHours(0, 0, 0, 0);
       const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
       const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
-      incidents = raw
-        .filter(r => r.lat != null && r.lng != null)
-        .map(r => {
-          const d = new Date(r.incident_date + 'T00:00:00');
-          return {
-            id: r.id, date: r.incident_date,
-            period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
-            category: r.category, location: bcFormatIncidentLocation(r.zone_id, r.location),
-            lat: parseFloat(r.lat), lng: parseFloat(r.lng),
-            weight: WEIGHTS[r.priority] || 0.6,
-          };
-        });
+      incidents = raw.map(r => {
+        const hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng));
+        const lat = hasCoords ? parseFloat(r.lat) : null;
+        const lng = hasCoords ? parseFloat(r.lng) : null;
+        const d = new Date(r.incident_date + 'T00:00:00');
+        return {
+          id: r.id,
+          date: r.incident_date,
+          period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
+          category: r.category,
+          zone: r.zone_id || 'Zone 1',
+          locationDetail: r.location || '',
+          location: bcFormatIncidentLocation(r.zone_id, r.location),
+          lat,
+          lng,
+          hasValidCoords: hasCoords,
+          weight: WEIGHTS[r.priority] || 0.6,
+          isInsideBoundary: false,
+        };
+      });
+      updateIncidentBoundaryStatuses();
     }
 
     const map = L.map('map', {
@@ -566,13 +601,6 @@
       preferCanvas: true
     }).setView(MAP_CENTER, 16);
 
-    // The map is initialized while cdn.tailwindcss.com may still be
-    // injecting the grid/column classes that determine this card's final
-    // width, so Leaflet can compute its internal size from a stale
-    // (usually too-wide) container box. That desync is what causes the
-    // heat layer / tiles / controls to render outside the map card and
-    // overlap the header or the side rail. Force Leaflet to remeasure
-    // once the real layout has settled, and again on any resize.
     setTimeout(() => map.invalidateSize(), 250);
     window.addEventListener('load', () => map.invalidateSize());
     window.addEventListener('resize', () => map.invalidateSize());
@@ -620,30 +648,23 @@
 
         map.invalidateSize();
         map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+        updateIncidentBoundaryStatuses();
       } catch (err) {
         console.error('Boundary file error:', err);
       }
     }
 
-    function getFilteredIncidents() {
+    function getFilteredIncidents(onlyMapped = false) {
       const period = periodFilter.value;
       const category = categoryFilter.value;
 
-      let filtered = incidents.filter(item => {
+      return incidents.filter(item => {
         const periodMatch = period === 'all' ? true : (period === 'month' ? (item.period === 'month' || item.period === 'week') : item.period === period);
         const categoryMatch = category === 'all' ? true : item.category === category;
-        return periodMatch && categoryMatch;
+        if (!periodMatch || !categoryMatch) return false;
+        if (onlyMapped) return item.isInsideBoundary;
+        return true;
       });
-
-      // Only keep points inside the loaded boundary
-      if (boundaryGeojson) {
-        filtered = filtered.filter(item => {
-          const point = turf.point([item.lng, item.lat]);
-          return turf.booleanPointInPolygon(point, boundaryGeojson);
-        });
-      }
-
-      return filtered;
     }
 
     function getCategoryCounts(data) {
@@ -657,7 +678,10 @@
     function renderHeatMap(data) {
       if (heatLayer) map.removeLayer(heatLayer);
 
-      const heatPoints = data.map(item => [item.lat, item.lng, item.weight]);
+      // Only plot points that strictly fall inside the boundary with valid coordinates
+      const heatPoints = data
+        .filter(item => item.isInsideBoundary && item.lat != null && item.lng != null)
+        .map(item => [item.lat, item.lng, item.weight]);
 
       heatLayer = L.heatLayer(heatPoints, {
         radius: 30,
@@ -678,7 +702,8 @@
       markerMap.clear();
       if (!showMarkers.checked) return;
 
-      data.forEach(item => {
+      // Only render markers for authentic verified coordinates within the barangay boundary
+      data.filter(item => item.isInsideBoundary && item.lat != null && item.lng != null).forEach(item => {
         const marker = L.circleMarker([item.lat, item.lng], {
           radius: 6,
           color: '#ffffff',
@@ -736,12 +761,17 @@
 
     function focusIncidentOnMap(id) {
       const item = incidents.find(r => r.id === id);
-      if (!item) return;
+      if (!item || !item.isInsideBoundary || item.lat == null || item.lng == null) {
+        if (typeof showToast === 'function') {
+          showToast('Incident location is unmapped or outside the barangay boundary.', 'warning');
+        }
+        return;
+      }
 
       // 1. Ensure markers layer is active/visible
       if (!showMarkers.checked) {
         showMarkers.checked = true;
-        renderMarkers(getFilteredIncidents());
+        renderMarkers(getFilteredIncidents(true));
       }
 
       // 2. Smoothly scroll viewport up to the map canvas if needed
@@ -756,10 +786,10 @@
       // 3. Highlight the table row
       highlightTableRow(item.id);
 
-      // 4. Highlight & pulse map marker
+      // 4. Highlight & pulse map marker at exact coordinates
       triggerMarkerPulse(item.lat, item.lng);
 
-      // 5. Smooth fly & zoom to the incident coordinate
+      // 5. Smooth fly & zoom to the exact incident coordinate
       map.flyTo([item.lat, item.lng], 18, { duration: 1.2 });
 
       // 6. Auto-open popup on that marker
@@ -772,17 +802,17 @@
       }
     }
 
-    function renderSummary(data) {
-      totalVisible.textContent = data.length;
+    function renderSummary(mappedData) {
+      totalVisible.textContent = mappedData.length;
 
-      const counts = getCategoryCounts(data);
+      const counts = getCategoryCounts(mappedData);
       const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
       topCategory.textContent = entries.length ? `${entries[0][0]} (${entries[0][1]})` : 'No data';
 
       categoryList.innerHTML = '';
 
       if (!entries.length) {
-        categoryList.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters.</p>';
+        categoryList.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters within the boundary.</p>';
         return;
       }
 
@@ -804,36 +834,42 @@
       });
     }
 
-    function renderTable(data) {
+    function renderTable(allFilteredData) {
       incidentTableBody.innerHTML = '';
 
-      if (!data.length) {
+      if (!allFilteredData.length) {
         incidentTableBody.innerHTML = `
           <tr>
-            <td colspan="8">No incident data for the selected filter or inside the current boundary.</td>
+            <td colspan="8" class="text-center py-6 text-forest-400 text-sm">No incident data matching the selected filter.</td>
           </tr>
         `;
         return;
       }
 
-      data.forEach(item => {
+      allFilteredData.forEach(item => {
         const tr = document.createElement('tr');
         tr.id = `incident-row-${item.id}`;
         if (activeRowId === item.id) {
           tr.classList.add('active-incident-row');
         }
+
+        const coordsContent = item.isInsideBoundary && item.lat != null && item.lng != null
+          ? `<td class="font-mono text-xs">${item.lat.toFixed(5)}</td><td class="font-mono text-xs">${item.lng.toFixed(5)}</td>`
+          : `<td colspan="2" class="text-xs text-amber-700"><span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 border border-amber-200 font-medium">Unmapped / Outside Boundary</span></td>`;
+
+        const actionBtn = item.isInsideBoundary && item.lat != null && item.lng != null
+          ? `<button onclick="focusIncidentOnMap(${item.id})" class="icon-btn" title="View on Map"><span data-icon="view" data-icon-size="16"></span></button>`
+          : `<button disabled class="icon-btn opacity-30 cursor-not-allowed" title="Cannot view on map: Coordinates are outside barangay boundary"><span data-icon="view" data-icon-size="16"></span></button>`;
+
         tr.innerHTML = `
           <td class="font-semibold text-forest-700">#${item.id}</td>
           <td>${item.date}</td>
           <td>${getCategoryBadge(item.category)}</td>
           <td>${item.location}</td>
-          <td class="font-mono text-xs">${item.lat.toFixed(4)}</td>
-          <td class="font-mono text-xs">${item.lng.toFixed(4)}</td>
+          ${coordsContent}
           <td><span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forest-50 text-forest-700 border border-forest-100">${item.weight.toFixed(2)}</span></td>
           <td class="text-center w-24">
-            <button onclick="focusIncidentOnMap(${item.id})" class="icon-btn" title="View on Map">
-              <span data-icon="view" data-icon-size="16"></span>
-            </button>
+            ${actionBtn}
           </td>
         `;
         incidentTableBody.appendChild(tr);
@@ -841,11 +877,12 @@
     }
 
     function updateHeatMapPage() {
-      const filtered = getFilteredIncidents();
-      renderHeatMap(filtered);
-      renderMarkers(filtered);
-      renderSummary(filtered);
-      renderTable(filtered);
+      const mappedOnly = getFilteredIncidents(true);
+      const allFiltered = getFilteredIncidents(false);
+      renderHeatMap(mappedOnly);
+      renderMarkers(mappedOnly);
+      renderSummary(mappedOnly);
+      renderTable(allFiltered);
     }
 
     periodFilter.addEventListener('change', updateHeatMapPage);

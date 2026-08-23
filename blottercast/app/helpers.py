@@ -58,11 +58,11 @@ def next_or_no() -> str:
 
 
 def zone_coords(zone_id: str):
+    """Returns the exact geographic coordinates tied to the specified zone."""
     zone = Zone.query.get(zone_id)
     if not zone:
         return 14.883, 120.965  # barangay centroid fallback
-    jitter = lambda: (random.random() - 0.5) * 0.0011
-    return round(float(zone.lat) + jitter(), 6), round(float(zone.lng) + jitter(), 6)
+    return round(float(zone.lat), 6), round(float(zone.lng), 6)
 
 
 def compute_age(dob) -> int | None:
