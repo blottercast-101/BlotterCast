@@ -339,13 +339,14 @@
           tbody.innerHTML = '<tr><td colspan="4">No blotter entries yet.</td></tr>';
         }
         stats.recentBlotter.forEach(r => {
+          const dNo = r.docket_no || r.docketNo || '';
           const statusClass = r.status === 'Resolved' ? 'badge-resolved' : r.status === 'Ongoing' ? 'badge-ongoing' : 'badge-pending';
           tbody.innerHTML += `
-            <tr>
-              <td class="font-semibold text-forest-700">${r.docket_no}</td>
-              <td>${r.complainant}</td>
-              <td>${r.nature}</td>
-              <td><span class="badge ${statusClass}">${r.status}</span></td>
+            <tr class="hover:bg-forest-50/70 transition-colors cursor-pointer" onclick="window.location.href='blotter.html?highlight=${encodeURIComponent(dNo)}'" title="View and highlight in Blotter Records">
+              <td class="font-semibold text-forest-700">${dNo || '—'}</td>
+              <td>${r.complainant || '—'}</td>
+              <td>${r.nature || '—'}</td>
+              <td><span class="badge ${statusClass}">${r.status || 'Pending'}</span></td>
             </tr>`;
         });
       } catch (err) {

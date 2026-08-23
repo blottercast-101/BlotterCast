@@ -326,10 +326,11 @@
         return;
       }
       records.forEach(r => {
+        const dNo = r.docket_no || r.docketNo || '';
         const statusClass = r.status === 'Resolved' ? 'badge-resolved' : r.status === 'Ongoing' ? 'badge-ongoing' : 'badge-pending';
         tbody.innerHTML += `
-          <tr class="hover:bg-forest-50/40 transition-colors">
-            <td class="font-semibold text-forest-700">${r.docket_no || r.docketNo || '—'}</td>
+          <tr class="hover:bg-forest-50/70 transition-colors cursor-pointer" onclick="window.location.href='blotter.html?highlight=${encodeURIComponent(dNo)}'" title="View and highlight in Blotter Records">
+            <td class="font-semibold text-forest-700">${dNo || '—'}</td>
             <td>${r.complainant || '—'}</td>
             <td>${r.nature || '—'}</td>
             <td><span class="badge ${statusClass}">${r.status || 'Pending'}</span></td>
@@ -409,8 +410,8 @@
           matchedBlotters.forEach(b => {
             const dNo = b.docket_no || b.docketNo || 'BLT';
             html += `
-              <a href="blotter.html?search=${encodeURIComponent(dNo)}"
-                 class="block px-4 py-3 hover:bg-forest-50 transition-colors">
+              <a href="blotter.html?highlight=${encodeURIComponent(dNo)}"
+                 class="block px-4 py-3 hover:bg-forest-50 transition-colors cursor-pointer">
                 <div class="flex items-center justify-between gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-forest-100 text-forest-800">
                     <span data-icon="blotter" data-icon-size="12"></span> ${dNo}
@@ -426,8 +427,8 @@
             const rNo = inc.report_no || inc.reportNo || 'INC';
             const prioColor = inc.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
             html += `
-              <a href="incident.html?search=${encodeURIComponent(rNo)}"
-                 class="block px-4 py-3 hover:bg-forest-50 transition-colors">
+              <a href="incident.html?highlight=${encodeURIComponent(rNo)}"
+                 class="block px-4 py-3 hover:bg-forest-50 transition-colors cursor-pointer">
                 <div class="flex items-center justify-between gap-2 mb-1">
                   <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
                     <span data-icon="incident" data-icon-size="12"></span> ${rNo}

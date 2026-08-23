@@ -776,7 +776,7 @@ document.addEventListener('click', (e) => {
  */
 function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSelector } = {}) {
   const urlParams = new URLSearchParams(window.location.search);
-  const target = (urlParams.get('highlight') || urlParams.get('id') || '').trim();
+  const target = (urlParams.get('highlight') || urlParams.get('id') || urlParams.get('search') || '').trim();
   if (!target || !items || !items.length) return false;
 
   const targetLower = target.toLowerCase();
@@ -785,10 +785,14 @@ function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSel
     return (
       (item.id != null && String(item.id) === target) ||
       (item.reportNo && item.reportNo.toLowerCase() === targetLower) ||
+      (item.report_no && item.report_no.toLowerCase() === targetLower) ||
       (item.docketNo && item.docketNo.toLowerCase() === targetLower) ||
+      (item.docket_no && item.docket_no.toLowerCase() === targetLower) ||
       (item.caseNo && item.caseNo.toLowerCase() === targetLower) ||
+      (item.case_no && item.case_no.toLowerCase() === targetLower) ||
       (item.resNo && item.resNo.toLowerCase() === targetLower) ||
       (item.residentNo && item.residentNo.toLowerCase() === targetLower) ||
+      (item.resident_no && item.resident_no.toLowerCase() === targetLower) ||
       (item.username && item.username.toLowerCase() === targetLower)
     );
   });
@@ -832,6 +836,7 @@ function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSel
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('highlight');
       newUrl.searchParams.delete('id');
+      newUrl.searchParams.delete('search');
       window.history.replaceState({}, document.title, newUrl.pathname + (newUrl.searchParams.toString() ? '?' + newUrl.searchParams.toString() : ''));
     }
   }, 120);
