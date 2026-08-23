@@ -13,7 +13,11 @@ r = client.post("/api/documents.php?type=census", json={
     "lastName": "Cruz", "firstName": "Juan", "dob": "1990-05-01", "sex": "Male",
     "address": "123 Rizal St", "householdNo": "HH-01",
 })
-resident_id = r.get_json()["id"]
+if r.status_code == 201:
+    resident_id = r.get_json()["id"]
+else:
+    clist = client.get("/api/documents.php?type=census").get_json()
+    resident_id = clist[0]["id"]
 
 for i in range(3):
     client.post("/api/records.php?type=incidents", json={
@@ -26,7 +30,11 @@ r = client.post("/api/records.php?type=blotter", json={
     "complainant": "Juan Cruz", "complainantId": resident_id,
     "respondent": "Pedro Reyes", "nature": "Noise complaint", "type": "CIVIL",
 })
-blotter_id = r.get_json()["id"]
+if r.status_code == 201:
+    blotter_id = r.get_json()["id"]
+else:
+    blist = client.get("/api/records.php?type=blotter").get_json()
+    blotter_id = blist[0]["id"]
 
 r = client.post("/api/records.php?type=settlements", json={"blotterId": blotter_id, "status": "Pending"})
 print("create settlement:", r.status_code)

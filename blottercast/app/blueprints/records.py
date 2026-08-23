@@ -121,7 +121,7 @@ def _incidents():
             title=f"New Incident Report Filed: {incident.report_no}",
             body=f"[ADD] Case ID: {incident.report_no} • {incident.category} at {incident.location} ({incident.zone_id}) • Actor: {actor} • {ts}",
             severity="critical" if incident.priority == "High" else "info",
-            link="incident.html",
+            link=f"incident.html?highlight={incident.report_no}",
             ref_table="incidents",
             ref_id=incident.id,
         ))
@@ -170,7 +170,7 @@ def _incidents():
             title=f"Incident Report Updated: {incident.report_no}",
             body=f"[EDIT] Case ID: {incident.report_no} • Status: {incident.status} • Actor: {actor} • {ts}",
             severity="warning" if incident.priority == "High" else "info",
-            link="incident.html",
+            link=f"incident.html?highlight={incident.report_no}",
             ref_table="incidents",
             ref_id=incident.id,
         ))

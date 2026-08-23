@@ -313,6 +313,12 @@
     }
     updateStlSummary();
     renderSettlements();
+    bcCheckUrlHighlight({
+      items: settlementData,
+      pageSize: STL_ROWS,
+      setPage: (p) => { stlPage = p; },
+      render: renderSettlements
+    });
   }
 
   async function toggleArchivedView() {
@@ -445,7 +451,7 @@
     tbody.innerHTML = page.length === 0
       ? `<tr><td colspan="8" class="text-center py-10 text-forest-400">No settlement records found.</td></tr>`
       : page.map(r => `
-        <tr>
+        <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}">
           <td class="font-semibold text-forest-700">${r.caseNo}</td>
           <td class="font-medium text-sm">${r.caseTitle||''}</td>
           <td class="text-sm">${r.complaintTitle||''}</td>

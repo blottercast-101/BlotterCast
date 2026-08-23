@@ -286,6 +286,12 @@ async function loadUsers(silent = false) {
     const raw = await BCApi.users();
     usersData = raw.map(mapUser);
     renderUsers();
+    bcCheckUrlHighlight({
+      items: usersData,
+      pageSize: USERS_ROWS,
+      setPage: (p) => { usersPage = p; },
+      render: renderUsers
+    });
   } catch (err) {
     if (!silent) showToast('Could not load users: ' + err.message, 'error');
   }
@@ -334,7 +340,7 @@ function renderUsers() {
         : `<span class="badge badge-closed text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>INACTIVE</span>`;
 
       return `
-    <tr>
+    <tr data-id="${u.id}" data-key="${u.username}">
       <td>
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs">${initials(u.name)}</div>

@@ -15,6 +15,17 @@ class Zone(db.Model):
     lng = db.Column(db.Numeric(9, 6), nullable=False)
     weight = db.Column(db.Numeric(4, 3), nullable=False)
 
+    def __init__(self, zone_id=None, label="", lat=0.0, lng=0.0, weight=1.0, **kwargs):
+        super().__init__()
+        if zone_id is not None:
+            self.zone_id = zone_id
+        self.label = label
+        self.lat = lat
+        self.lng = lng
+        self.weight = weight
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 class User(db.Model):
     __tablename__ = "users"
@@ -170,6 +181,16 @@ class SystemSetting(db.Model):
     setting_value = db.Column(db.Text, nullable=False)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
+    def __init__(self, setting_key=None, setting_value="", updated_at=None, **kwargs):
+        super().__init__()
+        if setting_key is not None:
+            self.setting_key = setting_key
+        self.setting_value = setting_value
+        if updated_at is not None:
+            self.updated_at = updated_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 class Incident(db.Model):
     __tablename__ = "incidents"
@@ -188,20 +209,71 @@ class Incident(db.Model):
     officer = db.Column(db.String(100))
     priority = db.Column(db.String(10), nullable=False, default="Medium")
     status = db.Column(db.String(30), nullable=False, default="Under Investigation")
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    def __init__(
+        self,
+        report_no=None,
+        incident_date=None,
+        time_reported=None,
+        hour=0,
+        zone_id="Zone 1",
+        location="",
+        lat=None,
+        lng=None,
+        category="Other",
+        description="",
+        reporter="",
+        officer="",
+        priority="Medium",
+        status="Under Investigation",
+        archived=False,
+        created_at=None,
+        updated_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if report_no is not None:
+            self.report_no = report_no
+        if incident_date is not None:
+            self.incident_date = incident_date
+        if time_reported is not None:
+            self.time_reported = time_reported
+        self.hour = hour
+        self.zone_id = zone_id
+        self.location = location
+        if lat is not None:
+            self.lat = lat
+        if lng is not None:
+            self.lng = lng
+        self.category = category
+        self.description = description
+        self.reporter = reporter
+        self.officer = officer
+        self.priority = priority
+        self.status = status
+        self.archived = archived
+        if created_at is not None:
+            self.created_at = created_at
+        if updated_at is not None:
+            self.updated_at = updated_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         return {
             "id": self.id, "report_no": self.report_no,
-            "incident_date": self.incident_date.isoformat() if self.incident_date else None,
-            "time_reported": self.time_reported.isoformat() if self.time_reported else None,
+            "incident_date": self.incident_date.isoformat() if hasattr(self.incident_date, "isoformat") else (str(self.incident_date) if self.incident_date else None),
+            "time_reported": self.time_reported.isoformat() if hasattr(self.time_reported, "isoformat") else (str(self.time_reported) if self.time_reported else None),
             "hour": self.hour, "zone_id": self.zone_id, "location": self.location,
             "lat": float(self.lat) if self.lat is not None else None,
             "lng": float(self.lng) if self.lng is not None else None,
             "category": self.category, "description": self.description,
             "reporter": self.reporter, "officer": self.officer,
             "priority": self.priority, "status": self.status,
+            "archived": bool(self.archived),
         }
 
 
@@ -224,16 +296,61 @@ class BlotterRecord(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
+    def __init__(
+        self,
+        docket_no=None,
+        date_filed=None,
+        complainant="",
+        complainant_id=None,
+        complainant_addr="",
+        respondent="",
+        respondent_id=None,
+        respondent_addr="",
+        nature="",
+        case_type="CRIM",
+        status="Pending",
+        zone_id=None,
+        archived=False,
+        created_at=None,
+        updated_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if docket_no is not None:
+            self.docket_no = docket_no
+        if date_filed is not None:
+            self.date_filed = date_filed
+        self.complainant = complainant
+        if complainant_id is not None:
+            self.complainant_id = complainant_id
+        self.complainant_addr = complainant_addr
+        self.respondent = respondent
+        if respondent_id is not None:
+            self.respondent_id = respondent_id
+        self.respondent_addr = respondent_addr
+        self.nature = nature
+        self.case_type = case_type
+        self.status = status
+        if zone_id is not None:
+            self.zone_id = zone_id
+        self.archived = archived
+        if created_at is not None:
+            self.created_at = created_at
+        if updated_at is not None:
+            self.updated_at = updated_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def to_dict(self):
         return {
             "id": self.id, "docket_no": self.docket_no,
-            "date_filed": self.date_filed.isoformat() if self.date_filed else None,
+            "date_filed": self.date_filed.isoformat() if hasattr(self.date_filed, "isoformat") else (str(self.date_filed) if self.date_filed else None),
             "complainant": self.complainant, "complainant_id": self.complainant_id,
             "complainant_addr": self.complainant_addr,
             "respondent": self.respondent, "respondent_id": self.respondent_id,
             "respondent_addr": self.respondent_addr, "nature": self.nature,
             "case_type": self.case_type, "status": self.status, "zone_id": self.zone_id,
-            "archived": self.archived,
+            "archived": bool(self.archived),
         }
 
 
@@ -253,10 +370,59 @@ class Settlement(db.Model):
     main_point = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default="Pending")
     remarks = db.Column(db.String(255))
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
     blotter = db.relationship("BlotterRecord")
+
+    def __init__(
+        self,
+        blotter_id=None,
+        case_no=None,
+        case_title="",
+        complaint_title="",
+        nature="Civil",
+        date_filed=None,
+        date_confrontation=None,
+        action_taken="",
+        date_settlement=None,
+        date_execution=None,
+        main_point="",
+        status="Pending",
+        remarks="",
+        archived=False,
+        created_at=None,
+        updated_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if blotter_id is not None:
+            self.blotter_id = blotter_id
+        if case_no is not None:
+            self.case_no = case_no
+        self.case_title = case_title
+        self.complaint_title = complaint_title
+        self.nature = nature
+        if date_filed is not None:
+            self.date_filed = date_filed
+        if date_confrontation is not None:
+            self.date_confrontation = date_confrontation
+        self.action_taken = action_taken
+        if date_settlement is not None:
+            self.date_settlement = date_settlement
+        if date_execution is not None:
+            self.date_execution = date_execution
+        self.main_point = main_point
+        self.status = status
+        self.remarks = remarks
+        self.archived = archived
+        if created_at is not None:
+            self.created_at = created_at
+        if updated_at is not None:
+            self.updated_at = updated_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         b = self.blotter
@@ -264,11 +430,11 @@ class Settlement(db.Model):
             "id": self.id, "blotter_id": self.blotter_id, "case_no": self.case_no,
             "case_title": self.case_title, "complaint_title": self.complaint_title,
             "nature": self.nature,
-            "date_filed": self.date_filed.isoformat() if self.date_filed else None,
-            "date_confrontation": self.date_confrontation.isoformat() if self.date_confrontation else None,
+            "date_filed": self.date_filed.isoformat() if hasattr(self.date_filed, "isoformat") else (str(self.date_filed) if self.date_filed else None),
+            "date_confrontation": self.date_confrontation.isoformat() if hasattr(self.date_confrontation, "isoformat") else (str(self.date_confrontation) if self.date_confrontation else None),
             "action_taken": self.action_taken,
-            "date_settlement": self.date_settlement.isoformat() if self.date_settlement else None,
-            "date_execution": self.date_execution.isoformat() if self.date_execution else None,
+            "date_settlement": self.date_settlement.isoformat() if hasattr(self.date_settlement, "isoformat") else (str(self.date_settlement) if self.date_settlement else None),
+            "date_execution": self.date_execution.isoformat() if hasattr(self.date_execution, "isoformat") else (str(self.date_execution) if self.date_execution else None),
             "main_point": self.main_point, "status": self.status, "remarks": self.remarks,
             "blotter_docket_no": b.docket_no if b else None,
             "complainant": b.complainant if b else None,
@@ -276,6 +442,7 @@ class Settlement(db.Model):
             "respondent": b.respondent if b else None,
             "respondent_addr": b.respondent_addr if b else None,
             "blotter_case_type": b.case_type if b else None,
+            "archived": bool(self.archived),
         }
 
 
@@ -297,19 +464,70 @@ class CensusRecord(db.Model):
     voter_status = db.Column(db.String(30), nullable=False, default="Not Registered")
     occupation = db.Column(db.String(100))
     status = db.Column(db.String(20), nullable=False, default="Active")
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    def __init__(
+        self,
+        resident_no=None,
+        last_name="",
+        first_name="",
+        middle_name="",
+        date_of_birth=None,
+        sex="Male",
+        civil_status="Single",
+        nationality="Filipino",
+        zone_id=None,
+        address="",
+        household_no="",
+        contact_no="",
+        voter_status="Not Registered",
+        occupation="",
+        status="Active",
+        archived=False,
+        created_at=None,
+        updated_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if resident_no is not None:
+            self.resident_no = resident_no
+        self.last_name = last_name
+        self.first_name = first_name
+        self.middle_name = middle_name
+        if date_of_birth is not None:
+            self.date_of_birth = date_of_birth
+        self.sex = sex
+        self.civil_status = civil_status
+        self.nationality = nationality
+        if zone_id is not None:
+            self.zone_id = zone_id
+        self.address = address
+        self.household_no = household_no
+        self.contact_no = contact_no
+        self.voter_status = voter_status
+        self.occupation = occupation
+        self.status = status
+        self.archived = archived
+        if created_at is not None:
+            self.created_at = created_at
+        if updated_at is not None:
+            self.updated_at = updated_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         return {
             "id": self.id, "resident_no": self.resident_no,
             "last_name": self.last_name, "first_name": self.first_name,
             "middle_name": self.middle_name,
-            "date_of_birth": self.date_of_birth.isoformat() if self.date_of_birth else None,
+            "date_of_birth": self.date_of_birth.isoformat() if hasattr(self.date_of_birth, "isoformat") else (str(self.date_of_birth) if self.date_of_birth else None),
             "sex": self.sex, "civil_status": self.civil_status, "nationality": self.nationality,
             "zone_id": self.zone_id, "address": self.address, "household_no": self.household_no,
             "contact_no": self.contact_no, "voter_status": self.voter_status,
             "occupation": self.occupation, "status": self.status,
+            "archived": bool(self.archived),
         }
 
 
@@ -331,6 +549,45 @@ class BarangayClearance(db.Model):
     created_at = db.Column(db.DateTime, default=now)
 
     resident = db.relationship("CensusRecord")
+
+    def __init__(
+        self,
+        resident_id=None,
+        ctrl_no=None,
+        full_name="",
+        age=None,
+        civil_status="Single",
+        address="",
+        voter_status="Not Registered",
+        purpose="",
+        or_no="",
+        fee=20.00,
+        date_issued=None,
+        issued_by="",
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if resident_id is not None:
+            self.resident_id = resident_id
+        if ctrl_no is not None:
+            self.ctrl_no = ctrl_no
+        self.full_name = full_name
+        if age is not None:
+            self.age = age
+        self.civil_status = civil_status
+        self.address = address
+        self.voter_status = voter_status
+        self.purpose = purpose
+        self.or_no = or_no
+        self.fee = fee
+        if date_issued is not None:
+            self.date_issued = date_issued
+        self.issued_by = issued_by
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         r = self.resident
@@ -367,6 +624,48 @@ class BarangayResidency(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(
+        self,
+        resident_id=None,
+        ctrl_no=None,
+        full_name="",
+        age=None,
+        civil_status="Single",
+        address="",
+        years_residency=None,
+        duration_unit="years",
+        purpose="",
+        or_no="",
+        fee=20.00,
+        date_issued=None,
+        issued_by="",
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if resident_id is not None:
+            self.resident_id = resident_id
+        if ctrl_no is not None:
+            self.ctrl_no = ctrl_no
+        self.full_name = full_name
+        if age is not None:
+            self.age = age
+        self.civil_status = civil_status
+        self.address = address
+        if years_residency is not None:
+            self.years_residency = years_residency
+        self.duration_unit = duration_unit
+        self.purpose = purpose
+        self.or_no = or_no
+        self.fee = fee
+        if date_issued is not None:
+            self.date_issued = date_issued
+        self.issued_by = issued_by
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -400,6 +699,38 @@ class BarangayNonResidency(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(
+        self,
+        resident_id=None,
+        ctrl_no=None,
+        full_name="",
+        previous_address="",
+        purpose="",
+        or_no="",
+        fee=20.00,
+        date_issued=None,
+        issued_by="",
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if resident_id is not None:
+            self.resident_id = resident_id
+        if ctrl_no is not None:
+            self.ctrl_no = ctrl_no
+        self.full_name = full_name
+        self.previous_address = previous_address
+        self.purpose = purpose
+        self.or_no = or_no
+        self.fee = fee
+        if date_issued is not None:
+            self.date_issued = date_issued
+        self.issued_by = issued_by
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -432,6 +763,39 @@ class IndigencyCertificate(db.Model):
 
     resident = db.relationship("CensusRecord")
 
+    def __init__(
+        self,
+        resident_id=None,
+        ctrl_no=None,
+        full_name="",
+        age=None,
+        civil_status="Single",
+        address="",
+        purpose="",
+        date_issued=None,
+        issued_by="",
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        if resident_id is not None:
+            self.resident_id = resident_id
+        if ctrl_no is not None:
+            self.ctrl_no = ctrl_no
+        self.full_name = full_name
+        if age is not None:
+            self.age = age
+        self.civil_status = civil_status
+        self.address = address
+        self.purpose = purpose
+        if date_issued is not None:
+            self.date_issued = date_issued
+        self.issued_by = issued_by
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def to_dict(self):
         r = self.resident
         return {
@@ -459,6 +823,33 @@ class MlRun(db.Model):
     hotspot_metrics_json = db.Column(db.Text, nullable=False)
     hotspots_json = db.Column(db.Text, nullable=False)
 
+    def __init__(
+        self,
+        record_count=0,
+        active_occurrence_model="random_forest",
+        active_type_model="gradient_boosting",
+        active_hotspot_model="random_forest",
+        occurrence_metrics_json="{}",
+        type_metrics_json="{}",
+        hotspot_metrics_json="{}",
+        hotspots_json="[]",
+        trained_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        self.record_count = record_count
+        self.active_occurrence_model = active_occurrence_model
+        self.active_type_model = active_type_model
+        self.active_hotspot_model = active_hotspot_model
+        self.occurrence_metrics_json = occurrence_metrics_json
+        self.type_metrics_json = type_metrics_json
+        self.hotspot_metrics_json = hotspot_metrics_json
+        self.hotspots_json = hotspots_json
+        if trained_at is not None:
+            self.trained_at = trained_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 class SystemBackup(db.Model):
     __tablename__ = "backups"
@@ -468,6 +859,17 @@ class SystemBackup(db.Model):
     status = db.Column(db.String(20), nullable=False, default="Success")
     created_by = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, file_name="", size_bytes=0, status="Success", created_by="", created_at=None, **kwargs):
+        super().__init__()
+        self.file_name = file_name
+        self.size_bytes = size_bytes
+        self.status = status
+        self.created_by = created_by
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class GeneratedReport(db.Model):
@@ -480,6 +882,31 @@ class GeneratedReport(db.Model):
     format = db.Column(db.String(10), nullable=False, default="PDF")
     file_path = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=now)
+
+    def __init__(
+        self,
+        report_type="",
+        generated_by="",
+        period_from=None,
+        period_to=None,
+        format="PDF",
+        file_path="",
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        self.report_type = report_type
+        self.generated_by = generated_by
+        if period_from is not None:
+            self.period_from = period_from
+        if period_to is not None:
+            self.period_to = period_to
+        self.format = format
+        self.file_path = file_path
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 class Notification(db.Model):
@@ -494,9 +921,48 @@ class Notification(db.Model):
     ref_id = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
+    def __init__(
+        self,
+        type="info",
+        title="",
+        body="",
+        severity="info",
+        link=None,
+        ref_table=None,
+        ref_id=None,
+        created_at=None,
+        **kwargs
+    ):
+        super().__init__()
+        self.type = type
+        self.title = title
+        self.body = body
+        self.severity = severity
+        if link is not None:
+            self.link = link
+        if ref_table is not None:
+            self.ref_table = ref_table
+        if ref_id is not None:
+            self.ref_id = ref_id
+        if created_at is not None:
+            self.created_at = created_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 class NotificationRead(db.Model):
     __tablename__ = "notification_reads"
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     notification_id = db.Column(db.Integer, db.ForeignKey("notifications.id", ondelete="CASCADE"), primary_key=True)
     read_at = db.Column(db.DateTime, default=now)
+
+    def __init__(self, user_id=None, notification_id=None, read_at=None, **kwargs):
+        super().__init__()
+        if user_id is not None:
+            self.user_id = user_id
+        if notification_id is not None:
+            self.notification_id = notification_id
+        if read_at is not None:
+            self.read_at = read_at
+        for k, v in kwargs.items():
+            setattr(self, k, v)

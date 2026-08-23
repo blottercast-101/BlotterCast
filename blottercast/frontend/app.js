@@ -657,6 +657,44 @@ setInterval(() => {
   if (!document.hidden) refreshNotifBadge();
 }, 30000);
 
+function resolveNotifLink(n) {
+  let link = n.link || '#';
+  if (link !== '#') {
+    if (link.includes('highlight=') || link.includes('?id=')) return link;
+  }
+  
+  // Extract key code (e.g. INC-2026-0064, BLT-2026-0012, STL-2026-0001, etc.) from title/body
+  const codeMatch = (n.title + ' ' + (n.body || '')).match(/(INC-\d{4}-\d{2,6}|BLT-\d{4}-\d{2,6}|STL-\d{4}-\d{2,6}|RES-\d{4}-\d{2,6})/i);
+  const code = codeMatch ? codeMatch[1] : (n.ref_id || '');
+
+  if (link === '#' || !link) {
+    if (n.ref_table === 'incidents' || (n.type && n.type.includes('incident'))) link = 'incident.html';
+    else if (n.ref_table === 'blotter' || (n.type && n.type.includes('blotter'))) link = 'blotter.html';
+    else if (n.ref_table === 'settlements' || (n.type && n.type.includes('settlement'))) link = 'settlement.html';
+    else if (n.type && n.type.includes('heatmap')) link = 'heatmap.html';
+    else if (n.type && (n.type.includes('predict') || n.type.includes('risk'))) link = 'predictions.html';
+    else if (n.type && n.type.includes('trend')) link = 'trends.html';
+    else link = 'dashboard.html';
+  }
+
+  if (code && !link.includes('highlight=')) {
+    const sep = link.includes('?') ? '&' : '?';
+    link = `${link}${sep}highlight=${encodeURIComponent(code)}`;
+  }
+  return link;
+}
+
+async function handleNotifClick(e, id, targetUrl) {
+  e.preventDefault();
+  try {
+    await BCApi.notifMarkRead(id);
+    refreshNotifBadge();
+  } catch (err) {}
+  if (targetUrl && targetUrl !== '#') {
+    window.location.href = targetUrl;
+  }
+}
+
 async function toggleNotifPanel() {
   const panel = document.getElementById('notifPanel');
   if (!panel) return;
@@ -673,8 +711,9 @@ async function toggleNotifPanel() {
     } else {
       list.innerHTML = items.map(n => {
         const cfg = NOTIF_TYPE_CONFIG[n.type] || { icon: 'bell', color: '#23703c', badge: 'ALERT', bg: '#f0f9f2' };
+        const destLink = resolveNotifLink(n);
         return `
-          <a href="${n.link || '#'}" onclick="markNotifRead(${n.id})"
+          <a href="${destLink}" onclick="handleNotifClick(event, ${n.id}, '${destLink}')"
              class="flex gap-3 px-4 py-3.5 border-b border-forest-50 hover:bg-forest-50/80 transition-colors ${n.is_read == 0 ? 'bg-forest-50/40' : ''}">
             <div style="background:${cfg.bg}; color:${cfg.color};" class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-black/5">
               <span data-icon="${cfg.icon}" data-icon-size="16"></span>
@@ -720,6 +759,85 @@ document.addEventListener('click', (e) => {
     panel.classList.add('hidden');
   }
 });
+
+/**
+ * Universal table row deep-link highlighter.
+ * Searches for 'highlight' or 'id' in URL search params.
+ * If found, locates the target record in the dataset, switches pagination to the matching page,
+ * smoothly scrolls to the row, triggers the pulsing emerald highlight animation, and cleans up the URL.
+ * 
+ * @param {Object} opts
+ * @param {Array} opts.items - complete dataset or filtered items array
+ * @param {Function} [opts.matcher] - (item, query) => boolean
+ * @param {number} [opts.pageSize] - rows per page (e.g. 6 or 8)
+ * @param {Function} [opts.setPage] - (pageNum) => void
+ * @param {Function} [opts.render] - () => void
+ * @param {string} [opts.rowSelector] - CSS selector pattern
+ */
+function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSelector } = {}) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const target = (urlParams.get('highlight') || urlParams.get('id') || '').trim();
+  if (!target || !items || !items.length) return false;
+
+  const targetLower = target.toLowerCase();
+  const index = items.findIndex(item => {
+    if (matcher) return matcher(item, target);
+    return (
+      (item.id != null && String(item.id) === target) ||
+      (item.reportNo && item.reportNo.toLowerCase() === targetLower) ||
+      (item.docketNo && item.docketNo.toLowerCase() === targetLower) ||
+      (item.caseNo && item.caseNo.toLowerCase() === targetLower) ||
+      (item.resNo && item.resNo.toLowerCase() === targetLower) ||
+      (item.residentNo && item.residentNo.toLowerCase() === targetLower) ||
+      (item.username && item.username.toLowerCase() === targetLower)
+    );
+  });
+
+  if (index === -1) return false;
+
+  if (pageSize && setPage) {
+    const pageNum = Math.floor(index / pageSize) + 1;
+    setPage(pageNum);
+    if (render) render();
+  }
+
+  // Allow DOM to settle, then scroll and animate
+  setTimeout(() => {
+    let row = null;
+    if (rowSelector) {
+      row = document.querySelector(rowSelector.replace(/%s/g, CSS.escape(target)));
+    }
+    if (!row) {
+      row = document.querySelector(`tr[data-id="${CSS.escape(target)}"], tr[data-key="${CSS.escape(target)}"], tr[data-report-no="${CSS.escape(target)}"], tr[data-docket-no="${CSS.escape(target)}"], tr[data-case-no="${CSS.escape(target)}"]`);
+    }
+    if (!row) {
+      // Fallback: search row text in data-table tbody
+      const allRows = document.querySelectorAll('.data-table tbody tr');
+      for (const r of allRows) {
+        if (r.textContent.toLowerCase().includes(targetLower)) {
+          row = r;
+          break;
+        }
+      }
+    }
+
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('bc-row-highlight');
+      setTimeout(() => {
+        row.classList.remove('bc-row-highlight');
+      }, 3500);
+
+      // Clean up URL query parameters without reloading
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('highlight');
+      newUrl.searchParams.delete('id');
+      window.history.replaceState({}, document.title, newUrl.pathname + (newUrl.searchParams.toString() ? '?' + newUrl.searchParams.toString() : ''));
+    }
+  }, 120);
+
+  return true;
+}
 
 // ── Resident search-picker (replaces the old <select> dropdown) ────
 // Shared by Clearance, Certificate of Residency, and Certificate of
