@@ -579,11 +579,11 @@
       panel.appendChild(cols);
 
       const footer = document.createElement('div');
-      footer.className = 'bc-dp-footer';
+      footer.className = 'bc-tp-footer';
       
       const nowBtn = document.createElement('button');
       nowBtn.type = 'button';
-      nowBtn.className = 'bc-dp-today-btn';
+      nowBtn.className = 'bc-tp-footer-btn bc-tp-btn-now';
       nowBtn.textContent = 'Now';
       nowBtn.onclick = () => {
         const n = new Date();
@@ -595,7 +595,7 @@
 
       const clearBtn = document.createElement('button');
       clearBtn.type = 'button';
-      clearBtn.className = 'bc-dp-clear-btn';
+      clearBtn.className = 'bc-tp-footer-btn bc-tp-btn-clear';
       clearBtn.textContent = 'Clear';
       clearBtn.onclick = () => {
         input.value = '';
@@ -606,7 +606,7 @@
 
       const doneBtn = document.createElement('button');
       doneBtn.type = 'button';
-      doneBtn.className = 'bc-dp-clear-btn';
+      doneBtn.className = 'bc-tp-footer-btn bc-tp-btn-done';
       doneBtn.textContent = 'Done';
       doneBtn.onclick = () => closeActivePopover();
 

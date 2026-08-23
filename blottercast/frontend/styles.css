@@ -1155,11 +1155,11 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
 .bc-time-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
 .bc-time-trigger.bc-time-disabled { opacity: 0.6; cursor: not-allowed; }
 
-.bc-timepicker-panel.bc-tp-12 { width: 220px; }
-.bc-timepicker-panel.bc-tp-24 { width: 172px; }
-.bc-tp-cols { display: flex; gap: 4px; max-height: 200px; }
+.bc-timepicker-panel.bc-tp-12 { width: 232px; min-width: 220px; }
+.bc-timepicker-panel.bc-tp-24 { width: 216px; min-width: 208px; }
+.bc-tp-cols { display: flex; gap: 6px; max-height: 200px; padding: 2px 2px; }
 .bc-tp-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scroll-behavior: smooth; }
-.bc-tp-col-period { flex: 0.85; }
+.bc-tp-col-period { flex: 0.9; }
 .bc-tp-item {
   border: none;
   background: transparent;
@@ -1168,11 +1168,39 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
   font-size: 0.82rem;
   color: #111827;
   cursor: pointer;
+  text-align: center;
   transition: background 0.1s ease;
 }
 .bc-tp-item:hover { background: var(--forest-50); }
 .bc-tp-item-active { background: var(--forest-600) !important; color: #fff !important; font-weight: 600; }
 .bc-tp-period-item { font-weight: 700; font-size: 0.8rem; }
+
+.bc-tp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 4px 2px;
+  border-top: 1px solid var(--forest-50);
+  margin-top: 6px;
+}
+.bc-tp-footer-btn {
+  flex: 1;
+  border: none;
+  background: var(--forest-50);
+  color: var(--forest-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.bc-tp-footer-btn:hover { background: var(--forest-100); }
+.bc-tp-footer-btn.bc-tp-btn-done { background: var(--forest-600); color: #fff; }
+.bc-tp-footer-btn.bc-tp-btn-done:hover { background: var(--forest-700); }
 
 /* ---------------- Scrollbar ---------------- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
