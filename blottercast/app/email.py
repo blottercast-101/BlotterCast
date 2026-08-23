@@ -10,7 +10,7 @@ BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5, purpose: str = "login") -> str:
-    """Generate email-client-compatible HTML with bulletproof dark mode styles and no-wrap digit cells."""
+    """Generate email-client-compatible HTML with light/dark mode responsiveness, seamless inline typography, and no-wrap digit cells."""
     name_display = full_name.strip() if full_name and full_name.strip() else "User"
 
     if purpose == "reset":
@@ -26,7 +26,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
         code_digits = list(str(otp_code).strip())
 
     digit_tds = "".join([
-        f'<td align="center" style="padding: 0 5px; font-family: \'SFMono-Regular\', Consolas, \'Liberation Mono\', Menlo, Courier, monospace, sans-serif; font-size: 32px; font-weight: 800; color: #4ade80 !important; -webkit-text-fill-color: #4ade80 !important; line-height: 1; min-width: 22px;">{d}</td>'
+        f'<td align="center" class="code-digit" style="padding: 0 5px; font-family: \'SFMono-Regular\', Consolas, \'Liberation Mono\', Menlo, Courier, monospace, sans-serif; font-size: 32px; font-weight: 800; color: #16a34a; line-height: 1; min-width: 22px;">{d}</td>'
         for d in code_digits
     ])
 
@@ -37,13 +37,13 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <title>BlotterCast Security Verification</title>
   <style type="text/css">
     :root {{
-      color-scheme: dark;
-      supported-color-schemes: dark;
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
     }}
     body, html, table, td {{
       -webkit-text-size-adjust: 100%;
@@ -52,55 +52,72 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
     body {{
       margin: 0 !important;
       padding: 0 !important;
-      background-color: #121212 !important;
-      background-image: linear-gradient(#121212, #121212) !important;
+      background-color: #f1f5f9;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      color: #cbd5e1 !important;
+      color: #0f172a;
     }}
-    .dark-card {{
-      background-color: #1e232a !important;
-      background-image: linear-gradient(#1e232a, #1e232a) !important;
+    @media (prefers-color-scheme: dark) {{
+      body, .email-body, .email-bg {{
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+      }}
+      .email-card {{
+        background-color: #1a2332 !important;
+        border-color: #334155 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+      }}
+      .email-text, .dynamic-text {{
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }}
+      .email-subtext {{
+        color: #cbd5e1 !important;
+        -webkit-text-fill-color: #cbd5e1 !important;
+      }}
+      .email-muted {{
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
+      }}
+      .email-divider {{
+        border-color: #334155 !important;
+      }}
+      .code-box {{
+        background-color: #0d2818 !important;
+        border-color: #22c55e !important;
+      }}
+      .code-digit {{
+        color: #4ade80 !important;
+        -webkit-text-fill-color: #4ade80 !important;
+      }}
+      .brand-title {{
+        color: #4ade80 !important;
+        -webkit-text-fill-color: #4ade80 !important;
+      }}
     }}
-    .code-box {{
-      background-color: #15271e !important;
-      background-image: linear-gradient(#15271e, #15271e) !important;
-      border: 2px dashed #22c55e !important;
-    }}
-    .brand-accent {{
-      color: #4ade80 !important;
-      -webkit-text-fill-color: #4ade80 !important;
-    }}
-    .pill-highlight {{
-      color: #ffffff !important;
-      -webkit-text-fill-color: #ffffff !important;
-      background-color: #2a333d !important;
-    }}
-    [data-ogsc] .brand-accent, [data-ogsc] .code-digit {{
-      color: #4ade80 !important;
-    }}
-    [data-ogsc] .pill-highlight {{
-      color: #ffffff !important;
-    }}
-    [data-ogsb] .dark-card {{
-      background-color: #1e232a !important;
-    }}
-    [data-ogsb] .code-box {{
-      background-color: #15271e !important;
-    }}
+    /* Outlook.com / Web App Dark Mode Overrides */
+    [data-ogsc] .email-bg {{ background-color: #0f172a !important; }}
+    [data-ogsc] .email-card {{ background-color: #1a2332 !important; border-color: #334155 !important; }}
+    [data-ogsc] .email-text, [data-ogsc] .dynamic-text {{ color: #ffffff !important; }}
+    [data-ogsc] .email-subtext {{ color: #cbd5e1 !important; }}
+    [data-ogsc] .email-muted {{ color: #94a3b8 !important; }}
+    [data-ogsc] .code-digit {{ color: #4ade80 !important; }}
+    [data-ogsc] .brand-title {{ color: #4ade80 !important; }}
+    [data-ogsb] .email-card {{ background-color: #1a2332 !important; }}
+    [data-ogsb] .code-box {{ background-color: #0d2818 !important; }}
   </style>
   <!--[if mso]>
   <style type="text/css">
-    body, table, td, p, span, a {{ font-family: Arial, Helvetica, sans-serif !important; }}
+    body, table, td, p, span, a, strong {{ font-family: Arial, Helvetica, sans-serif !important; }}
   </style>
   <![endif]-->
 </head>
-<body bgcolor="#121212" style="margin: 0; padding: 0; background-color: #121212; background-image: linear-gradient(#121212, #121212); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #cbd5e1;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#121212" style="background-color: #121212; background-image: linear-gradient(#121212, #121212); table-layout: fixed; width: 100%;">
+<body class="email-body" bgcolor="#f1f5f9" style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #0f172a;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-bg" bgcolor="#f1f5f9" style="background-color: #f1f5f9; table-layout: fixed; width: 100%;">
     <tr>
-      <td align="center" style="padding: 28px 12px 36px 12px; background-color: #121212; background-image: linear-gradient(#121212, #121212);">
+      <td align="center" style="padding: 32px 12px 40px 12px;">
         
         <!-- Main Card Container -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="dark-card" bgcolor="#1e232a" style="max-width: 480px; width: 100%; background-color: #1e232a; background-image: linear-gradient(#1e232a, #1e232a); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); overflow: hidden;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" bgcolor="#ffffff" style="max-width: 480px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); overflow: hidden;">
           <tr>
             <td style="padding: 32px 24px 28px 24px;">
               
@@ -108,14 +125,14 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 4px;">
-                    <span class="brand-accent" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #4ade80 !important; -webkit-text-fill-color: #4ade80 !important; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
+                    <span class="brand-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #16a34a; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
                       BlotterCast
                     </span>
                   </td>
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom: 24px;">
-                    <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.4; display: inline-block;">
+                    <span class="email-muted" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.4; display: inline-block;">
                       PAMAHALAANG BARANGAY NG MAPULANG LUPA
                     </span>
                   </td>
@@ -125,12 +142,12 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <!-- Greeting & Body Text -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td style="padding-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15.5px; color: #e2e8f0; line-height: 1.5;">
-                    Hello <span class="pill-highlight" style="color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700; background-color: #2a333d; padding: 2px 8px; border-radius: 6px; display: inline-block;">{name_display}</span>,
+                  <td class="email-text" style="padding-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15.5px; color: #0f172a; line-height: 1.5;">
+                    Hello <strong class="dynamic-text" style="font-weight: 700; color: inherit;">{name_display}</strong>,
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #94a3b8; line-height: 1.6;">
+                  <td class="email-subtext" style="padding-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #334155; line-height: 1.6;">
                     {lead_text}
                   </td>
                 </tr>
@@ -140,7 +157,7 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 20px 0;">
                 <tr>
                   <td align="center">
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="code-box" bgcolor="#15271e" style="width: 100%; border: 2px dashed #22c55e; background-color: #15271e; background-image: linear-gradient(#15271e, #15271e); border-radius: 12px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="code-box" bgcolor="#f0fdf4" style="width: 100%; border: 2px dashed #22c55e; background-color: #f0fdf4; border-radius: 12px;">
                       <tr>
                         <td align="center" style="padding: 16px 12px;">
                           <!-- Digit table ensuring single horizontal row -->
@@ -159,37 +176,38 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
               <!-- Expiration Notice & Security Disclaimer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="padding-bottom: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #94a3b8; line-height: 1.5;">
-                    This security code expires in <span class="pill-highlight" style="color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 700; background-color: #2a333d; padding: 2px 8px; border-radius: 6px; display: inline-block;">{expire_minutes} minutes</span>.
+                  <td align="center" class="email-subtext" style="padding-bottom: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; color: #334155; line-height: 1.5;">
+                    This security code expires in <strong class="dynamic-text" style="font-weight: 700; color: inherit;">{expire_minutes} minutes</strong>.
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12.5px; color: #64748b; line-height: 1.5;">
+                  <td align="center" class="email-muted" style="padding-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12.5px; color: #64748b; line-height: 1.5;">
                     {disclaimer_text}
                   </td>
                 </tr>
               </table>
 
               <!-- Subtle Divider -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 16px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="email-divider" width="100%" style="border-top: 1px solid #e2e8f0; margin-bottom: 16px;">
                 <tr><td></td></tr>
               </table>
 
               <!-- Sub-footer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #475569; line-height: 1.4;">
+                  <td align="center" class="email-muted" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #64748b; line-height: 1.4;">
                     BlotterCast &mdash; Official Barangay Records &amp; Intelligence System
                   </td>
                 </tr>
               </table>
 
               <!-- Anti-folding token -->
-              <div style="display: none; font-size: 1px; color: #1e232a; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+              <div style="display: none; font-size: 1px; color: #f1f5f9; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
                 Ref: {timestamp_str}
               </div>
 
             </td>
+          </tr>
         </table>
 
       </td>
