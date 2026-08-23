@@ -550,31 +550,41 @@
       `;
     }
 
-    // Point-in-Polygon Boundary Validator using Turf.js with Ray-Casting fallback
-    function isPointInsideBarangayBoundary(lat, lng) {
-      if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return false;
-      const numLat = Number(lat);
-      const numLng = Number(lng);
-      if (!numLat || !numLng) return false;
-      if (!boundaryGeojson) return false; // Strict: boundary must be loaded first
+    // Hard-Enforced Boundary & Coordinate Validation Engine
+    function isRecordValidAndWithinBoundary(incident, boundaryGeoJSON) {
+      // 1. Strict null / undefined / zero / NaN checks
+      if (!incident || incident.lat == null || incident.lng == null) return false;
+      
+      const lat = Number(incident.lat);
+      const lng = Number(incident.lng);
+      
+      if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return false;
 
-      // 1. Turf.js check: Turf expects [longitude, latitude]
+      // 2. Strict mock / gibberish location filter
+      const loc = (incident.locationDetail || incident.location || '').trim().toLowerCase();
+      if (loc.length < 4) return false;
+      const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
+      if (mockKeywords.some(kw => loc.includes(kw))) return false;
+      if (loc === 'main street' || loc === 'corner st' || loc.startsWith('test location')) return false;
+
+      // 3. Strict Point-in-Polygon check (Turf expects [longitude, latitude])
+      if (!boundaryGeoJSON) return false;
       try {
-        const pt = turf.point([numLng, numLat]);
-        if (turf.booleanPointInPolygon(pt, boundaryGeojson)) {
+        const point = turf.point([lng, lat]);
+        if (turf.booleanPointInPolygon(point, boundaryGeoJSON)) {
           return true;
         }
-      } catch (e) {}
+      } catch (err) {}
 
-      // 2. Strict Ray Casting Point-in-Polygon check on polygon coordinates [lng, lat]
+      // 4. Mathematical Ray-Casting algorithm fallback on polygon coordinates [lng, lat]
       try {
-        const coords = boundaryGeojson.geometry ? boundaryGeojson.geometry.coordinates[0] : (boundaryGeojson.coordinates ? boundaryGeojson.coordinates[0] : null);
+        const coords = boundaryGeoJSON.geometry ? boundaryGeoJSON.geometry.coordinates[0] : (boundaryGeoJSON.coordinates ? boundaryGeoJSON.coordinates[0] : null);
         if (!coords || !coords.length) return false;
         let inside = false;
         for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
           const xi = coords[i][0], yi = coords[i][1]; // xi = lng, yi = lat
           const xj = coords[j][0], yj = coords[j][1]; // xj = lng, yj = lat
-          const intersect = ((yi > numLat) !== (yj > numLat)) && (numLng < (xj - xi) * (numLat - yi) / (yj - yi) + xi);
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
           if (intersect) inside = !inside;
         }
         return inside;
@@ -583,27 +593,9 @@
       }
     }
 
-    // Whitelist and authentic address checker: invalidates arbitrary test/mock/placeholder records
-    function isAuthenticLocation(locationDetail, zoneId) {
-      if (!locationDetail) return false;
-      const loc = locationDetail.trim().toLowerCase();
-      // Length guard against single characters or short gibberish ("q", "w", "as", "12")
-      if (loc.length < 4) return false;
-      // Keywords representing mock/placeholder strings
-      const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
-      if (mockKeywords.some(kw => loc.includes(kw))) return false;
-      if (loc === 'main street' || loc === 'corner st' || loc.startsWith('test location')) return false;
-      return true;
-    }
-
     function updateIncidentBoundaryStatuses() {
       incidents.forEach(item => {
-        const hasCoords = item.lat != null && item.lng != null && !isNaN(item.lat) && !isNaN(item.lng) && item.lat !== 0 && item.lng !== 0;
-        const isAuthentic = isAuthenticLocation(item.locationDetail, item.zone);
-        const insidePoly = hasCoords && isPointInsideBarangayBoundary(item.lat, item.lng);
-
-        // Record is mapped ONLY IF authentic address + non-zero valid coords + inside boundary polygon
-        const valid = Boolean(hasCoords && isAuthentic && insidePoly);
+        const valid = isRecordValidAndWithinBoundary(item, boundaryGeojson);
         item.isInsideBoundary = valid;
         item.isUnmapped = !valid;
       });
