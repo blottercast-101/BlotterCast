@@ -55,6 +55,18 @@ def create_app(config_class=Config):
     app.register_blueprint(ml_proxy_bp)
     app.register_blueprint(blotter_import_bp)
 
+    @app.after_request
+    def add_security_and_cache_headers(response):
+        """Disable caching on API endpoints and HTML pages to ensure sensitive
+        authenticated views are never served stale from browser disk/memory cache."""
+        from flask import request
+        path = request.path.lower()
+        if path.startswith("/api/") or path.endswith(".html") or path in ("/", ""):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     @app.route("/")
     def root():
         return send_from_directory(FRONTEND_DIR, "index.html")

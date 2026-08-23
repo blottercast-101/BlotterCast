@@ -60,10 +60,28 @@ document.addEventListener('input', (e) => {
 // ── Auth guard: redirect to login if session is missing ────
 // Also enforces role-based page access (permissions.js) and hides
 // sidebar links the current role isn't permitted to use.
+let _bcAuthGuardRunning = false;
+
+function _handleUnauthenticatedRedirect() {
+  // Prevent rendering or interaction on protected views
+  try {
+    document.querySelectorAll('main, .page-header, .stat-card-grad, .data-table, aside').forEach(el => {
+      el.style.pointerEvents = 'none';
+    });
+  } catch (e) {}
+  sessionStorage.setItem('bc_logged_out_alert', '1');
+  window.location.replace('login.html?logged_out=1');
+}
+
 async function requireAuth() {
+  if (_bcAuthGuardRunning) return null;
+  _bcAuthGuardRunning = true;
   try {
     const status = await BCApi.me();
-    if (!status.authenticated) { window.location.href = 'login.html'; return null; }
+    if (!status || !status.authenticated) {
+      _handleUnauthenticatedRedirect();
+      return null;
+    }
 
     const role = status.user.role;
     if (typeof enforcePageAccess === 'function' && !enforcePageAccess(role)) {
@@ -87,10 +105,24 @@ async function requireAuth() {
     bcSyncTimeFormatFromServer().catch(() => {});
     return status.user;
   } catch (e) {
-    window.location.href = 'login.html';
+    _handleUnauthenticatedRedirect();
     return null;
+  } finally {
+    _bcAuthGuardRunning = false;
   }
 }
+
+// BFCache (Back/Forward Cache) and PopState auth re-verification
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted && !window.location.pathname.endsWith('login.html')) {
+    requireAuth();
+  }
+});
+window.addEventListener('popstate', () => {
+  if (!window.location.pathname.endsWith('login.html')) {
+    requireAuth();
+  }
+});
 
 // Extracts the first name from a full name string, e.g. "Freya Lynn Ramos" -> "Freya",
 // or falls back gracefully to "User" if missing or empty.
@@ -113,7 +145,7 @@ function bcInitials(fullName) {
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
   try { await BCApi.logout(); } catch (e) {}
-  window.location.href = 'login.html';
+  window.location.replace('login.html');
 }
 
 // ── Real-Time Presence Heartbeat ────────────────────────────

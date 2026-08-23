@@ -690,7 +690,7 @@
         if (resendTimer) clearInterval(resendTimer);
         document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
         document.getElementById('successOverlay').classList.add('show');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
       btn.classList.remove('loading');
@@ -914,10 +914,9 @@
       const result = await BCApi.verifyOtp(code, currentPreAuthToken);
       btn.classList.remove('loading');
       if (resendTimer) clearInterval(resendTimer);
-      currentPreAuthToken = null;
       document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
       document.getElementById('successOverlay').classList.add('show');
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+      setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
     } catch (e2) {
       btn.classList.remove('loading');
       err.textContent = e2.message || 'Incorrect code. Please try again.';
@@ -1002,7 +1001,7 @@
         if (resendTimer) clearInterval(resendTimer);
         document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
         document.getElementById('successOverlay').classList.add('show');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
       alert.classList.add('show');
@@ -1013,11 +1012,35 @@
     }
   }
 
+  // Handle Logged Out Alert from back navigation or session expiry
+  function checkLoggedOutNotification() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParam = urlParams.get('logged_out') === '1';
+    const hasStorage = sessionStorage.getItem('bc_logged_out_alert') === '1';
+
+    if (hasParam || hasStorage) {
+      sessionStorage.removeItem('bc_logged_out_alert');
+      if (hasParam) {
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      }
+      const alert = document.getElementById('loginAlert');
+      const alertText = document.getElementById('loginAlertMsg');
+      if (alert && alertText) {
+        alertText.textContent = "You've been logged out! Please login to your account to access BlotterCast";
+        alert.classList.add('show');
+      }
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGoogleSignIn);
+    document.addEventListener('DOMContentLoaded', () => { initGoogleSignIn(); checkLoggedOutNotification(); });
   } else {
     initGoogleSignIn();
+    checkLoggedOutNotification();
   }
+  window.addEventListener('pageshow', (e) => {
+    checkLoggedOutNotification();
+  });
   window.addEventListener('load', initGoogleSignIn);
 
   // Shake keyframe
