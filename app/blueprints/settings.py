@@ -11,8 +11,11 @@ from ..permissions import json_error, log_audit, login_required, permission_requ
 
 bp = Blueprint("settings", __name__)
 
-BACKUP_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "backup")
-os.makedirs(BACKUP_DIR, exist_ok=True)
+BACKUP_DIR = os.path.join("/tmp", "backup") if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "..", "backup")
+try:
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+except OSError:
+    pass
 
 ML_TASK_KEYS = {
     "occurrence": {"setting": "ml_occurrence_model", "default": "random_forest",

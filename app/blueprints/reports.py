@@ -28,8 +28,11 @@ from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("reports", __name__)
 
-REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "generated_reports")
-os.makedirs(REPORTS_DIR, exist_ok=True)
+REPORTS_DIR = os.path.join("/tmp", "generated_reports") if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "..", "generated_reports")
+try:
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+except OSError:
+    pass
 
 BC_GREEN = colors.Color(30 / 255, 126 / 255, 30 / 255)
 BC_GREEN_DARK = colors.Color(15 / 255, 66 / 255, 15 / 255)

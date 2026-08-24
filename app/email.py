@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import requests
 from flask import current_app
 
-OTP_OUTBOX_LOG = os.path.join(os.path.dirname(__file__), "..", "instance", "otp_outbox.log")
+OTP_OUTBOX_LOG = os.path.join("/tmp", "otp_outbox.log") if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "instance", "otp_outbox.log")
 BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
 
 
@@ -263,11 +263,14 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
 
 
 def _write_to_outbox(to_email: str, subject: str, body: str, error: str = None, html_body: str = None):
-    os.makedirs(os.path.dirname(OTP_OUTBOX_LOG), exist_ok=True)
-    with open(OTP_OUTBOX_LOG, "a", encoding="utf-8") as f:
-        f.write(f"\n----- {datetime.now(timezone.utc).isoformat()} -----\n")
-        if error:
-            f.write(f"[Brevo send failed ({error}) -- logged instead of sent]\n")
-        else:
-            f.write("[BREVO_API_KEY not configured -- logged instead of sent]\n")
-        f.write(f"To: {to_email}\nSubject: {subject}\n\n{body}\n")
+    try:
+        os.makedirs(os.path.dirname(OTP_OUTBOX_LOG), exist_ok=True)
+        with open(OTP_OUTBOX_LOG, "a", encoding="utf-8") as f:
+            f.write(f"\n----- {datetime.now(timezone.utc).isoformat()} -----\n")
+            if error:
+                f.write(f"[Brevo send failed ({error}) -- logged instead of sent]\n")
+            else:
+                f.write("[BREVO_API_KEY not configured -- logged instead of sent]\n")
+            f.write(f"To: {to_email}\nSubject: {subject}\n\n{body}\n")
+    except Exception:
+        pass

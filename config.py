@@ -1,10 +1,8 @@
 import os
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # loads .env from the project root if present; no-op otherwise
-except ImportError:
-    pass
+from dotenv import load_dotenv
+
+load_dotenv()  # loads .env from the project root if present; no-op otherwise
 
 
 def _normalize_db_url(url: str) -> str:
@@ -17,16 +15,9 @@ def _normalize_db_url(url: str) -> str:
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
-    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
-    # In serverless environments like Vercel, the local filesystem is read-only except /tmp
-    _default_db = "sqlite:////tmp/blottercast.db" if os.environ.get("VERCEL") else "sqlite:///blottercast.db"
     SQLALCHEMY_DATABASE_URI = _normalize_db_url(
-        os.environ.get("DATABASE_URL")
-        or os.environ.get("POSTGRES_URL")
-        or os.environ.get("SUPABASE_DATABASE_URL")
-        or os.environ.get("POSTGRES_PRISMA_URL")
-        or _default_db
+        os.environ.get("DATABASE_URL", "sqlite:///blottercast.db")
     )
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -40,8 +31,7 @@ class Config:
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8MB request body cap
 
     UPLOAD_FOLDER = os.environ.get(
-        "UPLOAD_FOLDER",
-        "/tmp/uploads" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "uploads")
+        "UPLOAD_FOLDER", os.path.join(os.path.dirname(__file__), "..", "uploads")
     )
 
     # ---- Email OTP (multi-factor authentication) ----

@@ -1,23 +1,10 @@
-"""
-Creates all tables (if missing) and seeds:
-  - the 8 barangay zones
-  - default system_settings (security thresholds etc. used by auth)
-  - the 5 demo accounts from the original README
-
-Run with:  python seed.py
-Safe to re-run — it skips anything that already exists.
-"""
 import bcrypt
 
-from app import create_app
-from app.extensions import db
-from app.migrate import ensure_columns
-from app.models import SystemSetting, User, Zone
+from .extensions import db
+from .migrate import ensure_columns
+from .models import SystemSetting, User, Zone
 
 ZONES = [
-    # Repositioned + relabeled to match the actual named subdivisions/
-    # landmarks inside the barangay boundary (was generic "Zone N –
-    # <generic area>" placeholders on a much tighter cluster of points).
     ("Zone 1", "Zone 1 – Mapulang Lupa Proper (Barangay Hall Area)", 14.8836, 120.9655, 0.20),
     ("Zone 2", "Zone 2 – Mapulang Lupa Elementary School Area", 14.8800, 120.9634, 0.11),
     ("Zone 3", "Zone 3 – Sitio Bata", 14.8863, 120.9679, 0.18),
@@ -67,12 +54,11 @@ def hash_password(raw: str) -> str:
 
 
 def seed_data(app_instance=None):
-    from app.extensions import db
-    from app.migrate import ensure_columns
-    from app.models import SystemSetting, User, Zone
-
     db.create_all()
-    ensure_columns(db)
+    try:
+        ensure_columns(db)
+    except Exception:
+        pass
 
     for zone_id, label, lat, lng, weight in ZONES:
         existing = Zone.query.get(zone_id)
@@ -95,16 +81,3 @@ def seed_data(app_instance=None):
             ))
 
     db.session.commit()
-
-
-def run():
-    app = create_app()
-    with app.app_context():
-        seed_data(app)
-        print("Seed complete. Demo accounts:")
-        for username, password, _, role, email in DEMO_USERS:
-            print(f"  {username:10} / {password:12} ({role}) — {email}")
-
-
-if __name__ == "__main__":
-    run()
