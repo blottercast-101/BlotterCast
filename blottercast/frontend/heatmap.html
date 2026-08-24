@@ -55,54 +55,13 @@
 
     #map {
       width:100%;
-      height:680px;
+      height:520px;
       border-radius:1rem;
       overflow:hidden;
       border:1px solid var(--forest-100, #dcf0e0);
       position:relative;
       isolation:isolate;
       contain:paint;
-    }
-
-    .map-float-legend {
-      position:absolute;
-      bottom:16px;
-      left:16px;
-      z-index:400;
-      background:rgba(255,255,255,0.92);
-      backdrop-filter:blur(6px);
-      -webkit-backdrop-filter:blur(6px);
-      border:1px solid #e5e7eb;
-      border-radius:10px;
-      padding:10px 12px;
-      box-shadow:0 2px 12px rgba(10,36,20,0.12);
-      font-family:'DM Sans',sans-serif;
-      font-size:0.72rem;
-      pointer-events:none;
-      user-select:none;
-    }
-    .map-float-legend .legend-title {
-      font-weight:700;
-      color:#374151;
-      margin-bottom:6px;
-      display:block;
-      letter-spacing:0.02em;
-    }
-    .map-float-legend .legend-swatches {
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-    .map-float-legend .legend-swatch {
-      display:flex;
-      align-items:center;
-      gap:3px;
-    }
-    .map-float-legend .swatch-dot {
-      width:10px;
-      height:10px;
-      border-radius:3px;
-      flex-shrink:0;
     }
 
     #map .leaflet-tile-pane      { z-index: 1; }
@@ -301,7 +260,7 @@
       aside { display:none; }
       .content-wrap { margin-left:0 !important; }
       .page-header { flex-direction:column; align-items:flex-start; }
-      #map { height:540px; }
+      #map { height:460px; }
     }
   </style>
 </head>
@@ -448,31 +407,7 @@
             </div>
           </div>
 
-          <div style="position:relative;">
-            <div id="map"></div>
-            <!-- Floating Density Scale Legend (z-index 400 keeps it above Leaflet tiles) -->
-            <div class="map-float-legend" aria-hidden="true">
-              <span class="legend-title">Density Scale</span>
-              <div class="legend-swatches">
-                <div class="legend-swatch">
-                  <div class="swatch-dot" style="background:#10B981;"></div>
-                  <span style="color:#065f46;">Low</span>
-                </div>
-                <div class="legend-swatch">
-                  <div class="swatch-dot" style="background:#FACC15;"></div>
-                  <span style="color:#92400e;">Moderate</span>
-                </div>
-                <div class="legend-swatch">
-                  <div class="swatch-dot" style="background:#FB923C;"></div>
-                  <span style="color:#9a3412;">Elevated</span>
-                </div>
-                <div class="legend-swatch">
-                  <div class="swatch-dot" style="background:#EF4444;"></div>
-                  <span style="color:#991b1b;">High</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div id="map"></div>
         </div>
 
         <div class="flex flex-col gap-6">
@@ -510,6 +445,30 @@
               <li>If the map says the boundary is missing, make sure <code>mapulang-lupa.geojson</code> is in the same folder.</li>
             </ul>
           </div>
+        </div>
+      </div>
+
+      <!-- Bottom Analytics Metric Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Top Incident Zone -->
+        <div class="card p-5">
+          <span class="text-xs font-semibold text-forest-500 uppercase tracking-wider">Top Incident Zone</span>
+          <h3 id="bottomTopZone" class="font-display text-base text-forest-800 mt-1.5">—</h3>
+          <p class="text-xs text-forest-400 mt-1">Highest concentration of reported entries</p>
+        </div>
+
+        <!-- Active Pin Density -->
+        <div class="card p-5">
+          <span class="text-xs font-semibold text-forest-500 uppercase tracking-wider">Active Pin Density</span>
+          <h3 id="bottomPinCount" class="font-display text-base text-forest-800 mt-1.5">0 Reported Incidents</h3>
+          <p class="text-xs text-forest-400 mt-1">Validated within barangay boundaries</p>
+        </div>
+
+        <!-- Data Source -->
+        <div class="card p-5">
+          <span class="text-xs font-semibold text-forest-500 uppercase tracking-wider">Data Source</span>
+          <h3 class="font-display text-base text-forest-800 mt-1.5">Incident Reports DB</h3>
+          <p class="text-xs text-forest-400 mt-1">Real-time synchronized · Boundary: mapulang-lupa.geojson</p>
         </div>
       </div>
 
@@ -1224,12 +1183,32 @@
       }
     }
 
-    function renderSummary(mappedData) {
+    function renderSummary(mappedData, zoneCounts) {
       totalVisible.textContent = mappedData.length;
 
       const counts = getCategoryCounts(mappedData);
       const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
       topCategory.textContent = entries.length ? `${entries[0][0]} (${entries[0][1]})` : 'No data';
+
+      // ── Bottom metric cards ──────────────────────────────────────────────
+      const pinCountEl = document.getElementById('bottomPinCount');
+      if (pinCountEl) {
+        pinCountEl.textContent = `${mappedData.length} Reported Incident${mappedData.length !== 1 ? 's' : ''}`;
+      }
+      const topZoneEl = document.getElementById('bottomTopZone');
+      if (topZoneEl && zoneCounts) {
+        const zoneEntries = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1]);
+        if (zoneEntries.length) {
+          const [zoneId, zoneCount] = zoneEntries[0];
+          const landmark = (ZONE_LANDMARK_COORDINATES || {})[zoneId];
+          topZoneEl.textContent = landmark
+            ? `${zoneId} — ${landmark.name} (${zoneCount})`
+            : `${zoneId} (${zoneCount})`;
+        } else {
+          topZoneEl.textContent = '—';
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────
 
       categoryList.innerHTML = '';
 
@@ -1342,7 +1321,7 @@
       renderZoneChoropleth(mappedOnly, tierEngine, zoneCounts);
       renderHeatMap(mappedOnly);
       renderMarkers(mappedOnly, tierEngine, zoneCounts);
-      renderSummary(mappedOnly);
+      renderSummary(mappedOnly, zoneCounts);
       renderTable(allFiltered);
     }
 
