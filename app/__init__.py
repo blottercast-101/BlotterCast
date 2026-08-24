@@ -9,21 +9,13 @@ FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 
 def _auto_migrate_schema(app):
-    """Automatically initializes tables and patches schema on application startup
-    across all environments (PostgreSQL on Supabase/Render, SQLite)."""
+    """Automatically patches database schema on application startup across all environments
+    (SQLite, PostgreSQL on Render/Supabase, MySQL) so newly added tables and columns exist."""
     with app.app_context():
         try:
             db.create_all()
-            from sqlalchemy import inspect, text
-            inspector = inspect(db.engine)
-            tables = ["incidents", "settlements", "census_records", "blotter_records"]
-            for table in tables:
-                if inspector.has_table(table):
-                    columns = [c["name"] for c in inspector.get_columns(table)]
-                    if "archived" not in columns:
-                        with db.engine.begin() as conn:
-                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN archived BOOLEAN DEFAULT FALSE"))
-                            conn.execute(text(f"UPDATE {table} SET archived = FALSE WHERE archived IS NULL"))
+            from .migrate import ensure_columns
+            ensure_columns(db)
 
             from .models import User
             if User.query.count() == 0:
@@ -70,6 +62,26 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(ml_proxy_bp)
     app.register_blueprint(blotter_import_bp)
+
+    @app.teardown_request
+    def check_teardown(exception=None):
+        if exception:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+
+    @app.after_request
+    def add_security_and_cache_headers(response):
+        """Disable caching on API endpoints and HTML pages to ensure sensitive
+        authenticated views are never served stale from browser disk/memory cache."""
+        from flask import request
+        path = request.path.lower()
+        if path.startswith("/api/") or path.endswith(".html") or path in ("/", ""):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
     @app.route("/")
     def root():

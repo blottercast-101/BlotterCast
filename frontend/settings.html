@@ -132,7 +132,10 @@
           </div>
           <div>
             <label class="form-label">Time Format</label>
-            <select class="form-input" data-setting="time_format"><option>12-Hour (AM/PM)</option><option>24-Hour</option></select>
+            <select class="form-input" data-setting="time_format" id="pref_time_format" onchange="onTimeFormatSelectChange(this.value)">
+              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
+            </select>
           </div>
           <div>
             <label class="form-label">Records Per Page</label>
@@ -144,6 +147,7 @@
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- NOTIFICATIONS -->
@@ -202,61 +206,124 @@
           <div><label class="form-label">New Password</label><input type="password" id="acct_newPw" class="form-input"/></div>
           <div><label class="form-label">Confirm New Password</label><input type="password" id="acct_confirmPw" class="form-input"/></div>
         </div>
+        <div id="acct_pw_error" class="text-xs text-red-600 font-semibold mt-3 p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
         <div class="flex justify-end mt-4">
           <button onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
         </div>
       </div>
 
       <div class="settings-section">
-        <h3>Two-Factor Authentication</h3>
-        <div class="space-y-0">
-          <div class="toggle-row">
-            <div><div class="toggle-label">Require a code by email at sign-in</div><div class="toggle-desc" id="mfaToggleDesc">Applies only to your own account, from your next login onward.</div></div>
-            <button id="mfaToggleBtn" class="toggle-switch off" onclick="toggleMyMfa()"><span class="sr-only">Toggle two-factor authentication</span></button>
+        <h3>Display Preferences</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">System Time Format</label>
+            <select id="user_time_format" class="form-input" onchange="onTimeFormatSelectChange(this.value)">
+              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
+            </select>
           </div>
         </div>
       </div>
-      <div id="tab-security-admin-only" data-perm="system_settings">
-      <div class="settings-section">
-        <h3>Authentication Settings</h3>
-        <div class="space-y-0">
-          <div class="toggle-row">
-            <div><div class="toggle-label">Account Lockout After Failed Attempts</div><div class="toggle-desc">Lock account after 5 consecutive failed logins</div></div>
-            <button class="toggle-switch on" data-setting="lockout_enabled" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+      <div id="tab-security-admin-only" data-perm="system_settings" class="space-y-6">
+        <!-- Security Settings Panel (Admin Master Control) -->
+        <div class="settings-section space-y-6">
+          <!-- Header with Aligned Badge -->
+          <div class="flex items-center gap-3 pb-3 border-b border-forest-100">
+            <h2 class="text-lg font-serif font-bold text-[#1b4332] m-0">
+              Security &amp; Authentication
+            </h2>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Admin Master Control
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Master 2FA Toggle Card -->
+            <div class="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
+              <div class="space-y-0.5">
+                <p class="text-sm font-semibold text-gray-800 m-0">
+                  Enforce 2FA for All Accounts
+                </p>
+                <p class="text-xs text-gray-500 m-0">
+                  Require Two-Factor Authentication across all roles during login.
+                </p>
+              </div>
+
+              <!-- Pure Toggle Switch (No visible checkbox / no checkmark) -->
+              <label class="relative inline-flex items-center cursor-pointer select-none m-0">
+                <input
+                  type="checkbox"
+                  id="twoFaMasterToggle"
+                  data-setting="is_2fa_globally_enabled"
+                  onchange="onSecurityToggleChange('is_2fa_globally_enabled', this.checked)"
+                  class="sr-only peer"
+                />
+                <div class="w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6 shadow-inner"></div>
+              </label>
+            </div>
+
+            <!-- Master Idle Timeout Toggle Card -->
+            <div class="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
+              <div class="space-y-0.5">
+                <p class="text-sm font-semibold text-gray-800 m-0">
+                  Session Inactivity Auto-Logout (2 Hours)
+                </p>
+                <p class="text-xs text-gray-500 m-0">
+                  Automatically logs out inactive users after 120 minutes of inactivity.
+                </p>
+              </div>
+
+              <!-- Pure Toggle Switch -->
+              <label class="relative inline-flex items-center cursor-pointer select-none m-0">
+                <input
+                  type="checkbox"
+                  id="idleTimeoutMasterToggle"
+                  data-setting="is_idle_timeout_enabled"
+                  onchange="onSecurityToggleChange('is_idle_timeout_enabled', this.checked)"
+                  class="sr-only peer"
+                />
+                <div class="w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6 shadow-inner"></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-forest-100/70">
+            <h3 class="text-sm font-semibold text-forest-800 mb-3">Policy Thresholds &amp; Password Rules</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">Inactivity Timeout Duration (minutes)</label>
+                <input type="number" class="form-input" data-setting="idle_timeout_duration_minutes" value="120" min="5" max="1440"/>
+                <p class="text-xs text-forest-400 mt-1">Default: 120 minutes (2 hours).</p>
+              </div>
+              <div>
+                <label class="form-label">Max Failed Login Attempts</label>
+                <input type="number" class="form-input" data-setting="max_failed_logins" value="5" min="1" max="20"/>
+              </div>
+              <div>
+                <label class="form-label">Minimum Password Length</label>
+                <input type="number" class="form-input" data-setting="min_password_length" value="8" min="6" max="32"/>
+              </div>
+              <div>
+                <label class="form-label">Password Expiry (days)</label>
+                <input type="number" class="form-input" data-setting="password_expiry_days" value="90" min="0" max="365"/>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <label class="form-label">Session Timeout (minutes)</label>
-            <input type="number" class="form-input" data-setting="session_timeout" value="30"/>
-          </div>
-          <div>
-            <label class="form-label">Max Failed Login Attempts</label>
-            <input type="number" class="form-input" data-setting="max_failed_logins" value="5"/>
-          </div>
-          <div>
-            <label class="form-label">Minimum Password Length</label>
-            <input type="number" class="form-input" data-setting="min_password_length" value="8"/>
-          </div>
-          <div>
-            <label class="form-label">Password Expiry (days)</label>
-            <input type="number" class="form-input" data-setting="password_expiry_days" value="90"/>
+
+        <div class="settings-section">
+          <h3>Data Privacy</h3>
+          <div class="space-y-0">
+            <div class="toggle-row">
+              <div><div class="toggle-label">Audit Trail Logging</div><div class="toggle-desc">Log all data changes, logins, and report exports</div></div>
+              <button class="toggle-switch on" data-setting="audit_trail" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Data Subject Rights Module</div><div class="toggle-desc">Allow data access/correction requests from data subjects</div></div>
+              <button class="toggle-switch on" data-setting="data_subject_rights" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="settings-section">
-        <h3>Data Privacy</h3>
-        <div class="space-y-0">
-          <div class="toggle-row">
-            <div><div class="toggle-label">Audit Trail Logging</div><div class="toggle-desc">Log all data changes, logins, and report exports</div></div>
-            <button class="toggle-switch on" data-setting="audit_trail" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
-          </div>
-          <div class="toggle-row">
-            <div><div class="toggle-label">Data Subject Rights Module</div><div class="toggle-desc">Allow data access/correction requests from data subjects</div></div>
-            <button class="toggle-switch on" data-setting="data_subject_rights" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
-          </div>
-        </div>
-      </div>
       </div>
     </div>
 
@@ -334,40 +401,89 @@
 <script src="custom-controls.js"></script>
 <script>
 function switchTab(name, btn) {
-  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  // Only target the four top-level tab panels — not child sections like
+  // #tab-security-admin-only which share the same id prefix.
+  ['general', 'notifications', 'security', 'backup'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.classList.add('hidden');
+  });
   document.querySelectorAll('.settings-tab').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.remove('hidden');
+  const panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.remove('hidden');
   btn.classList.add('active');
 }
 
+function onTimeFormatSelectChange(val) {
+  const normalized = (String(val || '12')).startsWith('24') ? '24' : '12';
+  bcSetTimeFormat(normalized);
+  const sel1 = document.getElementById('pref_time_format');
+  const sel2 = document.getElementById('user_time_format');
+  if (sel1 && sel1.value !== normalized) sel1.value = normalized;
+  if (sel2 && sel2.value !== normalized) sel2.value = normalized;
+  showToast(`Time display set to ${normalized === '24' ? '24-hour (HH:mm)' : '12-hour (hh:mm A)'}.`);
+}
+
+function syncTimeFormatControls() {
+  const current = bcGetTimeFormat();
+  const sel1 = document.getElementById('pref_time_format');
+  const sel2 = document.getElementById('user_time_format');
+  if (sel1) sel1.value = current;
+  if (sel2) sel2.value = current;
+}
+
+window.addEventListener('bc-time-format-changed', (e) => {
+  syncTimeFormatControls();
+  loadBackupHistory().catch(() => {});
+});
+
+async function onSecurityToggleChange(key, isChecked) {
+  try {
+    await BCApi.adminSecuritySettingsUpdate({ [key]: isChecked });
+    showToast(`Master Security setting updated: ${isChecked ? 'Enabled' : 'Disabled'}`);
+  } catch (err) {
+    showToast('Failed to update master security setting: ' + err.message, 'error');
+  }
+}
+
 function applySettings(values) {
+  if (!values) return;
   document.querySelectorAll('[data-setting]').forEach(el => {
+    if (!el) return;
     const key = el.dataset.setting;
     if (!(key in values)) return;
     const val = values[key];
-    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
-      const on = val === '1' || val === 'true';
-      el.classList.toggle('on', on);
-      el.classList.toggle('off', !on);
+    const isTrue = val === '1' || val === 'true' || val === true || val === 1;
+
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      el.checked = isTrue;
+    } else if (el.tagName === 'BUTTON' && el.classList?.contains('toggle-switch')) {
+      el.classList?.toggle('on', isTrue);
+      el.classList?.toggle('off', !isTrue);
     } else if (el.tagName === 'SELECT') {
-      // match by value first, fall back to matching visible text
-      if ([...el.options].some(o => o.value === val)) el.value = val;
+      if ([...el.options].some(o => o.value === String(val))) el.value = String(val);
       else {
-        const opt = [...el.options].find(o => o.textContent.trim() === val);
+        const opt = [...el.options].find(o => o.textContent.trim() === String(val));
         if (opt) el.value = opt.value;
       }
     } else {
       el.value = val;
     }
   });
+  if (values.time_format) {
+    bcSetTimeFormat(values.time_format, true);
+    syncTimeFormatControls();
+  }
 }
 
 function collectSettings() {
   const out = {};
   document.querySelectorAll('[data-setting]').forEach(el => {
+    if (!el) return;
     const key = el.dataset.setting;
-    if (el.tagName === 'BUTTON' && el.classList.contains('toggle-switch')) {
-      out[key] = el.classList.contains('on') ? '1' : '0';
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      out[key] = el.checked ? '1' : '0';
+    } else if (el.tagName === 'BUTTON' && el.classList?.contains('toggle-switch')) {
+      out[key] = el.classList?.contains('on') ? '1' : '0';
     } else {
       out[key] = el.value;
     }
@@ -501,40 +617,73 @@ async function saveMyAccount() {
   }
 }
 async function saveMyPassword() {
-  const current = document.getElementById('acct_currentPw').value;
-  const next = document.getElementById('acct_newPw').value;
-  const confirm = document.getElementById('acct_confirmPw').value;
-  if (!current || !next) { showToast('Fill in both your current and new password.', 'error'); return; }
-  if (next !== confirm) { showToast('New password and confirmation do not match.', 'error'); return; }
+  const currentEl = document.getElementById('acct_currentPw');
+  const nextEl = document.getElementById('acct_newPw');
+  const confirmEl = document.getElementById('acct_confirmPw');
+  const errEl = document.getElementById('acct_pw_error');
+
+  if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+  nextEl.classList.remove('border-red-500');
+
+  const current = currentEl.value;
+  const next = nextEl.value;
+  const confirm = confirmEl.value;
+
+  if (!current || !next) {
+    const msg = 'Fill in both your current and new password.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    showToast(msg, 'error');
+    return;
+  }
+  if (next !== confirm) {
+    const msg = 'New password and confirmation do not match.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    showToast(msg, 'error');
+    return;
+  }
   try {
     await BCApi.changePassword(current, next);
-    document.getElementById('acct_currentPw').value = '';
-    document.getElementById('acct_newPw').value = '';
-    document.getElementById('acct_confirmPw').value = '';
-    showToast('Password changed.');
+    currentEl.value = '';
+    nextEl.value = '';
+    confirmEl.value = '';
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+    showToast('Password changed successfully.');
   } catch (err) {
-    showToast(err.message, 'error');
+    const msg = err.message || 'Failed to change password.';
+    if (errEl) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+    nextEl.classList.add('border-red-500');
+    nextEl.value = '';
+    confirmEl.value = '';
+    nextEl.focus();
+    showToast(msg, 'error');
   }
 }
 
 async function loadMySecurity() {
   try {
-    const { mfaEnabled } = await BCApi.mySecurity();
+    const res = await BCApi.mySecurity();
     const btn = document.getElementById('mfaToggleBtn');
-    btn.classList.toggle('on', mfaEnabled);
-    btn.classList.toggle('off', !mfaEnabled);
+    if (btn && res) {
+      const mfaEnabled = Boolean(res.mfaEnabled);
+      btn.classList?.toggle('on', mfaEnabled);
+      btn.classList?.toggle('off', !mfaEnabled);
+    }
   } catch (err) {
-    showToast('Could not load your security setting: ' + err.message, 'error');
+    // Non-fatal if personal 2FA toggle element is not rendered
   }
 }
 async function toggleMyMfa() {
   const btn = document.getElementById('mfaToggleBtn');
-  const enabling = btn.classList.contains('off'); // about to turn on
+  if (!btn) return;
+  const enabling = btn.classList?.contains('off'); // about to turn on
   btn.disabled = true;
   try {
     await BCApi.toggleMyMfa(enabling);
-    btn.classList.toggle('on', enabling);
-    btn.classList.toggle('off', !enabling);
+    btn.classList?.toggle('on', enabling);
+    btn.classList?.toggle('off', !enabling);
     showToast(enabling
       ? 'Two-factor authentication turned on for your account. You\'ll get a code by email starting with your next login.'
       : 'Two-factor authentication turned off for your account. You can sign in with just your password from now on.');
@@ -547,6 +696,7 @@ async function toggleMyMfa() {
 
 (async function () {
   const user = await requireAuth();
+  syncTimeFormatControls();
   // My Account + personal 2FA — available to every role, independent of
   // the system-wide settings below (which only System Admin can load/save).
   await Promise.all([loadMyAccount(), loadMySecurity()]);
@@ -562,8 +712,12 @@ async function toggleMyMfa() {
   }
 
   try {
-    const values = await BCApi.settingsList();
-    applySettings(values);
+    const [values, secValues] = await Promise.all([
+      BCApi.settingsList().catch(() => ({})),
+      BCApi.adminSecuritySettingsGet().catch(() => ({})),
+    ]);
+    const mergedValues = Object.assign({}, values, secValues);
+    applySettings(mergedValues);
     await loadBackupHistory();
     // If it's been long enough since the last backup (per Backup Frequency
     // below), this silently runs one now instead of waiting for someone to

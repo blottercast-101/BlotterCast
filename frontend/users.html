@@ -141,9 +141,9 @@
         </select>
         <select id="statusFilter2" class="filter-input" onchange="usersPage=1;renderUsers()">
           <option value="">All Statuses</option>
-          <option value="Active">Active</option>
+          <option value="Active">Active (Online)</option>
+          <option value="Inactive">Inactive (Offline)</option>
           <option value="Suspended">Suspended</option>
-          <option value="Inactive">Inactive</option>
         </select>
       </div>
       <div class="overflow-x-auto">
@@ -191,27 +191,13 @@
         <div><label class="form-label">Email</label><input type="email" id="uf_email" class="form-input" placeholder="email@barangay.gov"/></div>
         <div><label class="form-label">Contact No.</label><input type="text" id="uf_contact" class="form-input" placeholder="09171234567" data-digits-only maxlength="11"/></div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div id="uf_role_wrap">
-          <label class="form-label">Role</label>
-          <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)" required>
-            <option value="" selected disabled>-Select-</option>
-            <option value="System Admin">System Admin</option>
-            <option value="Barangay Captain">Barangay Captain</option>
-            <option value="Desk Officer">Desk Officer</option>
-            <option value="Data Encoder">Data Encoder</option>
-          </select>
-        </div>
-        <div id="uf_status_wrap">
-          <label class="form-label">Status</label>
-          <select id="uf_status" class="form-input">
-            <option value="" selected disabled>-Select-</option>
-            <option value="Active">Active</option>
-            <option value="Suspended">Suspended</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-          <p class="text-xs text-forest-400 mt-1">New accounts always start Active — change status here after creation if needed.</p>
-        </div>
+      <div>
+        <label class="form-label">Role</label>
+        <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)" required>
+          <option value="" disabled selected hidden>-Select-</option>
+          <option value="Desk Officer">Desk Officer</option>
+          <option value="Data Encoder">Data Encoder</option>
+        </select>
       </div>
       <div id="uf_password_wrap">
         <label class="form-label flex items-center justify-between">
@@ -284,20 +270,32 @@ document.getElementById('permMatrix').innerHTML = permissions.map(p=>`
   </tr>`).join('');
 
 let usersData = []; let usersPage = 1; const USERS_ROWS = 8;
-let editUserId = null;
-
-function mapUser(u) {
+let editUserId = null;function mapUser(u) {
+  const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
   return {
     id: Number(u.id), name: u.full_name, username: u.username, email: u.email || '',
-    contact: u.contact_no || '', role: u.role, status: u.status, signaturePath: u.signature_path || null,
-    lastLogin: bcFormatTimestamp(u.last_login),
+    contact: u.contact_no || '', role: u.role, status: u.status,
+    is_online: !!u.is_online,
+    is_protected: isProtected, signaturePath: u.signature_path || null,
+    last_login_raw: u.last_login,
+    get lastLogin() { return bcFormatTimestamp(this.last_login_raw); },
   };
 }
 
-async function loadUsers() {
-  const raw = await BCApi.users();
-  usersData = raw.map(mapUser);
-  renderUsers();
+async function loadUsers(silent = false) {
+  try {
+    const raw = await BCApi.users();
+    usersData = raw.map(mapUser);
+    renderUsers();
+    bcCheckUrlHighlight({
+      items: usersData,
+      pageSize: USERS_ROWS,
+      setPage: (p) => { usersPage = p; },
+      render: renderUsers
+    });
+  } catch (err) {
+    if (!silent) showToast('Could not load users: ' + err.message, 'error');
+  }
 }
 
 async function loadAuditLog() {
@@ -334,8 +332,16 @@ function renderUsers() {
   const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('usersTableBody').innerHTML = pageRows.length === 0
     ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No users match your filters.</td></tr>'
-    : pageRows.map(u=>`
-    <tr>
+    : pageRows.map(u => {
+      const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
+      const statusBadge = u.status === 'Active'
+        ? `<span class="badge badge-resolved text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>ACTIVE</span>`
+        : u.status === 'Suspended'
+        ? `<span class="badge badge-not-complied text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>SUSPENDED</span>`
+        : `<span class="badge badge-closed text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>INACTIVE</span>`;
+
+      return `
+    <tr data-id="${u.id}" data-key="${u.username}">
       <td>
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs">${initials(u.name)}</div>
@@ -347,15 +353,19 @@ function renderUsers() {
       <td class="text-forest-500 text-sm font-mono">${u.username}</td>
       <td><span class="badge badge-resolved text-xs">${u.role}</span></td>
       <td class="text-xs text-forest-400">${u.lastLogin}</td>
-      <td><span class="badge ${u.status==='Active'?'badge-resolved':u.status==='Suspended'?'badge-not-complied':'badge-pending'}">${u.status}</span></td>
+      <td>${statusBadge}</td>
       <td>
-        <div class="row-actions">
+        <div class="row-actions items-center">
           <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> Edit</button>
-          <button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Active'?'Suspend':'Activate'}</button>
-          <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+          ${isProtected
+            ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> Protected</span>`
+            : `<button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Suspended'?'Activate':'Suspend'}</button>
+               <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
+          }
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+    }).join('');
   document.getElementById('usersPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }
@@ -420,10 +430,12 @@ function openAddUser() {
   document.getElementById('userModalTitle').textContent = 'Add New User';
   document.getElementById('userForm').reset();
   resetFormDropdowns('userForm');
+  document.getElementById('uf_role').innerHTML = `
+    <option value="" disabled selected hidden>-Select-</option>
+    <option value="Desk Officer">Desk Officer</option>
+    <option value="Data Encoder">Data Encoder</option>
+  `;
   document.getElementById('uf_username').disabled = false;
-  document.getElementById('uf_status').value = 'Active';
-  document.getElementById('uf_status_wrap').classList.add('hidden');
-  document.getElementById('uf_role_wrap').classList.add('col-span-2');
   document.getElementById('uf_password_wrap').classList.remove('hidden');
   document.getElementById('uf_password').value = '';
   document.getElementById('uf_sig_section').classList.add('hidden');
@@ -432,6 +444,7 @@ function openAddUser() {
 
 function editUser(id) {
   const u = usersData.find(x => x.id === id);
+  if (!u) return;
   editUserId = id;
   document.getElementById('userModalTitle').textContent = 'Edit User';
   document.getElementById('uf_name').value = u.name;
@@ -439,10 +452,17 @@ function editUser(id) {
   document.getElementById('uf_username').disabled = true;
   document.getElementById('uf_email').value = u.email;
   document.getElementById('uf_contact').value = u.contact || '';
+  
+  let roleOpts = `<option value="" disabled hidden>-Select-</option>`;
+  if (u.role === 'System Admin' || u.role === 'Barangay Captain') {
+    roleOpts += `<option value="${u.role}">${u.role}</option>`;
+  }
+  roleOpts += `
+    <option value="Desk Officer">Desk Officer</option>
+    <option value="Data Encoder">Data Encoder</option>
+  `;
+  document.getElementById('uf_role').innerHTML = roleOpts;
   document.getElementById('uf_role').value = u.role;
-  document.getElementById('uf_status').value = u.status;
-  document.getElementById('uf_status_wrap').classList.remove('hidden');
-  document.getElementById('uf_role_wrap').classList.remove('col-span-2');
   
   // Password cannot be edited by admin; users change their own password
   document.getElementById('uf_password_wrap').classList.add('hidden');
@@ -506,16 +526,20 @@ async function removeSignatureNow() {
 }
 
 async function saveUser() {
+  const roleVal = document.getElementById('uf_role').value;
   const vals = {
     name: document.getElementById('uf_name').value.trim(),
     username: document.getElementById('uf_username').value.trim(),
     email: document.getElementById('uf_email').value.trim(),
     contact: document.getElementById('uf_contact').value.trim(),
-    role: document.getElementById('uf_role').value,
-    status: document.getElementById('uf_status').value,
+    role: roleVal,
     password: document.getElementById('uf_password').value.trim(),
   };
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
+  if (!vals.role) { await bcAlert('Please select a valid role.'); return; }
+  if (!editUserId && (vals.role === 'System Admin' || vals.role === 'Barangay Captain')) {
+    await bcAlert('Creating System Admin or Barangay Captain accounts is not allowed.'); return;
+  }
   if (vals.name && !bcIsValidName(vals.name)) { await bcAlert('Full Name should only contain letters (no numbers).'); return; }
   if (vals.email && !bcIsValidEmail(vals.email)) { await bcAlert('Please enter a valid email address.'); return; }
   if (vals.email && usersData.some(u => u.id !== editUserId && u.email.toLowerCase() === vals.email.toLowerCase())) {
@@ -543,7 +567,13 @@ async function saveUser() {
     showToast(err.message, 'error');
   }
 }
+
 async function toggleStatus(id) {
+  const u = usersData.find(x => x.id === id);
+  if (u && (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected)) {
+    showToast('System Admin and Barangay Captain accounts are protected and cannot be suspended.', 'error');
+    return;
+  }
   try {
     const result = await BCApi.toggleUserStatus(id);
     showToast(`User ${result.status.toLowerCase()}.`);
@@ -553,7 +583,13 @@ async function toggleStatus(id) {
     showToast(err.message, 'error');
   }
 }
+
 async function removeUser(id) {
+  const u = usersData.find(x => x.id === id);
+  if (u && (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected)) {
+    showToast('System Admin and Barangay Captain accounts are protected and cannot be deleted.', 'error');
+    return;
+  }
   if (!(await bcConfirm('Permanently delete this user account? This cannot be undone.', { title: 'Delete User Account', okLabel: 'Delete', danger: true }))) return;
   try {
     await BCApi.deleteUser(id);
@@ -564,6 +600,21 @@ async function removeUser(id) {
     showToast(err.message, 'error');
   }
 }
+
+// ── Live Real-Time Presence Sync ────────────────────────────
+// Polls the active user list and presence statuses every 5 seconds
+// so that Active (Online) / Inactive (Offline) / Suspended updates live
+// without requiring manual page reload.
+setInterval(() => {
+  if (!document.hidden) {
+    loadUsers(true);
+  }
+}, 5000);
+
+window.addEventListener('bc-time-format-changed', () => {
+  renderUsers();
+  loadAuditLog().catch(() => {});
+});
 
 (async function () {
   await requireAuth();

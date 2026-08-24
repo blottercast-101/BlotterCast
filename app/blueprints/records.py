@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 
 from ..extensions import db
+from ..geocoding import forward_geocode, is_point_inside_boundary
 from ..helpers import (
     compute_age,
     find_census_resident_id_by_name,
@@ -10,7 +11,7 @@ from ..helpers import (
     next_seq_no,
     parse_date,
     parse_time,
-    zone_coords,
+    resolve_coordinates_by_zone_and_text,
 )
 from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
 from ..permissions import json_error, login_required, permission_required
@@ -40,16 +41,29 @@ def _blotter_party_error(resident: CensusRecord, role_label: str):
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def records_router():
+    rtype = request.args.get("type", "")
+    if rtype == "geocode":
+        q = request.args.get("q", "")
+        zone = request.args.get("zone", "")
+        res = forward_geocode(q, zone)
+        if res:
+            return jsonify({"ok": True, **res})
+        return jsonify({"ok": False, "message": "Location could not be geocoded within Barangay Mapulang Lupa boundary."}), 404
+
     if request.method == "PUT":
         resp = _enforce("edit_records")
         if resp:
             return resp
-    if request.method == "DELETE":
+    elif request.method == "DELETE":
         resp = _enforce("delete_records")
         if resp:
             return resp
+    elif request.method == "POST":
+        perm = "add_blotter" if request.args.get("type") == "blotter" else "edit_records"
+        resp = _enforce(perm)
+        if resp:
+            return resp
 
-    rtype = request.args.get("type", "")
     if rtype == "incidents":
         return _incidents()
     if rtype == "blotter":
@@ -93,10 +107,20 @@ def _incidents():
     if method == "POST":
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
-        if d.get("lat") not in (None, "") and d.get("lng") not in (None, ""):
-            lat, lng = d["lat"], d["lng"]
-        else:
-            lat, lng = zone_coords(zone_id)
+        loc_text = d.get("location", "")
+        lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
+        lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
+
+        # Strict boundary validation if explicit coordinates were passed
+        if lat is not None and lng is not None:
+            if not is_point_inside_boundary(lat, lng):
+                return json_error("Cannot file incident: Location coordinates fall outside Barangay Mapulang Lupa boundary.", 422)
+
+        # Auto-resolve / Forward Geocode if coordinates not supplied
+        if lat is None or lng is None:
+            geo = forward_geocode(loc_text, zone_id)
+            if geo and geo.get("lat") and geo.get("lng"):
+                lat, lng = float(geo["lat"]), float(geo["lng"])
 
         report_no = d.get("reportNo") or next_seq_no(Incident, "report_no", "INC", 4)
         idate = parse_date(d.get("date")) or datetime.utcnow().date()
@@ -105,7 +129,7 @@ def _incidents():
 
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
-            zone_id=zone_id, location=d.get("location", ""), lat=lat, lng=lng,
+            zone_id=zone_id, location=loc_text, lat=lat, lng=lng,
             category=d.get("category") or "Other", description=d.get("description", ""),
             reporter=d.get("reporter", ""), officer=d.get("officer", ""),
             priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
@@ -121,7 +145,7 @@ def _incidents():
             title=f"New Incident Report Filed: {incident.report_no}",
             body=f"[ADD] Case ID: {incident.report_no} • {incident.category} at {incident.location} ({incident.zone_id}) • Actor: {actor} • {ts}",
             severity="critical" if incident.priority == "High" else "info",
-            link="incident.html",
+            link=f"incident.html?highlight={incident.report_no}",
             ref_table="incidents",
             ref_id=incident.id,
         ))
@@ -144,16 +168,28 @@ def _incidents():
 
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
-        lat_def, lng_def = zone_coords(zone_id)
-        lat = d["lat"] if d.get("lat") not in (None, "") else lat_def
-        lng = d["lng"] if d.get("lng") not in (None, "") else lng_def
+        loc_text = d.get("location", "")
+        lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
+        lng = float(d["lng"]) if d.get("lng") not in (None, "") else None
+
+        # Strict boundary validation if explicit coordinates were passed
+        if lat is not None and lng is not None:
+            if not is_point_inside_boundary(lat, lng):
+                return json_error("Cannot update incident: Location coordinates fall outside Barangay Mapulang Lupa boundary.", 422)
+
+        # Auto-resolve / Forward Geocode if coordinates not supplied
+        if lat is None or lng is None:
+            geo = forward_geocode(loc_text, zone_id)
+            if geo and geo.get("lat") and geo.get("lng"):
+                lat, lng = float(geo["lat"]), float(geo["lng"])
+
         time_reported = parse_time(d.get("timeReported")) or parse_time("12:00:00")
 
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
         incident.time_reported = time_reported
         incident.hour = time_reported.hour
         incident.zone_id = zone_id
-        incident.location = d.get("location", "")
+        incident.location = loc_text
         incident.lat = lat
         incident.lng = lng
         incident.category = d.get("category") or "Other"
@@ -170,7 +206,7 @@ def _incidents():
             title=f"Incident Report Updated: {incident.report_no}",
             body=f"[EDIT] Case ID: {incident.report_no} • Status: {incident.status} • Actor: {actor} • {ts}",
             severity="warning" if incident.priority == "High" else "info",
-            link="incident.html",
+            link=f"incident.html?highlight={incident.report_no}",
             ref_table="incidents",
             ref_id=incident.id,
         ))

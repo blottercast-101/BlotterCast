@@ -55,21 +55,14 @@
 
     #map {
       width:100%;
-      height:560px;
-      border-radius:1rem;
+      height:640px;
+      border-radius:0 0 1rem 1rem;
       overflow:hidden;
-      border:1px solid var(--forest-100, #dcf0e0);
       position:relative;
       isolation:isolate;
-      contain:paint; /* extra guarantee that nothing inside can paint outside this box */
+      contain:paint;
     }
 
-    /* Leaflet ships its own z-index scale (controls go up to 1000), which is
-       higher than our sticky header (20) and fixed sidebar (30). Normally
-       isolation+overflow above should contain it, but on some browsers a
-       GPU-transformed tile layer can still bleed through on scroll, so we
-       also cap Leaflet's internal z-indexes directly — keeping their
-       relative order, just scaled well below the header/sidebar. */
     #map .leaflet-tile-pane      { z-index: 1; }
     #map .leaflet-overlay-pane   { z-index: 2; }
     #map .leaflet-shadow-pane    { z-index: 3; }
@@ -84,6 +77,138 @@
     .leaflet-popup-content-wrapper {
       border-radius:14px;
       font-family:'DM Sans', sans-serif;
+      box-shadow: 0 4px 20px rgba(10, 36, 20, 0.15);
+      border: 1px solid var(--forest-100, #dcf0e0);
+    }
+    .leaflet-popup-content {
+      margin: 12px 14px;
+    }
+
+    .incident-popup-box {
+      min-width: 220px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .popup-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #123d22;
+    }
+    .popup-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+    .popup-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .popup-label {
+      color: #6b7280;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .popup-val {
+      font-weight: 600;
+      color: #1f2937;
+      text-align: right;
+      word-break: break-word;
+    }
+    .popup-weight-row {
+      border-top: 1px dashed #e5e7eb;
+      padding-top: 6px;
+      margin-top: 2px;
+      align-items: center;
+    }
+    .popup-weight-val {
+      font-weight: 700;
+      color: #166534;
+      background: #dcf0e0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: monospace;
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.35);
+        opacity: 0.95;
+      }
+      80%, 100% {
+        transform: scale(3.5);
+        opacity: 0;
+      }
+    }
+    @keyframes pulse-dot {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.3);
+      }
+    }
+    .incident-focus-container {
+      background: transparent;
+      border: none;
+    }
+    .incident-focus-pin {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .incident-focus-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(35, 112, 60, 0.35);
+      border: 2px solid rgba(47, 138, 76, 0.85);
+      animation: pulse-ring 1.6s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+    }
+    .incident-focus-ring.delay {
+      animation-delay: 0.55s;
+    }
+    .incident-focus-dot {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      background: #123d22;
+      border: 2.5px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(18, 61, 34, 0.7);
+      animation: pulse-dot 1.6s ease-in-out infinite;
+    }
+
+    .active-incident-row {
+      background-color: #dcf0e0 !important;
+      transition: background-color 0.25s ease;
+    }
+
+    .cat-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
     .stat-pill {
@@ -117,8 +242,6 @@
       font-weight:700;
     }
 
-    /* Heat map severity badges — a different scale (low/medium/high risk)
-       from the status badges used elsewhere, so kept distinct on purpose. */
     .badge-low { background:#e8f5e9; color:#166534; }
     .badge-medium { background:#fff8e1; color:#a16207; }
     .badge-high { background:#fee2e2; color:#b91c1c; }
@@ -132,12 +255,11 @@
       font-size:.9rem;
     }
 
-
     @media (max-width: 1024px) {
       aside { display:none; }
       .content-wrap { margin-left:0 !important; }
       .page-header { flex-direction:column; align-items:flex-start; }
-      #map { height:460px; }
+      #map { height:500px; }
     }
   </style>
 </head>
@@ -257,40 +379,36 @@
 
     <main class="flex-1 p-6 space-y-6">
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 card p-5">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div class="xl:col-span-2 card flex flex-col overflow-hidden">
+          <!-- Header: padding applied here only — map flushes to bottom -->
+          <div class="p-5 pb-3 border-b border-forest-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div class="flex items-center gap-3">
               <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
               <div>
                 <h2 class="font-display text-lg text-forest-800">Mapulang Lupa Heat Map</h2>
-                <p class="text-sm text-forest-500">Incident concentration based on recorded blotter locations</p>
+                <p class="text-sm text-forest-500">Visual density of reported incidents across Barangay Mapulang Lupa zones</p>
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#4ade80;"></div><span>Low</span>
+            <div id="heatmapLegendContainer" class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
+              <span class="font-semibold text-forest-800 mr-1">Zone Density:</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText">Low</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#facc15;"></div><span>Medium</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText">Medium</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#fb923c;"></div><span>Elevated</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText">Elevated</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="legend-box" style="background:#ef4444;"></div><span>High</span>
+              <div class="flex items-center gap-1.5">
+                <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText">High</span>
               </div>
             </div>
           </div>
 
+          <!-- Map: no padding wrapper — flushes directly to card bottom edge -->
           <div id="map"></div>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            <span class="stat-pill">Barangay: Mapulang Lupa</span>
-            <span class="stat-pill">Municipality: Pandi</span>
-            <span class="stat-pill">Source: Blotter records</span>
-            <span class="stat-pill">Boundary file: mapulang-lupa.geojson</span>
-          </div>
         </div>
 
         <div class="flex flex-col gap-6">
@@ -331,14 +449,75 @@
         </div>
       </div>
 
-      <div class="card overflow-hidden">
-        <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg text-forest-800">Incident Location Summary</h2>
-            <p class="text-sm text-forest-500">Only incidents inside the loaded barangay boundary are displayed</p>
+      <!-- Bottom Analytics Metric Cards — Dark Forest Green Gradient -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- Card 1: Top Incident Zone -->
+        <div class="relative overflow-hidden rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between" style="background:#165b33; min-height:120px;">
+          <div class="flex items-center justify-between">
+            <span style="font-size:10px; font-weight:700; letter-spacing:0.12em; color:rgba(167,243,208,0.85); text-transform:uppercase;">Incident Density</span>
+            <div style="padding:6px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;">
+              <!-- Alert / Hotspot icon -->
+              <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
           </div>
+          <div class="mt-3">
+            <h3 id="bottomTopZone" class="font-display text-2xl font-bold text-white leading-tight">—</h3>
+            <p style="font-size:11px; color:rgba(209,250,229,0.7); margin-top:3px; font-weight:500;">Highest Density Zone</p>
+          </div>
+          <!-- Decorative radial shape -->
+          <div style="position:absolute; right:-24px; bottom:-24px; width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,0.05); pointer-events:none;"></div>
         </div>
 
+        <!-- Card 2: Validated Incident Count -->
+        <div class="relative overflow-hidden rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between" style="background:linear-gradient(135deg,#1e6f3d,#4c7a2b); min-height:120px;">
+          <div class="flex items-center justify-between">
+            <span style="font-size:10px; font-weight:700; letter-spacing:0.12em; color:rgba(167,243,208,0.85); text-transform:uppercase;">Total Active Pins</span>
+            <div style="padding:6px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;">
+              <!-- Location pin icon -->
+              <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3">
+            <h3 id="bottomPinCount" class="font-display text-3xl font-bold text-white leading-tight">0</h3>
+            <p style="font-size:11px; color:rgba(209,250,229,0.7); margin-top:3px; font-weight:500;">Verified Boundary Coordinates</p>
+          </div>
+          <div style="position:absolute; right:-24px; bottom:-24px; width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,0.05); pointer-events:none;"></div>
+        </div>
+
+        <!-- Card 3: Hotspot Coverage -->
+        <div class="relative overflow-hidden rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between" style="background:#134e2c; min-height:120px;">
+          <div class="flex items-center justify-between">
+            <span style="font-size:10px; font-weight:700; letter-spacing:0.12em; color:rgba(167,243,208,0.85); text-transform:uppercase;">Hotspot Coverage</span>
+            <div style="padding:6px; border-radius:8px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;">
+              <!-- Map/grid icon -->
+              <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3">
+            <h3 class="font-display text-3xl font-bold text-white leading-tight">7 Zones</h3>
+            <p style="font-size:11px; color:rgba(209,250,229,0.7); margin-top:3px; font-weight:500;">Mapulang Lupa Spatial Grid</p>
+          </div>
+          <div style="position:absolute; right:-24px; bottom:-24px; width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,0.05); pointer-events:none;"></div>
+        </div>
+
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="font-display text-lg text-forest-800">Incident Location Summary</h2>
+            <p id="tableSubtitle" class="text-sm text-forest-500">Only incidents inside the loaded barangay boundary are displayed on the map canvas</p>
+          </div>
+          <div id="unmappedSummaryBadge" class="hidden"></div>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -350,6 +529,7 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Weight</th>
+                <th class="text-center w-24">Actions</th>
               </tr>
             </thead>
             <tbody id="incidentTableBody"></tbody>
@@ -362,8 +542,8 @@
   <script src="api.js"></script>
   <script src="permissions.js"></script>
   <script src="app.js"></script>
-<script src="icons.js"></script>
-<script src="custom-controls.js"></script>
+  <script src="icons.js"></script>
+  <script src="custom-controls.js"></script>
   <script>
     // Approximate center of Mapulang Lupa, Pandi, Bulacan
     const MAP_CENTER = [14.8831, 120.9651];
@@ -373,24 +553,379 @@
     const WEIGHTS = { High: 1.0, Medium: 0.7, Low: 0.45 };
     let incidents = [];
 
+    const CATEGORY_STYLES = {
+      'Physical Assault':      { bg: '#fee2e2', color: '#991b1b', border: '#fecaca' },
+      'Theft':                 { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+      'Domestic Dispute':      { bg: '#e0f2fe', color: '#075985', border: '#bae6fd' },
+      'Vandalism':             { bg: '#f3e8ff', color: '#6b21a8', border: '#e9d5ff' },
+      'Drug-Related Activity': { bg: '#ffedd5', color: '#9a3412', border: '#fed7aa' },
+      'Public Disturbance':    { bg: '#fef9c3', color: '#854d0e', border: '#fef08a' },
+      'Trespassing':           { bg: '#f1f5f9', color: '#334155', border: '#e2e8f0' },
+      'Other':                 { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' },
+    };
+
+    function getCategoryBadge(category) {
+      const style = CATEGORY_STYLES[category] || { bg: '#dcf0e0', color: '#1a5730', border: '#b8e0c0' };
+      return `<span class="cat-badge" style="background:${style.bg}; color:${style.color}; border:1px solid ${style.border};">${category}</span>`;
+    }
+
+    const computeDynamicDensityTiers = (zoneCounts) => {
+      const counts = Object.values(zoneCounts || {});
+      const maxCount = counts.length > 0 ? Math.max(...counts, 0) : 0;
+
+      // If no incidents exist
+      if (maxCount === 0) {
+        return {
+          maxCount: 0,
+          getTier: () => ({
+            label: 'No Incidents',
+            color: '#E2E8F0',
+            border: '#94A3B8',
+            opacity: 0.20,
+            fillOpacity: 0.20,
+            badgeClass: 'bg-slate-100 text-slate-700'
+          }),
+          ranges: { low: '0', medium: '0', elevated: '0', high: '0' }
+        };
+      }
+
+      // Calculate dynamic step thresholds (25%, 50%, 75% of maxCount)
+      let lowLimit, medLimit, eleLimit;
+      if (maxCount <= 3) {
+        lowLimit = 1;
+        medLimit = Math.min(2, maxCount);
+        eleLimit = Math.min(3, maxCount);
+      } else {
+        lowLimit = Math.max(1, Math.round(maxCount * 0.25));
+        medLimit = Math.max(lowLimit + 1, Math.round(maxCount * 0.50));
+        eleLimit = Math.max(medLimit + 1, Math.round(maxCount * 0.75));
+      }
+
+      const getTier = (count) => {
+        if (count === 0 || count == null) {
+          return {
+            label: 'None',
+            color: '#E2E8F0',
+            border: '#94A3B8',
+            opacity: 0.20,
+            fillOpacity: 0.20,
+            badgeClass: 'bg-slate-100 text-slate-700'
+          };
+        }
+        if (count > eleLimit) {
+          return {
+            label: 'High',
+            color: '#EF4444',
+            border: '#DC2626',
+            opacity: 0.50,
+            fillOpacity: 0.50,
+            badgeClass: 'bg-red-500 text-white'
+          };
+        }
+        if (count > medLimit) {
+          return {
+            label: 'Elevated',
+            color: '#FB923C',
+            border: '#EA580C',
+            opacity: 0.45,
+            fillOpacity: 0.45,
+            badgeClass: 'bg-orange-400 text-white'
+          };
+        }
+        if (count > lowLimit) {
+          return {
+            label: 'Medium',
+            color: '#FACC15',
+            border: '#CA8A04',
+            opacity: 0.40,
+            fillOpacity: 0.40,
+            badgeClass: 'bg-yellow-400 text-gray-900'
+          };
+        }
+        return {
+          label: 'Low',
+          color: '#10B981',
+          border: '#059669',
+          opacity: 0.35,
+          fillOpacity: 0.35,
+          badgeClass: 'bg-emerald-500 text-white'
+        };
+      };
+
+      const ranges = {
+        low: `1 – ${lowLimit}`,
+        medium: lowLimit < medLimit ? `${lowLimit + 1} – ${medLimit}` : `${medLimit}`,
+        elevated: medLimit < eleLimit ? `${medLimit + 1} – ${eleLimit}` : `${eleLimit}`,
+        high: eleLimit < maxCount ? `${eleLimit + 1} – ${maxCount}` : `${maxCount}+`
+      };
+
+      return {
+        maxCount,
+        lowLimit,
+        medLimit,
+        eleLimit,
+        getTier,
+        ranges
+      };
+    };
+
+    function updateLegendUI(tierEngine) {
+      if (!tierEngine || !tierEngine.ranges) return;
+      const r = tierEngine.ranges;
+      const lowEl = document.getElementById('legendLowText');
+      const medEl = document.getElementById('legendMedText');
+      const eleEl = document.getElementById('legendEleText');
+      const highEl = document.getElementById('legendHighText');
+      if (lowEl) lowEl.textContent = `Low (${r.low})`;
+      if (medEl) medEl.textContent = `Medium (${r.medium})`;
+      if (eleEl) eleEl.textContent = `Elevated (${r.elevated})`;
+      if (highEl) highEl.textContent = `High (${r.high})`;
+    }
+
+    function getZoneIncidentCounts(data) {
+      const counts = {};
+      (data || []).forEach(item => {
+        if (item.zone) {
+          counts[item.zone] = (counts[item.zone] || 0) + 1;
+        }
+      });
+      return counts;
+    }
+
+    function createIncidentPopupContent(item, zoneCount = 1, tier = null) {
+      return `
+        <div class="incident-popup-box">
+          <div class="popup-header flex items-center justify-between gap-2 border-b pb-2 mb-2">
+            <div>
+              <span class="popup-title font-bold text-forest-900 block text-sm">Incident #${item.id}</span>
+              <span class="text-xs font-semibold text-forest-700">${item.zone} — ${zoneCount} Incident${zoneCount !== 1 ? 's' : ''} (${tier ? tier.label : 'Low'})</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${tier ? tier.badgeClass : 'bg-emerald-500 text-white'}">${tier ? tier.label : 'Low'}</span>
+              ${getCategoryBadge(item.category)}
+            </div>
+          </div>
+          <div class="popup-body">
+            <div class="popup-row">
+              <span class="popup-label">Date:</span>
+              <span class="popup-val">${item.date}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Zone:</span>
+              <span class="popup-val font-semibold text-forest-700">${item.zone}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Location Detail:</span>
+              <span class="popup-val">${item.locationDetail || '—'}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Full Location:</span>
+              <span class="popup-val">${item.location}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Coordinates:</span>
+              <span class="popup-val font-mono">${item.lat != null ? item.lat.toFixed(5) : '—'}, ${item.lng != null ? item.lng.toFixed(5) : '—'}</span>
+            </div>
+            <div class="popup-row popup-weight-row">
+              <span class="popup-label">Incident Weight:</span>
+              <span class="popup-weight-val">${item.weight.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Authentic geographical landmark coordinates and aliases for Barangay Mapulang Lupa
+    const ZONE_LANDMARK_COORDINATES = {
+      'Zone 1': {
+        name: 'Residence 3',
+        aliases: ['residence 3', 'residences 3', 'pandi residences 3', 'pandi residence 3', 'res 3', 'res3'],
+        latitude: 14.881000,
+        longitude: 120.969500,
+      },
+      'Zone 2': {
+        name: 'Residence 1',
+        aliases: ['residence 1', 'residences 1', 'pandi residences 1', 'pandi residence 1', 'res 1', 'res1'],
+        latitude: 14.881800,
+        longitude: 120.960200,
+      },
+      'Zone 3': {
+        name: 'Pandi Village 2 (Atlantica)',
+        aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'],
+        latitude: 14.879500,
+        longitude: 120.966800,
+      },
+      'Zone 4': {
+        name: 'Mitay 1',
+        aliases: ['mitay 1', 'mitay', 'sitio mitay'],
+        latitude: 14.883500,
+        longitude: 120.964800,
+      },
+      'Zone 5': {
+        name: 'Sitio Gubat',
+        aliases: ['sitio gubat', 'gubat'],
+        latitude: 14.885800,
+        longitude: 120.966500,
+      },
+      'Zone 6': {
+        name: 'Bangko St.',
+        aliases: ['bangko st', 'bangko street', 'bangko'],
+        latitude: 14.884200,
+        longitude: 120.962500,
+      },
+      'Zone 7': {
+        name: 'Barangka St.',
+        aliases: ['barangka st', 'barangka street', 'barangka'],
+        latitude: 14.885200,
+        longitude: 120.964000,
+      },
+    };
+
+    const MAPULANG_LUPA_GAZETTEER = [
+      { name: 'Pandi Residences 1', aliases: ['pandi residences 1', 'pandi residence 1', 'residence 1', 'residences 1', 'res 1', 'res1'], lat: 14.881800, lng: 120.960200 },
+      { name: 'Pandi Residences 3', aliases: ['pandi residences 3', 'pandi residence 3', 'residence 3', 'residences 3', 'res 3', 'res3'], lat: 14.881000, lng: 120.969500 },
+      { name: 'Pandi Village 2 (Atlantica)', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.966800 },
+      { name: 'Pandi Encampment One', aliases: ['pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi encampment', 'encampment'], lat: 14.883059, lng: 120.963831 },
+      { name: 'Mitay 1', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'], lat: 14.883500, lng: 120.964800 },
+      { name: 'Sitio Gubat', aliases: ['sitio gubat', 'gubat', 'purok gubat'], lat: 14.885800, lng: 120.966500 },
+      { name: 'Bangko St.', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'bangko lane'], lat: 14.884200, lng: 120.962500 },
+      { name: 'Barangka St.', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka'], lat: 14.885200, lng: 120.964000 },
+      { name: 'Mapulang Lupa Barangay Hall', aliases: ['barangay hall', 'brgy hall', 'hall', 'mapulang lupa hall'], lat: 14.883600, lng: 120.965500 },
+      { name: 'Mapulang Lupa Elementary School', aliases: ['elementary school', 'mapulang lupa elementary', 'elem school', 'es school'], lat: 14.880000, lng: 120.963400 },
+      { name: 'Sitio Bata', aliases: ['sitio bata', 'bata'], lat: 14.886300, lng: 120.967900 },
+      { name: 'Silangan Corridor', aliases: ['silangan', 'silangan corridor', 'pandi-angat road', 'pandi angat rd'], lat: 14.888400, lng: 120.964000 },
+    ];
+
+    // Substring & forward gazetteer coordinate resolver (resolves streets, subdivisions, encampments)
+    function resolveCoordinatesByZoneAndText(zone, locationDetail) {
+      if (!locationDetail && !zone) return null;
+      const normalizedText = (locationDetail || '').toString().toLowerCase().trim();
+
+      // 1. Check full Mapulang Lupa gazetteer
+      for (const entry of MAPULANG_LUPA_GAZETTEER) {
+        if (entry.name.toLowerCase() === normalizedText || entry.aliases.some(alias => normalizedText.includes(alias))) {
+          return {
+            latitude: entry.lat,
+            longitude: entry.lng,
+          };
+        }
+      }
+
+      // 2. Fall back to Zone center landmark if recognized
+      const zoneLandmark = ZONE_LANDMARK_COORDINATES[zone];
+      if (zoneLandmark) {
+        const matches = (zoneLandmark.aliases || []).some(alias => normalizedText.includes(alias.toLowerCase()));
+        if (matches || normalizedText.includes(zoneLandmark.name.toLowerCase())) {
+          return {
+            latitude: zoneLandmark.latitude,
+            longitude: zoneLandmark.longitude,
+          };
+        }
+      }
+      return null;
+    }
+
+    // Hard-Enforced Boundary & Coordinate Validation Engine
+    function isRecordValidAndWithinBoundary(incident, boundaryGeoJSON) {
+      if (!incident) return false;
+
+      let lat = incident.lat != null ? Number(incident.lat) : null;
+      let lng = incident.lng != null ? Number(incident.lng) : null;
+
+      // If missing or unassigned coordinates, attempt landmark resolution from location text
+      if ((lat == null || lng == null || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) && incident.zone && (incident.locationDetail || incident.location)) {
+        const resolved = resolveCoordinatesByZoneAndText(incident.zone, incident.locationDetail || incident.location);
+        if (resolved) {
+          lat = resolved.latitude;
+          lng = resolved.longitude;
+          incident.lat = lat;
+          incident.lng = lng;
+          incident.hasValidCoords = true;
+        }
+      }
+
+      // 1. Strict null / undefined / zero / NaN checks
+      if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return false;
+
+      // 2. Strict mock / gibberish location filter
+      const loc = (incident.locationDetail || incident.location || '').trim().toLowerCase();
+      if (loc.length < 4) return false;
+      const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
+      if (mockKeywords.some(kw => loc.includes(kw))) return false;
+
+      // 3. Strict Point-in-Polygon check (Turf expects [longitude, latitude])
+      if (!boundaryGeoJSON) return false;
+      try {
+        const point = turf.point([lng, lat]);
+        if (turf.booleanPointInPolygon(point, boundaryGeoJSON)) {
+          return true;
+        }
+      } catch (err) {}
+
+      // 4. Mathematical Ray-Casting algorithm fallback on polygon coordinates [lng, lat]
+      try {
+        const coords = boundaryGeoJSON.geometry ? boundaryGeoJSON.geometry.coordinates[0] : (boundaryGeoJSON.coordinates ? boundaryGeoJSON.coordinates[0] : null);
+        if (!coords || !coords.length) return false;
+        let inside = false;
+        for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+          const xi = coords[i][0], yi = coords[i][1]; // xi = lng, yi = lat
+          const xj = coords[j][0], yj = coords[j][1]; // xj = lng, yj = lat
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateIncidentBoundaryStatuses() {
+      incidents.forEach(item => {
+        const valid = isRecordValidAndWithinBoundary(item, boundaryGeojson);
+        item.isInsideBoundary = valid;
+        item.isUnmapped = !valid;
+      });
+    }
+
     async function loadIncidents() {
       await requireAuth();
       const raw = await BCApi.heatmap();
       const now = new Date(); now.setHours(0, 0, 0, 0);
       const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
       const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
-      incidents = raw
-        .filter(r => r.lat != null && r.lng != null)
-        .map(r => {
-          const d = new Date(r.incident_date + 'T00:00:00');
-          return {
-            id: r.id, date: r.incident_date,
-            period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
-            category: r.category, location: bcFormatIncidentLocation(r.zone_id, r.location),
-            lat: parseFloat(r.lat), lng: parseFloat(r.lng),
-            weight: WEIGHTS[r.priority] || 0.6,
-          };
-        });
+      incidents = (Array.isArray(raw) ? raw : []).map(r => {
+        let hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
+        let lat = hasCoords ? parseFloat(r.lat) : null;
+        let lng = hasCoords ? parseFloat(r.lng) : null;
+
+        // Auto-resolve coordinates if missing but has recognized landmark
+        if (!hasCoords && r.zone_id && r.location) {
+          const resolved = resolveCoordinatesByZoneAndText(r.zone_id, r.location);
+          if (resolved) {
+            lat = resolved.latitude;
+            lng = resolved.longitude;
+            hasCoords = true;
+          }
+        }
+
+        const d = new Date((r.incident_date || '') + 'T00:00:00');
+        return {
+          id: r.id,
+          date: r.incident_date || '—',
+          period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
+          category: r.category || 'Other',
+          zone: r.zone_id || 'Zone 1',
+          locationDetail: r.location || '',
+          location: bcFormatIncidentLocation(r.zone_id, r.location),
+          lat,
+          lng,
+          hasValidCoords: hasCoords,
+          weight: WEIGHTS[r.priority] || 0.6,
+          isInsideBoundary: false,
+          isUnmapped: true,
+        };
+      });
+      updateIncidentBoundaryStatuses();
     }
 
     const map = L.map('map', {
@@ -398,13 +933,6 @@
       preferCanvas: true
     }).setView(MAP_CENTER, 16);
 
-    // The map is initialized while cdn.tailwindcss.com may still be
-    // injecting the grid/column classes that determine this card's final
-    // width, so Leaflet can compute its internal size from a stale
-    // (usually too-wide) container box. That desync is what causes the
-    // heat layer / tiles / controls to render outside the map card and
-    // overlap the header or the side rail. Force Leaflet to remeasure
-    // once the real layout has settled, and again on any resize.
     setTimeout(() => map.invalidateSize(), 250);
     window.addEventListener('load', () => map.invalidateSize());
     window.addEventListener('resize', () => map.invalidateSize());
@@ -419,8 +947,14 @@
 
     let boundaryLayer = null;
     let boundaryGeojson = null;
+    let zonesLayer = null;
+    let zonesGeojson = null;
     let heatLayer = null;
     let markerLayer = L.layerGroup().addTo(map);
+    let highlightLayer = L.layerGroup().addTo(map);
+    let markerMap = new Map();
+    let pulseTimer = null;
+    let activeRowId = null;
 
     const periodFilter = document.getElementById('periodFilter');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -432,46 +966,121 @@
 
     async function loadBoundary() {
       try {
-        const res = await fetch('mapulang-lupa.geojson');
-        if (!res.ok) throw new Error('Boundary file not found.');
+        const [boundRes, zonesRes] = await Promise.all([
+          fetch('mapulang-lupa.geojson'),
+          fetch('mapulang-lupa-zones.geojson')
+        ]);
 
-        boundaryGeojson = await res.json();
+        if (boundRes.ok) {
+          boundaryGeojson = await boundRes.json();
+          boundaryLayer = L.geoJSON(boundaryGeojson, {
+            interactive: false,
+            style: {
+              color: '#064e3b',
+              weight: 3.5,
+              fillColor: 'transparent',
+              fillOpacity: 0
+            }
+          }).addTo(map);
 
-        boundaryLayer = L.geoJSON(boundaryGeojson, {
-          style: {
-            color: '#23703c',
-            weight: 3,
-            fillColor: '#4fa868',
-            fillOpacity: 0.10
-          }
-        }).addTo(map);
+          map.invalidateSize();
+          map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+          updateIncidentBoundaryStatuses();
+        }
 
-        map.invalidateSize();
-        map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+        if (zonesRes.ok) {
+          zonesGeojson = await zonesRes.json();
+        }
       } catch (err) {
         console.error('Boundary file error:', err);
       }
     }
 
-    function getFilteredIncidents() {
+    function getZonePolygonStyle(feature, tierEngine, zoneCounts) {
+      const zoneId = feature.properties.zone;
+      const count = zoneCounts[zoneId] || 0;
+      const tier = tierEngine.getTier(count);
+      return {
+        fillColor: tier.color,
+        fillOpacity: tier.fillOpacity || tier.opacity,
+        color: tier.border,
+        weight: 1.5,
+        dashArray: '4',
+      };
+    }
+
+    function renderZoneChoropleth(data, tierEngine, zoneCounts) {
+      if (zonesLayer) {
+        map.removeLayer(zonesLayer);
+        zonesLayer = null;
+      }
+      if (!zonesGeojson) return;
+
+      zonesLayer = L.geoJSON(zonesGeojson, {
+        style: (feature) => getZonePolygonStyle(feature, tierEngine, zoneCounts),
+        onEachFeature: (feature, layer) => {
+          const zProps = feature.properties;
+          const count = zoneCounts[zProps.zone] || 0;
+          const tier = tierEngine.getTier(count);
+
+          // Tooltip on hover
+          layer.bindTooltip(`
+            <div class="font-sans text-xs">
+              <strong>${zProps.zone} (${zProps.name})</strong><br/>
+              <span style="color:${count > 0 ? tier.color : '#6B7280'}">${count} Incident${count !== 1 ? 's' : ''} (${count > 0 ? tier.label : 'None'})</span>
+            </div>
+          `, { sticky: true, className: 'zone-tooltip' });
+
+          // Popup on click
+          layer.bindPopup(`
+            <div class="p-2 font-sans text-xs space-y-1.5">
+              <div class="flex items-center justify-between gap-2 border-b pb-1.5">
+                <strong class="text-sm font-bold text-forest-900">${zProps.zone}</strong>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? tier.badgeClass : 'bg-gray-100 text-gray-700'}">${count > 0 ? tier.label : 'No Incidents'}</span>
+              </div>
+              <div><strong>Primary Landmark:</strong> ${zProps.landmark || zProps.name}</div>
+              <div><strong>Total Incidents:</strong> <span class="font-bold text-forest-800">${count}</span></div>
+              <div><strong>Density Tier:</strong> <span style="color:${count > 0 ? tier.color : '#6B7280'}; font-weight:600;">${count > 0 ? tier.label : 'Zero Activity'}</span></div>
+            </div>
+          `);
+
+          layer.on('mouseover', (e) => {
+            const l = e.target;
+            l.setStyle({
+              weight: 3,
+              color: '#111827',
+              fillOpacity: 0.65,
+              dashArray: ''
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+              l.bringToFront();
+            }
+          });
+
+          layer.on('mouseout', (e) => {
+            if (zonesLayer) {
+              zonesLayer.resetStyle(e.target);
+            }
+          });
+        }
+      }).addTo(map);
+
+      if (zonesLayer && zonesLayer.bringToBack) {
+        zonesLayer.bringToBack();
+      }
+    }
+
+    function getFilteredIncidents(onlyMapped = false) {
       const period = periodFilter.value;
       const category = categoryFilter.value;
 
-      let filtered = incidents.filter(item => {
+      return incidents.filter(item => {
         const periodMatch = period === 'all' ? true : (period === 'month' ? (item.period === 'month' || item.period === 'week') : item.period === period);
         const categoryMatch = category === 'all' ? true : item.category === category;
-        return periodMatch && categoryMatch;
+        if (!periodMatch || !categoryMatch) return false;
+        if (onlyMapped) return !item.isUnmapped;
+        return true;
       });
-
-      // Only keep points inside the loaded boundary
-      if (boundaryGeojson) {
-        filtered = filtered.filter(item => {
-          const point = turf.point([item.lng, item.lat]);
-          return turf.booleanPointInPolygon(point, boundaryGeojson);
-        });
-      }
-
-      return filtered;
     }
 
     function getCategoryCounts(data) {
@@ -485,7 +1094,10 @@
     function renderHeatMap(data) {
       if (heatLayer) map.removeLayer(heatLayer);
 
-      const heatPoints = data.map(item => [item.lat, item.lng, item.weight]);
+      // Only plot points that strictly fall inside the boundary with authentic coordinates
+      const heatPoints = data
+        .filter(item => !item.isUnmapped && item.lat != null && item.lng != null)
+        .map(item => [item.lat, item.lng, item.weight]);
 
       heatLayer = L.heatLayer(heatPoints, {
         radius: 30,
@@ -493,49 +1105,153 @@
         maxZoom: 17,
         minOpacity: 0.35,
         gradient: {
-          0.20: '#4ade80',
-          0.45: '#facc15',
-          0.65: '#fb923c',
-          0.85: '#ef4444'
+          0.2: '#10B981', // Green (Low: 1–24)
+          0.5: '#FACC15', // Yellow (Medium: 25–49)
+          0.8: '#FB923C', // Orange (Elevated: 50–100)
+          1.0: '#EF4444'  // Red (High: 101+)
         }
       }).addTo(map);
     }
 
-    function renderMarkers(data) {
+    function renderMarkers(data, tierEngine, zoneCounts) {
       markerLayer.clearLayers();
+      markerMap.clear();
       if (!showMarkers.checked) return;
 
-      data.forEach(item => {
+      // Only render markers for authentic verified coordinates within the barangay boundary
+      data.filter(item => !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
+        const zoneCount = zoneCounts[item.zone] || 1;
+        const tier = tierEngine ? tierEngine.getTier(zoneCount) : null;
+
         const marker = L.circleMarker([item.lat, item.lng], {
-          radius: 6,
+          radius: 7,
           color: '#ffffff',
           weight: 2,
-          fillColor: '#123d22',
+          fillColor: tier ? tier.color : '#10B981',
           fillOpacity: 0.95
-        }).bindPopup(`
-          <div style="min-width:190px;">
-            <div style="font-weight:700; color:#123d22; margin-bottom:4px;">${item.category}</div>
-            <div><strong>ID:</strong> ${item.id}</div>
-            <div><strong>Date:</strong> ${item.date}</div>
-            <div><strong>Location:</strong> ${item.location}</div>
-            <div><strong>Coordinates:</strong> ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
-          </div>
-        `);
+        }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
+
+        marker.on('click', () => {
+          triggerMarkerPulse(item.lat, item.lng);
+          highlightTableRow(item.id);
+        });
+
+        markerMap.set(item.id, marker);
         markerLayer.addLayer(marker);
       });
     }
 
-    function renderSummary(data) {
-      totalVisible.textContent = data.length;
+    function triggerMarkerPulse(lat, lng) {
+      if (pulseTimer) clearTimeout(pulseTimer);
+      highlightLayer.clearLayers();
 
-      const counts = getCategoryCounts(data);
+      const pulseIcon = L.divIcon({
+        className: 'incident-focus-container',
+        html: `
+          <div class="incident-focus-pin">
+            <div class="incident-focus-ring"></div>
+            <div class="incident-focus-ring delay"></div>
+            <div class="incident-focus-dot"></div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const pulseMarker = L.marker([lat, lng], { icon: pulseIcon, zIndexOffset: 1000 });
+      highlightLayer.addLayer(pulseMarker);
+
+      pulseTimer = setTimeout(() => {
+        highlightLayer.clearLayers();
+      }, 5000);
+    }
+
+    function highlightTableRow(id) {
+      if (activeRowId) {
+        const prev = document.getElementById(`incident-row-${activeRowId}`);
+        if (prev) prev.classList.remove('active-incident-row');
+      }
+      activeRowId = id;
+      const cur = document.getElementById(`incident-row-${id}`);
+      if (cur) {
+        cur.classList.add('active-incident-row');
+      }
+    }
+
+    function focusIncidentOnMap(id) {
+      const item = incidents.find(r => r.id === id);
+      if (!item || item.isUnmapped || item.lat == null || item.lng == null) {
+        if (typeof showToast === 'function') {
+          showToast('Cannot locate on map: location is outside barangay boundary or unmapped.', 'warning');
+        }
+        return;
+      }
+
+      // 1. Ensure markers layer is active/visible
+      if (!showMarkers.checked) {
+        showMarkers.checked = true;
+        renderMarkers(getFilteredIncidents(true));
+      }
+
+      // 2. Smoothly scroll viewport up to the map canvas if needed
+      const mapCard = document.getElementById('map');
+      if (mapCard) {
+        const rect = mapCard.getBoundingClientRect();
+        if (rect.top < 60 || rect.bottom > window.innerHeight) {
+          mapCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      // 3. Highlight the table row
+      highlightTableRow(item.id);
+
+      // 4. Highlight & pulse map marker at exact coordinates
+      triggerMarkerPulse(item.lat, item.lng);
+
+      // 5. Smooth fly & zoom to the exact incident coordinate
+      map.flyTo([item.lat, item.lng], 18, { duration: 1.2 });
+
+      // 6. Auto-open popup on that marker
+      const marker = markerMap.get(item.id);
+      if (marker) {
+        marker.openPopup();
+        map.once('moveend', () => {
+          marker.openPopup();
+        });
+      }
+    }
+
+    function renderSummary(mappedData, zoneCounts) {
+      totalVisible.textContent = mappedData.length;
+
+      const counts = getCategoryCounts(mappedData);
       const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
       topCategory.textContent = entries.length ? `${entries[0][0]} (${entries[0][1]})` : 'No data';
+
+      // ── Bottom metric cards ──────────────────────────────────────────────
+      const pinCountEl = document.getElementById('bottomPinCount');
+      if (pinCountEl) {
+        pinCountEl.textContent = `${mappedData.length} Reported Incident${mappedData.length !== 1 ? 's' : ''}`;
+      }
+      const topZoneEl = document.getElementById('bottomTopZone');
+      if (topZoneEl && zoneCounts) {
+        const zoneEntries = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1]);
+        if (zoneEntries.length) {
+          const [zoneId, zoneCount] = zoneEntries[0];
+          const landmark = (ZONE_LANDMARK_COORDINATES || {})[zoneId];
+          topZoneEl.textContent = landmark
+            ? `${zoneId} — ${landmark.name} (${zoneCount})`
+            : `${zoneId} (${zoneCount})`;
+        } else {
+          topZoneEl.textContent = '—';
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────
 
       categoryList.innerHTML = '';
 
       if (!entries.length) {
-        categoryList.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters.</p>';
+        categoryList.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters within the boundary.</p>';
         return;
       }
 
@@ -557,39 +1273,94 @@
       });
     }
 
-    function renderTable(data) {
+    function renderTable(allFilteredData) {
       incidentTableBody.innerHTML = '';
 
-      if (!data.length) {
+      const unmappedCount = allFilteredData.filter(i => i.isUnmapped).length;
+      const mappedCount = allFilteredData.filter(i => !i.isUnmapped).length;
+
+      const subtitleEl = document.getElementById('tableSubtitle');
+      if (subtitleEl) {
+        if (allFilteredData.length === 0) {
+          subtitleEl.textContent = 'No incident records recorded in the system.';
+        } else if (unmappedCount > 0) {
+          subtitleEl.innerHTML = `Only incidents inside the loaded barangay boundary are displayed on the map canvas (<strong class="text-amber-800 font-semibold">${unmappedCount} unmapped record${unmappedCount > 1 ? 's' : ''}</strong> excluded from map view).`;
+        } else {
+          subtitleEl.textContent = `All ${mappedCount} filtered incidents are mapped within the loaded barangay boundary.`;
+        }
+      }
+
+      const unmappedBadge = document.getElementById('unmappedSummaryBadge');
+      if (unmappedBadge) {
+        if (unmappedCount > 0) {
+          unmappedBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200';
+          unmappedBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> ${unmappedCount} Unmapped / Outside Boundary`;
+        } else {
+          unmappedBadge.className = 'hidden';
+        }
+      }
+
+      if (!allFilteredData.length) {
         incidentTableBody.innerHTML = `
           <tr>
-            <td colspan="7">No incident data for the selected filter or inside the current boundary.</td>
+            <td colspan="8" class="text-center py-8 text-forest-400 text-sm font-medium">No incident records recorded in the system.</td>
           </tr>
         `;
         return;
       }
 
-      data.forEach(item => {
+      allFilteredData.forEach(item => {
         const tr = document.createElement('tr');
+        tr.id = `incident-row-${item.id}`;
+        if (activeRowId === item.id) {
+          tr.classList.add('active-incident-row');
+        }
+
+        const locationCol = item.isUnmapped
+          ? `<div>
+               <div class="text-forest-800 font-medium">${item.location}</div>
+               <span class="inline-flex items-center mt-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                 Unmapped / Outside Boundary
+               </span>
+             </div>`
+          : `<div class="text-forest-800 font-medium">${item.location}</div>`;
+
+        const coordsContent = !item.isUnmapped && item.lat != null && item.lng != null
+          ? `<td class="font-mono text-xs text-forest-700 font-medium">${item.lat.toFixed(5)}</td><td class="font-mono text-xs text-forest-700 font-medium">${item.lng.toFixed(5)}</td>`
+          : `<td colspan="2" class="text-xs text-gray-400 font-mono text-center">N/A</td>`;
+
+        const actionBtn = !item.isUnmapped && item.lat != null && item.lng != null
+          ? `<button onclick="focusIncidentOnMap(${item.id})" class="icon-btn text-forest-700 hover:text-forest-900" title="View on Map"><span data-icon="view" data-icon-size="16"></span></button>`
+          : `<button disabled class="icon-btn opacity-40 cursor-not-allowed text-gray-400" title="Cannot locate on map: location is outside barangay boundary or unmapped"><span data-icon="view" data-icon-size="16"></span></button>`;
+
         tr.innerHTML = `
-          <td>${item.id}</td>
+          <td class="font-semibold text-forest-700">#${item.id}</td>
           <td>${item.date}</td>
-          <td>${item.category}</td>
-          <td>${item.location}</td>
-          <td>${item.lat.toFixed(4)}</td>
-          <td>${item.lng.toFixed(4)}</td>
-          <td>${item.weight.toFixed(2)}</td>
+          <td>${getCategoryBadge(item.category)}</td>
+          <td>${locationCol}</td>
+          ${coordsContent}
+          <td><span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forest-50 text-forest-700 border border-forest-100">${item.weight.toFixed(2)}</span></td>
+          <td class="text-center w-24">
+            ${actionBtn}
+          </td>
         `;
         incidentTableBody.appendChild(tr);
       });
     }
 
     function updateHeatMapPage() {
-      const filtered = getFilteredIncidents();
-      renderHeatMap(filtered);
-      renderMarkers(filtered);
-      renderSummary(filtered);
-      renderTable(filtered);
+      const mappedOnly = getFilteredIncidents(true);
+      const allFiltered = getFilteredIncidents(false);
+
+      const zoneCounts = getZoneIncidentCounts(mappedOnly);
+      const tierEngine = computeDynamicDensityTiers(zoneCounts);
+
+      updateLegendUI(tierEngine);
+      renderZoneChoropleth(mappedOnly, tierEngine, zoneCounts);
+      renderHeatMap(mappedOnly);
+      renderMarkers(mappedOnly, tierEngine, zoneCounts);
+      renderSummary(mappedOnly, zoneCounts);
+      renderTable(allFiltered);
     }
 
     periodFilter.addEventListener('change', updateHeatMapPage);
@@ -598,11 +1369,11 @@
 
     (async function () {
       try {
-        await loadIncidents();
         await loadBoundary();
+        await loadIncidents();
         updateHeatMapPage();
       } catch (err) {
-        boundaryStatus.innerHTML = 'Could not load incident data: ' + err.message;
+        console.error('Could not load incident data:', err);
       }
     })();
   </script>

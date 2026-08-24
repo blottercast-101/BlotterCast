@@ -10,17 +10,23 @@ from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("ml_proxy", __name__)
 
-ML_BASE = os.environ.get("ML_SERVICE_URL", "http://localhost:5001")
+ML_BASE = os.environ.get("ML_SERVICE_URL", "http://127.0.0.1:5001").replace("localhost", "127.0.0.1")
 ML_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "ml")
 ML_SCRIPT = os.path.join(ML_DIR, "service.py")
 ML_LOG = os.path.join(ML_DIR, "service.log")
 
 _ml_process = None  # tracks a process we started, so we don't spawn duplicates
 
+# Persistent HTTP connection pool for sub-millisecond proxy forwarding
+_session = requests.Session()
+_adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=1)
+_session.mount("http://", _adapter)
+_session.mount("https://", _adapter)
+
 
 def _ml_is_running() -> bool:
     try:
-        r = requests.get(f"{ML_BASE}/health", timeout=0.8)
+        r = _session.get(f"{ML_BASE}/health", timeout=0.8)
         return r.status_code == 200
     except requests.RequestException:
         return False
@@ -56,14 +62,29 @@ def _ml_ensure_running() -> bool:
 
 def _forward(path: str, method: str = "GET", body=None):
     url = f"{ML_BASE}{path}"
+    # Fast path: attempt direct pooled request without redundant health check
     try:
         if method == "POST":
-            r = requests.post(url, json=body, timeout=30)
+            r = _session.post(url, json=body, timeout=30)
         else:
-            r = requests.get(url, timeout=30)
-    except requests.RequestException as e:
-        return json_error(f"ML service unreachable: {e}", 502)
-    return jsonify(r.json()), r.status_code
+            r = _session.get(url, timeout=30)
+        return jsonify(r.json()), r.status_code
+    except requests.RequestException:
+        # Slow path / cold start: service is down, attempt auto-spawn
+        if _ml_ensure_running():
+            try:
+                if method == "POST":
+                    r = _session.post(url, json=body, timeout=30)
+                else:
+                    r = _session.get(url, timeout=30)
+                return jsonify(r.json()), r.status_code
+            except requests.RequestException as e:
+                return json_error(f"ML service unreachable: {e}", 502)
+        return json_error(
+            "The prediction service could not be started automatically. Make sure Python "
+            "is installed and its packages are set up (see ml/requirements.txt), then "
+            "check ml/service.log for details.", 503,
+        )
 
 
 @bp.route("/api/ml_proxy.php", methods=["GET", "POST"])
@@ -79,15 +100,11 @@ def ml_proxy_router():
             return _forward("/health")
         return jsonify({"status": "down"}), 200
 
-    if not _ml_ensure_running():
-        return json_error(
-            "The prediction service could not be started automatically. Make sure Python "
-            "is installed and its packages are set up (see ml/requirements.txt), then "
-            "check ml/service.log for details.", 503,
-        )
-
     if action == "latest" and request.method == "GET":
         return _forward("/latest")
+
+    if action == "predict" and request.method == "POST":
+        return _forward("/predict", "POST", request.get_json(silent=True) or {})
 
     if action == "train" and request.method == "POST":
         from ..permissions import json_error as _json_error, role_can

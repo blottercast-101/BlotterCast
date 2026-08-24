@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/png" href="favicon.png"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BlotterCast — Barangay Intelligence System</title>
+  <title>BlotterCast — Barangay Incident & Blotter Intelligence System</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="icons.js"></script>
   <script src="api.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     :root {
       --green-deep:  #0a2414;
@@ -374,9 +373,9 @@
 
 <!-- NAV -->
 <nav id="mainNav">
-  <a href="index.html" class="nav-logo">
-    <img src="logo.png" alt="BlotterCast Logo" style="width:30px;height:30px;object-fit:contain;"/>
-    <span class="nav-brand">lotterCast</span>
+  <a href="index.html" class="nav-logo" style="display:flex;align-items:center;gap:10px;">
+    <img src="logo.png" alt="BlotterCast Logo" style="width:32px;height:32px;object-fit:contain;border-radius:8px;"/>
+    <span class="nav-brand">BlotterCast</span>
   </a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
@@ -424,12 +423,12 @@
     </div>
     <div class="hero-stats">
       <div>
-        <div class="hero-stat-num" id="heroStatBlotters">—</div>
-        <div class="hero-stat-label">Blotter Records</div>
-      </div>
-      <div>
         <div class="hero-stat-num" id="heroStatAccuracy">—</div>
         <div class="hero-stat-label">ML Accuracy</div>
+      </div>
+      <div>
+        <div class="hero-stat-num" id="heroStatRecords">—</div>
+        <div class="hero-stat-label">Overall Records</div>
       </div>
       <div>
         <div class="hero-stat-num" id="heroStatZones">—</div>
@@ -654,6 +653,31 @@
   </div>
 </footer>
 
+<!-- Logged Out Confirmation Modal -->
+<div id="bcLoggedOutModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-all duration-300">
+  <div class="bg-[#0e2e1a] border border-[#2f8a4c]/40 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all text-center">
+    <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h3 class="font-display text-xl font-bold text-white mb-2">Session Ended</h3>
+    <p class="text-sm text-gray-300 leading-relaxed mb-6">
+      You've been logged out! Please login to your account to access BlotterCast
+    </p>
+    <div class="flex items-center justify-center gap-3">
+      <button id="bcLoggedOutCancelBtn" onclick="closeBcLoggedOutModal()" class="px-5 py-2.5 rounded-xl border border-white/20 text-white hover:bg-white/10 text-sm font-medium transition-colors">
+        Cancel
+      </button>
+      <button id="bcLoggedOutOkBtn" onclick="goToLoginFromModal()" class="px-6 py-2.5 rounded-xl bg-[#2f8a4c] hover:bg-[#3ea55f] text-white text-sm font-semibold shadow-lg shadow-[#2f8a4c]/30 transition-all">
+        OK
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   // Nav scroll effect
   const nav = document.getElementById('mainNav');
@@ -668,14 +692,57 @@
   }, { threshold: 0.12 });
   reveals.forEach(el => observer.observe(el));
 
+  // Logged-out confirmation modal helpers
+  function openBcLoggedOutModal() {
+    const modal = document.getElementById('bcLoggedOutModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeBcLoggedOutModal() {
+    const modal = document.getElementById('bcLoggedOutModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function goToLoginFromModal() {
+    window.location.replace('login.html');
+  }
+
+  function checkLoggedOutModalState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParam = urlParams.get('logged_out') === '1';
+    const hasStorage = sessionStorage.getItem('bc_logged_out_modal') === '1' || sessionStorage.getItem('bc_logged_out_alert') === '1';
+
+    if (hasParam || hasStorage) {
+      sessionStorage.removeItem('bc_logged_out_modal');
+      sessionStorage.removeItem('bc_logged_out_alert');
+      if (hasParam) {
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      }
+      openBcLoggedOutModal();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkLoggedOutModalState);
+  } else {
+    checkLoggedOutModalState();
+  }
+  window.addEventListener('pageshow', checkLoggedOutModalState);
+
   // Live stats — same endpoint/calculation as the login page, so the two
   // never show conflicting numbers.
   (async function () {
     try {
       const s = await BCApi.publicStats();
-      document.getElementById('heroStatBlotters').textContent = s.blotterCount + '+';
       document.getElementById('heroStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
-      document.getElementById('heroStatZones').textContent = s.zonesMonitored;
+      document.getElementById('heroStatRecords').textContent = (s.overallRecords != null ? s.overallRecords : '—');
+      document.getElementById('heroStatZones').textContent = s.zonesMonitored ?? '—';
     } catch (err) {
       // Leave the placeholders in place rather than showing stale numbers.
     }

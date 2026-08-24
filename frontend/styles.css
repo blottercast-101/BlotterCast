@@ -418,22 +418,24 @@ body { font-family: 'DM Sans', sans-serif; }
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
-.badge-resolved     { background: var(--forest-100); color: var(--forest-600); }
-.badge-complied      { background: var(--forest-100); color: var(--forest-600); }
-.badge-ongoing       { background: var(--amber-100); color: var(--amber-600); }
-.badge-referred      { background: var(--amber-100); color: var(--amber-600); }
-.badge-pending       { background: var(--red-100); color: var(--red-600); }
-.badge-not-complied  { background: var(--red-100); color: var(--red-600); }
-.badge-closed        { background: var(--slate-100); color: var(--slate-500); }
+.badge-resolved     { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-complied      { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-ongoing       { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-criminal      { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-pending       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-civil         { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-referred      { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-not-complied  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-closed        { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
 /* Priority / status chips (Incident Reports) */
-.priority-high   { background: var(--red-100); color: var(--red-600); }
-.priority-medium { background: var(--amber-100); color: var(--amber-600); }
-.priority-low    { background: var(--blue-100); color: var(--blue-600); }
-.status-investigating { background: var(--violet-100); color: var(--violet-600); }
-.status-resolved       { background: var(--forest-100); color: var(--forest-600); }
-.status-closed         { background: var(--slate-100); color: var(--slate-500); }
-.status-referred       { background: var(--amber-100); color: var(--amber-600); }
+.priority-high   { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.priority-medium { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.priority-low    { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.status-investigating { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.status-resolved       { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-closed         { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.status-referred       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 
 /* ---------------- Tables ---------------- */
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -645,7 +647,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .toast .bc-icon { flex-shrink: 0; }
 .toast.show { transform: translateY(0); opacity: 1; }
-.toast.error { background: var(--red-600); }
+.toast.error   { background: var(--red-600); }
+.toast.warning { background: #B45309; }   /* amber-700 — distinct from green success & red error */
 
 /* ---------------- Pagination ---------------- */
 .pagination-btn {
@@ -1134,9 +1137,32 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
 }
 .bc-dp-today-btn:hover, .bc-dp-clear-btn:hover { background: var(--forest-100); }
 
-.bc-timepicker-panel { width: 168px; }
-.bc-tp-cols { display: flex; gap: 4px; max-height: 200px; }
+.bc-time-wrap { position: relative; }
+.bc-time-native { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; opacity: 0 !important; pointer-events: none !important; z-index: -1; }
+.bc-time-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  color: #111827;
+  padding-right: 34px;
+}
+.bc-time-trigger .bc-time-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-time-value.bc-time-placeholder { color: #9ca3af; }
+.bc-time-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
+.bc-time-trigger.bc-time-disabled { opacity: 0.6; cursor: not-allowed; }
+
+.bc-timepicker-panel.bc-tp-12 { width: 232px; min-width: 220px; }
+.bc-timepicker-panel.bc-tp-24 { width: 216px; min-width: 208px; }
+.bc-tp-cols { display: flex; gap: 6px; max-height: 200px; padding: 2px 2px; }
 .bc-tp-col { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scroll-behavior: smooth; }
+.bc-tp-col-period { flex: 0.9; }
 .bc-tp-item {
   border: none;
   background: transparent;
@@ -1145,16 +1171,90 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
   font-size: 0.82rem;
   color: #111827;
   cursor: pointer;
+  text-align: center;
   transition: background 0.1s ease;
 }
 .bc-tp-item:hover { background: var(--forest-50); }
-.bc-tp-item-active { background: var(--forest-600); color: #fff; font-weight: 600; }
+.bc-tp-item-active { background: var(--forest-600) !important; color: #fff !important; font-weight: 600; }
+.bc-tp-period-item { font-weight: 700; font-size: 0.8rem; }
+
+.bc-tp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 4px 2px;
+  border-top: 1px solid var(--forest-50);
+  margin-top: 6px;
+}
+.bc-tp-footer-btn {
+  flex: 1;
+  border: none;
+  background: var(--forest-50);
+  color: var(--forest-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.bc-tp-footer-btn:hover { background: var(--forest-100); }
+.bc-tp-footer-btn.bc-tp-btn-done { background: var(--forest-600); color: #fff; }
+.bc-tp-footer-btn.bc-tp-btn-done:hover { background: var(--forest-700); }
 
 /* ---------------- Scrollbar ---------------- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--forest-50); }
 ::-webkit-scrollbar-thumb { background: var(--forest-200); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--forest-400); }
+
+/* ---------------- Table Row Deep-link Flash Highlight ---------------- */
+@keyframes bc-row-pulse {
+  0% {
+    background-color: rgba(16, 185, 129, 0.28) !important;
+    box-shadow: inset 0 0 0 2px #10b981, 0 0 16px rgba(16, 185, 129, 0.35);
+  }
+  25% {
+    background-color: rgba(16, 185, 129, 0.38) !important;
+    box-shadow: inset 0 0 0 2px #059669, 0 0 22px rgba(16, 185, 129, 0.5);
+  }
+  60% {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    box-shadow: inset 0 0 0 2px #10b981, 0 0 10px rgba(16, 185, 129, 0.2);
+  }
+  100% {
+    background-color: transparent !important;
+    box-shadow: none;
+  }
+}
+.bc-row-highlight {
+  animation: bc-row-pulse 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  position: relative;
+  z-index: 5;
+}
+.bc-row-highlight td {
+  background-color: transparent !important;
+}
+
+/* ---------------- Pure Toggle Switch Utilities ---------------- */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 /* ---------------- Reduced motion ---------------- */
 @media (prefers-reduced-motion: reduce) {

@@ -9,6 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <script>
     tailwind.config = {
       theme: { extend: { colors: {
@@ -16,7 +19,6 @@
       }, fontFamily: { display:['DM Serif Display','serif'], body:['DM Sans','sans-serif'] } } }
     }
   </script>
-
 </head>
 <body class="font-body bg-forest-50 min-h-screen">
 
@@ -163,8 +165,8 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="incSearchInput" placeholder="Search report no., location, reporter…" class="filter-input w-full pl-8" oninput="renderIncidents()"/></span>
-        <select id="incCategoryFilter" class="filter-input" onchange="renderIncidents()">
+        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="incSearchInput" placeholder="Search report no., location, reporter…" class="filter-input w-full pl-8" oninput="incPage=1; renderIncidents()"/></span>
+        <select id="incCategoryFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Categories</option>
           <option>Physical Assault</option>
           <option>Theft</option>
@@ -174,13 +176,13 @@
           <option>Drug-Related Activity</option>
           <option>Public Disturbance</option>
         </select>
-        <select id="incPriorityFilter" class="filter-input" onchange="renderIncidents()">
+        <select id="incPriorityFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Priorities</option>
           <option value="High">High</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
-        <select id="incStatusFilter" class="filter-input" onchange="renderIncidents()">
+        <select id="incStatusFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Statuses</option>
           <option value="Under Investigation">Under Investigation</option>
           <option value="Resolved">Resolved</option>
@@ -236,17 +238,119 @@
       <div class="grid grid-cols-3 gap-4">
         <div>
           <label class="form-label">Zone</label>
-          <select id="if_zone" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+          <select id="if_zone" class="form-input" required onchange="onZoneDropdownChange()">
+            <option value="" disabled selected hidden>-Select-</option>
+            <option value="Zone 1">Zone 1 (Residence 3)</option>
+            <option value="Zone 2">Zone 2 (Residence 1)</option>
+            <option value="Zone 3">Zone 3 (Pandi Village 2)</option>
+            <option value="Zone 4">Zone 4 (Mitay 1)</option>
+            <option value="Zone 5">Zone 5 (Sitio Gubat)</option>
+            <option value="Zone 6">Zone 6 (Bangko St.)</option>
+            <option value="Zone 7">Zone 7 (Barangka St.)</option>
           </select>
         </div>
-        <div class="col-span-2"><label class="form-label">Location Detail</label><input type="text" id="if_location" class="form-input" placeholder="Street, landmark, purok…"/></div>
+        <div class="col-span-2">
+          <label class="form-label">Location Detail</label>
+          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="onLocationDetailInput()"/>
+        </div>
+      </div>
+
+      <!-- Zone vs Location Conflict Warning Banner -->
+      <div id="if_zoneConflictBanner" class="hidden p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3 animate-fadeIn shadow-sm">
+        <div class="flex items-start gap-2.5">
+          <span class="text-amber-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
+          <div>
+            <strong class="font-bold text-amber-950 block">Zone & Location Mismatch Detected</strong>
+            <span id="if_zoneConflictMsg" class="text-amber-800">The entered location matches another zone.</span>
+          </div>
+        </div>
+        <button type="button" onclick="quickFixZoneConflict()" id="btnQuickFixZone" class="flex-shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded text-xs transition-colors shadow-sm">
+          Switch Zone
+        </button>
+      </div>
+
+      <!-- Wide View: Full-screen backdrop + flex centering shell (body-level, z-200 beats all modals) -->
+      <!-- This element is moved to document.body on expand so it renders above everything -->
+      <div id="incPickerWideBackdrop" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8 animate-fadeIn"></div>
+
+      <!-- Geographic Forward Geocoding & Interactive Pin Picker -->
+      <div class="bg-forest-50/70 p-3 rounded-lg border border-forest-100 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-forest-800 flex items-center gap-1.5">
+              <span data-icon="location" data-icon-size="14"></span> Geocoded Pin & Boundary
+            </span>
+            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1 shadow-sm">
+              <span data-icon="search" data-icon-size="12"></span> Geocode Location
+            </button>
+            <button type="button" onclick="togglePickerMap()" id="btnToggleMap" class="text-xs px-2 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors shadow-sm">
+              Toggle Mini-Map
+            </button>
+            <button type="button" onclick="toggleExpandPickerMap()" id="btnExpandMap" class="text-xs px-2 py-1 bg-white hover:bg-forest-100 text-forest-800 border border-forest-300 rounded font-medium transition-colors flex items-center gap-1 shadow-sm" title="Expand Fullscreen Wide View">
+              <span data-icon="maximize" data-icon-size="12"></span> <span id="expandBtnLabel">Wide View</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="incPickerMapContainer" class="hidden">
+          <!-- Top header bar — shown only in Wide View, acts as the card's top bar -->
+          <div id="incPickerWideHeader" class="hidden items-center justify-between gap-2 px-5 py-3.5 border-b border-gray-100 bg-white">
+            <div class="flex items-center gap-2 flex-wrap min-w-0">
+              <span class="text-sm font-semibold text-gray-800 flex items-center gap-1.5 whitespace-nowrap">
+                <span data-icon="map" data-icon-size="15"></span> Mapulang Lupa Pin Placement &amp; Boundaries
+              </span>
+              <span id="wideZoneBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">Zone: None</span>
+              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">⚪ Unverified Location</span>
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span class="font-mono text-xs text-gray-500" id="wideCoordsPreview">Lat: --, Lng: --</span>
+              <button type="button" onclick="toggleExpandPickerMap(false)" title="Close wide view (Esc)" aria-label="Close wide map view"
+                class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors duration-150 focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Map fills the flex-1 space between header and footer -->
+          <div id="incPickerMap" style="height: 180px; width: 100%;" class="rounded border border-forest-200 shadow-inner z-0"></div>
+
+          <!-- Inline Footer (Default / mini-map view) -->
+          <div id="incPickerInlineFooter" class="flex justify-between items-center text-[11px] text-forest-600 mt-1">
+            <span>Tip: Click or drag marker anywhere inside the green boundary.</span>
+            <span class="font-mono text-xs font-semibold text-forest-800" id="if_coordsPreview">Lat: --, Lng: --</span>
+          </div>
+
+          <!-- Wide View bottom bar -->
+          <div id="incPickerWideFooter" class="hidden items-center justify-between px-5 py-2.5 border-t border-gray-100 bg-gray-50/80 text-xs text-gray-500">
+            <span>💡 <strong class="text-gray-600">Tip:</strong> Click or drag the marker inside your designated zone boundary. Press <kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded font-mono text-[11px] shadow-sm">Esc</kbd> to collapse.</span>
+            <button type="button" onclick="toggleExpandPickerMap(false)" class="ml-4 flex-shrink-0 px-3.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
+              Done Pinning
+            </button>
+          </div>
+        </div>
+
+        <!-- Strict Boundary Geofence Error Banner -->
+        <div id="if_boundaryErrorBanner" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2.5 animate-fadeIn shadow-sm">
+          <span class="text-rose-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
+          <div>
+            <strong class="font-bold text-rose-950 block" id="if_boundaryErrorTitle">Outside Barangay Jurisdiction</strong>
+            <span id="if_boundaryErrorMsg" class="text-rose-800">This location is outside Barangay Mapulang Lupa. Incident reports can only be filed within barangay jurisdiction.</span>
+          </div>
+        </div>
+
+        <input type="hidden" id="if_lat"/>
+        <input type="hidden" id="if_lng"/>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="form-label">Category</label>
           <select id="if_category" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option>Physical Assault</option><option>Theft</option><option>Domestic Dispute</option>
             <option>Vandalism</option><option>Trespassing</option><option>Drug-Related Activity</option>
             <option>Public Disturbance</option><option>Other</option>
@@ -255,7 +359,7 @@
         <div>
           <label class="form-label">Priority Level</label>
           <select id="if_priority" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
           </select>
         </div>
@@ -268,7 +372,7 @@
       <div>
         <label class="form-label">Status</label>
         <select id="if_status" class="form-input" required>
-          <option value="" selected disabled>-Select-</option>
+          <option value="" disabled selected hidden>-Select-</option>
           <option value="Under Investigation">Under Investigation</option>
           <option value="Resolved">Resolved</option>
           <option value="Closed">Closed</option>
@@ -277,7 +381,7 @@
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" onclick="closeModal('incidentModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveIncident()" class="btn-primary">Save Report</button>
+        <button type="button" id="btnSaveIncident" onclick="saveIncident()" class="btn-primary">Save Report</button>
       </div>
     </form>
   </div>
@@ -330,6 +434,12 @@
     }
     updateSummary();
     renderIncidents();
+    bcCheckUrlHighlight({
+      items: incidentData,
+      pageSize: INC_ROWS,
+      setPage: (p) => { incPage = p; },
+      render: renderIncidents
+    });
   }
 
   async function toggleArchivedView() {
@@ -362,15 +472,15 @@
   }
 
   function getIncFiltered() {
-    const s = document.getElementById('incSearchInput').value.toLowerCase();
+    const s = document.getElementById('incSearchInput').value.trim().toLowerCase();
     const c = document.getElementById('incCategoryFilter').value;
     const p = document.getElementById('incPriorityFilter').value;
     const st = document.getElementById('incStatusFilter').value;
     return incidentData.filter(r =>
       (!s || r.reportNo.toLowerCase().includes(s) || r.location.toLowerCase().includes(s) || r.reporter.toLowerCase().includes(s)) &&
-      (!c || r.category === c) &&
-      (!p || r.priority === p) &&
-      (!st || r.status === st)
+      (!c || c === 'ALL' || c === 'All Categories' || r.category === c) &&
+      (!p || p === 'ALL' || p === 'All Priorities' || r.priority === p) &&
+      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
   }
 
@@ -384,10 +494,10 @@
     tbody.innerHTML = page.length === 0
       ? `<tr><td colspan="11" class="text-center py-10 text-forest-400">No incident reports found.</td></tr>`
       : page.map(r => `
-        <tr>
+        <tr data-id="${r.id}" data-key="${r.reportNo}" data-report-no="${r.reportNo}">
           <td class="font-semibold text-forest-700">${r.reportNo}</td>
           <td>${r.dateReported}</td>
-          <td>${bcFormatTime12h(r.timeReported)}</td>
+          <td>${bcFormatTime(r.timeReported)}</td>
           <td class="text-xs">${bcFormatIncidentLocation(r.zone, r.location)}</td>
           <td><span class="text-xs font-medium text-forest-700">${r.category}</span></td>
           <td class="text-xs text-gray-500 max-w-xs truncate" title="${r.description}">${r.description}</td>
@@ -413,11 +523,640 @@
     bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
   }
 
+  let pickerMap = null;
+  let pickerMarker = null;
+  let pickerBoundaryLayer = null;
+  let pickerBoundaryGeojson = null;
+  let pickerZonesLayer = null;
+  let pickerZonesGeojson = null;
+  let isLocationVerifiedInBoundary = false;
+  let isGeocoded = false;
+
+  function setBoundaryStyle(isError) {
+    if (pickerBoundaryLayer) {
+      pickerBoundaryLayer.setStyle({
+        color: isError ? '#e11d48' : '#064e3b',
+        weight: isError ? 3.5 : 3.5,
+        fillColor: 'transparent',
+        fillOpacity: 0
+      });
+    }
+  }
+
+  function getPickerZoneStyle(feature, isSelected = false) {
+    if (isSelected) {
+      return {
+        color: '#059669',
+        weight: 3,
+        fillColor: '#10B981',
+        fillOpacity: 0.35,
+        dashArray: ''
+      };
+    }
+    return {
+      color: '#94A3B8',
+      weight: 1.5,
+      fillColor: '#E2E8F0',
+      fillOpacity: 0.20,
+      dashArray: '4'
+    };
+  }
+
+  function highlightSelectedZoneOnMiniMap(zoneId) {
+    if (!pickerZonesLayer) return;
+    pickerZonesLayer.eachLayer((layer) => {
+      const isSel = layer.feature && layer.feature.properties && layer.feature.properties.zone === zoneId;
+      layer.setStyle(getPickerZoneStyle(layer.feature, isSel));
+      if (isSel && pickerMap && layer.getBounds) {
+        pickerMap.fitBounds(layer.getBounds(), { padding: [30, 30], maxZoom: 17 });
+      }
+    });
+  }
+
+  function detectZoneFromCoordinates(lat, lng) {
+    if (!pickerZonesGeojson || !pickerZonesGeojson.features) return null;
+    try {
+      const pt = turf.point([Number(lng), Number(lat)]);
+      for (const feat of pickerZonesGeojson.features) {
+        if (turf.booleanPointInPolygon(pt, feat)) {
+          return {
+            zone: feat.properties.zone,
+            name: feat.properties.name,
+            landmark: feat.properties.landmark || feat.properties.name
+          };
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  async function initPickerMap() {
+    if (pickerMap) {
+      pickerMap.invalidateSize();
+      return;
+    }
+    const el = document.getElementById('incPickerMap');
+    if (!el) return;
+
+    pickerMap = L.map('incPickerMap', {
+      zoomControl: true,
+      preferCanvas: true
+    }).setView([14.883, 120.965], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(pickerMap);
+
+    try {
+      const [boundRes, zonesRes] = await Promise.all([
+        fetch('mapulang-lupa.geojson'),
+        fetch('mapulang-lupa-zones.geojson')
+      ]);
+
+      if (zonesRes.ok) {
+        pickerZonesGeojson = await zonesRes.json();
+        const selectedZone = document.getElementById('if_zone').value;
+
+        pickerZonesLayer = L.geoJSON(pickerZonesGeojson, {
+          style: (feature) => getPickerZoneStyle(feature, feature.properties.zone === selectedZone),
+          onEachFeature: (feature, layer) => {
+            const z = feature.properties;
+            layer.bindTooltip(`<strong>${z.zone}</strong> (${z.name})`, { sticky: true, className: 'text-xs' });
+
+            layer.on('click', (e) => {
+              setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
+            });
+          }
+        }).addTo(pickerMap);
+      }
+
+      if (boundRes.ok) {
+        pickerBoundaryGeojson = await boundRes.json();
+        pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
+          style: {
+            color: '#1a5730',
+            weight: 3,
+            fillColor: 'transparent',
+            fillOpacity: 0
+          }
+        }).addTo(pickerMap);
+        pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
+      }
+    } catch (err) {
+      console.error('Picker boundary load error:', err);
+    }
+
+    pickerMap.on('click', (e) => {
+      setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
+    });
+  }
+
+  function setPickerCoordinates(lat, lng, pan = true) {
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || (Number(lat) === 0 && Number(lng) === 0)) {
+      document.getElementById('if_lat').value = '';
+      document.getElementById('if_lng').value = '';
+      isLocationVerifiedInBoundary = false;
+      isGeocoded = false;
+      updatePickerStatusBadge(null, null);
+      if (pickerMarker && pickerMap) {
+        pickerMap.removeLayer(pickerMarker);
+        pickerMarker = null;
+      }
+      setBoundaryStyle(false);
+      updateSubmitButtonState();
+      return;
+    }
+
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+    document.getElementById('if_lat').value = numLat.toFixed(6);
+    document.getElementById('if_lng').value = numLng.toFixed(6);
+
+    if (!pickerMap) initPickerMap();
+
+    if (pickerMarker) {
+      pickerMarker.setLatLng([numLat, numLng]);
+    } else if (pickerMap) {
+      pickerMarker = L.marker([numLat, numLng], { draggable: true }).addTo(pickerMap);
+      pickerMarker.on('dragend', (ev) => {
+        const pos = ev.target.getLatLng();
+        setPickerCoordinates(pos.lat, pos.lng, false);
+      });
+    }
+
+    if (pan && pickerMap) {
+      pickerMap.setView([numLat, numLng], Math.max(pickerMap.getZoom(), 16));
+    }
+
+    updatePickerStatusBadge(numLat, numLng);
+    updateSubmitButtonState();
+  }
+
+  function isPickerPointInBoundary(lat, lng) {
+    if (!pickerBoundaryGeojson) return false;
+    try {
+      const pt = turf.point([Number(lng), Number(lat)]);
+      return turf.booleanPointInPolygon(pt, pickerBoundaryGeojson);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  let isMapExpanded = false;
+
+  function updatePickerStatusBadge(lat, lng) {
+    const badge = document.getElementById('if_geoBadge');
+    const preview = document.getElementById('if_coordsPreview');
+    const wideGeoBadge = document.getElementById('wideGeoBadge');
+    const wideCoordsPreview = document.getElementById('wideCoordsPreview');
+    const wideZoneBadge = document.getElementById('wideZoneBadge');
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
+    const boundaryMsg = document.getElementById('if_boundaryErrorMsg');
+
+    const selectedZone = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
+    if (wideZoneBadge) {
+      wideZoneBadge.textContent = selectedZone ? `Zone: ${selectedZone}` : 'Zone: None Selected';
+    }
+
+    if (!badge) return;
+
+    if (lat == null || lng == null) {
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      badge.className = cls;
+      badge.textContent = '⚪ Unverified Location';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '⚪ Unverified Location';
+      }
+      if (preview) preview.textContent = 'Lat: --, Lng: --';
+      if (wideCoordsPreview) wideCoordsPreview.textContent = 'Lat: --, Lng: --';
+      if (boundaryBanner) boundaryBanner.classList.add('hidden');
+      isLocationVerifiedInBoundary = false;
+      setBoundaryStyle(false);
+      return;
+    }
+
+    const inBounds = isPickerPointInBoundary(lat, lng);
+    if (inBounds) {
+      isLocationVerifiedInBoundary = true;
+      isGeocoded = true;
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      badge.className = cls;
+      badge.textContent = '✓ Inside Boundary';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '✓ Inside Boundary';
+      }
+      if (boundaryBanner) boundaryBanner.classList.add('hidden');
+      setBoundaryStyle(false);
+
+      const detectedZoneObj = detectZoneFromCoordinates(lat, lng);
+      if (detectedZoneObj && selectedZone && detectedZoneObj.zone !== selectedZone) {
+        currentZoneConflict = {
+          selectedZone,
+          detectedZone: detectedZoneObj.zone,
+          landmark: detectedZoneObj.landmark,
+          matchedKeyword: 'Pin Placement'
+        };
+        const banner = document.getElementById('if_zoneConflictBanner');
+        const msgEl = document.getElementById('if_zoneConflictMsg');
+        const fixBtn = document.getElementById('btnQuickFixZone');
+        if (banner && msgEl && fixBtn) {
+          msgEl.innerHTML = `Placed pin is located inside <strong class="text-amber-950 font-semibold">${detectedZoneObj.zone} (${detectedZoneObj.landmark})</strong>, but you selected <strong class="text-amber-950 font-semibold">${selectedZone}</strong>. Please switch zone or adjust pin.`;
+          fixBtn.textContent = `Switch to ${detectedZoneObj.zone}`;
+          banner.classList.remove('hidden');
+        }
+      } else {
+        checkZoneLocationConflict();
+      }
+    } else {
+      isLocationVerifiedInBoundary = false;
+      const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+      badge.className = cls;
+      badge.textContent = '⚠️ Outside Boundary / Non-Jurisdiction';
+      if (wideGeoBadge) {
+        wideGeoBadge.className = cls;
+        wideGeoBadge.textContent = '⚠️ Outside Boundary';
+      }
+      if (boundaryBanner && boundaryTitle && boundaryMsg) {
+        boundaryTitle.textContent = 'Outside Barangay Jurisdiction';
+        boundaryMsg.textContent = 'This location is outside Barangay Mapulang Lupa boundary. Incident reports can only be filed within barangay jurisdiction.';
+        boundaryBanner.classList.remove('hidden');
+      }
+      setBoundaryStyle(true);
+    }
+    const coordsStr = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+    if (preview) preview.textContent = coordsStr;
+    if (wideCoordsPreview) wideCoordsPreview.textContent = coordsStr;
+  }
+
+  // Store the container's original DOM parent so we can restore it on collapse
+  let _wideViewOriginalParent = null;
+  let _wideViewOriginalNextSibling = null;
+
+  function toggleExpandPickerMap(forceState) {
+    isMapExpanded = typeof forceState === 'boolean' ? forceState : !isMapExpanded;
+    const container = document.getElementById('incPickerMapContainer');
+    const mapEl    = document.getElementById('incPickerMap');
+    const wideHeader   = document.getElementById('incPickerWideHeader');
+    const wideFooter   = document.getElementById('incPickerWideFooter');
+    const inlineFooter = document.getElementById('incPickerInlineFooter');
+    const expandLabel  = document.getElementById('expandBtnLabel');
+    const backdrop     = document.getElementById('incPickerWideBackdrop');
+
+    if (!container || !mapEl || !backdrop) return;
+
+    if (isMapExpanded) {
+      showPickerMap();
+
+      // ── DOM transplant: lift map card into the body-level backdrop ──
+      _wideViewOriginalParent        = container.parentNode;
+      _wideViewOriginalNextSibling   = container.nextSibling;
+      document.body.appendChild(backdrop);   // ensure backdrop is above every modal
+      backdrop.appendChild(container);        // card lives inside the flex centering shell
+
+      // Style backdrop (flex centering shell)
+      backdrop.classList.remove('hidden');
+
+      // Close when clicking the dark backdrop area (not the card)
+      backdrop.onclick = function(e) {
+        if (e.target === backdrop) toggleExpandPickerMap(false);
+      };
+
+      // Style the card — clean white card, no fixed positioning needed
+      container.className = 'relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-fadeIn';
+      container.style.height = '85vh';
+
+      // Map element fills the card's flex-1 region
+      mapEl.style.height = '100%';
+      mapEl.style.minHeight = '';
+      mapEl.classList.add('flex-1');
+      mapEl.classList.remove('rounded', 'border', 'border-forest-200', 'shadow-inner');
+
+      if (wideHeader)   { wideHeader.classList.remove('hidden');   wideHeader.style.display   = 'flex'; }
+      if (wideFooter)   { wideFooter.classList.remove('hidden');   wideFooter.style.display   = 'flex'; }
+      if (inlineFooter) inlineFooter.classList.add('hidden');
+      if (expandLabel)  expandLabel.textContent = 'Collapse View';
+      // Map el: flex:1 so it fills space between header and footer
+      mapEl.style.flex = '1 1 0%';
+
+    } else {
+      // ── DOM restore: put card back in the form's original position ──
+      if (_wideViewOriginalParent) {
+        _wideViewOriginalParent.insertBefore(container, _wideViewOriginalNextSibling);
+        _wideViewOriginalParent = null;
+        _wideViewOriginalNextSibling = null;
+      }
+
+      backdrop.classList.add('hidden');
+      backdrop.onclick = null;
+
+      // Move backdrop back inside the form modal (its original home in the DOM)
+      // It stays hidden so position doesn't matter until next expand
+      if (!backdrop.closest('#incidentModal')) {
+        const bpPlaceholder = document.getElementById('incPickerWideBackdropSlot');
+        if (bpPlaceholder) bpPlaceholder.appendChild(backdrop);
+      }
+
+      // Restore card to inline styles
+      container.className = 'space-y-2 mt-2';
+      container.style.height = '';
+
+      // Restore map element
+      mapEl.style.height = '180px';
+      mapEl.style.minHeight = '180px';
+      mapEl.classList.remove('flex-1');
+      mapEl.classList.add('rounded', 'border', 'border-forest-200', 'shadow-inner');
+
+      if (wideHeader)   { wideHeader.style.display   = 'none'; wideHeader.classList.add('hidden'); }
+      if (wideFooter)   { wideFooter.style.display   = 'none'; wideFooter.classList.add('hidden'); }
+      if (inlineFooter) inlineFooter.classList.remove('hidden');
+      if (expandLabel)  expandLabel.textContent = 'Wide View';
+      mapEl.style.flex = '';
+    }
+
+    if (window.lucide) lucide.createIcons();
+
+    // Re-verify current coords and sync badges
+    const curLat = document.getElementById('if_lat').value;
+    const curLng = document.getElementById('if_lng').value;
+    if (curLat && curLng) {
+      updatePickerStatusBadge(Number(curLat), Number(curLng));
+    } else {
+      updatePickerStatusBadge(null, null);
+    }
+
+    setTimeout(() => {
+      if (pickerMap) {
+        pickerMap.invalidateSize();
+        if (curLat && curLng) {
+          pickerMap.setView([Number(curLat), Number(curLng)], Math.max(pickerMap.getZoom(), 16));
+        } else if (pickerBoundaryLayer) {
+          pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [25, 25] });
+        }
+      }
+    }, 200);
+  }
+
+  function onLocationDetailInput() {
+    checkZoneLocationConflict();
+
+    // 1. Immediately invalidate previous geocoded pin & coords
+    isLocationVerifiedInBoundary = false;
+    isGeocoded = false;
+    document.getElementById('if_lat').value = '';
+    document.getElementById('if_lng').value = '';
+
+    // 2. Reset status badge to unverified
+    const badge = document.getElementById('if_geoBadge');
+    if (badge) {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
+      badge.textContent = '⚪ Unverified Location';
+    }
+    const preview = document.getElementById('if_coordsPreview');
+    if (preview) preview.textContent = 'Lat: --, Lng: --';
+
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    if (boundaryBanner) boundaryBanner.classList.add('hidden');
+
+    // 3. Remove pin marker if currently placed
+    if (pickerMarker && pickerMap) {
+      pickerMap.removeLayer(pickerMarker);
+      pickerMarker = null;
+    }
+    setBoundaryStyle(false);
+    updateSubmitButtonState();
+  }
+
+  function updateSubmitButtonState() {
+    const btn = document.getElementById('btnSaveIncident');
+    if (!btn) return;
+    if (!isLocationVerifiedInBoundary) {
+      btn.classList.add('opacity-75');
+      btn.title = 'Location must be verified within Barangay boundary before saving.';
+    } else {
+      btn.classList.remove('opacity-75');
+      btn.removeAttribute('title');
+    }
+  }
+
+  async function geocodeTypedAddress() {
+    const loc = document.getElementById('if_location').value.trim();
+    const zone = document.getElementById('if_zone').value;
+    if (!loc && !zone) {
+      showToast('Please type a location or select a zone first.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btnGeocode');
+    if (btn) btn.innerHTML = '<span data-icon="loader" class="animate-spin" data-icon-size="12"></span> Locating…';
+
+    try {
+      const res = await fetch(`/api/records.php?type=geocode&q=${encodeURIComponent(loc)}&zone=${encodeURIComponent(zone)}`, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (data && data.ok && data.lat && data.lng) {
+        showPickerMap();
+        setPickerCoordinates(data.lat, data.lng, true);
+        if (isLocationVerifiedInBoundary) {
+          showToast(`Located: ${data.display_name || loc}`, 'success');
+        } else {
+          showToast('Location is outside Barangay Mapulang Lupa. Incident cannot be filed outside barangay jurisdiction.', 'error');
+        }
+      } else {
+        // Unresolved / Gibberish
+        isLocationVerifiedInBoundary = false;
+        isGeocoded = false;
+        document.getElementById('if_lat').value = '';
+        document.getElementById('if_lng').value = '';
+        if (pickerMarker && pickerMap) {
+          pickerMap.removeLayer(pickerMarker);
+          pickerMarker = null;
+        }
+        const badge = document.getElementById('if_geoBadge');
+        if (badge) {
+          badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+          badge.textContent = '❌ Invalid Location';
+        }
+        const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+        const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
+        const boundaryMsg = document.getElementById('if_boundaryErrorMsg');
+        if (boundaryBanner && boundaryTitle && boundaryMsg) {
+          boundaryTitle.textContent = 'Unable to Verify Location';
+          boundaryMsg.textContent = data.message || 'Could not find a valid street or landmark for this address within Barangay Mapulang Lupa. Please use the mini-map to drop a pin or enter a recognized street.';
+          boundaryBanner.classList.remove('hidden');
+        }
+        setBoundaryStyle(true);
+        updateSubmitButtonState();
+        showToast(data.message || 'Location could not be geocoded within Barangay Mapulang Lupa boundary.', 'error');
+      }
+    } catch (err) {
+      showToast('Geocoding request failed.', 'error');
+    } finally {
+      if (btn) btn.innerHTML = '<span data-icon="search" data-icon-size="12"></span> Geocode Location';
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  function showPickerMap() {
+    const c = document.getElementById('incPickerMapContainer');
+    if (c && c.classList.contains('hidden')) {
+      c.classList.remove('hidden');
+      setTimeout(() => {
+        initPickerMap();
+        if (pickerMap) pickerMap.invalidateSize();
+      }, 100);
+    }
+  }
+
+  function togglePickerMap() {
+    const c = document.getElementById('incPickerMapContainer');
+    if (!c) return;
+    if (c.classList.contains('hidden')) {
+      c.classList.remove('hidden');
+      setTimeout(() => {
+        initPickerMap();
+        if (pickerMap) pickerMap.invalidateSize();
+      }, 100);
+    } else {
+      c.classList.add('hidden');
+    }
+  }
+
+  const ZONE_MATCH_RULES = [
+    {
+      zone: 'Zone 1',
+      landmark: 'Residence 3',
+      keywords: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3'],
+    },
+    {
+      zone: 'Zone 2',
+      landmark: 'Residence 1',
+      keywords: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1'],
+    },
+    {
+      zone: 'Zone 3',
+      landmark: 'Pandi Village 2 (Atlantica)',
+      keywords: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2', 'sitio bata', 'bata'],
+    },
+    {
+      zone: 'Zone 4',
+      landmark: 'Mitay 1',
+      keywords: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'],
+    },
+    {
+      zone: 'Zone 5',
+      landmark: 'Sitio Gubat',
+      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'silangan'],
+    },
+    {
+      zone: 'Zone 6',
+      landmark: 'Bangko St.',
+      keywords: ['bangko st', 'bangko street', 'bangko', 'kalye bangko'],
+    },
+    {
+      zone: 'Zone 7',
+      landmark: 'Barangka St. / Pandi Encampment One',
+      keywords: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one'],
+    },
+  ];
+
+  let currentZoneConflict = null;
+
+  function checkZoneLocationConflict() {
+    const selectedZone = document.getElementById('if_zone').value;
+    const locationText = (document.getElementById('if_location').value || '').toLowerCase().trim();
+    const banner = document.getElementById('if_zoneConflictBanner');
+    const msgEl = document.getElementById('if_zoneConflictMsg');
+    const fixBtn = document.getElementById('btnQuickFixZone');
+
+    if (!selectedZone || !locationText || locationText.length < 3) {
+      currentZoneConflict = null;
+      if (banner) banner.classList.add('hidden');
+      return null;
+    }
+
+    let detectedRule = null;
+    let matchedKeyword = '';
+
+    for (const rule of ZONE_MATCH_RULES) {
+      for (const kw of rule.keywords) {
+        if (locationText.includes(kw)) {
+          detectedRule = rule;
+          matchedKeyword = kw;
+          break;
+        }
+      }
+      if (detectedRule) break;
+    }
+
+    if (detectedRule && detectedRule.zone !== selectedZone) {
+      currentZoneConflict = {
+        selectedZone,
+        detectedZone: detectedRule.zone,
+        landmark: detectedRule.landmark,
+        matchedKeyword,
+      };
+
+      if (banner && msgEl && fixBtn) {
+        msgEl.innerHTML = `<strong class="text-amber-950 font-semibold">"${matchedKeyword.toUpperCase()}"</strong> belongs to <strong class="text-amber-950 font-semibold">${detectedRule.zone} (${detectedRule.landmark})</strong>, but you selected <strong class="text-amber-950 font-semibold">${selectedZone}</strong>. Please verify or switch zone.`;
+        fixBtn.textContent = `Switch to ${detectedRule.zone}`;
+        banner.classList.remove('hidden');
+      }
+      return currentZoneConflict;
+    } else {
+      currentZoneConflict = null;
+      if (banner) banner.classList.add('hidden');
+      return null;
+    }
+  }
+
+  function quickFixZoneConflict() {
+    if (!currentZoneConflict) return;
+    const targetZone = currentZoneConflict.detectedZone;
+    const zoneSelect = document.getElementById('if_zone');
+    if (zoneSelect) {
+      zoneSelect.value = targetZone;
+      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(zoneSelect);
+      showToast(`Switched zone to ${targetZone}`, 'success');
+    }
+    checkZoneLocationConflict();
+  }
+
+  function onZoneDropdownChange() {
+    // 1. Decoupled from geocoding coordinates:
+    // Changing Zone NEVER injects coordinates or marks outside-boundary locations as inside!
+    checkZoneLocationConflict();
+    const zoneVal = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
+    highlightSelectedZoneOnMiniMap(zoneVal);
+
+    // 2. If coordinates are already set, re-verify status with the new zone conflict rule
+    const lat = document.getElementById('if_lat').value;
+    const lng = document.getElementById('if_lng').value;
+    if (lat && lng) {
+      updatePickerStatusBadge(Number(lat), Number(lng));
+    }
+  }
+
   function resetIncidentFormFields() {
     incEditId = null;
     document.getElementById('incModalTitle').textContent = 'New Incident Report';
     document.getElementById('incidentForm').reset();
     document.getElementById('if_reportNo').value = '';
+    setPickerCoordinates(null, null);
+    isLocationVerifiedInBoundary = false;
+    isGeocoded = false;
+    currentZoneConflict = null;
+    const banner = document.getElementById('if_zoneConflictBanner');
+    if (banner) banner.classList.add('hidden');
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    if (boundaryBanner) boundaryBanner.classList.add('hidden');
+    toggleExpandPickerMap(false);
+    const container = document.getElementById('incPickerMapContainer');
+    if (container) container.classList.add('hidden');
+    setBoundaryStyle(false);
+    updateSubmitButtonState();
     resetFormDropdowns('incidentForm');
   }
 
@@ -425,9 +1164,6 @@
     resetIncidentFormFields();
     openModal('incidentModal');
 
-    // Look-ahead preview only, same reasoning as Blotter's Docket No.
-    // preview — the real number is (re)generated at save time, so it
-    // can't go stale or collide even with two forms open at once.
     const reportField = document.getElementById('if_reportNo');
     reportField.value = 'Loading…';
     try {
@@ -453,17 +1189,35 @@
     document.getElementById('if_reporter').value = r.reporter;
     document.getElementById('if_officer').value = r.officer;
     document.getElementById('if_status').value = r.status;
+
+    if (r.lat != null && r.lng != null && !isNaN(r.lat) && !isNaN(r.lng) && r.lat !== 0) {
+      showPickerMap();
+      setPickerCoordinates(r.lat, r.lng, true);
+    } else {
+      setPickerCoordinates(null, null);
+      const container = document.getElementById('incPickerMapContainer');
+      if (container) container.classList.add('hidden');
+    }
+
+    checkZoneLocationConflict();
     openModal('incidentModal');
   }
 
   async function saveIncident() {
+    const conflict = checkZoneLocationConflict();
+    if (conflict) {
+      const switchZone = await bcConfirm(
+        `Location & Zone Mismatch Detected:\n\nThe address entered "${conflict.matchedKeyword.toUpperCase()}" belongs to ${conflict.detectedZone} (${conflict.landmark}), but you have selected ${conflict.selectedZone}.\n\nWould you like to automatically switch the Zone to ${conflict.detectedZone} before saving?`,
+        { title: 'Zone Conflict Warning', okLabel: `Switch to ${conflict.detectedZone} & Save`, cancelLabel: 'Keep & Save Anyway', danger: false }
+      );
+      if (switchZone) {
+        document.getElementById('if_zone').value = conflict.detectedZone;
+        if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(document.getElementById('if_zone'));
+        checkZoneLocationConflict();
+      }
+    }
+
     const vals = {
-      // Same reasoning as Blotter's Docket No.: on create this field only
-      // ever shows a look-ahead preview (see openAddIncident()), never a
-      // reserved number, so it must be sent as '' to let the server mint
-      // the real one at save time — otherwise two people opening "New
-      // Incident Report" around the same moment would both submit the
-      // same previewed number and collide.
       reportNo: incEditId ? document.getElementById('if_reportNo').value.trim() : '',
       date: document.getElementById('if_dateReported').value,
       timeReported: document.getElementById('if_timeReported').value,
@@ -475,6 +1229,8 @@
       officer: document.getElementById('if_officer').value.trim(),
       status: document.getElementById('if_status').value,
       zone: document.getElementById('if_zone').value,
+      lat: document.getElementById('if_lat').value || null,
+      lng: document.getElementById('if_lng').value || null,
     };
     if (!vals.location || !vals.reporter) { await bcAlert('Please fill in required fields.'); return; }
     if (!vals.zone) { await bcAlert('Please select the Zone.'); return; }
@@ -483,14 +1239,17 @@
     if (!vals.status) { await bcAlert('Please select the Status.'); return; }
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
-    // Zone lives in its own column (zone_id) — never baked into the
-    // location text, so changing the zone dropdown always takes effect
-    // everywhere it's displayed, with no stale prefix left behind.
+
+    // Hard Submission Guard: Strict Point-in-Polygon Geofence Validation
+    if (!isLocationVerifiedInBoundary || !vals.lat || !vals.lng) {
+      await bcAlert('Cannot file incident report: Location is outside the barangay boundary or unverified.\n\nPlease click "Geocode Location" or place a marker inside the green boundary on the mini-map.');
+      showPickerMap();
+      return;
+    }
+
     vals.location = bcStripZonePrefix(vals.location);
     try {
       if (incEditId) {
-        const prev = incidentData.find(x => x.id === incEditId);
-        if (prev && prev.zone !== vals.zone) { vals.lat = ''; vals.lng = ''; } // re-derive coords server-side
         await BCApi.update('incidents', incEditId, vals);
         showToast('Incident report updated!');
       } else {
@@ -530,7 +1289,7 @@
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
     const rows = [
-      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime12h(r.timeReported)],
+      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime(r.timeReported)],
       ['Zone', r.zone], ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
       ['Description', r.description], ['Reporter', r.reporter], ['Officer', r.officer], ['Status', r.status],
     ];
@@ -552,6 +1311,21 @@
       ).join('');
     } catch (err) { /* dropdown just stays on the placeholder if this fails */ }
   }
+
+  window.addEventListener('bc-time-format-changed', () => {
+    renderIncidents();
+  });
+
+  // Pressing Escape while in Wide View closes only the wide view without closing the main modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+      if (isMapExpanded) {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleExpandPickerMap(false);
+      }
+    }
+  }, true);
 
   (async function () {
     await requireAuth();

@@ -6,14 +6,6 @@ c = app.test_client()
 
 mfa_login(c, "admin", "admin123")
 
-from app.extensions import db
-from app.models import User
-with app.app_context():
-    existing = User.query.filter_by(username="testofficer").first()
-    if existing:
-        db.session.delete(existing)
-        db.session.commit()
-
 # exact shape sent by frontend/users.html saveUser()
 vals = {
     "name": "Test Officer",

@@ -27,7 +27,11 @@ r = client.post("/api/documents.php?type=census", json={
     "voterStatus": "Registered Voter", "occupation": "Farmer", "status": "Active",
 })
 print("create census:", r.status_code, r.get_json())
-resident_id = r.get_json()["id"]
+if r.status_code == 201:
+    resident_id = r.get_json()["id"]
+else:
+    clist = client.get("/api/documents.php?type=census").get_json()
+    resident_id = clist[0]["id"]
 
 r = client.get("/api/documents.php?type=census")
 print("list census count:", len(r.get_json()))

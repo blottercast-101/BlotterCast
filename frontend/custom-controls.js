@@ -90,12 +90,20 @@
       '<svg class="bc-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     wrap.appendChild(trigger);
 
+    function isPlaceholderOption(opt) {
+      if (!opt) return true;
+      const text = (opt.textContent || '').trim();
+      const textLower = text.toLowerCase();
+      if (textLower.startsWith('all ') || textLower === 'all') return false;
+      return opt.hidden || opt.disabled || (!opt.value && (textLower.includes('select') || textLower.includes('choose') || text === '')) || textLower === '-select-' || textLower === 'select...' || textLower === 'select…';
+    }
+
     function syncTrigger() {
       const opt = select.options[select.selectedIndex];
       const valSpan = trigger.querySelector('.bc-select-value');
       const text = opt ? (opt.textContent || '').trim() : '';
       valSpan.textContent = text || '-Select-';
-      const isPlaceholder = !opt || opt.disabled || !opt.value || text === '-Select-' || text === 'Select…' || text.toLowerCase() === '-select-';
+      const isPlaceholder = isPlaceholderOption(opt);
       valSpan.classList.toggle('bc-select-placeholder', isPlaceholder);
       trigger.disabled = select.disabled;
       trigger.classList.toggle('bc-select-disabled', select.disabled);
@@ -125,22 +133,21 @@
       const panel = document.createElement('div');
       panel.className = 'bc-select-panel';
       Array.from(select.options).forEach((opt, i) => {
-        if (opt.hidden) return;
+        // Exclude placeholders like -Select-, disabled headers, or hidden options from the open dropdown
+        if (isPlaceholderOption(opt)) return;
+
         const item = document.createElement('div');
         item.className = 'bc-select-option';
-        if (opt.disabled) item.classList.add('bc-select-option-disabled');
         if (i === select.selectedIndex) item.classList.add('bc-select-option-active');
         item.textContent = opt.textContent;
-        if (!opt.disabled) {
-          item.addEventListener('click', () => {
-            select.selectedIndex = i;
-            syncTrigger();
-            select.dispatchEvent(new Event('input', { bubbles: true }));
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            closeActivePopover();
-            trigger.focus();
-          });
-        }
+        item.addEventListener('click', () => {
+          select.selectedIndex = i;
+          syncTrigger();
+          select.dispatchEvent(new Event('input', { bubbles: true }));
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          closeActivePopover();
+          trigger.focus();
+        });
         panel.appendChild(item);
       });
       if (!panel.children.length) {
@@ -418,48 +425,147 @@
   function enhanceTimeInput(input) {
     if (input.dataset.bcTime || input.hidden) return;
     input.dataset.bcTime = '1';
-    input.classList.add('bc-time-enhanced');
-    attachFieldIcon(input,
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>'
-    );
+
+    const wrap = document.createElement('div');
+    wrap.className = 'bc-field-wrap bc-time-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    input.classList.add('bc-time-native');
+    input.tabIndex = -1;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'bc-time-trigger ' + input.className.replace('bc-time-native', '').trim();
+    if (input.getAttribute('style')) trigger.setAttribute('style', input.getAttribute('style'));
+    trigger.innerHTML =
+      '<span class="bc-time-value"></span>' +
+      '<span class="bc-field-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>';
+    wrap.appendChild(trigger);
 
     let panelRef;
 
+    function syncTrigger() {
+      const valSpan = trigger.querySelector('.bc-time-value');
+      if (!valSpan) return;
+      const is24 = (typeof bcGetTimeFormat === 'function' ? bcGetTimeFormat() : '12') === '24';
+      if (!input.value) {
+        valSpan.textContent = is24 ? 'HH:mm' : 'hh:mm A';
+        valSpan.classList.add('bc-time-placeholder');
+      } else {
+        valSpan.textContent = typeof bcFormatTime === 'function' ? bcFormatTime(input.value) : input.value;
+        valSpan.classList.remove('bc-time-placeholder');
+      }
+      trigger.classList.toggle('bc-time-disabled', !!input.disabled);
+    }
+
+    const proto = Object.getPrototypeOf(input);
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value') || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    if (descriptor && descriptor.set) {
+      Object.defineProperty(input, 'value', {
+        get() {
+          return descriptor.get.call(this);
+        },
+        set(v) {
+          descriptor.set.call(this, v);
+          syncTrigger();
+        },
+        configurable: true,
+      });
+    }
+
+    input.addEventListener('input', syncTrigger);
+    input.addEventListener('change', syncTrigger);
+    window.addEventListener('bc-time-format-changed', syncTrigger);
+
+    syncTrigger();
+
     function build() {
-      const t = parseTimeVal(input.value) || { h: new Date().getHours(), m: 0 };
+      const is24 = (typeof bcGetTimeFormat === 'function' ? bcGetTimeFormat() : '12') === '24';
+      const parsed = parseTimeVal(input.value);
+      const now = new Date();
+      const currentH = parsed ? parsed.h : now.getHours();
+      const currentM = parsed ? parsed.m : 0;
+
       const panel = document.createElement('div');
-      panel.className = 'bc-timepicker-panel';
+      panel.className = 'bc-timepicker-panel' + (is24 ? ' bc-tp-24' : ' bc-tp-12');
 
       const cols = document.createElement('div');
       cols.className = 'bc-tp-cols';
 
       const hourCol = document.createElement('div');
       hourCol.className = 'bc-tp-col';
-      for (let h = 0; h < 24; h++) {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'bc-tp-item' + (h === t.h ? ' bc-tp-item-active' : '');
-        item.textContent = pad2(h);
-        item.onclick = () => {
-          input.value = fmtTimeVal(h, t.m);
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.dispatchEvent(new Event('change', { bubbles: true }));
-          rebuild();
-        };
-        hourCol.appendChild(item);
-      }
 
       const minCol = document.createElement('div');
       minCol.className = 'bc-tp-col';
+
+      const periodCol = document.createElement('div');
+      periodCol.className = 'bc-tp-col bc-tp-col-period';
+
+      if (is24) {
+        // 24-Hour mode: 00 to 23
+        for (let h = 0; h < 24; h++) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'bc-tp-item' + (h === currentH ? ' bc-tp-item-active' : '');
+          item.textContent = pad2(h);
+          item.onclick = () => {
+            input.value = fmtTimeVal(h, currentM);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            rebuild();
+          };
+          hourCol.appendChild(item);
+        }
+      } else {
+        // 12-Hour mode: 01 to 12 with AM/PM
+        const isPM = currentH >= 12;
+        const h12 = currentH % 12 === 0 ? 12 : currentH % 12;
+
+        for (let h = 1; h <= 12; h++) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'bc-tp-item' + (h === h12 ? ' bc-tp-item-active' : '');
+          item.textContent = pad2(h);
+          item.onclick = () => {
+            let target24h = h % 12;
+            if (isPM) target24h += 12;
+            input.value = fmtTimeVal(target24h, currentM);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            rebuild();
+          };
+          hourCol.appendChild(item);
+        }
+
+        ['AM', 'PM'].forEach(p => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          const active = (p === 'PM' && isPM) || (p === 'AM' && !isPM);
+          item.className = 'bc-tp-item bc-tp-period-item' + (active ? ' bc-tp-item-active' : '');
+          item.textContent = p;
+          item.onclick = () => {
+            let target24h = h12 % 12;
+            if (p === 'PM') target24h += 12;
+            input.value = fmtTimeVal(target24h, currentM);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            rebuild();
+          };
+          periodCol.appendChild(item);
+        });
+      }
+
+      // Minute column
       const minuteSet = new Set([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]);
-      minuteSet.add(t.m);
+      minuteSet.add(currentM);
       Array.from(minuteSet).sort((a, b) => a - b).forEach(m => {
         const item = document.createElement('button');
         item.type = 'button';
-        item.className = 'bc-tp-item' + (m === t.m ? ' bc-tp-item-active' : '');
+        item.className = 'bc-tp-item' + (m === currentM ? ' bc-tp-item-active' : '');
         item.textContent = pad2(m);
         item.onclick = () => {
-          input.value = fmtTimeVal(t.h, m);
+          input.value = fmtTimeVal(currentH, m);
           input.dispatchEvent(new Event('input', { bubbles: true }));
           input.dispatchEvent(new Event('change', { bubbles: true }));
           rebuild();
@@ -467,13 +573,19 @@
         minCol.appendChild(item);
       });
 
-      cols.append(hourCol, minCol);
+      cols.appendChild(hourCol);
+      cols.appendChild(minCol);
+      if (!is24) cols.appendChild(periodCol);
+
       panel.appendChild(cols);
 
       const footer = document.createElement('div');
-      footer.className = 'bc-dp-footer';
+      footer.className = 'bc-tp-footer';
+      
       const nowBtn = document.createElement('button');
-      nowBtn.type = 'button'; nowBtn.className = 'bc-dp-today-btn'; nowBtn.textContent = 'Now';
+      nowBtn.type = 'button';
+      nowBtn.className = 'bc-tp-footer-btn bc-tp-btn-now';
+      nowBtn.textContent = 'Now';
       nowBtn.onclick = () => {
         const n = new Date();
         input.value = fmtTimeVal(n.getHours(), n.getMinutes());
@@ -481,10 +593,25 @@
         input.dispatchEvent(new Event('change', { bubbles: true }));
         closeActivePopover();
       };
+
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'bc-tp-footer-btn bc-tp-btn-clear';
+      clearBtn.textContent = 'Clear';
+      clearBtn.onclick = () => {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        closeActivePopover();
+      };
+
       const doneBtn = document.createElement('button');
-      doneBtn.type = 'button'; doneBtn.className = 'bc-dp-clear-btn'; doneBtn.textContent = 'Done';
+      doneBtn.type = 'button';
+      doneBtn.className = 'bc-tp-footer-btn bc-tp-btn-done';
+      doneBtn.textContent = 'Done';
       doneBtn.onclick = () => closeActivePopover();
-      footer.append(nowBtn, doneBtn);
+
+      footer.append(nowBtn, clearBtn, doneBtn);
       panel.appendChild(footer);
       return panel;
     }
@@ -493,36 +620,41 @@
       const fresh = build();
       panelRef.replaceWith(fresh);
       panelRef = fresh;
-      positionPopover(panelRef, input);
+      positionPopover(panelRef, trigger);
       panelRef.classList.add('open');
-      if (activePopover && activePopover.trigger === input) activePopover.el = panelRef;
+      if (activePopover && activePopover.trigger === trigger) activePopover.el = panelRef;
       const active = panelRef.querySelector('.bc-tp-item-active');
       if (active && active.scrollIntoView) active.scrollIntoView({ block: 'center' });
     }
 
     function open() {
+      if (input.disabled) return;
       closeActivePopover();
       panelRef = build();
       document.body.appendChild(panelRef);
-      positionPopover(panelRef, input);
+      positionPopover(panelRef, trigger);
+      trigger.classList.add('bc-time-trigger-open');
       requestAnimationFrame(() => {
         panelRef.classList.add('open');
         const active = panelRef.querySelector('.bc-tp-item-active');
         if (active && active.scrollIntoView) active.scrollIntoView({ block: 'center' });
       });
       activePopover = {
-        el: panelRef, trigger: input,
-        close() { panelRef.classList.remove('open'); setTimeout(() => panelRef.remove(), 120); }
+        el: panelRef, trigger: trigger,
+        close() {
+          trigger.classList.remove('bc-time-trigger-open');
+          panelRef.classList.remove('open');
+          setTimeout(() => panelRef.remove(), 120);
+        }
       };
     }
 
-    input.addEventListener('mousedown', (e) => {
+    trigger.addEventListener('click', (e) => {
       e.preventDefault();
-      input.focus();
-      if (activePopover && activePopover.trigger === input) closeActivePopover();
+      if (activePopover && activePopover.trigger === trigger) closeActivePopover();
       else open();
     });
-    input.addEventListener('keydown', (e) => {
+    trigger.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
       if (e.key === 'Escape') closeActivePopover();
     });

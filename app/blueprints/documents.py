@@ -270,21 +270,32 @@ def _resident_status_block(resident, cert_label, blocked_statuses):
     return None
 
 
-def _is_blotter_respondent(resident):
-    """True if `resident` is named as the Respondent in any blotter case —
-    matched by Census link first, then by name for cases filed before the
-    party was linked to a Census record. Being a Complainant never counts
-    here; only the Respondent role restricts indigency eligibility."""
-    if BlotterRecord.query.filter_by(respondent_id=resident.id).first():
+def _has_unresolved_blotter_as_respondent(resident):
+    """True if `resident` is named as a Respondent in any active/unresolved
+    blotter case (status in 'Pending', 'Ongoing'). If all blotter records where
+    the resident is a respondent are 'Resolved', or if they are only a complainant,
+    this returns False (issuance allowed)."""
+    unresolved = BlotterRecord.query.filter(
+        BlotterRecord.respondent_id == resident.id,
+        BlotterRecord.status.in_(["Pending", "Ongoing"]),
+        (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
+    ).first()
+    if unresolved:
         return True
+
     last, first = (resident.last_name or "").strip(), (resident.first_name or "").strip()
-    if not last or not first:
-        return False
-    return BlotterRecord.query.filter(
-        BlotterRecord.respondent_id.is_(None),
-        BlotterRecord.respondent.ilike(f"%{last}%"),
-        BlotterRecord.respondent.ilike(f"%{first}%"),
-    ).first() is not None
+    if last and first:
+        unresolved_name = BlotterRecord.query.filter(
+            BlotterRecord.respondent_id.is_(None),
+            BlotterRecord.respondent.ilike(f"%{last}%"),
+            BlotterRecord.respondent.ilike(f"%{first}%"),
+            BlotterRecord.status.in_(["Pending", "Ongoing"]),
+            (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
+        ).first()
+        if unresolved_name:
+            return True
+
+    return False
 
 
 # ---------------- BARANGAY CLEARANCE ----------------
@@ -305,6 +316,11 @@ def _clearance():
         err = _resident_status_block(resident, "Certificate of Clearance", {"Deceased", "Transferred"})
         if err:
             return err
+        if _has_unresolved_blotter_as_respondent(resident):
+            return json_error(
+                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
+                403,
+            )
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayClearance, "BC")
         or_no = d.get("orNo") or next_or_no()
@@ -354,6 +370,11 @@ def _residency():
         err = _resident_status_block(resident, "Certificate of Residency", {"Transferred"})
         if err:
             return err
+        if _has_unresolved_blotter_as_respondent(resident):
+            return json_error(
+                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
+                403,
+            )
 
         years_residency = int(d["yearsResidency"]) if d.get("yearsResidency") not in (None, "") else None
         duration_unit = "months" if d.get("durationUnit") == "months" else "years"
@@ -405,6 +426,11 @@ def _non_residency():
         )
         if err:
             return err
+        if _has_unresolved_blotter_as_respondent(resident):
+            return json_error(
+                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
+                403,
+            )
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayNonResidency, "NR")
         or_no = d.get("orNo") or next_or_no()
@@ -451,11 +477,10 @@ def _indigency():
         err = _resident_status_block(resident, "Certificate of Indigency", {"Transferred"})
         if err:
             return err
-        if _is_blotter_respondent(resident):
+        if _has_unresolved_blotter_as_respondent(resident):
             return json_error(
-                f"{full_name_of(resident)} is listed as a Respondent in a blotter case and is not "
-                "eligible for a Certificate of Indigency. Being named as a Complainant does not "
-                "affect eligibility."
+                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
+                403,
             )
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(IndigencyCertificate, "CI")

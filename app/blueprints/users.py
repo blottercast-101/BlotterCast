@@ -1,4 +1,5 @@
 import os
+import secrets
 import time
 import uuid
 from datetime import datetime
@@ -9,7 +10,7 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 from ..extensions import db
-from ..models import AuditLog, User
+from ..models import AuditLog, NotificationRead, OtpCode, PasswordHistory, User
 from ..permissions import get_security_settings, json_error, log_audit, login_required, permission_required
 
 bp = Blueprint("users", __name__)
@@ -43,7 +44,7 @@ def users_router():
             return _update()
         if action == "toggle_status" and method == "POST":
             return _toggle_status()
-        if action == "delete" and method == "DELETE":
+        if (action == "delete" and method in ("DELETE", "POST")) or (method == "DELETE" and action in ("", "delete")):
             return _delete()
         if action == "upload_signature" and method == "POST":
             return _upload_signature()
@@ -69,24 +70,41 @@ def _get_target_user_id():
         return None
 
 
+PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
+
+
 def _captain_signature():
-    row = User.query.filter_by(role="Barangay Captain", status="Active").order_by(User.id).first()
+    row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
     return jsonify({
         "fullName": row.full_name if row else None,
         "signaturePath": row.signature_path if row else None,
     })
 
 
+def _get_computed_status(u: User) -> str:
+    if u.status == "Suspended":
+        return "Suspended"
+    if u.last_seen:
+        elapsed = (datetime.utcnow() - u.last_seen).total_seconds()
+        if elapsed <= 45:
+            return "Active"
+    return "Inactive"
+
+
 def _list():
     rows = User.query.order_by(User.full_name).all()
     return jsonify([{
         "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
-        "contact_no": u.contact_no, "role": u.role, "status": u.status,
+        "contact_no": u.contact_no, "role": u.role,
+        "status": _get_computed_status(u),
+        "is_online": _get_computed_status(u) == "Active",
+        "is_protected": u.role in PROTECTED_ROLES,
         "signature_path": u.signature_path,
         # Naive datetimes from utcnow() have no offset — appending "Z" makes
         # the value unambiguous UTC so the browser doesn't guess it's local
         # time (which silently shifts it by the browser's own UTC offset).
         "last_login": (u.last_login.isoformat() + "Z") if u.last_login else None,
+        "last_seen": (u.last_seen.isoformat() + "Z") if u.last_seen else None,
         "created_at": (u.created_at.isoformat() + "Z") if u.created_at else None,
     } for u in rows])
 
@@ -123,6 +141,11 @@ def _create():
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
 
+    # Guard: Only Desk Officer and Data Encoder roles may be created via user management
+    normalized_role = role.upper()
+    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN"} or role not in {"Desk Officer", "Data Encoder"}:
+        return json_error("Creating accounts with 'System Admin' or 'Barangay Captain' roles is forbidden. Only Desk Officer and Data Encoder accounts can be created.", 403)
+
     min_len = get_security_settings()["min_password_length"]
     if len(password) < min_len:
         return json_error(f"Password must be at least {min_len} characters long")
@@ -135,7 +158,7 @@ def _create():
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
         email=email, contact_no=contact, role=role,
-        status="Active", password_changed_at=datetime.utcnow(),
+        status="Inactive", password_changed_at=datetime.utcnow(),
     )
     db.session.add(user)
     db.session.commit()
@@ -165,7 +188,9 @@ def _update():
     user.email = email
     user.contact_no = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     user.role = d.get("role") or user.role
-    user.status = d.get("status") or user.status
+
+    # Note: Status is purely system-managed (presence or suspension actions).
+    # Any manual status in the payload is ignored.
 
     # Note: Admin cannot directly overwrite or change another user's password.
     # Users independently change their own password via Settings -> Security.
@@ -182,25 +207,67 @@ def _toggle_status():
     user = db.session.get(User, uid)
     if not user:
         return json_error("User not found", 404)
-    user.status = "Suspended" if user.status == "Active" else "Active"
+    if user.role in PROTECTED_ROLES:
+        return json_error(f"{user.role} accounts are protected and cannot be suspended.", 400)
+    
+    if user.status == "Suspended":
+        user.status = "Inactive"
+        action_note = "Unsuspended"
+    else:
+        user.status = "Suspended"
+        user.last_seen = None
+        action_note = "Suspended"
+
     db.session.commit()
-    log_audit(session.get("username"), "Updated", "Users", f"{user.username} set to {user.status}")
-    return jsonify({"ok": True, "status": user.status})
+    computed = _get_computed_status(user)
+    log_audit(session.get("username"), "Updated", "Users", f"{user.username} {action_note.lower()}")
+    return jsonify({"ok": True, "status": computed})
 
 
 def _delete():
-    uid = _get_target_user_id()
-    if not uid:
-        return json_error("id required")
-    if session.get("user_id") == uid:
-        return json_error("You cannot delete your own account while logged in")
-    user = db.session.get(User, uid)
-    if user:
+    try:
+        uid = _get_target_user_id()
+        if not uid:
+            return json_error("id required", 400)
+        if session.get("user_id") == uid:
+            return json_error("You cannot delete your own account while logged in", 400)
+        user = db.session.get(User, uid)
+        if not user:
+            return json_error("User not found", 404)
+        if user.role in PROTECTED_ROLES:
+            return json_error(f"{user.role} accounts are protected and cannot be deleted.", 400)
+        
         username = user.username
+
+        # 1. Clean up user's signature file if one exists
+        if user.signature_path:
+            try:
+                sig_file = os.path.join(current_app.static_folder, user.signature_path)
+                if os.path.isfile(sig_file):
+                    os.remove(sig_file)
+            except Exception as e:
+                current_app.logger.warning(f"Failed to remove signature file on user delete: {e}")
+
+        # 2. Safely remove child foreign key dependencies within the transaction
+        OtpCode.query.filter_by(user_id=uid).delete()
+        NotificationRead.query.filter_by(user_id=uid).delete()
+        PasswordHistory.query.filter_by(user_id=uid).delete()
+
+        # 3. Hard-delete user record safely
         db.session.delete(user)
         db.session.commit()
-        log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
-    return jsonify({"ok": True})
+
+        # 4. Safely log audit event
+        try:
+            log_audit(session.get("username"), "Deleted", "Users", f"Account removed: {username}")
+        except Exception as e:
+            current_app.logger.warning(f"Audit log failed on user delete: {e}")
+
+        return jsonify({"ok": True, "success": True, "message": f"User '{username}' deleted successfully."})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception(f"Failed to delete user: {e}")
+        return json_error(f"Failed to delete user: {str(e)}", 500)
 
 
 def _upload_signature():

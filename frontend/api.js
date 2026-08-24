@@ -40,6 +40,9 @@ const BCApi = {
   },
   logout() { return this._fetch(`${BC_API}/api/auth.php?action=logout`); },
   me() { return this._fetch(`${BC_API}/api/auth.php?action=me`); },
+  heartbeat() {
+    return this._fetch(`${BC_API}/api/auth.php?action=heartbeat`, { method: 'POST' });
+  },
   verifyOtp(code, preAuthToken = null) {
     const payload = { code };
     if (preAuthToken) payload.pre_auth_token = preAuthToken;
@@ -240,6 +243,12 @@ const BCApi = {
 
   // ---- settings & backup ----
   settingsList() { return this._fetch(`${BC_API}/api/settings.php?action=list`); },
+  getTimeFormat() { return this._fetch(`${BC_API}/api/settings.php?action=time_format`); },
+  setTimeFormat(timeFormat) {
+    return this._fetch(`${BC_API}/api/settings.php?action=time_format`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_format: timeFormat }),
+    });
+  },
   letterheadInfo() { return this._fetch(`${BC_API}/api/settings.php?action=letterhead`); },
   getMlModel() { return this._fetch(`${BC_API}/api/settings.php?action=ml_model`); },
   autoBackupCheck() { return this._fetch(`${BC_API}/api/settings.php?action=auto_backup_check`); },
@@ -251,6 +260,14 @@ const BCApi = {
   settingsSave(values) {
     return this._fetch(`${BC_API}/api/settings.php?action=save`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
+    });
+  },
+  adminSecuritySettingsGet() {
+    return this._fetch(`${BC_API}/api/admin/security-settings`);
+  },
+  adminSecuritySettingsUpdate(values) {
+    return this._fetch(`${BC_API}/api/admin/security-settings`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
     });
   },
   runBackup() { return this._fetch(`${BC_API}/api/settings.php?action=backup`, { method: 'POST' }); },
@@ -279,6 +296,14 @@ const BCApi = {
     if (res.status === 404) return null;
     if (res.status === 401) { window.location.href = 'login.html'; return null; }
     if (!res.ok) throw new Error('ML service unavailable');
+    return res.json();
+  },
+  async mlPredict(payload) {
+    const res = await fetch(`${BC_API}/api/ml_proxy.php?action=predict`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify(payload || {}),
+    });
+    if (!res.ok) throw new Error('ML prediction failed');
     return res.json();
   },
   async mlHealth() {

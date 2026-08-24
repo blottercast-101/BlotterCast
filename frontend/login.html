@@ -401,7 +401,7 @@
         </div>
         <div class="left-stat">
           <div class="left-stat-num" id="loginStatZones">—</div>
-          <div class="left-stat-label">Zones</div>
+          <div class="left-stat-label">Zones Monitored</div>
         </div>
       </div>
     </div>
@@ -690,7 +690,7 @@
         if (resendTimer) clearInterval(resendTimer);
         document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
         document.getElementById('successOverlay').classList.add('show');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
       btn.classList.remove('loading');
@@ -893,6 +893,8 @@
       btn.classList.remove('loading');
       alertMsg.textContent = err.message || 'Could not reset your password. Please try again.';
       alertEl.classList.add('show');
+      npEl.value = '';
+      cpEl.value = '';
       npEl.focus();
     }
   }
@@ -912,10 +914,9 @@
       const result = await BCApi.verifyOtp(code, currentPreAuthToken);
       btn.classList.remove('loading');
       if (resendTimer) clearInterval(resendTimer);
-      currentPreAuthToken = null;
       document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
       document.getElementById('successOverlay').classList.add('show');
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+      setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
     } catch (e2) {
       btn.classList.remove('loading');
       err.textContent = e2.message || 'Incorrect code. Please try again.';
@@ -1000,7 +1001,7 @@
         if (resendTimer) clearInterval(resendTimer);
         document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
         document.getElementById('successOverlay').classList.add('show');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
       alert.classList.add('show');
@@ -1011,11 +1012,40 @@
     }
   }
 
+  // Handle Logged Out Alert from back navigation or session expiry
+  function checkLoggedOutNotification() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParam = urlParams.get('logged_out') === '1';
+    const isSessionExpired = urlParams.get('session_expired') === '1';
+    const hasStorage = sessionStorage.getItem('bc_logged_out_alert') === '1';
+    const expiredReason = sessionStorage.getItem('bc_session_expired_reason');
+
+    if (hasParam || isSessionExpired || hasStorage || expiredReason) {
+      sessionStorage.removeItem('bc_logged_out_alert');
+      sessionStorage.removeItem('bc_session_expired_reason');
+      try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      const alert = document.getElementById('loginAlert');
+      const alertText = document.getElementById('loginAlertMsg');
+      if (alert && alertText) {
+        if (isSessionExpired || expiredReason) {
+          alertText.textContent = expiredReason || 'Your session expired due to 2 hours of inactivity. Please sign in again.';
+        } else {
+          alertText.textContent = "You've been logged out! Please login to your account to access BlotterCast";
+        }
+        alert.classList.add('show');
+      }
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGoogleSignIn);
+    document.addEventListener('DOMContentLoaded', () => { initGoogleSignIn(); checkLoggedOutNotification(); });
   } else {
     initGoogleSignIn();
+    checkLoggedOutNotification();
   }
+  window.addEventListener('pageshow', (e) => {
+    checkLoggedOutNotification();
+  });
   window.addEventListener('load', initGoogleSignIn);
 
   // Shake keyframe
@@ -1043,8 +1073,8 @@
     try {
       const s = await BCApi.publicStats();
       document.getElementById('loginStatAccuracy').textContent = (s.mlAccuracy != null ? s.mlAccuracy + '%' : '—');
-      document.getElementById('loginStatRecords').textContent = s.overallRecords + '+';
-      document.getElementById('loginStatZones').textContent = s.zonesMonitored;
+      document.getElementById('loginStatRecords').textContent = (s.overallRecords != null ? s.overallRecords : '—');
+      document.getElementById('loginStatZones').textContent = s.zonesMonitored ?? '—';
 
       const sysUp = s.systemStatus && s.systemStatus.database && s.systemStatus.core;
       document.getElementById('loginSysStatus').innerHTML =

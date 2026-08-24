@@ -8,7 +8,7 @@ except ImportError:
 
 
 def _normalize_db_url(url: str) -> str:
-    # Render/Railway/Heroku hand out "postgres://" but SQLAlchemy needs
+    # Render/Railway/Heroku/Supabase hand out "postgres://" but SQLAlchemy needs
     # "postgresql://" (psycopg's dialect prefix).
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)

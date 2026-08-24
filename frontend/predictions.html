@@ -410,19 +410,20 @@ async function trainAll(fromButton) {
   if (fromButton) { status.textContent = 'Starting the prediction engine…'; bar.style.width = '15%'; }
 
   try {
-    if (!CAN_RETRAIN) {
-      // View-only role: never trigger a fresh training run, just read
-      // whatever the last admin/captain retrain produced.
+    if (!fromButton) {
+      // Fast sub-millisecond initial page load: fetch warm in-memory cached run
       RESULT = await BCApi.mlLatest();
-      if (!RESULT) throw new Error('No trained model yet. Ask an Admin or Barangay Captain to train one from this page.');
+      if (!RESULT && CAN_RETRAIN) {
+        // Cold start fallback: auto-train only if no model exists in system
+        RESULT = await BCApi.mlTrain(ACTIVE);
+      } else if (!RESULT) {
+        throw new Error('No trained model yet. Ask an Admin or Barangay Captain to train one from this page.');
+      }
     } else {
-      // mlTrain() transparently starts the Python service if it isn't
-      // already running (see api/ml_proxy.php) — first run can take a
-      // few seconds while it spins up, same as any app opening for the
-      // first time. No terminal or manual step needed from the user.
-      if (fromButton) { status.textContent = 'Training prediction models…'; bar.style.width = '45%'; }
+      // Explicit user retrain click
+      status.textContent = 'Training prediction models…'; bar.style.width = '45%';
       RESULT = await BCApi.mlTrain(ACTIVE);
-      if (fromButton) { status.textContent = 'Computing hotspot forecasts…'; bar.style.width = '85%'; }
+      status.textContent = 'Computing hotspot forecasts…'; bar.style.width = '85%';
     }
 
     bar.style.width = '100%';

@@ -90,6 +90,15 @@ class GoogleAuthTestCase(unittest.TestCase):
 
     @patch("urllib.request.urlopen")
     def test_google_login_enforces_2fa_when_enabled(self, mock_urlopen):
+        with self.app.app_context():
+            from app.models import SystemSecuritySetting
+            sec = db.session.get(SystemSecuritySetting, 1)
+            if not sec:
+                sec = SystemSecuritySetting(id=1)
+                db.session.add(sec)
+            sec.is_2fa_globally_enabled = True
+            db.session.commit()
+
         mock_resp = MagicMock()
         mock_resp.status = 200
         mock_resp.read.return_value = json.dumps({

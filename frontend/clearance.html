@@ -214,7 +214,7 @@
         <div class="col-span-2">
           <label class="form-label">Purpose of Clearance</label>
           <select id="cl_purpose" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option>Employment</option><option>Loan Application</option><option>Business Permit</option>
             <option>School Requirement</option><option>Travel Abroad</option><option>Legal Purposes</option>
             <option>Other</option>
@@ -223,23 +223,19 @@
         <div><label class="form-label">O.R. Number</label><input type="text" id="cl_or" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Amount Paid (₱)</label><input type="number" id="cl_fee" class="form-input" value="20"/></div>
       </div>
-      <div id="cl_blotter_warning" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4">
+      <div id="cl_blotter_block" class="hidden bg-red-50 border border-red-300 rounded-xl p-4">
         <div class="flex items-start gap-2 mb-2">
-          <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
+          <span class="text-red-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
           <div>
-            <div class="font-semibold text-amber-800 text-sm">This resident has blotter record(s) on file</div>
-            <div class="text-xs text-amber-700 mt-0.5">Review before deciding whether to issue this clearance.</div>
+            <div class="font-semibold text-red-800 text-sm">Issuance Blocked: Unresolved Blotter Record(s)</div>
+            <div class="text-xs text-red-700 mt-0.5">This resident is listed as a <strong>Respondent</strong> in active pending or ongoing blotter case(s). A Barangay Clearance cannot be issued until all respondent cases are resolved.</div>
           </div>
         </div>
-        <div id="cl_blotter_list" class="space-y-2 mb-3"></div>
-        <label class="flex items-center gap-2 text-xs text-amber-800">
-          <input type="checkbox" id="cl_blotter_ack" class="rounded"/>
-          I have reviewed the blotter record(s) above and choose to proceed with issuing this clearance.
-        </label>
+        <div id="cl_blotter_list" class="space-y-2"></div>
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('clearanceFormModal')" class="btn-secondary">Cancel</button>
-        <button onclick="issueClearance()" class="btn-primary">Issue & Preview</button>
+        <button id="cl_submit_btn" onclick="issueClearance()" class="btn-primary">Issue & Preview</button>
       </div>
     </div>
   </div>
@@ -253,6 +249,7 @@
 <script>
 const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let logData=[]; let clPage=1; const CL_ROWS=8;
+let clRespondentBlocked = false;
 
 function mapClearance(r) {
   const d = new Date(r.date_issued + 'T00:00:00');
@@ -293,13 +290,19 @@ function validateClearanceEligibility(r) {
 }
 
 async function onResidentPicked(r) {
-  const warningBox = document.getElementById('cl_blotter_warning');
+  const blockBox = document.getElementById('cl_blotter_block');
   const listEl = document.getElementById('cl_blotter_list');
+  const submitBtn = document.getElementById('cl_submit_btn');
+  clRespondentBlocked = false;
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+
   if (!r) {
     ['cl_name_display','cl_age_display','cl_civil_display','cl_addr_display','cl_voter_display'].forEach(f => document.getElementById(f).value = '');
-    warningBox.classList.add('hidden');
-    listEl.innerHTML = '';
-    document.getElementById('cl_blotter_ack').checked = false;
+    if (blockBox) blockBox.classList.add('hidden');
+    if (listEl) listEl.innerHTML = '';
     return;
   }
   document.getElementById('cl_name_display').value = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
@@ -308,22 +311,31 @@ async function onResidentPicked(r) {
   document.getElementById('cl_addr_display').value = r.address;
   document.getElementById('cl_voter_display').value = r.voterStatus;
 
-  document.getElementById('cl_blotter_ack').checked = false;
-  warningBox.classList.add('hidden');
-  listEl.innerHTML = '';
+  if (blockBox) blockBox.classList.add('hidden');
+  if (listEl) listEl.innerHTML = '';
+
   try {
     const records = await BCApi.checkBlotterRecords(r.lastName, r.firstName, r.id);
-    if (records.length > 0) {
-      listEl.innerHTML = records.map(b => `
-        <div class="bg-white border border-amber-200 rounded-lg p-3 text-xs">
-          <div class="flex justify-between items-center mb-1">
-            <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
-            <span class="badge ${b.role === 'Complainant' ? 'badge-resolved' : 'badge-pending'}">${b.role}</span>
-          </div>
-          <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
-          <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: ${b.status}</div>
-        </div>`).join('');
-      warningBox.classList.remove('hidden');
+    // Strict Auto-Block: only active Pending or Ongoing cases where resident is a Respondent
+    const unresolvedRespondentCases = records.filter(b => b.role === 'Respondent' && (b.status === 'Pending' || b.status === 'Ongoing'));
+    if (unresolvedRespondentCases.length > 0) {
+      clRespondentBlocked = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (listEl) {
+        listEl.innerHTML = unresolvedRespondentCases.map(b => `
+          <div class="bg-white border border-red-200 rounded-lg p-3 text-xs">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
+              <span class="badge badge-ongoing">${b.role} (${b.status})</span>
+            </div>
+            <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
+            <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: <span class="font-semibold text-red-600">${b.status}</span></div>
+          </div>`).join('');
+      }
+      if (blockBox) blockBox.classList.remove('hidden');
     }
   } catch (e) { /* if the check fails, don't block issuance on it */ }
 }
@@ -414,6 +426,13 @@ async function openClearanceForm(){
 function resetClearanceForm(){
   bcResidentPickerClear('cl_residentSearch');
   resetFormDropdowns('clearanceFormModal');
+  clRespondentBlocked = false;
+  const submitBtn = document.getElementById('cl_submit_btn');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+  const blockBox = document.getElementById('cl_blotter_block');
+  if (blockBox) blockBox.classList.add('hidden');
+  const listEl = document.getElementById('cl_blotter_list');
+  if (listEl) listEl.innerHTML = '';
   document.getElementById('cl_or').value = '';
   document.getElementById('cl_fee').value = '20';
 }
@@ -425,9 +444,8 @@ async function issueClearance(){
   const fee=document.getElementById('cl_fee').value;
   if(!residentId){await bcAlert('Please select the resident this clearance is for.');return;}
   if(!purpose){await bcAlert('Please select the purpose of this clearance.');return;}
-  const warningVisible = !document.getElementById('cl_blotter_warning').classList.contains('hidden');
-  if (warningVisible && !document.getElementById('cl_blotter_ack').checked) {
-    await bcAlert('This resident has blotter record(s) on file. Please review them and check the acknowledgment box before issuing this clearance.');
+  if (clRespondentBlocked) {
+    await bcAlert('Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.');
     return;
   }
 

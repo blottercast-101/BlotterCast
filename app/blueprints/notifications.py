@@ -46,7 +46,7 @@ def _generate_notifications():
         db.session.add(Notification(
             type="new_incident", title=f"High-Priority Incident: {r.report_no}",
             body=f"{r.report_no} • {r.category} at {r.location} ({r.zone_id})", severity="critical",
-            link="incident.html", ref_table="incidents", ref_id=r.id,
+            link=f"incident.html?highlight={r.report_no}", ref_table="incidents", ref_id=r.id,
         ))
 
     # 2. Overdue Settlements (14+ days pending)
@@ -63,7 +63,7 @@ def _generate_notifications():
         body = r.case_no + (f" ({r.case_title})" if r.case_title else "") + " has been pending settlement for 14+ days."
         db.session.add(Notification(
             type="settlement_overdue", title="Settlement Follow-Up Overdue", body=body,
-            severity="warning", link="settlement.html", ref_table="settlements", ref_id=r.id,
+            severity="warning", link=f"settlement.html?highlight={r.case_no}", ref_table="settlements", ref_id=r.id,
         ))
 
     # 3. Heatmap / Geospatial Hotspot Alerts

@@ -165,17 +165,18 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch" placeholder="Search case no., title…" class="filter-input w-full pl-8" oninput="renderSettlements()"/></span>
-        <select id="stlNatureFilter" class="filter-input" onchange="renderSettlements()">
+        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch" placeholder="Search case no., title…" class="filter-input w-full pl-8" oninput="stlPage=1; renderSettlements()"/></span>
+        <select id="stlNatureFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
           <option value="">All Natures</option>
           <option>Criminal</option>
           <option>Civil</option>
         </select>
-        <select id="stlStatusFilter" class="filter-input" onchange="renderSettlements()">
+        <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
           <option value="">All Statuses</option>
           <option value="Complied">Complied</option>
           <option value="Not Complied">Not Complied</option>
           <option value="Pending">Pending</option>
+          <option value="Ongoing">Ongoing</option>
         </select>
       </div>
 
@@ -232,7 +233,7 @@
         <div>
           <label class="form-label">Action Taken</label>
           <select id="sf_actionTaken" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option value="Mediation (M)">Mediation (M)</option>
             <option value="Conciliation (C)">Conciliation (C)</option>
             <option value="Arbitration (A)">Arbitration (A)</option>
@@ -250,7 +251,7 @@
         <div>
           <label class="form-label">Status of Compliance</label>
           <select id="sf_status" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
             <option value="Pending">Pending</option>
@@ -313,6 +314,12 @@
     }
     updateStlSummary();
     renderSettlements();
+    bcCheckUrlHighlight({
+      items: settlementData,
+      pageSize: STL_ROWS,
+      setPage: (p) => { stlPage = p; },
+      render: renderSettlements
+    });
   }
 
   async function toggleArchivedView() {
@@ -425,13 +432,13 @@
   }
 
   function getStlFiltered() {
-    const s = document.getElementById('stlSearch').value.toLowerCase();
+    const s = document.getElementById('stlSearch').value.trim().toLowerCase();
     const n = document.getElementById('stlNatureFilter').value;
     const st = document.getElementById('stlStatusFilter').value;
     return settlementData.filter(r =>
       (!s || r.caseNo.toLowerCase().includes(s) || (r.caseTitle||'').toLowerCase().includes(s)) &&
-      (!n || r.nature === n) &&
-      (!st || r.status === st)
+      (!n || n === 'ALL' || n === 'All Natures' || r.nature === n) &&
+      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
   }
 
@@ -445,14 +452,14 @@
     tbody.innerHTML = page.length === 0
       ? `<tr><td colspan="8" class="text-center py-10 text-forest-400">No settlement records found.</td></tr>`
       : page.map(r => `
-        <tr>
+        <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}">
           <td class="font-semibold text-forest-700">${r.caseNo}</td>
           <td class="font-medium text-sm">${r.caseTitle||''}</td>
           <td class="text-sm">${r.complaintTitle||''}</td>
-          <td><span class="badge ${r.nature==='Criminal'?'badge-ongoing':'badge-pending'}">${r.nature}</span></td>
+          <td><span class="badge ${r.nature==='Criminal'?'badge-criminal':'badge-civil'}">${r.nature}</span></td>
           <td class="text-xs">${r.dateFiled||''}</td>
           <td class="text-xs font-medium text-forest-700">${r.actionTaken||''}</td>
-          <td><span class="badge ${r.status==='Complied'?'badge-complied':r.status==='Not Complied'?'badge-not-complied':'badge-ongoing'}" style="white-space:nowrap">${r.status}</span></td>
+          <td><span class="badge ${r.status==='Complied'?'badge-complied':r.status==='Not Complied'?'badge-not-complied':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}" style="white-space:nowrap">${r.status}</span></td>
           <td>
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>

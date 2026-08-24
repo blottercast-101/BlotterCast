@@ -35,7 +35,7 @@ def settings_router():
 
     if action == "auto_backup_check" and method == "GET":
         if not role_can(session.get("role", ""), "system_settings"):
-            return json_error("You do not have permission to perform this action.", 403)
+            return jsonify({"ran": False, "reason": "not_authorized"}), 200
         return _auto_backup_check()
 
     if action == "ml_model" and method == "GET":
@@ -49,6 +49,21 @@ def settings_router():
 
     if action == "letterhead" and method == "GET":
         return _letterhead()
+
+    if action == "time_format" and method == "GET":
+        row = SystemSetting.query.get("time_format")
+        return jsonify({"time_format": row.setting_value if row else "12"})
+    if action == "time_format" and method == "POST":
+        d = request.get_json(silent=True) or {}
+        tf = str(d.get("time_format") or d.get("timeFormat") or "12").strip()
+        tf = "24" if tf.startswith("24") else "12"
+        row = SystemSetting.query.get("time_format")
+        if row:
+            row.setting_value = tf
+        else:
+            db.session.add(SystemSetting(setting_key="time_format", setting_value=tf))
+        db.session.commit()
+        return jsonify({"ok": True, "time_format": tf})
 
     # Everything else requires full system_settings access.
     if not role_can(session.get("role", ""), "system_settings"):
@@ -66,6 +81,112 @@ def settings_router():
         return _download_backup()
 
     return json_error("Unknown action", 404)
+
+
+@bp.route("/api/admin/security-settings", methods=["GET", "PATCH", "POST"])
+@login_required
+@permission_required("system_settings")
+def admin_security_settings():
+    from ..models import SystemSecuritySetting
+    from ..permissions import get_security_settings
+    if request.method == "GET":
+        settings = get_security_settings()
+        return jsonify({
+            "ok": True,
+            "status": "success",
+            "is_2fa_globally_enabled": settings.get("is_2fa_globally_enabled", False),
+            "enforce_2fa_all_users": settings.get("enforce_2fa_all_users", False),
+            "is_idle_timeout_enabled": settings.get("is_idle_timeout_enabled", False),
+            "idle_timeout_enabled": settings.get("idle_timeout_enabled", False),
+            "idle_timeout_duration_minutes": settings.get("idle_timeout_duration_minutes", 120),
+            "session_timeout": settings.get("session_timeout", 120),
+            "lockout_enabled": settings.get("lockout_enabled", True),
+            "max_failed_logins": settings.get("max_failed_logins", 5),
+            "min_password_length": settings.get("min_password_length", 8),
+            "password_expiry_days": settings.get("password_expiry_days", 90),
+        })
+
+    # PATCH or POST
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return json_error("No settings provided to update", 400)
+
+    # 1. Update or create the single-row SystemSecuritySetting record
+    sec_row = db.session.get(SystemSecuritySetting, 1)
+    if not sec_row:
+        sec_row = SystemSecuritySetting(id=1)
+        db.session.add(sec_row)
+
+    if "is_2fa_globally_enabled" in data or "enforce_2fa_all_users" in data:
+        val = data.get("is_2fa_globally_enabled", data.get("enforce_2fa_all_users"))
+        sec_row.is_2fa_globally_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+    if "is_idle_timeout_enabled" in data or "idle_timeout_enabled" in data:
+        val = data.get("is_idle_timeout_enabled", data.get("idle_timeout_enabled"))
+        sec_row.is_idle_timeout_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+    if "idle_timeout_duration_minutes" in data or "session_timeout" in data:
+        val = data.get("idle_timeout_duration_minutes", data.get("session_timeout", 120))
+        sec_row.idle_timeout_duration_minutes = max(1, int(val))
+    sec_row.updated_by = session.get("user_id")
+    sec_row.updated_at = datetime.utcnow()
+
+    # 2. Synchronize with key-value system_settings
+    updated_count = 0
+    mapping = {
+        "is_2fa_globally_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "enforce_2fa_all_users": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "is_idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "idle_timeout_duration_minutes": lambda v: str(max(1, int(v))),
+        "session_timeout": lambda v: str(max(1, int(v))),
+        "lockout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
+        "max_failed_logins": lambda v: str(max(1, int(v))),
+        "min_password_length": lambda v: str(max(4, int(v))),
+        "password_expiry_days": lambda v: str(max(0, int(v))),
+    }
+
+    for key, formatter in mapping.items():
+        if key in data:
+            val_str = formatter(data[key])
+            row = SystemSetting.query.get(key)
+            if row:
+                row.setting_value = val_str
+            else:
+                db.session.add(SystemSetting(setting_key=key, setting_value=val_str))
+            updated_count += 1
+
+            # Sync aliases
+            if key in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
+                for alias in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+            elif key in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
+                for alias in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+            elif key in ("idle_timeout_duration_minutes", "session_timeout"):
+                for alias in ("idle_timeout_duration_minutes", "session_timeout"):
+                    al_row = SystemSetting.query.get(alias)
+                    if al_row:
+                        al_row.setting_value = val_str
+                    else:
+                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+
+    db.session.commit()
+    log_audit(session.get("username"), "Updated", "Security", f"Admin master security settings updated ({updated_count} fields)")
+
+    settings = get_security_settings()
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "message": "System-wide master security settings updated successfully.",
+        "settings": settings,
+    })
 
 
 def _settings_map(keys=None):
@@ -91,6 +212,21 @@ def _save():
             row.setting_value = str(value)
         else:
             db.session.add(SystemSetting(setting_key=clean_key, setting_value=str(value)))
+
+        # Keep session_timeout and idle_timeout_duration_minutes in sync
+        if clean_key == "idle_timeout_duration_minutes" and "session_timeout" not in d:
+            st = SystemSetting.query.get("session_timeout")
+            if st:
+                st.setting_value = str(value)
+            else:
+                db.session.add(SystemSetting(setting_key="session_timeout", setting_value=str(value)))
+        elif clean_key == "session_timeout" and "idle_timeout_duration_minutes" not in d:
+            it = SystemSetting.query.get("idle_timeout_duration_minutes")
+            if it:
+                it.setting_value = str(value)
+            else:
+                db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=str(value)))
+
     db.session.commit()
 
     log_audit(session.get("username"), "Updated", "Settings", "System settings saved")

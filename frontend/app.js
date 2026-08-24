@@ -57,13 +57,31 @@ document.addEventListener('input', (e) => {
   else if (el.matches('[data-digits-only]')) bcStripDisallowedChars(el, /[^0-9]/g);
 });
 
-// ── Auth guard: redirect to login if session is missing ────
+// ── Auth guard: redirect to landing page if session is missing ────
 // Also enforces role-based page access (permissions.js) and hides
 // sidebar links the current role isn't permitted to use.
+let _bcAuthGuardRunning = false;
+
+function _handleUnauthenticatedRedirect() {
+  // Prevent rendering or interaction on protected views
+  try {
+    document.querySelectorAll('main, .page-header, .stat-card-grad, .data-table, aside').forEach(el => {
+      el.style.pointerEvents = 'none';
+    });
+  } catch (e) {}
+  sessionStorage.setItem('bc_logged_out_modal', '1');
+  window.location.replace('index.html?logged_out=1');
+}
+
 async function requireAuth() {
+  if (_bcAuthGuardRunning) return null;
+  _bcAuthGuardRunning = true;
   try {
     const status = await BCApi.me();
-    if (!status.authenticated) { window.location.href = 'login.html'; return null; }
+    if (!status || !status.authenticated) {
+      _handleUnauthenticatedRedirect();
+      return null;
+    }
 
     const role = status.user.role;
     if (typeof enforcePageAccess === 'function' && !enforcePageAccess(role)) {
@@ -75,15 +93,178 @@ async function requireAuth() {
     const nameEl = document.querySelector('[data-user-name]');
     const roleEl = document.querySelector('[data-user-role]');
     const avatarEl = document.querySelector('[data-user-avatar]');
+    const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
     if (nameEl) nameEl.textContent = status.user.full_name;
     if (roleEl) roleEl.textContent = status.user.role;
     if (avatarEl) avatarEl.textContent = bcInitials(status.user.full_name);
+    if (greetingEl) {
+      const firstName = bcFirstName(status.user.full_name || status.user.firstName || status.user.first_name);
+      greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+    }
     if (status.user.mustChangePassword) bcShowForcedPasswordChange();
+    bcSyncTimeFormatFromServer().catch(() => {});
+    _bcStartIdleTracker();
     return status.user;
   } catch (e) {
-    window.location.href = 'login.html';
+    _handleUnauthenticatedRedirect();
     return null;
+  } finally {
+    _bcAuthGuardRunning = false;
   }
+}
+
+// ── Global Inactivity / Idle Auto-Logout Engine (Dynamic & Background-Safe) ──
+let _bcIdleTimeoutMs = 2 * 60 * 60 * 1000; // 120 minutes = 7,200,000 ms default
+let _bcIdleEnabled = true;
+const BC_IDLE_CHECK_INTERVAL_MS = 5000;       // check every 5 seconds
+const BC_ACTIVITY_THROTTLE_MS = 1000;     // write to localStorage at most once per second
+let _bcLastThrottleWrite = 0;
+let _bcIdleCheckInterval = null;
+let _bcIdleListenersAttached = false;
+
+function _bcIsPublicPage() {
+  const path = window.location.pathname.toLowerCase();
+  return path.endsWith('login.html') || path.endsWith('index.html') || path === '/' || path === '';
+}
+
+function _bcRecordActivity() {
+  if (!_bcIdleEnabled) return;
+  const now = Date.now();
+  if (now - _bcLastThrottleWrite > BC_ACTIVITY_THROTTLE_MS) {
+    _bcLastThrottleWrite = now;
+    try {
+      localStorage.setItem('bc_last_active_timestamp', now.toString());
+    } catch (e) {}
+  }
+}
+
+function _bcCheckIdleExpiry() {
+  if (_bcIsPublicPage() || !_bcIdleEnabled) return;
+  try {
+    const raw = localStorage.getItem('bc_last_active_timestamp');
+    const lastActive = raw ? Number(raw) : Date.now();
+    const elapsed = Date.now() - lastActive;
+    if (elapsed >= _bcIdleTimeoutMs) {
+      _bcTriggerIdleLogout();
+    }
+  } catch (e) {}
+}
+
+async function _bcTriggerIdleLogout() {
+  _bcStopIdleTracker();
+  try { await BCApi.logout(); } catch (e) {}
+  try {
+    localStorage.removeItem('token');
+    localStorage.removeItem('bc_last_active_timestamp');
+    sessionStorage.setItem('bc_logged_out_modal', '1');
+    sessionStorage.setItem('bc_session_expired_reason', `Your session expired due to ${Math.round(_bcIdleTimeoutMs / 60000)} minutes of inactivity.`);
+  } catch (e) {}
+  window.location.replace('login.html?session_expired=1');
+}
+
+function _bcStopIdleTracker() {
+  if (_bcIdleCheckInterval) {
+    clearInterval(_bcIdleCheckInterval);
+    _bcIdleCheckInterval = null;
+  }
+}
+
+async function _bcStartIdleTracker() {
+  if (_bcIsPublicPage()) return;
+
+  // Fetch or sync global security settings
+  try {
+    const settings = await BCApi.settingsList();
+    if (settings) {
+      if ('idle_timeout_enabled' in settings) {
+        _bcIdleEnabled = settings.idle_timeout_enabled === '1' || settings.idle_timeout_enabled === 'true';
+      }
+      const dur = Number(settings.idle_timeout_duration_minutes || settings.session_timeout || 120);
+      if (dur > 0) {
+        _bcIdleTimeoutMs = dur * 60 * 1000;
+      }
+    }
+  } catch (e) {}
+
+  if (!_bcIdleEnabled) {
+    _bcStopIdleTracker();
+    return;
+  }
+
+  _bcRecordActivity();
+
+  if (!_bcIdleCheckInterval) {
+    _bcIdleCheckInterval = setInterval(_bcCheckIdleExpiry, BC_IDLE_CHECK_INTERVAL_MS);
+  }
+
+  if (!_bcIdleListenersAttached) {
+    _bcIdleListenersAttached = true;
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(evt => {
+      window.addEventListener(evt, _bcRecordActivity, { passive: true });
+    });
+
+    // Background sync: trigger instant check on tab focus / visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        _bcCheckIdleExpiry();
+      }
+    });
+    window.addEventListener('focus', () => {
+      _bcCheckIdleExpiry();
+    });
+    // Cross-tab sync: sync activity if updated in another tab
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'bc_last_active_timestamp') {
+        _bcCheckIdleExpiry();
+      }
+    });
+  }
+}
+
+function _bcStopIdleTracker() {
+  if (_bcIdleCheckInterval) {
+    clearInterval(_bcIdleCheckInterval);
+    _bcIdleCheckInterval = null;
+  }
+}
+
+// ── Browser Navigation Guards (Back/Forward Buttons) ────────
+// 1. Trap Back button on protected pages so it terminates the session and returns to Landing Page
+(function _bcSetupBackNavigationTrap() {
+  if (!_bcIsPublicPage()) {
+    try {
+      if (!history.state || history.state.bcGuard !== 1) {
+        history.pushState({ bcGuard: 1 }, '', window.location.href);
+      }
+    } catch (e) {}
+  }
+})();
+
+window.addEventListener('popstate', async (event) => {
+  if (!_bcIsPublicPage()) {
+    _bcStopIdleTracker();
+    try { localStorage.removeItem('bc_last_active_timestamp'); } catch (e) {}
+    try { await BCApi.logout(); } catch (e) {}
+    sessionStorage.setItem('bc_logged_out_modal', '1');
+    window.location.replace('index.html?logged_out=1');
+  }
+});
+
+// 2. BFCache & Forward Navigation Guard
+window.addEventListener('pageshow', (event) => {
+  if (!_bcIsPublicPage()) {
+    _bcCheckIdleExpiry();
+    requireAuth();
+  }
+});
+
+// Extracts the first name from a full name string, e.g. "Freya Lynn Ramos" -> "Freya",
+// or falls back gracefully to "User" if missing or empty.
+function bcFirstName(fullName) {
+  if (!fullName || typeof fullName !== 'string') return 'User';
+  const words = fullName.trim().split(/\s+/).filter(Boolean);
+  return words[0] || 'User';
 }
 
 // Initials shown in the sidebar avatar circle, e.g. "Juan Dela Cruz" -> "JD"
@@ -98,9 +279,19 @@ function bcInitials(fullName) {
 
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
+  _bcStopIdleTracker();
+  try { localStorage.removeItem('bc_last_active_timestamp'); } catch (e) {}
   try { await BCApi.logout(); } catch (e) {}
-  window.location.href = 'login.html';
+  window.location.replace('login.html');
 }
+
+// ── Real-Time Presence Heartbeat ────────────────────────────
+// Keeps active user presence marked "ACTIVE (Online)" in real-time.
+setInterval(() => {
+  if (!document.hidden && !window.location.pathname.endsWith('login.html')) {
+    BCApi.heartbeat().catch(() => {});
+  }
+}, 15000);
 
 
 // ── Field validation helpers ────────────────────────────────
@@ -121,37 +312,120 @@ function bcIsValidName(str) {
   return BC_NAME_RE.test((str || '').trim());
 }
 
-// The system's one canonical timezone — this is a single-barangay-office
-// app, so every timestamp is shown in the same timezone the office
-// actually operates in, regardless of which timezone the viewing browser
-// happens to be set to. Pairs with the "Z"-suffixed UTC timestamps the
-// server sends for exactly this reason (see api/users.php's Last Login).
+// ── Global Time Format Preference & Formatting Engine ──────────
 const BC_SYSTEM_TIMEZONE = 'Asia/Manila';
-function bcFormatTimestamp(iso, emptyLabel = 'Never') {
-  if (!iso) return emptyLabel;
-  return new Date(iso).toLocaleString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-    timeZone: BC_SYSTEM_TIMEZONE,
-  });
+
+function bcGetTimeFormat() {
+  const saved = localStorage.getItem('bc_time_format') || '12';
+  return saved.startsWith('24') ? '24' : '12';
 }
-// Same as bcFormatTimestamp but date-only — for places that only ever
-// showed a calendar date, not a time of day.
+
+function bcSetTimeFormat(fmt, broadcastOnly = false) {
+  const normalized = (String(fmt || '12')).startsWith('24') ? '24' : '12';
+  localStorage.setItem('bc_time_format', normalized);
+  window.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: normalized } }));
+  document.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: normalized } }));
+  if (!broadcastOnly && typeof BCApi !== 'undefined' && BCApi.setTimeFormat) {
+    BCApi.setTimeFormat(normalized).catch(() => {});
+  }
+}
+
+async function bcSyncTimeFormatFromServer() {
+  try {
+    if (typeof BCApi !== 'undefined' && BCApi.getTimeFormat) {
+      const res = await BCApi.getTimeFormat();
+      if (res && res.time_format) {
+        const serverFmt = res.time_format.startsWith('24') ? '24' : '12';
+        const currentFmt = bcGetTimeFormat();
+        if (serverFmt !== currentFmt) {
+          localStorage.setItem('bc_time_format', serverFmt);
+          window.dispatchEvent(new CustomEvent('bc-time-format-changed', { detail: { format: serverFmt } }));
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+/**
+ * Formats a time value (e.g. "13:45", "13:45:00", or a Date/ISO timestamp)
+ * into "01:45 PM" (12-hour) or "13:45" (24-hour) based on active preference.
+ */
+function bcFormatTime(val, formatPref) {
+  if (!val) return '';
+  const use24 = (formatPref || bcGetTimeFormat()) === '24';
+  
+  if (typeof val === 'string' && val.includes(':') && !val.includes('T') && !val.includes(' ')) {
+    const parts = val.split(':').map(Number);
+    const h = parts[0];
+    const m = parts[1];
+    if (Number.isNaN(h) || Number.isNaN(m)) return val;
+    if (use24) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+  }
+
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    if (use24) {
+      return d.toLocaleTimeString('en-PH', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: BC_SYSTEM_TIMEZONE
+      });
+    }
+    return d.toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: BC_SYSTEM_TIMEZONE
+    });
+  } catch (e) {
+    return String(val);
+  }
+}
+
+/**
+ * Universal Date+Time Formatter.
+ * Formats timestamps into:
+ *   - 12-Hour: "Aug 23, 2026, 01:36 AM" / "Aug 23, 2026, 01:36 PM"
+ *   - 24-Hour: "Aug 23, 2026, 01:36" / "Aug 23, 2026, 13:36"
+ */
+function bcFormatTimestamp(iso, emptyLabel = 'Never', formatPref) {
+  if (!iso) return emptyLabel;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return emptyLabel;
+    const use24 = (formatPref || bcGetTimeFormat()) === '24';
+    const datePart = d.toLocaleDateString('en-PH', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE
+    });
+    const timePart = d.toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit', hour12: !use24, timeZone: BC_SYSTEM_TIMEZONE
+    });
+    return `${datePart}, ${timePart}`;
+  } catch (e) {
+    return emptyLabel;
+  }
+}
+
+function bcFormatDateTime(iso, emptyLabel = 'Never', formatPref) {
+  return bcFormatTimestamp(iso, emptyLabel, formatPref);
+}
+
 function bcFormatDate(iso, emptyLabel = '') {
   if (!iso) return emptyLabel;
-  return new Date(iso).toLocaleDateString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
-  });
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return emptyLabel;
+    return d.toLocaleDateString('en-PH', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
+    });
+  } catch (e) {
+    return emptyLabel;
+  }
 }
-// Plain "HH:MM" (24-hour, what <input type="time"> and the database both
-// use) -> 12-hour clock with AM/PM for display. Never show military time
-// to the person reading a report.
+
 function bcFormatTime12h(hhmm) {
-  if (!hhmm) return '';
-  const [h, m] = hhmm.split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  return bcFormatTime(hhmm);
 }
 
 // Zone is its own field (Incident.zone_id) — it must never be baked into
@@ -294,7 +568,11 @@ function bcShowForcedPasswordChange() {
       document.body.style.overflow = '';
       showToast('Password updated. You\'re all set!');
     } catch (err) {
-      errEl.textContent = err.message; errEl.classList.remove('hidden');
+      errEl.textContent = err.message || 'Failed to change password.';
+      errEl.classList.remove('hidden');
+      document.getElementById('bcPw_new').value = '';
+      document.getElementById('bcPw_confirm').value = '';
+      document.getElementById('bcPw_new').focus();
     }
   };
 }
@@ -386,9 +664,12 @@ function showToast(msg, type = 'success') {
     t.className = 'toast';
     document.body.appendChild(t);
   }
-  const iconName = type === 'error' ? 'x' : 'check';
-  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  // Icon per type: success → check, warning → alert-triangle, error → x
+  const iconName = type === 'error' ? 'x' : type === 'warning' ? 'alert-triangle' : 'check';
+  // Apply the matching CSS modifier class
+  t.className = 'toast' + (type === 'error' ? ' error' : type === 'warning' ? ' warning' : '');
   t.innerHTML = `<span data-icon="${iconName}" data-icon-size="16"></span><span>${msg}</span>`;
+  if (window.lucide) lucide.createIcons({ nodes: [t] });
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
@@ -636,6 +917,44 @@ setInterval(() => {
   if (!document.hidden) refreshNotifBadge();
 }, 30000);
 
+function resolveNotifLink(n) {
+  let link = n.link || '#';
+  if (link !== '#') {
+    if (link.includes('highlight=') || link.includes('?id=')) return link;
+  }
+  
+  // Extract key code (e.g. INC-2026-0064, BLT-2026-0012, STL-2026-0001, etc.) from title/body
+  const codeMatch = (n.title + ' ' + (n.body || '')).match(/(INC-\d{4}-\d{2,6}|BLT-\d{4}-\d{2,6}|STL-\d{4}-\d{2,6}|RES-\d{4}-\d{2,6})/i);
+  const code = codeMatch ? codeMatch[1] : (n.ref_id || '');
+
+  if (link === '#' || !link) {
+    if (n.ref_table === 'incidents' || (n.type && n.type.includes('incident'))) link = 'incident.html';
+    else if (n.ref_table === 'blotter' || (n.type && n.type.includes('blotter'))) link = 'blotter.html';
+    else if (n.ref_table === 'settlements' || (n.type && n.type.includes('settlement'))) link = 'settlement.html';
+    else if (n.type && n.type.includes('heatmap')) link = 'heatmap.html';
+    else if (n.type && (n.type.includes('predict') || n.type.includes('risk'))) link = 'predictions.html';
+    else if (n.type && n.type.includes('trend')) link = 'trends.html';
+    else link = 'dashboard.html';
+  }
+
+  if (code && !link.includes('highlight=')) {
+    const sep = link.includes('?') ? '&' : '?';
+    link = `${link}${sep}highlight=${encodeURIComponent(code)}`;
+  }
+  return link;
+}
+
+async function handleNotifClick(e, id, targetUrl) {
+  e.preventDefault();
+  try {
+    await BCApi.notifMarkRead(id);
+    refreshNotifBadge();
+  } catch (err) {}
+  if (targetUrl && targetUrl !== '#') {
+    window.location.href = targetUrl;
+  }
+}
+
 async function toggleNotifPanel() {
   const panel = document.getElementById('notifPanel');
   if (!panel) return;
@@ -652,8 +971,9 @@ async function toggleNotifPanel() {
     } else {
       list.innerHTML = items.map(n => {
         const cfg = NOTIF_TYPE_CONFIG[n.type] || { icon: 'bell', color: '#23703c', badge: 'ALERT', bg: '#f0f9f2' };
+        const destLink = resolveNotifLink(n);
         return `
-          <a href="${n.link || '#'}" onclick="markNotifRead(${n.id})"
+          <a href="${destLink}" onclick="handleNotifClick(event, ${n.id}, '${destLink}')"
              class="flex gap-3 px-4 py-3.5 border-b border-forest-50 hover:bg-forest-50/80 transition-colors ${n.is_read == 0 ? 'bg-forest-50/40' : ''}">
             <div style="background:${cfg.bg}; color:${cfg.color};" class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-black/5">
               <span data-icon="${cfg.icon}" data-icon-size="16"></span>
@@ -699,6 +1019,90 @@ document.addEventListener('click', (e) => {
     panel.classList.add('hidden');
   }
 });
+
+/**
+ * Universal table row deep-link highlighter.
+ * Searches for 'highlight' or 'id' in URL search params.
+ * If found, locates the target record in the dataset, switches pagination to the matching page,
+ * smoothly scrolls to the row, triggers the pulsing emerald highlight animation, and cleans up the URL.
+ * 
+ * @param {Object} opts
+ * @param {Array} opts.items - complete dataset or filtered items array
+ * @param {Function} [opts.matcher] - (item, query) => boolean
+ * @param {number} [opts.pageSize] - rows per page (e.g. 6 or 8)
+ * @param {Function} [opts.setPage] - (pageNum) => void
+ * @param {Function} [opts.render] - () => void
+ * @param {string} [opts.rowSelector] - CSS selector pattern
+ */
+function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSelector } = {}) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const target = (urlParams.get('highlight') || urlParams.get('id') || urlParams.get('search') || '').trim();
+  if (!target || !items || !items.length) return false;
+
+  const targetLower = target.toLowerCase();
+  const index = items.findIndex(item => {
+    if (matcher) return matcher(item, target);
+    return (
+      (item.id != null && String(item.id) === target) ||
+      (item.reportNo && item.reportNo.toLowerCase() === targetLower) ||
+      (item.report_no && item.report_no.toLowerCase() === targetLower) ||
+      (item.docketNo && item.docketNo.toLowerCase() === targetLower) ||
+      (item.docket_no && item.docket_no.toLowerCase() === targetLower) ||
+      (item.caseNo && item.caseNo.toLowerCase() === targetLower) ||
+      (item.case_no && item.case_no.toLowerCase() === targetLower) ||
+      (item.resNo && item.resNo.toLowerCase() === targetLower) ||
+      (item.residentNo && item.residentNo.toLowerCase() === targetLower) ||
+      (item.resident_no && item.resident_no.toLowerCase() === targetLower) ||
+      (item.username && item.username.toLowerCase() === targetLower)
+    );
+  });
+
+  if (index === -1) return false;
+
+  if (pageSize && setPage) {
+    const pageNum = Math.floor(index / pageSize) + 1;
+    setPage(pageNum);
+    if (render) render();
+  }
+
+  // Allow DOM to settle, then scroll and animate
+  setTimeout(() => {
+    let row = null;
+    if (rowSelector) {
+      row = document.querySelector(rowSelector.replace(/%s/g, CSS.escape(target)));
+    }
+    if (!row) {
+      row = document.querySelector(`tr[data-id="${CSS.escape(target)}"], tr[data-key="${CSS.escape(target)}"], tr[data-report-no="${CSS.escape(target)}"], tr[data-docket-no="${CSS.escape(target)}"], tr[data-case-no="${CSS.escape(target)}"]`);
+    }
+    if (!row) {
+      // Fallback: search row text in data-table tbody
+      const allRows = document.querySelectorAll('.data-table tbody tr');
+      for (const r of allRows) {
+        if (r.textContent.toLowerCase().includes(targetLower)) {
+          row = r;
+          break;
+        }
+      }
+    }
+
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('bc-row-highlight');
+      setTimeout(() => {
+        row.classList.remove('bc-row-highlight');
+      }, 3500);
+
+      // Clean up URL query parameters without reloading
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('highlight');
+      newUrl.searchParams.delete('id');
+      newUrl.searchParams.delete('search');
+      window.history.replaceState({}, document.title, newUrl.pathname + (newUrl.searchParams.toString() ? '?' + newUrl.searchParams.toString() : ''));
+    }
+  }, 120);
+
+  return true;
+}
 
 // ── Resident search-picker (replaces the old <select> dropdown) ────
 // Shared by Clearance, Certificate of Residency, and Certificate of

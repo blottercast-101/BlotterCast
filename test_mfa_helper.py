@@ -15,7 +15,8 @@ OUTBOX_PATH = os.path.join(os.path.dirname(__file__), "instance", "otp_outbox.lo
 # convention (see seed.py) -- kept here so callers can keep doing
 # mfa_login(client, "admin", "admin123") without knowing the exception.
 DEMO_EMAIL_OVERRIDES = {
-    "admin": "fileyourname@gmail.com",
+    "admin": "blottercast@gmail.com",
+    "kapitan": "fhalynramos4@gmail.com",
 }
 
 

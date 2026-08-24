@@ -24,8 +24,13 @@ PERMISSIONS = {
 }
 
 SECURITY_DEFAULTS = {
+    "is_2fa_globally_enabled": False,
+    "enforce_2fa_all_users": False,
+    "is_idle_timeout_enabled": False,
+    "idle_timeout_enabled": False,
+    "idle_timeout_duration_minutes": 120,
+    "session_timeout": 120,
     "lockout_enabled": True,
-    "session_timeout": 30,
     "max_failed_logins": 5,
     "min_password_length": 8,
     "password_expiry_days": 90,
@@ -37,18 +42,46 @@ def role_can(role: str, permission: str) -> bool:
 
 
 def get_security_settings() -> dict:
+    from .models import SystemSecuritySetting
     out = dict(SECURITY_DEFAULTS)
-    rows = SystemSetting.query.filter(SystemSetting.setting_key.in_(out.keys())).all()
-    for r in rows:
-        if r.setting_key == "lockout_enabled":
-            out[r.setting_key] = r.setting_value in ("1", "true", "True")
-        else:
-            out[r.setting_key] = int(r.setting_value)
+
+    try:
+        rows = SystemSetting.query.filter(SystemSetting.setting_key.in_(out.keys())).all()
+        for r in rows:
+            if r.setting_key in ("lockout_enabled", "idle_timeout_enabled", "is_idle_timeout_enabled", "enforce_2fa_all_users", "is_2fa_globally_enabled"):
+                val_bool = str(r.setting_value).lower() in ("1", "true", "yes", "on", "t")
+                out[r.setting_key] = val_bool
+            else:
+                try:
+                    out[r.setting_key] = int(r.setting_value)
+                except (ValueError, TypeError):
+                    pass
+    except Exception:
+        pass
+
+    # SystemSecuritySetting table (single row with id=1) is the master ground truth
+    try:
+        sec_row = db.session.get(SystemSecuritySetting, 1)
+        if sec_row:
+            out["is_2fa_globally_enabled"] = bool(sec_row.is_2fa_globally_enabled)
+            out["enforce_2fa_all_users"] = bool(sec_row.is_2fa_globally_enabled)
+            out["is_idle_timeout_enabled"] = bool(sec_row.is_idle_timeout_enabled)
+            out["idle_timeout_enabled"] = bool(sec_row.is_idle_timeout_enabled)
+            out["idle_timeout_duration_minutes"] = int(sec_row.idle_timeout_duration_minutes)
+            out["session_timeout"] = int(sec_row.idle_timeout_duration_minutes)
+    except Exception:
+        pass
+
+    # Ensure aliases are 100% in sync
+    out["enforce_2fa_all_users"] = out["is_2fa_globally_enabled"]
+    out["idle_timeout_enabled"] = out["is_idle_timeout_enabled"]
+    out["session_timeout"] = out["idle_timeout_duration_minutes"]
+
     return out
 
 
 def json_error(message: str, status: int = 400):
-    return jsonify({"error": message}), status
+    return jsonify({"error": message, "message": message, "success": False, "ok": False}), status
 
 
 def login_required(view):
@@ -60,12 +93,14 @@ def login_required(view):
             return json_error("Not authenticated", 401)
 
         settings = get_security_settings()
-        timeout_seconds = settings["session_timeout"] * 60
-        last_activity = session.get("last_activity")
-        if timeout_seconds > 0 and last_activity:
-            if (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
-                session.clear()
-                return json_error("Your session has expired due to inactivity. Please log in again.", 401)
+        if settings.get("idle_timeout_enabled", True):
+            timeout_minutes = settings.get("idle_timeout_duration_minutes") or settings.get("session_timeout", 120)
+            timeout_seconds = timeout_minutes * 60
+            last_activity = session.get("last_activity")
+            if timeout_seconds > 0 and last_activity:
+                if (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
+                    session.clear()
+                    return json_error("Your session has expired due to inactivity. Please log in again.", 401)
         session["last_activity"] = datetime.utcnow().timestamp()
 
         if session.get("must_change_password") and view.__module__.split(".")[-1] != "auth":

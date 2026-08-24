@@ -175,13 +175,13 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="searchInput" placeholder="Search docket, name…" class="filter-input w-full pl-8" oninput="renderTable()"/></span>
-        <select id="typeFilter" class="filter-input" onchange="renderTable()">
+        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="searchInput" placeholder="Search docket, name…" class="filter-input w-full pl-8" oninput="currentPage=1; renderTable()"/></span>
+        <select id="typeFilter" class="filter-input" onchange="currentPage=1; renderTable()">
           <option value="">All Types</option>
           <option value="CRIM">Criminal</option>
           <option value="CIVIL">Civil</option>
         </select>
-        <select id="statusFilter" class="filter-input" onchange="renderTable()">
+        <select id="statusFilter" class="filter-input" onchange="currentPage=1; renderTable()">
           <option value="">All Statuses</option>
           <option value="Ongoing">Ongoing</option>
           <option value="Pending">Pending</option>
@@ -233,12 +233,16 @@
         <div><label class="form-label">Docket No.</label><input type="text" id="f_docketNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Date Filed</label><input type="date" id="f_dateFiled" class="form-input" data-no-future/></div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
+
+      <!-- Complainant Row (Name on left, Address on right) -->
+      <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0">Name of Complainant <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer" id="f_complainantOutsideLabel">
-              <input type="checkbox" id="f_complainantOutside" class="rounded" onchange="toggleComplainantOutside()"/> Not a resident / outside party
+          <div class="flex items-end justify-between gap-2 mb-2 h-10">
+            <label class="form-label mb-0 leading-tight">
+              Name of<br/>Complainant<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_complainantOutsideLabel">
+              <input type="checkbox" id="f_complainantOutside" class="rounded accent-forest-600" onchange="toggleComplainantOutside()"/> Not a resident / outside party
             </label>
           </div>
           <input type="text" id="f_complainantSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
@@ -247,14 +251,23 @@
           <input type="hidden" id="f_complainantId"/>
           <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
-        <div><label class="form-label">Complainant Address</label><input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/></div>
+        <div>
+          <div class="flex items-end justify-between mb-2 h-10">
+            <label class="form-label mb-0 pb-0.5">Complainant Address</label>
+          </div>
+          <input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/>
+        </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
+
+      <!-- Respondent Row (Name on left, Address on right) -->
+      <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-center justify-between mb-1">
-            <label class="form-label mb-0">Name of Respondent <span class="text-red-500">*</span></label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-500 cursor-pointer" id="f_respondentOutsideLabel">
-              <input type="checkbox" id="f_respondentOutside" class="rounded" onchange="toggleRespondentOutside()"/> Not a resident / outside party
+          <div class="flex items-end justify-between gap-2 mb-2 h-10">
+            <label class="form-label mb-0 leading-tight">
+              Name of<br/>Respondent<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_respondentOutsideLabel">
+              <input type="checkbox" id="f_respondentOutside" class="rounded accent-forest-600" onchange="toggleRespondentOutside()"/> Not a resident / outside party
             </label>
           </div>
           <input type="text" id="f_respondentSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
@@ -263,15 +276,20 @@
           <input type="hidden" id="f_respondentId"/>
           <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
         </div>
-        <div><label class="form-label">Respondent Address</label><input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/></div>
+        <div>
+          <div class="flex items-end justify-between mb-2 h-10">
+            <label class="form-label mb-0 pb-0.5">Respondent Address</label>
+          </div>
+          <input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/>
+        </div>
       </div>
-      <p class="text-xs text-forest-400 -mt-2">Either the complainant or the respondent can be marked "Not a resident" if they're from outside the barangay — but not both, since at least one party must be a registered Census resident.</p>
+      <p class="text-xs text-forest-600 leading-relaxed -mt-1">Either the complainant or the respondent can be marked "Not a resident" if they're from outside the barangay — but not both, since at least one party must be a registered Census resident.</p>
       <div class="grid grid-cols-3 gap-4">
         <div><label class="form-label">Nature of Case</label><input type="text" id="f_nature" class="form-input" placeholder="e.g. Pag-aaway" data-no-numbers/></div>
         <div>
           <label class="form-label">Type</label>
           <select id="f_type" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option value="CRIM">Criminal</option>
             <option value="CIVIL">Civil</option>
           </select>
@@ -279,7 +297,7 @@
         <div>
           <label class="form-label">Status</label>
           <select id="f_status" class="form-input" required>
-            <option value="" selected disabled>-Select-</option>
+            <option value="" disabled selected hidden>-Select-</option>
             <option value="Pending">Pending</option>
             <option value="Ongoing">Ongoing</option>
             <option value="Resolved">Resolved</option>
@@ -356,6 +374,12 @@
     blotterData = raw.map(mapRow);
     renderSummaryCards();
     renderTable();
+    bcCheckUrlHighlight({
+      items: blotterData,
+      pageSize: ROWS_PER_PAGE,
+      setPage: (p) => { currentPage = p; },
+      render: renderTable
+    });
   }
 
   // Records are archived, never permanently deleted — this just switches
@@ -469,13 +493,13 @@
   }
 
   function getFiltered() {
-    const s = document.getElementById('searchInput').value.toLowerCase();
+    const s = document.getElementById('searchInput').value.trim().toLowerCase();
     const t = document.getElementById('typeFilter').value;
     const st = document.getElementById('statusFilter').value;
     return blotterData.filter(r =>
       (!s || r.docketNo.toLowerCase().includes(s) || r.complainant.toLowerCase().includes(s) || r.respondent.toLowerCase().includes(s)) &&
-      (!t || r.type === t) &&
-      (!st || r.status === st)
+      (!t || t === 'ALL' || t === 'All Types' || r.type === t) &&
+      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
   }
 
@@ -489,7 +513,7 @@
     tbody.innerHTML = page.length === 0
       ? `<tr><td colspan="10" class="text-center py-10 text-forest-400">No records found.</td></tr>`
       : page.map(r => `
-        <tr>
+        <tr data-id="${r.id}" data-key="${r.docketNo}" data-docket-no="${r.docketNo}">
           <td class="font-semibold text-forest-700">${r.docketNo}</td>
           <td>${r.dateFiled}</td>
           <td>${r.complainant}</td>
@@ -497,7 +521,7 @@
           <td>${r.respondent}</td>
           <td class="text-xs text-forest-400">${r.respondentAddr}</td>
           <td>${r.nature}</td>
-          <td><span class="badge ${r.type==='CRIM'?'badge-ongoing':'badge-pending'}">${r.type}</span></td>
+          <td><span class="badge ${r.type==='CRIM'||r.type==='Criminal'?'badge-criminal':'badge-civil'}">${r.type}</span></td>
           <td><span class="badge ${r.status==='Resolved'?'badge-resolved':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}">${r.status}</span></td>
           <td>
             <div class="row-actions">
