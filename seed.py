@@ -23,50 +23,50 @@ ZONE_LANDMARK_COORDINATES = {
     "Zone 1": {
         "landmark": "Residence 3",
         "label": "Zone 1 – Residence 3",
-        "latitude": 14.881000,
-        "longitude": 120.969500,
+        "latitude": 14.883760,
+        "longitude": 120.968420,
         "weight": 0.18,
     },
     "Zone 2": {
         "landmark": "Residence 1",
         "label": "Zone 2 – Residence 1",
-        "latitude": 14.881800,
-        "longitude": 120.960200,
+        "latitude": 14.882000,
+        "longitude": 120.958000,
         "weight": 0.12,
     },
     "Zone 3": {
         "landmark": "Pandi Village 2 (Atlantica)",
         "label": "Zone 3 – Pandi Village 2 (Atlantica)",
-        "latitude": 14.879500,
-        "longitude": 120.966800,
+        "latitude": 14.879000,
+        "longitude": 120.972000,
         "weight": 0.16,
     },
     "Zone 4": {
         "landmark": "Mitay 1",
         "label": "Zone 4 – Mitay 1",
-        "latitude": 14.883500,
-        "longitude": 120.964800,
+        "latitude": 14.887500,
+        "longitude": 120.962000,
         "weight": 0.14,
     },
     "Zone 5": {
         "landmark": "Sitio Gubat",
         "label": "Zone 5 – Sitio Gubat",
-        "latitude": 14.885800,
-        "longitude": 120.966500,
+        "latitude": 14.882500,
+        "longitude": 120.964500,
         "weight": 0.15,
     },
     "Zone 6": {
         "landmark": "Bangko St.",
         "label": "Zone 6 – Bangko St.",
-        "latitude": 14.884200,
-        "longitude": 120.962500,
+        "latitude": 14.877500,
+        "longitude": 120.966500,
         "weight": 0.11,
     },
     "Zone 7": {
         "landmark": "Barangka St.",
         "label": "Zone 7 – Barangka St.",
-        "latitude": 14.885200,
-        "longitude": 120.964000,
+        "latitude": 14.878500,
+        "longitude": 120.959500,
         "weight": 0.14,
     },
 }
@@ -220,108 +220,116 @@ def hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
+def seed_data(app_instance=None, force_reset: bool = False):
+    from .extensions import db
+    from .migrate import ensure_columns
+    from .models import Incident, Notification, SystemSecuritySetting, SystemSetting, User, Zone
+
+    db.create_all()
+    try:
+        ensure_columns(db)
+    except Exception:
+        pass
+
+    # 1. Sync 7 authentic zones
+    for zone_id, info in ZONE_LANDMARK_COORDINATES.items():
+        label = info["label"]
+        lat = info["latitude"]
+        lng = info["longitude"]
+        weight = info["weight"]
+
+        existing = Zone.query.get(zone_id)
+        if not existing:
+            db.session.add(Zone(zone_id=zone_id, label=label, lat=lat, lng=lng, weight=weight))
+        else:
+            existing.label = label
+            existing.lat = lat
+            existing.lng = lng
+            existing.weight = weight
+
+    # Remove obsolete zones (e.g. Zone 8)
+    obsolete_zones = Zone.query.filter(~Zone.zone_id.in_(list(ZONE_LANDMARK_COORDINATES.keys()))).all()
+    for oz in obsolete_zones:
+        db.session.delete(oz)
+
+    # 2. System Settings
+    for key, value in SETTINGS.items():
+        existing_setting = SystemSetting.query.get(key)
+        if not existing_setting:
+            db.session.add(SystemSetting(setting_key=key, setting_value=value))
+        elif key == "session_timeout":
+            existing_setting.setting_value = value
+
+    # 2b. Master Security Settings
+    sec_setting = SystemSecuritySetting.query.get(1)
+    if not sec_setting:
+        db.session.add(SystemSecuritySetting(
+            id=1,
+            is_2fa_globally_enabled=False,
+            is_idle_timeout_enabled=False,
+            idle_timeout_duration_minutes=120,
+        ))
+
+    # 3. Demo Users
+    for username, password, full_name, role, email in DEMO_USERS:
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            db.session.add(User(
+                username=username, password=hash_password(password),
+                full_name=full_name, role=role, status="Active", email=email,
+            ))
+        else:
+            user.email = email
+            user.full_name = full_name
+            user.role = role
+
+    # 4. Incident Reports Seeding (Non-destructive: preserves existing reports)
+    existing_incidents_count = Incident.query.count()
+    if existing_incidents_count == 0 or force_reset:
+        if force_reset:
+            Incident.query.delete()
+            Notification.query.filter_by(ref_table="incidents").delete()
+            db.session.flush()
+
+        today = date.today()
+        year = today.year
+
+        for idx, inc_info in enumerate(AUTHENTIC_INCIDENTS, start=1):
+            report_no = f"INC-{year}-{idx:04d}"
+            inc_date = today - timedelta(days=inc_info["days_ago"])
+            inc_time = time(inc_info["hour"], inc_info["minute"], 0)
+            
+            base_zone = ZONE_LANDMARK_COORDINATES[inc_info["zone_id"]]
+            lat = round(base_zone["latitude"] + inc_info.get("dlat", 0.0), 6)
+            lng = round(base_zone["longitude"] + inc_info.get("dlng", 0.0), 6)
+
+            inc = Incident(
+                report_no=report_no,
+                incident_date=inc_date,
+                time_reported=inc_time,
+                hour=inc_info["hour"],
+                zone_id=inc_info["zone_id"],
+                location=inc_info["location"],
+                lat=lat,
+                lng=lng,
+                category=inc_info["category"],
+                description=inc_info["description"],
+                reporter=inc_info["reporter"],
+                officer=inc_info["officer"],
+                priority=inc_info["priority"],
+                status=inc_info["status"],
+                archived=False,
+            )
+            db.session.add(inc)
+
+    db.session.commit()
+
+
 def run(force_reset: bool = False):
+    from app import create_app
     app = create_app()
     with app.app_context():
-        db.create_all()
-        ensure_columns(db)
-
-        # 1. Sync 7 authentic zones
-        for zone_id, info in ZONE_LANDMARK_COORDINATES.items():
-            label = info["label"]
-            lat = info["latitude"]
-            lng = info["longitude"]
-            weight = info["weight"]
-
-            existing = Zone.query.get(zone_id)
-            if not existing:
-                db.session.add(Zone(zone_id=zone_id, label=label, lat=lat, lng=lng, weight=weight))
-            else:
-                existing.label = label
-                existing.lat = lat
-                existing.lng = lng
-                existing.weight = weight
-
-        # Remove obsolete zones (e.g. Zone 8)
-        obsolete_zones = Zone.query.filter(~Zone.zone_id.in_(list(ZONE_LANDMARK_COORDINATES.keys()))).all()
-        for oz in obsolete_zones:
-            db.session.delete(oz)
-
-        # 2. System Settings
-        for key, value in SETTINGS.items():
-            existing_setting = SystemSetting.query.get(key)
-            if not existing_setting:
-                db.session.add(SystemSetting(setting_key=key, setting_value=value))
-            elif key == "session_timeout":
-                existing_setting.setting_value = value
-
-        # 2b. Master Security Settings
-        sec_setting = SystemSecuritySetting.query.get(1)
-        if not sec_setting:
-            db.session.add(SystemSecuritySetting(
-                id=1,
-                is_2fa_globally_enabled=False,
-                is_idle_timeout_enabled=False,
-                idle_timeout_duration_minutes=120,
-            ))
-
-        # 3. Demo Users
-        for username, password, full_name, role, email in DEMO_USERS:
-            user = User.query.filter_by(username=username).first()
-            if not user:
-                db.session.add(User(
-                    username=username, password=hash_password(password),
-                    full_name=full_name, role=role, status="Active", email=email,
-                ))
-            else:
-                user.email = email
-                user.full_name = full_name
-                user.role = role
-
-        # 4. Incident Reports Seeding (Non-destructive: preserves existing reports)
-        existing_incidents_count = Incident.query.count()
-        if existing_incidents_count > 0 and not force_reset:
-            print(f"  [INFO] Preserved {existing_incidents_count} existing incident report(s). (Pass --reset or --force to wipe and re-seed baseline)")
-        else:
-            if force_reset:
-                Incident.query.delete()
-                Notification.query.filter_by(ref_table="incidents").delete()
-                db.session.flush()
-
-            today = date.today()
-            year = today.year
-
-            for idx, inc_info in enumerate(AUTHENTIC_INCIDENTS, start=1):
-                report_no = f"INC-{year}-{idx:04d}"
-                inc_date = today - timedelta(days=inc_info["days_ago"])
-                inc_time = time(inc_info["hour"], inc_info["minute"], 0)
-                
-                base_zone = ZONE_LANDMARK_COORDINATES[inc_info["zone_id"]]
-                lat = round(base_zone["latitude"] + inc_info.get("dlat", 0.0), 6)
-                lng = round(base_zone["longitude"] + inc_info.get("dlng", 0.0), 6)
-
-                inc = Incident(
-                    report_no=report_no,
-                    incident_date=inc_date,
-                    time_reported=inc_time,
-                    hour=inc_info["hour"],
-                    zone_id=inc_info["zone_id"],
-                    location=inc_info["location"],
-                    lat=lat,
-                    lng=lng,
-                    category=inc_info["category"],
-                    description=inc_info["description"],
-                    reporter=inc_info["reporter"],
-                    officer=inc_info["officer"],
-                    priority=inc_info["priority"],
-                    status=inc_info["status"],
-                    archived=False,
-                )
-                db.session.add(inc)
-
-            print(f"  [SEED] Seeded {len(AUTHENTIC_INCIDENTS)} authentic in-boundary incident reports.")
-
-        db.session.commit()
+        seed_data(app, force_reset=force_reset)
         print(f"Seed complete. {len(ZONE_LANDMARK_COORDINATES)} zones synchronized.")
         print("Demo accounts:")
         for username, password, _, role, email in DEMO_USERS:

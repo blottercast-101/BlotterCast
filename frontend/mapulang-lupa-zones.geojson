@@ -9,10 +9,10 @@
         "zone_id": "Zone 1",
         "zone": "Zone 1",
         "zone_number": 1,
-        "name": "North-East / Residence 3",
-        "landmark": "Residence 3 / Eastern River Corridor",
-        "sector": "North-East (Large Red Loop)",
-        "center": [14.884000, 120.974000]
+        "name": "Residence 3",
+        "landmark": "Residence 3",
+        "sector": "North-East (Pandi Residences 3)",
+        "center": [14.883760, 120.968420]
       },
       "geometry": {
         "type": "Polygon",
@@ -25,10 +25,9 @@
             [120.978500, 14.887000],
             [120.980000, 14.884000],
             [120.979500, 14.880500],
-            [120.977500, 14.877500],
-            [120.975000, 14.876500],
-            [120.970500, 14.882500],
-            [120.967000, 14.886000],
+            [120.975000, 14.880000],
+            [120.967000, 14.882000],
+            [120.966500, 14.885000],
             [120.967000, 14.889800]
           ]
         ]
@@ -40,9 +39,9 @@
         "zone_id": "Zone 2",
         "zone": "Zone 2",
         "zone_number": 2,
-        "name": "West / Residence 1",
-        "landmark": "Pandi Residences 1 / Pasong Kalabaw",
-        "sector": "West",
+        "name": "Residence 1",
+        "landmark": "Residence 1",
+        "sector": "West (Pasong Kalabaw St.)",
         "center": [14.882000, 120.958000]
       },
       "geometry": {
@@ -51,8 +50,10 @@
           [
             [120.955500, 14.881000],
             [120.956200, 14.883500],
-            [120.961000, 14.884500],
-            [120.961000, 14.880000],
+            [120.958000, 14.884500],
+            [120.961000, 14.885200],
+            [120.962000, 14.880000],
+            [120.958000, 14.879500],
             [120.955500, 14.881000]
           ]
         ]
@@ -64,21 +65,23 @@
         "zone_id": "Zone 3",
         "zone": "Zone 3",
         "zone_number": 3,
-        "name": "Central-East / Pandi Village 2",
+        "name": "Pandi Village 2 (Atlantica)",
         "landmark": "Pandi Village 2 (Atlantica)",
-        "sector": "Central-East",
+        "sector": "East/Southeast (Pandi Village 2)",
         "center": [14.879000, 120.972000]
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
+            [120.967000, 14.882000],
+            [120.975000, 14.880000],
+            [120.979500, 14.880500],
+            [120.977500, 14.877500],
             [120.975000, 14.876500],
             [120.972000, 14.876000],
-            [120.969500, 14.876000],
-            [120.970500, 14.879200],
-            [120.970500, 14.882500],
-            [120.975000, 14.876500]
+            [120.967000, 14.878000],
+            [120.967000, 14.882000]
           ]
         ]
       }
@@ -89,9 +92,9 @@
         "zone_id": "Zone 4",
         "zone": "Zone 4",
         "zone_number": 4,
-        "name": "North / Mitay 1",
-        "landmark": "Mitay 1 (Upper Northern Corridor)",
-        "sector": "North",
+        "name": "Mitay 1",
+        "landmark": "Mitay 1",
+        "sector": "Northwest (Pandi Village 1)",
         "center": [14.887500, 120.962000]
       },
       "geometry": {
@@ -105,8 +108,10 @@
             [120.963500, 14.889300],
             [120.965800, 14.889600],
             [120.967000, 14.889800],
-            [120.967000, 14.886000],
-            [120.961000, 14.884500],
+            [120.966500, 14.885000],
+            [120.964000, 14.885000],
+            [120.961000, 14.885200],
+            [120.958000, 14.884500],
             [120.956200, 14.883500]
           ]
         ]
@@ -118,22 +123,23 @@
         "zone_id": "Zone 5",
         "zone": "Zone 5",
         "zone_number": 5,
-        "name": "Central Core / Sitio Gubat",
-        "landmark": "Barangay Center / Sitio Gubat",
-        "sector": "Central Core",
-        "center": [14.882000, 120.965000]
+        "name": "Sitio Gubat",
+        "landmark": "Sitio Gubat",
+        "sector": "Center / Barangay Center",
+        "center": [14.882500, 120.964500]
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [120.961000, 14.884500],
-            [120.967000, 14.886000],
-            [120.970500, 14.882500],
-            [120.970500, 14.879200],
-            [120.965000, 14.878500],
-            [120.961000, 14.880000],
-            [120.961000, 14.884500]
+            [120.961000, 14.885200],
+            [120.964000, 14.885000],
+            [120.966500, 14.885000],
+            [120.967000, 14.882000],
+            [120.967000, 14.878000],
+            [120.964500, 14.878500],
+            [120.962000, 14.880000],
+            [120.961000, 14.885200]
           ]
         ]
       }
@@ -144,21 +150,22 @@
         "zone_id": "Zone 6",
         "zone": "Zone 6",
         "zone_number": 6,
-        "name": "South-East / Bangko St.",
-        "landmark": "Bangko St. / Mag-asawang Sapa Road",
-        "sector": "South-East",
+        "name": "Bangko St.",
+        "landmark": "Bangko St.",
+        "sector": "Lower Southeast",
         "center": [14.877500, 120.966500]
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
+            [120.967000, 14.878000],
+            [120.972000, 14.876000],
             [120.969500, 14.876000],
             [120.965500, 14.876200],
-            [120.962000, 14.876500],
-            [120.965000, 14.878500],
-            [120.970500, 14.879200],
-            [120.969500, 14.876000]
+            [120.963500, 14.876400],
+            [120.964500, 14.878500],
+            [120.967000, 14.878000]
           ]
         ]
       }
@@ -169,22 +176,24 @@
         "zone_id": "Zone 7",
         "zone": "Zone 7",
         "zone_number": 7,
-        "name": "South-West / Barangka St.",
-        "landmark": "Barangka St. / Pandi-Angat Road / Encampment One",
-        "sector": "South-West",
+        "name": "Barangka St.",
+        "landmark": "Barangka St.",
+        "sector": "Lower Southwest (Pandi-Angat Road)",
         "center": [14.878500, 120.959500]
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
+            [120.955500, 14.881000],
+            [120.958000, 14.879500],
+            [120.962000, 14.880000],
+            [120.964500, 14.878500],
+            [120.963500, 14.876400],
             [120.962000, 14.876500],
             [120.958500, 14.877500],
             [120.956500, 14.879000],
-            [120.955500, 14.881000],
-            [120.961000, 14.880000],
-            [120.965000, 14.878500],
-            [120.962000, 14.876500]
+            [120.955500, 14.881000]
           ]
         ]
       }
