@@ -221,9 +221,9 @@ def hash_password(raw: str) -> str:
 
 
 def seed_data(app_instance=None, force_reset: bool = False):
-    from .extensions import db
-    from .migrate import ensure_columns
-    from .models import Incident, Notification, SystemSecuritySetting, SystemSetting, User, Zone
+    from app.extensions import db
+    from app.migrate import ensure_columns
+    from app.models import Incident, Notification, SystemSecuritySetting, SystemSetting, User, Zone
 
     db.create_all()
     try:
