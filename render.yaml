@@ -3,7 +3,6 @@ services:
     name: blottercast
     env: python
     plan: free
-    rootDir: blottercast
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
     envVars:
@@ -26,7 +25,6 @@ services:
     name: blottercast-ml
     env: python
     plan: free
-    rootDir: blottercast
     buildCommand: "pip install -r ml/requirements.txt"
     startCommand: "gunicorn service:app --chdir ml --bind 0.0.0.0:$PORT"
     envVars:
