@@ -55,13 +55,54 @@
 
     #map {
       width:100%;
-      height:560px;
+      height:680px;
       border-radius:1rem;
       overflow:hidden;
       border:1px solid var(--forest-100, #dcf0e0);
       position:relative;
       isolation:isolate;
       contain:paint;
+    }
+
+    .map-float-legend {
+      position:absolute;
+      bottom:16px;
+      left:16px;
+      z-index:400;
+      background:rgba(255,255,255,0.92);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:10px 12px;
+      box-shadow:0 2px 12px rgba(10,36,20,0.12);
+      font-family:'DM Sans',sans-serif;
+      font-size:0.72rem;
+      pointer-events:none;
+      user-select:none;
+    }
+    .map-float-legend .legend-title {
+      font-weight:700;
+      color:#374151;
+      margin-bottom:6px;
+      display:block;
+      letter-spacing:0.02em;
+    }
+    .map-float-legend .legend-swatches {
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .map-float-legend .legend-swatch {
+      display:flex;
+      align-items:center;
+      gap:3px;
+    }
+    .map-float-legend .swatch-dot {
+      width:10px;
+      height:10px;
+      border-radius:3px;
+      flex-shrink:0;
     }
 
     #map .leaflet-tile-pane      { z-index: 1; }
@@ -260,7 +301,7 @@
       aside { display:none; }
       .content-wrap { margin-left:0 !important; }
       .page-header { flex-direction:column; align-items:flex-start; }
-      #map { height:460px; }
+      #map { height:540px; }
     }
   </style>
 </head>
@@ -407,13 +448,30 @@
             </div>
           </div>
 
-          <div id="map"></div>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            <span class="stat-pill">Barangay: Mapulang Lupa</span>
-            <span class="stat-pill">Municipality: Pandi</span>
-            <span class="stat-pill">Source: Incident Reports</span>
-            <span class="stat-pill">Boundary file: mapulang-lupa.geojson</span>
+          <div style="position:relative;">
+            <div id="map"></div>
+            <!-- Floating Density Scale Legend (z-index 400 keeps it above Leaflet tiles) -->
+            <div class="map-float-legend" aria-hidden="true">
+              <span class="legend-title">Density Scale</span>
+              <div class="legend-swatches">
+                <div class="legend-swatch">
+                  <div class="swatch-dot" style="background:#10B981;"></div>
+                  <span style="color:#065f46;">Low</span>
+                </div>
+                <div class="legend-swatch">
+                  <div class="swatch-dot" style="background:#FACC15;"></div>
+                  <span style="color:#92400e;">Moderate</span>
+                </div>
+                <div class="legend-swatch">
+                  <div class="swatch-dot" style="background:#FB923C;"></div>
+                  <span style="color:#9a3412;">Elevated</span>
+                </div>
+                <div class="legend-swatch">
+                  <div class="swatch-dot" style="background:#EF4444;"></div>
+                  <span style="color:#991b1b;">High</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
