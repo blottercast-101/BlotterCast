@@ -88,10 +88,19 @@ def _forward(path: str, method: str = "GET", body=None):
 
 
 @bp.route("/api/predict/insights", methods=["GET"])
+@bp.route("/api/predictions/latest", methods=["GET"])
 @login_required
 @permission_required("view_analytics")
 def predict_insights_direct():
     return _forward("/latest")
+
+
+@bp.route("/api/ml/warmup", methods=["GET", "POST"])
+def ml_warmup():
+    """Non-blocking background ping to keep ML microservice warm."""
+    if _ml_is_running():
+        return jsonify({"ok": True, "status": "warm"}), 200
+    return jsonify({"ok": False, "status": "cold"}), 200
 
 
 @bp.route("/api/ml_proxy.php", methods=["GET", "POST"])

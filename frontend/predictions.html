@@ -484,56 +484,98 @@ function renderCategoryChart() {
   });
 }
 
-async function trainAll(fromButton) {
-  if (fromButton) openModal('trainModal');
-  const bar = document.getElementById('trainProgress');
-  const status = document.getElementById('trainStatus');
-  const stamp = document.getElementById('trainedStamp');
-  stamp.textContent = 'Loading model results…';
-  if (fromButton) { status.textContent = 'Starting the prediction engine…'; bar.style.width = '15%'; }
+let activeAbortController = null;
 
-  try {
-    if (!fromButton) {
-      // Fast sub-millisecond initial page load: fetch warm in-memory cached run
-      RESULT = await BCApi.mlLatest();
-      if (!RESULT && CAN_RETRAIN) {
-        // Cold start fallback: auto-train only if no model exists in system
-        RESULT = await BCApi.mlTrain(ACTIVE);
-      } else if (!RESULT) {
-        throw new Error('No trained model yet. Ask an Admin or Barangay Captain to train one from this page.');
-      }
-    } else {
-      // Explicit user retrain click
-      status.textContent = 'Training prediction models…'; bar.style.width = '45%';
-      RESULT = await BCApi.mlTrain(ACTIVE);
-      status.textContent = 'Computing hotspot forecasts…'; bar.style.width = '85%';
-    }
-
-    bar.style.width = '100%';
-    stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
-      bcFormatTimestamp(RESULT.trainedAt) +
-      '</strong> · ' + RESULT.recordCount + ' records';
-    renderModelCards();
-    renderOutputs();
-    if (fromButton) {
-      setTimeout(() => {
-        closeModal('trainModal');
-        const occAcc = RESULT.occurrence.metrics[ACTIVE.occurrence].accuracy;
-        showToast('Models retrained on ' + RESULT.recordCount + ' records. Occurrence accuracy: ' + pct(occAcc));
-      }, 400);
-    }
-  } catch (err) {
-    stamp.textContent = 'Training failed';
-    if (fromButton) {
-      closeModal('trainModal');
-      showToast(err.message, 'error');
-    } else {
-      showToast(err.message, 'error');
-    }
+function cancelPendingMLRequests() {
+  if (activeAbortController) {
+    try {
+      activeAbortController.abort();
+    } catch (_) {}
+    activeAbortController = null;
   }
 }
 
-function retrain() { trainAll(true); }
+// Ensure route switches and navigation clicks immediately cancel pending ML fetches
+window.addEventListener('beforeunload', cancelPendingMLRequests);
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('a[href]').forEach(link => {
+    link.addEventListener('click', cancelPendingMLRequests);
+  });
+});
+
+async function loadCachedPredictions() {
+  cancelPendingMLRequests();
+  activeAbortController = new AbortController();
+  const stamp = document.getElementById('trainedStamp');
+  if (stamp) stamp.textContent = 'Loading latest insights…';
+
+  try {
+    // 1. Instant Cached Load: fetch latest persisted predictions without training
+    RESULT = await BCApi.mlLatest(activeAbortController.signal);
+
+    if (RESULT && RESULT.trainedAt) {
+      if (stamp) {
+        stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
+          bcFormatTimestamp(RESULT.trainedAt) +
+          '</strong> · ' + (RESULT.recordCount || 0) + ' records';
+      }
+      renderModelCards();
+      renderOutputs();
+    } else {
+      if (stamp) stamp.textContent = 'No trained model run recorded yet';
+      renderModelCards();
+      const tbody = document.getElementById('predTableBody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-forest-400">No predictions recorded yet. Click "Retrain Model" to generate forecasts.</td></tr>';
+      }
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') return; // User navigated away, ignore cancellation
+    if (stamp) stamp.textContent = 'Prediction insights unavailable';
+    console.warn('loadCachedPredictions notice:', err.message);
+  }
+}
+
+async function retrain() {
+  if (!CAN_RETRAIN) return;
+  const btn = document.getElementById('retrainBtn');
+  const stamp = document.getElementById('trainedStamp');
+
+  // Background loading state inside button only — keeps charts/KPIs visible
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-80', 'cursor-not-allowed');
+    btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Retraining…';
+  }
+  if (stamp) stamp.textContent = 'Retraining models in background…';
+
+  cancelPendingMLRequests();
+  activeAbortController = new AbortController();
+
+  try {
+    RESULT = await BCApi.mlTrain(ACTIVE, activeAbortController.signal);
+    if (stamp && RESULT) {
+      stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
+        bcFormatTimestamp(RESULT.trainedAt) +
+        '</strong> · ' + RESULT.recordCount + ' records';
+    }
+    // Silently swap updated values and charts
+    renderModelCards();
+    renderOutputs();
+    showToast('Models successfully retrained on ' + (RESULT?.recordCount || 0) + ' records.');
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    if (stamp) stamp.textContent = 'Retraining failed';
+    showToast('Retraining error: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-80', 'cursor-not-allowed');
+      btn.innerHTML = '<span data-icon="refresh" data-icon-size="15"></span> Retrain Model';
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+}
 
 (async function () {
   const user = await requireAuth();
@@ -546,7 +588,7 @@ function retrain() { trainAll(true); }
 
   await loadZoneLabels();
   renderModelCards();
-  await trainAll(false);
+  await loadCachedPredictions();
 })();
 </script>
 </body>

@@ -280,9 +280,10 @@ const BCApi = {
   backupHistory() { return this._fetch(`${BC_API}/api/settings.php?action=backups`); },
 
   // ---- ML (Python service, routed through ml_proxy.php for auth/permission enforcement) ----
-  async mlTrain(activeModels) {
+  async mlTrain(activeModels, signal) {
     const res = await fetch(`${BC_API}/api/ml_proxy.php?action=train`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      signal: signal,
       body: JSON.stringify({
         activeOccurrenceModel: activeModels?.occurrence,
         activeTypeModel: activeModels?.type,
@@ -297,8 +298,8 @@ const BCApi = {
     }
     return res.json();
   },
-  async mlLatest() {
-    const res = await fetch(`${BC_API}/api/ml_proxy.php?action=latest`, { credentials: 'include' });
+  async mlLatest(signal) {
+    const res = await fetch(`${BC_API}/api/ml_proxy.php?action=latest`, { credentials: 'include', signal: signal });
     if (res.status === 404) return null;
     if (res.status === 401) { window.location.href = 'login.html'; return null; }
     if (!res.ok) throw new Error('ML service unavailable');

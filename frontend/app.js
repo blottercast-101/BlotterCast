@@ -73,6 +73,22 @@ function _handleUnauthenticatedRedirect() {
   window.location.replace('index.html?logged_out=1');
 }
 
+// ── Non-blocking background pre-warm for ML Prediction service ──
+let _bcMLPrewarmed = false;
+function bcPrewarmMLService() {
+  if (_bcMLPrewarmed || typeof window === 'undefined') return;
+  _bcMLPrewarmed = true;
+  setTimeout(() => {
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/ml/warmup');
+      } else if (window.fetch) {
+        fetch('/api/ml/warmup', { method: 'GET', keepalive: true, priority: 'low' }).catch(() => {});
+      }
+    } catch (_) {}
+  }, 1200);
+}
+
 async function requireAuth() {
   if (_bcAuthGuardRunning) return null;
   _bcAuthGuardRunning = true;
@@ -88,6 +104,7 @@ async function requireAuth() {
       return null; // enforcePageAccess already redirected away
     }
     if (typeof applyNavPermissions === 'function') applyNavPermissions(role);
+    bcPrewarmMLService();
     if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(role);
 
     const nameEl = document.querySelector('[data-user-name]');
