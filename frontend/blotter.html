@@ -123,9 +123,6 @@
       <button onclick="openModal('importModal')" class="btn-secondary flex items-center gap-2" data-perm="import_data">
         <span data-icon="folder" data-icon-size="16"></span> Import
       </button>
-      <button onclick="openModal('blotterModal')" class="btn-primary flex items-center gap-2">
-        <span data-icon="plus" data-icon-size="16"></span> New Blotter Entry
-      </button>
     </div>
   </header>
 
@@ -669,6 +666,11 @@
       type: document.getElementById('f_type').value,
       status: document.getElementById('f_status').value,
     };
+    if (!editingId && !elevateSourceIncidentId) {
+      await bcAlert('All official Blotter cases must originate from an Incident Report. Please file or select an Incident Report and click "Elevate to Blotter".', { title: 'Elevation Required', okLabel: 'Go to Incidents' });
+      window.location.href = 'incident.html';
+      return;
+    }
     if (!editingId && elevateSourceIncidentId) {
       vals.sourceIncidentId = elevateSourceIncidentId;
     }
@@ -851,15 +853,15 @@
     }
   }
 
-  document.querySelector('[onclick="openModal(\'blotterModal\')"]').onclick = openAdd;
   (async function () {
     await requireAuth();
     try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
     try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
     await checkElevationPrefill();
     if (new URLSearchParams(location.search).get('new') === '1') {
-      openAdd();
       history.replaceState(null, '', location.pathname);
+      await bcAlert('All official Blotter cases originate from Incident Reports. Please create or select an Incident Report and click "Elevate to Blotter".', { title: 'Workflow Notice', okLabel: 'Go to Incident Reports' });
+      window.location.href = 'incident.html';
     }
   })();
 </script>

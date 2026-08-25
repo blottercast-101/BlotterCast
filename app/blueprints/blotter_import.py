@@ -7,8 +7,8 @@ from flask import Blueprint, jsonify, request
 from openpyxl import load_workbook
 
 from ..extensions import db
-from ..helpers import find_census_resident_id_by_name, is_name_a_census_resident, next_seq_no, parse_date
-from ..models import BlotterRecord, Settlement
+from ..helpers import find_census_resident_id_by_name, is_name_a_census_resident, next_seq_no, parse_date, zone_coords
+from ..models import BlotterRecord, Incident, Settlement
 from ..permissions import json_error, log_audit, login_required, permission_required
 from flask import session
 
@@ -138,6 +138,7 @@ def blotter_import():
 
         date_filed = _parse_flexible_date(date_filed_raw) or datetime.utcnow().date().isoformat()
         date_filed = parse_date(date_filed)
+        zone_id = "Zone 1"
 
         case_type, nature_desc = "CIVIL", nature_of_case
         m = re.match(r"^(criminal|civil)\s*[—-]\s*(.+)$", nature_of_case, re.IGNORECASE)
@@ -147,19 +148,62 @@ def blotter_import():
         elif complaint_title:
             nature_desc = complaint_title
 
+        # Map incident category
+        def _map_cat(txt):
+            t = (txt or "").lower()
+            if any(k in t for k in ["assault", "physical", "injury", "pananakit", "suntukan"]): return "Physical Assault"
+            if any(k in t for k in ["theft", "robbery", "nakaw", "pagnanakaw", "hold-up"]): return "Theft"
+            if any(k in t for k in ["dispute", "domestic", "away", "mag-asawa", "family"]): return "Domestic Dispute"
+            if any(k in t for k in ["vandalism", "damage", "paninira"]): return "Vandalism"
+            if any(k in t for k in ["trespass", "trespassing", "pagpasok"]): return "Trespassing"
+            if any(k in t for k in ["drug", "droga", "shabu"]): return "Drug-Related Activity"
+            if any(k in t for k in ["disturbance", "public", "ingay", "kaguluhan"]): return "Public Disturbance"
+            return "Other"
+
+        category = _map_cat(nature_desc)
         docket_no = next_seq_no(BlotterRecord, "docket_no", "BLT")
+        inc_report_no = next_seq_no(Incident, "report_no", "INC")
+        lat, lng = zone_coords(zone_id)
+
+        # 1. Create linked Incident Report with standard legacy fallbacks
+        incident = Incident(
+            report_no=inc_report_no,
+            incident_date=date_filed,
+            time_reported=datetime.strptime("12:00:00", "%H:%M:%S").time(),
+            hour=12,
+            zone_id=zone_id,
+            location="Barangay Mapulang Lupa (Legacy Record)",
+            lat=lat,
+            lng=lng,
+            category=category,
+            description=nature_desc or "Legacy Blotter Case Record",
+            reporter=complainant or "Legacy Walk-In",
+            is_non_resident=False if complainant_id else True,
+            reporter_resident_id=complainant_id,
+            reporter_address="",
+            officer="PO1 Legacy / Desk Officer",
+            priority="Medium",
+            status="Elevated to Blotter",
+            is_blotter=True,
+            blotter_docket_no=docket_no,
+        )
+        db.session.add(incident)
+        db.session.flush()
+
+        # 2. Create official Blotter Record linked to incident
         record = BlotterRecord(
-            docket_no=docket_no, date_filed=date_filed, complainant=complainant,
+            docket_no=docket_no, date_filed=date_filed, complainant=complainant or "Legacy Walk-In",
             complainant_id=complainant_id, complainant_addr="", respondent=respondent,
             respondent_id=respondent_id, respondent_addr="", nature=nature_desc,
-            case_type=case_type, status="Ongoing", zone_id="Zone 1",
+            case_type=case_type, status="Ongoing", zone_id=zone_id,
+            source_incident_id=incident.id,
         )
         db.session.add(record)
         try:
             db.session.commit()
-        except Exception:
+        except Exception as e:
             db.session.rollback()
-            errors.append(f"Row {row_num}: could not save this blotter entry.")
+            errors.append(f"Row {row_num}: could not save this blotter entry: {e}")
             skipped += 1
             continue
         imported += 1
