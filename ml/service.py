@@ -273,8 +273,12 @@ def train():
                 'metrics': type_results,
                 'active': 'gradient_boosting',
                 'meta': {
-                    'macroF1': type_metrics['macroF1'],
-                    'accuracy': type_metrics['accuracy'],
+                    'macroF1': type_metrics.get('macroF1', 0.0),
+                    'weightedF1': type_metrics.get('weightedF1', 0.0),
+                    'f1': type_metrics.get('f1', 0.0),
+                    'f1_score': type_metrics.get('f1_score', 0.0),
+                    'incident_type_f1': type_metrics.get('incident_type_f1', 0.0),
+                    'accuracy': type_metrics.get('accuracy', 0.0),
                 }
             },
             'hotspot': {
