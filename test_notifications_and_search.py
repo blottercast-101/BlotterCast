@@ -21,15 +21,17 @@ class TestNotificationsAndSearch(unittest.TestCase):
         self.ctx.push()
         db.create_all()
 
-        user = User(
-            username="admin",
-            password="hashedpassword",
-            full_name="Admin User",
-            email="admin@test.gov",
-            role="System Admin",
-            status="Active"
-        )
-        db.session.add(user)
+        user = User.query.filter_by(username="admin").first()
+        if not user:
+            user = User(
+                username="admin",
+                email="admin@test.gov",
+                full_name="Admin User",
+                role="System Admin",
+                status="Active",
+                password="hashedpassword"
+            )
+            db.session.add(user)
         db.session.commit()
         self.user_id = user.id
 

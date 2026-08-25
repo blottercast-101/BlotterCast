@@ -267,8 +267,20 @@ def _zone_density():
     })
 
 
+@bp.route("/api/analytics/trends", methods=["GET"])
+@bp.route("/api/trends.php", methods=["GET"])
+@login_required
+@permission_required("view_analytics")
+def trends_direct():
+    """Direct REST endpoint for comparative incident-to-blotter and settlement trends."""
+    return _trends()
+
+
 @permission_required("view_analytics")
 def _trends_impl():
+    MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    
+    # 1. Available years
     years = [
         r[0] for r in
         db.session.query(extract("year", Incident.incident_date))
@@ -277,14 +289,90 @@ def _trends_impl():
         .order_by(extract("year", Incident.incident_date).desc()).all()
     ]
     years = [int(y) for y in years if y is not None]
-    year = int(request.args.get("year") or (years[0] if years else datetime.utcnow().year))
+    current_year = datetime.utcnow().year
+    if not years:
+        years = [current_year]
+    year = int(request.args.get("year") or years[0])
 
-    monthly_rows = (
+    # 2. KPI Summary Aggregation
+    total_incidents = Incident.query.filter(
+        extract("year", Incident.incident_date) == year,
+        Incident.archived == False
+    ).count()
+
+    total_blottered = Incident.query.filter(
+        extract("year", Incident.incident_date) == year,
+        Incident.is_blotter == True,
+        Incident.archived == False
+    ).count()
+
+    prev_count = Incident.query.filter(
+        extract("year", Incident.incident_date) == year - 1,
+        Incident.archived == False
+    ).count()
+
+    resolved_count = Incident.query.filter(
+        extract("year", Incident.incident_date) == year,
+        Incident.status.in_(["Resolved", "Closed"]),
+        Incident.archived == False
+    ).count()
+
+    total_blotter_cases = BlotterRecord.query.filter(
+        extract("year", BlotterRecord.date_filed) == year,
+        BlotterRecord.archived == False
+    ).count()
+
+    total_settled_blotters = BlotterRecord.query.filter(
+        extract("year", BlotterRecord.date_filed) == year,
+        BlotterRecord.status.in_(["Resolved", "Settled"]),
+        BlotterRecord.archived == False
+    ).count()
+
+    elevation_rate = round((total_blottered / max(1, total_incidents)) * 100, 1) if total_incidents > 0 else 0.0
+    settlement_rate = round((total_settled_blotters / max(1, total_blotter_cases)) * 100, 1) if total_blotter_cases > 0 else 0.0
+    resolution_rate = round((resolved_count / max(1, total_incidents)) * 100, 1) if total_incidents > 0 else 0.0
+
+    # 3. Monthly Timeline (Total vs Elevated Blotters vs Resolved)
+    monthly_incidents_raw = (
         db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
         .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
         .group_by("m").order_by("m").all()
     )
+    inc_by_month = {int(r.m): int(r.c) for r in monthly_incidents_raw}
 
+    monthly_blottered_raw = (
+        db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, Incident.archived == False)
+        .group_by("m").order_by("m").all()
+    )
+    blt_by_month = {int(r.m): int(r.c) for r in monthly_blottered_raw}
+
+    monthly_resolved_raw = (
+        db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False)
+        .group_by("m").order_by("m").all()
+    )
+    res_by_month = {int(r.m): int(r.c) for r in monthly_resolved_raw}
+
+    timeline = []
+    monthly_compat = []
+    for m in range(1, 13):
+        tot_m = inc_by_month.get(m, 0)
+        blt_m = blt_by_month.get(m, 0)
+        res_m = res_by_month.get(m, 0)
+        m_name = MONTH_NAMES[m - 1]
+        timeline.append({
+            "m": m,
+            "month_name": m_name,
+            "total_incidents": tot_m,
+            "blottered_count": blt_m,
+            "resolved_count": res_m,
+            "elevation_rate": round((blt_m / max(1, tot_m)) * 100, 1) if tot_m > 0 else 0.0,
+            "c": tot_m,
+        })
+        monthly_compat.append({"m": m, "c": tot_m})
+
+    # 4. Day of Week
     dates = [d[0] for d in db.session.query(Incident.incident_date).filter(
         extract("year", Incident.incident_date) == year, Incident.archived == False
     ).all()]
@@ -294,25 +382,101 @@ def _trends_impl():
         dow_counts[mysql_dow] = dow_counts.get(mysql_dow, 0) + 1
     dow_result = [{"d": k, "c": v} for k, v in sorted(dow_counts.items())]
 
-    cat_rows = (
+    # 5. Category Breakdown with Elevation Rates
+    cat_total_raw = (
         db.session.query(Incident.category, func.count().label("c"))
         .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
         .group_by(Incident.category).order_by(func.count().desc()).all()
     )
+    cat_elevated_raw = (
+        db.session.query(Incident.category, func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, Incident.archived == False)
+        .group_by(Incident.category).all()
+    )
+    elevated_by_cat = {r.category: int(r.c) for r in cat_elevated_raw}
 
-    total_count = Incident.query.filter(extract("year", Incident.incident_date) == year, Incident.archived == False).count()
-    prev_count = Incident.query.filter(extract("year", Incident.incident_date) == year - 1, Incident.archived == False).count()
-    resolved_count = Incident.query.filter(
-        extract("year", Incident.incident_date) == year, Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False
-    ).count()
+    categories = []
+    for r in cat_total_raw:
+        cat_name = r.category
+        c_count = int(r.c)
+        elev_c = elevated_by_cat.get(cat_name, 0)
+        c_rate = round((elev_c / max(1, c_count)) * 100, 1) if c_count > 0 else 0.0
+        categories.append({
+            "category": cat_name,
+            "count": c_count,
+            "c": c_count,
+            "elevated_count": elev_c,
+            "category_elevation_rate": c_rate,
+        })
+
+    # 6. Zonal Breakdown (Zone 1 to Zone 7)
+    zone_defs = Zone.query.filter(Zone.zone_id.in_(OFFICIAL_ZONES)).order_by(Zone.zone_id).all()
+    zone_label_map = {z.zone_id: z.label for z in zone_defs}
+
+    zonal_total_raw = (
+        db.session.query(Incident.zone_id, func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
+        .group_by(Incident.zone_id).all()
+    )
+    tot_by_zone = {r.zone_id: int(r.c) for r in zonal_total_raw}
+
+    zonal_elevated_raw = (
+        db.session.query(Incident.zone_id, func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, Incident.archived == False)
+        .group_by(Incident.zone_id).all()
+    )
+    elev_by_zone = {r.zone_id: int(r.c) for r in zonal_elevated_raw}
+
+    zonal_resolved_raw = (
+        db.session.query(Incident.zone_id, func.count().label("c"))
+        .filter(extract("year", Incident.incident_date) == year, Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False)
+        .group_by(Incident.zone_id).all()
+    )
+    res_by_zone = {r.zone_id: int(r.c) for r in zonal_resolved_raw}
+
+    zonal = []
+    for zid in OFFICIAL_ZONES:
+        z_tot = tot_by_zone.get(zid, 0)
+        z_elev = elev_by_zone.get(zid, 0)
+        z_res = res_by_zone.get(zid, 0)
+        z_rate = round((z_elev / max(1, z_tot)) * 100, 1) if z_tot > 0 else 0.0
+        zonal.append({
+            "zone_id": zid,
+            "label": zone_label_map.get(zid, zid),
+            "total_incidents": z_tot,
+            "elevated_count": z_elev,
+            "resolved_count": z_res,
+            "elevation_rate": z_rate,
+            "settlement_rate": round((z_res / max(1, z_tot)) * 100, 1) if z_tot > 0 else 0.0,
+        })
+
+    summary_obj = {
+        "total_incidents": total_incidents,
+        "total_blottered": total_blottered,
+        "elevation_rate": elevation_rate,
+        "total_blotter_cases": total_blotter_cases,
+        "total_settled_blotters": total_settled_blotters,
+        "lupon_settlement_rate": settlement_rate,
+        "resolvedCount": resolved_count,
+        "resolutionRate": resolution_rate,
+        "prevYearTotal": prev_count,
+    }
 
     return jsonify({
-        "years": years, "year": year,
-        "monthly": [{"m": int(r.m), "c": r.c} for r in monthly_rows],
+        "status": "success",
+        "ok": True,
+        "years": years,
+        "year": year,
+        "summary": summary_obj,
+        "timeline": timeline,
+        "categories": categories,
+        "zonal": zonal,
+        "monthly": monthly_compat,
         "dayOfWeek": dow_result,
-        "categories": [{"category": r.category, "c": r.c} for r in cat_rows],
-        "total": total_count, "prevYearTotal": prev_count, "resolvedCount": resolved_count,
-        "resolutionRate": round(resolved_count / total_count * 100) if total_count > 0 else 0,
+        "total": total_incidents,
+        "prevYearTotal": prev_count,
+        "resolvedCount": resolved_count,
+        "resolutionRate": resolution_rate,
     })
 
 

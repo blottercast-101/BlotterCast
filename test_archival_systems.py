@@ -21,17 +21,21 @@ class TestArchivalSystems(unittest.TestCase):
         self.ctx.push()
         db.create_all()
 
-        z1 = Zone(zone_id="Zone 1", label="Zone 1", lat=14.0, lng=121.0, weight=1.0)
-        db.session.add(z1)
-        user = User(
-            username="admin",
-            email="admin@example.com",
-            full_name="Admin User",
-            role="Admin",
-            status="Active",
-            password="test-password",
-        )
-        db.session.add(user)
+        z1 = Zone.query.get("Zone 1")
+        if not z1:
+            z1 = Zone(zone_id="Zone 1", label="Zone 1", lat=14.0, lng=121.0, weight=1.0)
+            db.session.add(z1)
+        user = User.query.filter_by(username="admin").first()
+        if not user:
+            user = User(
+                username="admin",
+                email="admin@example.com",
+                full_name="Admin User",
+                role="Admin",
+                status="Active",
+                password="test-password",
+            )
+            db.session.add(user)
         db.session.commit()
 
     def tearDown(self):
@@ -67,27 +71,27 @@ class TestArchivalSystems(unittest.TestCase):
         res = self.client.get("/api/records.php?type=incidents")
         self.assertEqual(res.status_code, 200)
         records = res.get_json()
-        self.assertEqual(len(records), 1)
-        self.assertEqual(records[0]["id"], inc_id)
+        self.assertTrue(any(r["id"] == inc_id for r in records))
 
-        # 3. Check in archived list (should be empty)
+        # 3. Check initial archived count
         res = self.client.get("/api/records.php?type=incidents&archived=1")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.get_json()), 0)
+        archived_before = len(res.get_json())
 
         # 4. Soft-delete / Archive
         res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.get_json().get("archived"))
 
-        # 5. Check active list (now empty)
-        res = self.client.get("/api/records.php?type=incidents")
-        self.assertEqual(len(res.get_json()), 0)
-
-        # 6. Check archived list (now has 1)
+        # 5. Check in archived list (count increased by 1)
         res = self.client.get("/api/records.php?type=incidents&archived=1")
-        self.assertEqual(len(res.get_json()), 1)
-        self.assertEqual(res.get_json()[0]["id"], inc_id)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.get_json()), archived_before + 1)
+
+        # 6. Check active list (inc_id no longer in active)
+        res = self.client.get("/api/records.php?type=incidents")
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(any(r["id"] == inc_id for r in res.get_json()))
 
         # 7. Restore
         res = self.client.put(f"/api/records.php?type=incidents&id={inc_id}&restore=1", json={})
@@ -96,8 +100,8 @@ class TestArchivalSystems(unittest.TestCase):
 
         # 8. Check active list (restored)
         res = self.client.get("/api/records.php?type=incidents")
-        self.assertEqual(len(res.get_json()), 1)
-        self.assertEqual(records[0]["id"], inc_id)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(any(r["id"] == inc_id for r in res.get_json()))
 
     def test_settlement_archival_and_restore(self):
         self.login_as()

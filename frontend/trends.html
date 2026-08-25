@@ -97,8 +97,8 @@
 <div class="ml-64 flex flex-col min-h-screen">
   <header class="page-header">
     <div>
-      <h1 class="font-display text-2xl text-forest-800">Incident Trends</h1>
-      <p class="text-forest-500 text-sm">Historical patterns and category analysis over time</p>
+      <h1 class="font-display text-2xl text-forest-800">Trends &amp; Comparative Analytics</h1>
+      <p class="text-forest-500 text-sm">Incident-to-blotter elevation, Lupon settlement rates, and spatial performance</p>
     </div>
     <div class="flex items-center gap-3">
       <select id="trendYear" class="filter-input" onchange="updateCharts()"></select>
@@ -107,76 +107,140 @@
 
   <main class="flex-1 p-6 space-y-6">
 
-    <!-- Summary KPIs -->
-    <div class="grid grid-cols-4 gap-4">
+    <!-- 4 Top KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="stat-card-grad plum">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Total This Year</span>
+          <span class="text-white/80 text-sm font-medium">Total Incidents</span>
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="incident" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="kpiTotal">—</div>
-        <div class="text-xs text-white/70 mt-1" id="kpiTotalSub"></div>
+        <div class="font-display text-3xl text-white" id="kpiTotal">—</div>
+        <div class="text-xs text-white/70 mt-1" id="kpiTotalSub">All field incident logs</div>
       </div>
-      <div class="stat-card-grad moss">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Monthly Average</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="trends" data-icon-size="18"></div>
-        </div>
-        <div class="font-display text-3xl" id="kpiAvg">—</div>
-        <div class="text-xs text-white/70 mt-1">incidents / month</div>
-      </div>
+
       <div class="stat-card-grad sunset">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Peak Month</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
+          <span class="text-white/80 text-sm font-medium">Elevated to Blotter</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="blotter" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="kpiPeak">—</div>
-        <div class="text-xs text-white/70 mt-1" id="kpiPeakSub"></div>
+        <div class="font-display text-3xl text-white" id="kpiElevated">—</div>
+        <div class="text-xs text-white/70 mt-1" id="kpiElevatedSub">Official docketed cases</div>
       </div>
+
+      <div class="stat-card-grad moss">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Elevation Rate</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="trends" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl text-white" id="kpiElevationRate">—</div>
+        <div class="text-xs text-white/70 mt-1">Escalated to Lupon Tagapamayapa</div>
+      </div>
+
       <div class="stat-card-grad dark">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium">Resolution Rate</span>
+          <span class="text-white/80 text-sm font-medium">Lupon Settlement Rate</span>
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="kpiRes">—</div>
-        <div class="text-xs text-white/60 mt-1">resolved or closed cases</div>
+        <div class="font-display text-3xl text-white" id="kpiSettlementRate">—</div>
+        <div class="text-xs text-white/70 mt-1" id="kpiSettlementSub">Amicably settled cases</div>
       </div>
     </div>
 
-    <!-- Line Chart + Doughnut -->
-    <div class="grid grid-cols-3 gap-6">
-      <div class="col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
-        <div class="flex items-center gap-3 mb-5">
-          <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>
-          <h2 class="font-display text-lg text-forest-800" id="lineTitle">Monthly Incident Count</h2>
+    <!-- Comparative Main Chart + Category Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>
+            <div>
+              <h2 class="font-display text-lg text-forest-800" id="lineTitle">Monthly Comparative Pipeline</h2>
+              <p class="text-xs text-forest-500">Field Incidents vs. Elevated Blotter Cases vs. Resolved</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-1.5 font-medium text-forest-700">
+              <span class="w-3 h-3 rounded-full bg-forest-600 inline-block"></span> Total Incidents
+            </div>
+            <div class="flex items-center gap-1.5 font-medium text-amber-600">
+              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Elevated Blotters
+            </div>
+            <div class="flex items-center gap-1.5 font-medium text-teal-600">
+              <span class="w-3 h-3 rounded-full bg-teal-600 inline-block"></span> Resolved
+            </div>
+          </div>
         </div>
-        <canvas id="lineChart" height="100"></canvas>
+        <canvas id="lineChart" height="115"></canvas>
       </div>
+
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
-        <div class="flex items-center gap-3 mb-5">
+        <div class="flex items-center gap-3 mb-4">
           <div class="stat-icon-badge" data-icon="incident" data-icon-size="17"></div>
-          <h2 class="font-display text-lg text-forest-800">By Category</h2>
+          <div>
+            <h2 class="font-display text-lg text-forest-800">Category Severity</h2>
+            <p class="text-xs text-forest-500">Incidents &amp; Elevation Distribution</p>
+          </div>
         </div>
-        <canvas id="doughnutChart" height="170"></canvas>
-        <div id="doughnutLegend" class="mt-4 space-y-1 text-xs"></div>
+        <canvas id="doughnutChart" height="160"></canvas>
+        <div id="doughnutLegend" class="mt-4 space-y-2 text-xs max-h-48 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
-    <!-- Bar Chart + Day-of-week -->
-    <div class="grid grid-cols-2 gap-6">
+    <!-- Zonal Comparative Matrix Table -->
+    <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
+          <div>
+            <h2 class="font-display text-lg text-forest-800">Zonal Elevation &amp; Settlement Matrix</h2>
+            <p class="text-xs text-forest-500">Administrative Zone 1 to Zone 7 comparative performance</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-forest-600 bg-forest-50 px-3 py-1.5 rounded-full border border-forest-100">
+          7 Official Administrative Zones
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-forest-100 text-xs font-bold text-forest-600 uppercase tracking-wider">
+              <th class="py-3 px-3">Zone / Substation</th>
+              <th class="py-3 px-3 text-center">Total Incidents</th>
+              <th class="py-3 px-3 text-center">Elevated to Blotter</th>
+              <th class="py-3 px-3">Elevation Rate</th>
+              <th class="py-3 px-3 text-center">Resolved Cases</th>
+              <th class="py-3 px-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="zonalMatrixBody" class="divide-y divide-forest-50">
+            <tr><td colspan="6" class="py-6 text-center text-forest-400">Loading zonal matrix...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Secondary Charts: Day-of-week & Ranked Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
         <div class="flex items-center gap-3 mb-5">
           <div class="stat-icon-badge" data-icon="clock" data-icon-size="17"></div>
-          <h2 class="font-display text-lg text-forest-800">Incidents by Day of Week</h2>
+          <div>
+            <h2 class="font-display text-lg text-forest-800">Incidents by Day of Week</h2>
+            <p class="text-xs text-forest-500">Weekly occurrence distribution</p>
+          </div>
         </div>
-        <canvas id="barDayChart" height="130"></canvas>
+        <canvas id="barDayChart" height="120"></canvas>
       </div>
+
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
         <div class="flex items-center gap-3 mb-5">
           <div class="stat-icon-badge" data-icon="predictions" data-icon-size="17"></div>
-          <h2 class="font-display text-lg text-forest-800">Top 5 Incident Categories (Ranked)</h2>
+          <div>
+            <h2 class="font-display text-lg text-forest-800">Top Incident Categories</h2>
+            <p class="text-xs text-forest-500">Ranked by volume</p>
+          </div>
         </div>
-        <canvas id="hBarChart" height="130"></canvas>
+        <canvas id="hBarChart" height="120"></canvas>
       </div>
     </div>
   </main>
@@ -188,7 +252,6 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
-// Trends page — all aggregates computed server-side from MySQL via analytics.php.
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const COLORS = ['#1a5730','#2f8a4c','#4fa868','#c9a84c','#0e7c86','#86c895','#8a6a2e','#94a3b8'];
@@ -201,98 +264,304 @@ let cachedYears = [];
 
 async function initYears() {
   const data = await BCApi.trends();
-  cachedYears = data.years;
+  cachedYears = data?.years || [new Date().getFullYear()];
   const sel = document.getElementById('trendYear');
   sel.innerHTML = cachedYears.map(y => `<option value="${y}">${y}</option>`).join('');
-  sel.value = data.year;
-  renderFromData(data);
+  sel.value = data?.year || cachedYears[0];
+  renderFromData(data || {});
 }
 
 async function updateCharts() {
   const year = document.getElementById('trendYear').value;
   const data = await BCApi.trends(year);
-  renderFromData(data);
+  renderFromData(data || {});
 }
 
 function renderFromData(data) {
-  const year = data.year;
-  document.getElementById('lineTitle').textContent = `Monthly Incident Count (${year})`;
+  const year = data?.year ?? new Date().getFullYear();
+  const summary = data?.summary || {};
+  
+  const totalIncidents = summary.total_incidents ?? data?.total ?? 0;
+  const totalBlottered = summary.total_blottered ?? 0;
+  const elevationRate = summary.elevation_rate ?? (totalIncidents > 0 ? ((totalBlottered / totalIncidents) * 100).toFixed(1) : 0);
+  const settlementRate = summary.lupon_settlement_rate ?? summary.settlement_rate ?? 0;
+  const totalSettled = summary.total_settled_blotters ?? summary.resolvedCount ?? 0;
+  const totalBlotters = summary.total_blotter_cases ?? totalBlottered;
 
-  const monthly = new Array(12).fill(0);
-  data.monthly.forEach(row => { monthly[row.m - 1] = row.c; });
+  // 1. Update 4 Top KPI Cards
+  document.getElementById('kpiTotal').textContent = totalIncidents;
+  document.getElementById('kpiElevated').textContent = totalBlottered;
+  document.getElementById('kpiElevationRate').textContent = `${Number(elevationRate).toFixed(1)}%`;
+  document.getElementById('kpiSettlementRate').textContent = `${Number(settlementRate).toFixed(1)}%`;
+  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases settled`;
 
-  const dayData = new Array(7).fill(0);
-  data.dayOfWeek.forEach(row => { dayData[row.d - 1] = row.c; }); // MySQL DAYOFWEEK: 1=Sun..7=Sat
+  const prevYearTotal = summary.prevYearTotal ?? data?.prevYearTotal ?? 0;
+  if (prevYearTotal > 0) {
+    const diffPct = Math.abs(Math.round(((totalIncidents - prevYearTotal) / prevYearTotal) * 100));
+    const icon = totalIncidents >= prevYearTotal ? '↑' : '↓';
+    document.getElementById('kpiTotalSub').textContent = `${icon} ${diffPct}% vs ${Number(year) - 1}`;
+  } else {
+    document.getElementById('kpiTotalSub').textContent = 'All field incident logs';
+  }
 
-  const catCounts = {};
-  data.categories.forEach(row => { catCounts[row.category] = row.c; });
+  // 2. Comparative Dual-Line / Area Chart
+  document.getElementById('lineTitle').textContent = `Monthly Comparative Pipeline (${year})`;
+  const timeline = data?.timeline || [];
+  const monthlyIncidents = new Array(12).fill(0);
+  const monthlyBlottered = new Array(12).fill(0);
+  const monthlyResolved = new Array(12).fill(0);
 
-  // KPIs
-  const nowY = String(new Date().getFullYear());
-  const monthsElapsed = String(year) === nowY ? (new Date().getMonth() + 1) : 12;
-  document.getElementById('kpiTotal').textContent = data.total;
-  document.getElementById('kpiTotalSub').textContent = data.prevYearTotal
-    ? (data.total >= data.prevYearTotal ? '↑ ' : '↓ ') + Math.abs(Math.round((data.total - data.prevYearTotal) / data.prevYearTotal * 100)) + '% vs ' + (Number(year) - 1)
-    : 'recorded incidents';
-  document.getElementById('kpiAvg').textContent = Math.round(data.total / Math.max(1, monthsElapsed));
-  const peakIdx = monthly.indexOf(Math.max(...monthly));
-  document.getElementById('kpiPeak').textContent = data.total ? MONTHS[peakIdx] : '—';
-  document.getElementById('kpiPeakSub').textContent = data.total ? monthly[peakIdx] + ' incidents' : '';
-  document.getElementById('kpiRes').textContent = data.total ? data.resolutionRate + '%' : '—';
-
-  const cats = Object.keys(catCounts).sort((a, b) => catCounts[b] - catCounts[a]);
-  const catData = cats.map(c => catCounts[c]);
+  if (timeline.length > 0) {
+    timeline.forEach(row => {
+      const idx = (row.m || 1) - 1;
+      if (idx >= 0 && idx < 12) {
+        monthlyIncidents[idx] = row.total_incidents ?? row.c ?? 0;
+        monthlyBlottered[idx] = row.blottered_count ?? 0;
+        monthlyResolved[idx] = row.resolved_count ?? 0;
+      }
+    });
+  } else if (Array.isArray(data?.monthly)) {
+    data.monthly.forEach(row => {
+      const idx = (row.m || 1) - 1;
+      if (idx >= 0 && idx < 12) monthlyIncidents[idx] = row.c ?? 0;
+    });
+  }
 
   if (lineChart) lineChart.destroy();
   const lineCtx = document.getElementById('lineChart').getContext('2d');
-  const lineGradient = lineCtx.createLinearGradient(0, 0, 0, 260);
-  lineGradient.addColorStop(0, 'rgba(47,138,76,0.28)');
-  lineGradient.addColorStop(1, 'rgba(47,138,76,0.02)');
+  
+  const grad1 = lineCtx.createLinearGradient(0, 0, 0, 240);
+  grad1.addColorStop(0, 'rgba(35, 112, 60, 0.25)');
+  grad1.addColorStop(1, 'rgba(35, 112, 60, 0.01)');
+
+  const grad2 = lineCtx.createLinearGradient(0, 0, 0, 240);
+  grad2.addColorStop(0, 'rgba(217, 119, 6, 0.25)');
+  grad2.addColorStop(1, 'rgba(217, 119, 6, 0.01)');
+
   lineChart = new Chart(lineCtx, {
     type: 'line',
-    data: { labels: MONTHS, datasets: [{ label: 'Incidents', data: monthly,
-      borderColor: '#23703c', backgroundColor: lineGradient, borderWidth: 2.5,
-      tension: 0.4, fill: true, pointBackgroundColor: '#fff', pointBorderColor: '#23703c',
-      pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6 }] },
-    options: { plugins: { legend: { display: false }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8, titleFont: { weight: '600' } } },
-      scales: { y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+    data: {
+      labels: MONTHS,
+      datasets: [
+        {
+          label: 'Total Incidents',
+          data: monthlyIncidents,
+          borderColor: '#23703c',
+          backgroundColor: grad1,
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#23703c',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+        },
+        {
+          label: 'Elevated Blotters',
+          data: monthlyBlottered,
+          borderColor: '#d97706',
+          backgroundColor: grad2,
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#d97706',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+        },
+        {
+          label: 'Resolved Cases',
+          data: monthlyResolved,
+          borderColor: '#0e7c86',
+          borderWidth: 2,
+          borderDash: [4, 4],
+          tension: 0.35,
+          fill: false,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#0e7c86',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#123d22',
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { weight: '600' }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } },
+        x: { grid: { display: false }, border: { display: false } }
+      }
+    }
   });
+
+  // 3. Category Doughnut Chart & Severity Breakdown
+  const categories = data?.categories || [];
+  const catNames = categories.map(c => c.category || 'Other');
+  const catCounts = categories.map(c => c.count ?? c.c ?? 0);
 
   if (doughnutChart) doughnutChart.destroy();
   doughnutChart = new Chart(document.getElementById('doughnutChart'), {
     type: 'doughnut',
-    data: { labels: cats, datasets: [{ data: catData, backgroundColor: COLORS, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
-    options: { plugins: { legend: { display: false }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 } }, cutout: '68%' }
+    data: {
+      labels: catNames,
+      datasets: [{
+        data: catCounts,
+        backgroundColor: COLORS,
+        borderWidth: 3,
+        borderColor: '#fff',
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
+      },
+      cutout: '68%'
+    }
   });
-  document.getElementById('doughnutLegend').innerHTML = cats.map((c, i) => `
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:3px;background:${COLORS[i % COLORS.length]};display:inline-block"></span><span class="text-forest-600">${c}</span></div>
-      <span class="font-bold text-forest-700">${catData[i]}</span>
-    </div>`).join('');
+
+  document.getElementById('doughnutLegend').innerHTML = categories.map((cat, i) => {
+    const name = cat.category || 'Other';
+    const count = cat.count ?? cat.c ?? 0;
+    const elevated = cat.elevated_count ?? 0;
+    const rate = cat.category_elevation_rate ?? (count > 0 ? ((elevated / count) * 100).toFixed(0) : 0);
+    const color = COLORS[i % COLORS.length];
+
+    return `
+      <div class="flex items-center justify-between py-1 border-b border-forest-50 last:border-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <span style="width:10px;height:10px;border-radius:3px;background:${color};display:inline-block;flex-shrink:0;"></span>
+          <span class="text-forest-700 font-medium truncate">${name}</span>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="badge ${Number(rate) >= 50 ? 'badge-not-complied' : Number(rate) >= 25 ? 'badge-ongoing' : 'badge-resolved'} text-[10px] font-bold">
+            ${rate}% Elevated (${elevated}/${count})
+          </span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // 4. Zonal Matrix Table
+  const zonal = data?.zonal || [];
+  const matrixBody = document.getElementById('zonalMatrixBody');
+  if (zonal.length > 0) {
+    matrixBody.innerHTML = zonal.map(z => {
+      const tot = z.total_incidents ?? 0;
+      const elev = z.elevated_count ?? 0;
+      const res = z.resolved_count ?? 0;
+      const rate = Number(z.elevation_rate ?? (tot > 0 ? (elev / tot * 100) : 0)).toFixed(1);
+      const isHighElev = Number(rate) >= 50;
+
+      return `
+        <tr class="hover:bg-forest-50/60 transition-colors">
+          <td class="py-3 px-3">
+            <div class="font-bold text-forest-800">${z.zone_id}</div>
+            <div class="text-xs text-forest-400">${z.label || 'Barangay Substation'}</div>
+          </td>
+          <td class="py-3 px-3 text-center font-bold text-forest-700">${tot}</td>
+          <td class="py-3 px-3 text-center">
+            <span class="font-bold text-amber-700">${elev}</span>
+          </td>
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2">
+              <div class="risk-bar w-24">
+                <div class="risk-bar-fill" style="width:${Math.min(100, Number(rate))}%;background:${isHighElev ? '#d97706' : '#23703c'};"></div>
+              </div>
+              <span class="text-xs font-bold text-forest-700">${rate}%</span>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-center font-semibold text-teal-700">${res}</td>
+          <td class="py-3 px-3 text-center">
+            <span class="badge ${isHighElev ? 'badge-ongoing' : 'badge-resolved'} text-[11px] font-semibold">
+              ${isHighElev ? 'High Elevation' : 'Stable Control'}
+            </span>
+          </td>
+        </tr>`;
+    }).join('');
+  } else {
+    matrixBody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-forest-400">No zonal data available for this year</td></tr>';
+  }
+
+  // 5. Day of Week Chart
+  const dayData = new Array(7).fill(0);
+  (data?.dayOfWeek || []).forEach(row => {
+    const dIdx = (row.d || 1) - 1;
+    if (dIdx >= 0 && dIdx < 7) dayData[dIdx] = row.c ?? 0;
+  });
 
   if (barDayChart) barDayChart.destroy();
   barDayChart = new Chart(document.getElementById('barDayChart'), {
     type: 'bar',
-    data: { labels: DAYS, datasets: [{ label: 'Incidents', data: dayData,
-      backgroundColor: '#2f8a4c', hoverBackgroundColor: '#1a5730', borderRadius: 8, borderSkipped: false, maxBarThickness: 40 }] },
-    options: { plugins: { legend: { display: false }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 } },
-      scales: { y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+    data: {
+      labels: DAYS,
+      datasets: [{
+        label: 'Incidents',
+        data: dayData,
+        backgroundColor: '#2f8a4c',
+        hoverBackgroundColor: '#1a5730',
+        borderRadius: 8,
+        borderSkipped: false,
+        maxBarThickness: 36
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } },
+        x: { grid: { display: false }, border: { display: false } }
+      }
+    }
   });
 
+  // 6. Ranked Top Incident Categories
+  const top5 = categories.slice(0, 5);
   if (hBarChart) hBarChart.destroy();
-  const top5 = cats.slice(0, 5);
   hBarChart = new Chart(document.getElementById('hBarChart'), {
     type: 'bar',
-    data: { labels: top5, datasets: [{ label: 'Count', data: top5.map(c => catCounts[c]),
-      backgroundColor: top5.map((_, i) => COLORS[i % COLORS.length]), borderRadius: 8, borderSkipped: false, maxBarThickness: 26 }] },
-    options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 } },
-      scales: { x: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } }, y: { grid: { display: false }, border: { display: false } } } }
+    data: {
+      labels: top5.map(c => c.category || 'Other'),
+      datasets: [{
+        label: 'Count',
+        data: top5.map(c => c.count ?? c.c ?? 0),
+        backgroundColor: top5.map((_, i) => COLORS[i % COLORS.length]),
+        borderRadius: 8,
+        borderSkipped: false,
+        maxBarThickness: 24
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } },
+        y: { grid: { display: false }, border: { display: false } }
+      }
+    }
   });
 }
 
 (async function () {
   await requireAuth();
-  try { await initYears(); } catch (err) { showToast('Could not load trends: ' + err.message, 'error'); }
+  try {
+    await initYears();
+  } catch (err) {
+    showToast('Could not load trends: ' + err.message, 'error');
+  }
 })();
 </script>
 </body>

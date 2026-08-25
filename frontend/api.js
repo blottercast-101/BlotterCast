@@ -146,8 +146,10 @@ const BCApi = {
     return this._fetch(`${BC_API}/api/analytics.php?action=heatmap&${qs}`);
   },
   trends(year) {
-    const qs = year ? `&year=${year}` : '';
-    return this._fetch(`${BC_API}/api/analytics.php?action=trends${qs}`);
+    const qs = year ? `?year=${year}` : '';
+    return this._fetch(`${BC_API}/api/analytics/trends${qs}`).catch(() => {
+      return this._fetch(`${BC_API}/api/analytics.php?action=trends${year ? '&year=' + year : ''}`);
+    });
   },
   zones() { return this._fetch(`${BC_API}/api/analytics.php?action=zones`); },
   zoneDensity(params = {}) {

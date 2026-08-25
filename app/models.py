@@ -264,6 +264,9 @@ class Incident(db.Model):
     officer = db.Column(db.String(100))
     priority = db.Column(db.String(10), nullable=False, default="Medium")
     status = db.Column(db.String(30), nullable=False, default="Under Investigation")
+    is_blotter = db.Column(db.Boolean, nullable=False, default=False)
+    blotter_docket_no = db.Column(db.String(50))
+    resolved_at = db.Column(db.DateTime)
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
@@ -284,6 +287,9 @@ class Incident(db.Model):
         officer="",
         priority="Medium",
         status="Under Investigation",
+        is_blotter=False,
+        blotter_docket_no=None,
+        resolved_at=None,
         archived=False,
         created_at=None,
         updated_at=None,
@@ -309,6 +315,9 @@ class Incident(db.Model):
         self.officer = officer
         self.priority = priority
         self.status = status
+        self.is_blotter = bool(is_blotter)
+        self.blotter_docket_no = blotter_docket_no
+        self.resolved_at = resolved_at
         self.archived = archived
         if created_at is not None:
             self.created_at = created_at
@@ -328,6 +337,9 @@ class Incident(db.Model):
             "category": self.category, "description": self.description,
             "reporter": self.reporter, "officer": self.officer,
             "priority": self.priority, "status": self.status,
+            "is_blotter": bool(self.is_blotter),
+            "blotter_docket_no": self.blotter_docket_no,
+            "resolved_at": self.resolved_at.isoformat() if hasattr(self.resolved_at, "isoformat") else (str(self.resolved_at) if self.resolved_at else None),
             "archived": bool(self.archived),
         }
 
@@ -337,6 +349,8 @@ class BlotterRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     docket_no = db.Column(db.String(30), nullable=False, unique=True)
     date_filed = db.Column(db.Date, nullable=False)
+    source_incident_id = db.Column(db.Integer, db.ForeignKey("incidents.id", ondelete="SET NULL"))
+    incident_time = db.Column(db.Time)
     complainant = db.Column(db.String(150), nullable=False)
     complainant_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"))
     complainant_addr = db.Column(db.String(255))
@@ -344,9 +358,11 @@ class BlotterRecord(db.Model):
     respondent_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"))
     respondent_addr = db.Column(db.String(255))
     nature = db.Column(db.String(100))
+    narrative = db.Column(db.Text)
     case_type = db.Column(db.String(10), nullable=False, default="CRIM")
     status = db.Column(db.String(20), nullable=False, default="Pending")
     zone_id = db.Column(db.String(10), db.ForeignKey("zones.zone_id"))
+    resolved_at = db.Column(db.DateTime)
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
@@ -355,6 +371,8 @@ class BlotterRecord(db.Model):
         self,
         docket_no=None,
         date_filed=None,
+        source_incident_id=None,
+        incident_time=None,
         complainant="",
         complainant_id=None,
         complainant_addr="",
@@ -362,9 +380,11 @@ class BlotterRecord(db.Model):
         respondent_id=None,
         respondent_addr="",
         nature="",
+        narrative="",
         case_type="CRIM",
         status="Pending",
         zone_id=None,
+        resolved_at=None,
         archived=False,
         created_at=None,
         updated_at=None,
@@ -375,6 +395,9 @@ class BlotterRecord(db.Model):
             self.docket_no = docket_no
         if date_filed is not None:
             self.date_filed = date_filed
+        self.source_incident_id = source_incident_id
+        if incident_time is not None:
+            self.incident_time = incident_time
         self.complainant = complainant
         if complainant_id is not None:
             self.complainant_id = complainant_id
@@ -384,10 +407,12 @@ class BlotterRecord(db.Model):
             self.respondent_id = respondent_id
         self.respondent_addr = respondent_addr
         self.nature = nature
+        self.narrative = narrative
         self.case_type = case_type
         self.status = status
         if zone_id is not None:
             self.zone_id = zone_id
+        self.resolved_at = resolved_at
         self.archived = archived
         if created_at is not None:
             self.created_at = created_at
@@ -400,11 +425,15 @@ class BlotterRecord(db.Model):
         return {
             "id": self.id, "docket_no": self.docket_no,
             "date_filed": self.date_filed.isoformat() if hasattr(self.date_filed, "isoformat") else (str(self.date_filed) if self.date_filed else None),
+            "source_incident_id": self.source_incident_id,
+            "incident_time": self.incident_time.isoformat() if hasattr(self.incident_time, "isoformat") else (str(self.incident_time) if self.incident_time else None),
             "complainant": self.complainant, "complainant_id": self.complainant_id,
             "complainant_addr": self.complainant_addr,
             "respondent": self.respondent, "respondent_id": self.respondent_id,
-            "respondent_addr": self.respondent_addr, "nature": self.nature,
+            "respondent_addr": self.respondent_addr,
+            "nature": self.nature, "narrative": self.narrative,
             "case_type": self.case_type, "status": self.status, "zone_id": self.zone_id,
+            "resolved_at": self.resolved_at.isoformat() if hasattr(self.resolved_at, "isoformat") else (str(self.resolved_at) if self.resolved_at else None),
             "archived": bool(self.archived),
         }
 
