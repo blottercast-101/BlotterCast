@@ -159,3 +159,20 @@ C:\Users\fhaly\OneDrive\Documents\RENDER CAP\BlotterCast\app\blueprints\..\..\ml
 127.0.0.1 - - [25/Aug/2026 10:06:48] "GET /health HTTP/1.1" 200 -
 127.0.0.1 - - [25/Aug/2026 10:06:48] "GET /latest HTTP/1.1" 200 -
 127.0.0.1 - - [25/Aug/2026 10:06:48] "POST /predict HTTP/1.1" 200 -
+[ML Singleton] Preloaded warm models from disk (trained at 2026-08-25T02:06:48.587608Z)
+ * Serving Flask app 'service'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.100.82:5001
+Press CTRL+C to quit
+127.0.0.1 - - [25/Aug/2026 13:13:06] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2026 13:13:06] "GET /latest HTTP/1.1" 200 -
+C:\Users\fhaly\OneDrive\Documents\RENDER CAP\BlotterCast\app\blueprints\..\..\ml\service.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  trained_at = datetime.utcnow()
+127.0.0.1 - - [25/Aug/2026 13:13:08] "POST /train HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2026 13:13:08] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2026 13:13:08] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2026 13:13:08] "GET /latest HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2026 13:13:08] "POST /predict HTTP/1.1" 200 -
