@@ -150,6 +150,10 @@ const BCApi = {
     return this._fetch(`${BC_API}/api/analytics.php?action=trends${qs}`);
   },
   zones() { return this._fetch(`${BC_API}/api/analytics.php?action=zones`); },
+  zoneDensity(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this._fetch(`${BC_API}/api/analytics.php?action=zone-density${qs ? '&' + qs : ''}`);
+  },
 
   // ---- users & audit log ----
   users() { return this._fetch(`${BC_API}/api/users.php?action=list`); },
@@ -298,6 +302,9 @@ const BCApi = {
     if (!res.ok) throw new Error('ML service unavailable');
     return res.json();
   },
+  async mlInsights() {
+    return this.mlLatest();
+  },
   async mlPredict(payload) {
     const res = await fetch(`${BC_API}/api/ml_proxy.php?action=predict`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -314,5 +321,5 @@ const BCApi = {
   },
 };
 
-const ZONES = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5','Zone 6','Zone 7','Zone 8'];
+const ZONES = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5','Zone 6','Zone 7'];
 const CATEGORIES = ['Physical Assault','Theft','Domestic Dispute','Vandalism','Trespassing','Drug-Related Activity','Public Disturbance','Other'];

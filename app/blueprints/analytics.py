@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import extract, func
@@ -21,6 +21,8 @@ from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("analytics", __name__)
 
+OFFICIAL_ZONES = ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6", "Zone 7"]
+
 
 @bp.route("/api/analytics.php", methods=["GET"])
 @login_required
@@ -34,7 +36,16 @@ def analytics_router():
         return _heatmap()
     if action == "trends":
         return _trends()
+    if action in ("zone-density", "zone_density"):
+        return _zone_density()
     return json_error("Unknown action", 404)
+
+
+@bp.route("/api/analytics/zone-density", methods=["GET"])
+@login_required
+def zone_density_direct():
+    """Direct REST endpoint for spatial occurrence densities and RF forecast weights."""
+    return _zone_density()
 
 
 @bp.route("/api/public_stats.php", methods=["GET"])
@@ -61,7 +72,7 @@ def _public_stats():
     docs_count = clearance_count + residency_count + non_residency_count + indigency_count
 
     overall_records = blotter_count + incident_count + settlement_count + census_count + docs_count
-    zones_monitored = Zone.query.count()
+    zones_monitored = Zone.query.filter(Zone.zone_id.in_(OFFICIAL_ZONES)).count()
 
     run = MlRun.query.order_by(MlRun.id.desc()).first()
 
@@ -69,8 +80,6 @@ def _public_stats():
     last_model_train = None
     risk_alert = None
     if run:
-        # Naive UTC — append "Z" so the browser doesn't misread it as its
-        # own local time (see the same fix on Last Login in users.php).
         last_model_train = (run.trained_at.isoformat() + "Z") if run.trained_at else None
         try:
             occ_metrics = json.loads(run.occurrence_metrics_json)
@@ -90,10 +99,6 @@ def _public_stats():
         except (ValueError, TypeError, KeyError):
             risk_alert = None
 
-    # System status: this endpoint responding at all proves the core app and
-    # its DB connection are up (the query above would have raised otherwise).
-    # The ML/prediction microservice is checked separately since it's a
-    # distinct process that can be down independently.
     from .ml_proxy import _ml_is_running
     ml_up = _ml_is_running()
 
@@ -113,7 +118,7 @@ def _public_stats():
 
 
 def _zones():
-    rows = Zone.query.order_by(Zone.zone_id).all()
+    rows = Zone.query.filter(Zone.zone_id.in_(OFFICIAL_ZONES)).order_by(Zone.zone_id).all()
     return jsonify([{
         "zone_id": z.zone_id, "label": z.label,
         "lat": float(z.lat), "lng": float(z.lng), "weight": float(z.weight),
@@ -121,16 +126,12 @@ def _zones():
 
 
 def _dashboard():
-    # Archived records stay in the database but drop out of every
-    # active-records view/stat, same as the Blotter Records module.
     blotter_count = BlotterRecord.query.filter_by(archived=False).count()
     incident_count = Incident.query.filter_by(archived=False).count()
     week_ago = datetime.utcnow().date() - timedelta(days=7)
     week_count = Incident.query.filter(Incident.incident_date >= week_ago, Incident.archived == False).count()
     pending_stl = Settlement.query.filter_by(status="Pending", archived=False).count()
-    # Resolution rate spans every applicable case/record module, not just
-    # incidents — a blotter case can be "Resolved" independently of any
-    # linked incident report.
+
     resolved_incidents = Incident.query.filter(Incident.status.in_(["Resolved", "Closed"]), Incident.archived == False).count()
     resolved_blotters = BlotterRecord.query.filter_by(status="Resolved", archived=False).count()
     resolvable_total = incident_count + blotter_count
@@ -150,7 +151,7 @@ def _dashboard():
 
 @permission_required("view_analytics")
 def _heatmap_impl():
-    q = Incident.query.filter_by(archived=False)
+    q = Incident.query.filter_by(archived=False).filter(Incident.zone_id.in_(OFFICIAL_ZONES))
     if request.args.get("from"):
         q = q.filter(Incident.incident_date >= request.args["from"])
     if request.args.get("to"):
@@ -172,6 +173,101 @@ def _heatmap():
 
 
 @permission_required("view_analytics")
+def _zone_density():
+    """
+    Computes unified spatial density and occurrence weights for the 7 official zones.
+    Blends real database incident counts with the Random Forest model's occurrence forecast.
+    """
+    # 1. Base query on active incidents
+    q = Incident.query.filter_by(archived=False).filter(Incident.zone_id.in_(OFFICIAL_ZONES))
+    if request.args.get("from"):
+        q = q.filter(Incident.incident_date >= request.args["from"])
+    if request.args.get("to"):
+        q = q.filter(Incident.incident_date <= request.args["to"])
+    cat = request.args.get("category")
+    if cat and cat != "all":
+        q = q.filter(Incident.category == cat)
+
+    # 2. Count incidents per zone
+    incidents = q.all()
+    total_incidents = len(incidents)
+    zone_counts = {z: 0 for z in OFFICIAL_ZONES}
+    for inc in incidents:
+        if inc.zone_id in zone_counts:
+            zone_counts[inc.zone_id] += 1
+
+    # 3. Retrieve latest ML model run for predicted occurrence probabilities
+    run = MlRun.query.order_by(MlRun.id.desc()).first()
+    ml_zone_data = {}
+    if run:
+        try:
+            hotspots = json.loads(run.hotspots_json)
+            for item in hotspots:
+                ml_zone_data[item.get("zone")] = item
+        except (ValueError, TypeError, KeyError):
+            ml_zone_data = {}
+
+    # 4. Fetch zone definitions
+    zone_defs = Zone.query.filter(Zone.zone_id.in_(OFFICIAL_ZONES)).order_by(Zone.zone_id).all()
+    zone_label_map = {z.zone_id: z.label for z in zone_defs}
+
+    max_count = max(zone_counts.values()) if zone_counts else 0
+
+    results = []
+    for zone_id in OFFICIAL_ZONES:
+        count = zone_counts.get(zone_id, 0)
+        ml_item = ml_zone_data.get(zone_id, {})
+        pred_p = ml_item.get("meanDailyProb")
+        if pred_p is None:
+            pred_p = round((count / max(1, total_incidents)) * 0.45, 4) if total_incidents > 0 else 0.10
+
+        exp_7d = ml_item.get("expectedCount7d", round(pred_p * 7, 2))
+        exp_14d = ml_item.get("expectedCount14d", round(pred_p * 14, 2))
+
+        # Determine dynamic tier
+        if count == 0:
+            tier = "Low"
+            density_score = round(pred_p * 100, 1)
+        elif count >= max(4, int(max_count * 0.75)):
+            tier = "High"
+            density_score = round(max(75.0, pred_p * 250), 1)
+        elif count >= max(2, int(max_count * 0.50)):
+            tier = "Elevated"
+            density_score = round(max(50.0, pred_p * 200), 1)
+        elif count >= max(1, int(max_count * 0.25)):
+            tier = "Medium"
+            density_score = round(max(25.0, pred_p * 150), 1)
+        else:
+            tier = "Low"
+            density_score = round(pred_p * 100, 1)
+
+        results.append({
+            "zone_id": zone_id,
+            "label": zone_label_map.get(zone_id, zone_id),
+            "historicalCount": count,
+            "predictedOccurrenceProb": round(float(pred_p), 4),
+            "expectedCount7d": exp_7d,
+            "expectedCount14d": exp_14d,
+            "densityScore": density_score,
+            "tier": tier,
+            "topCategory": ml_item.get("topCategory", "Physical Assault"),
+            "peakWindow": ml_item.get("peakWindow", "8PM–12AM"),
+            "trend": ml_item.get("trend", "→"),
+        })
+
+    # Sort descending by predicted occurrence probability and historical count
+    results.sort(key=lambda r: (-r["predictedOccurrenceProb"], -r["historicalCount"]))
+    top_zone = results[0] if results else None
+
+    return jsonify({
+        "ok": True,
+        "totalIncidents": total_incidents,
+        "topRiskZone": top_zone["zone_id"] if top_zone else "Zone 1",
+        "zones": results,
+    })
+
+
+@permission_required("view_analytics")
 def _trends_impl():
     years = [
         r[0] for r in
@@ -188,13 +284,12 @@ def _trends_impl():
         .filter(extract("year", Incident.incident_date) == year, Incident.archived == False)
         .group_by("m").order_by("m").all()
     )
-    # Portable day-of-week aggregation: pull dates for the year, bucket in Python.
+
     dates = [d[0] for d in db.session.query(Incident.incident_date).filter(
         extract("year", Incident.incident_date) == year, Incident.archived == False
     ).all()]
     dow_counts = {}
     for d in dates:
-        # ISO weekday: Monday=1..Sunday=7 -> convert to MySQL DAYOFWEEK (Sunday=1..Saturday=7)
         mysql_dow = (d.isoweekday() % 7) + 1
         dow_counts[mysql_dow] = dow_counts.get(mysql_dow, 0) + 1
     dow_result = [{"d": k, "c": v} for k, v in sorted(dow_counts.items())]

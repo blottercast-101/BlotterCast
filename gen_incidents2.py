@@ -12,8 +12,8 @@ random.seed(42)
 
 CATEGORIES = ['Physical Assault', 'Theft', 'Domestic Dispute', 'Vandalism',
               'Trespassing', 'Drug-Related Activity', 'Public Disturbance', 'Other']
-ZONES = [f"Zone {i}" for i in range(1, 9)]
-ZONE_WEIGHTS = [0.20, 0.11, 0.18, 0.06, 0.10, 0.05, 0.16, 0.14]
+ZONES = [f"Zone {i}" for i in range(1, 8)]
+ZONE_WEIGHTS = [0.22, 0.13, 0.20, 0.08, 0.12, 0.07, 0.18]
 
 app = create_app()
 with app.app_context():

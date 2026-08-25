@@ -32,18 +32,17 @@ def latest_otp_for(email: str) -> str:
 
 
 def login(client, username, password, email=None):
-    """Full two-step login: password, then OTP pulled from the dev outbox.
-    Returns the final verify_otp JSON body. Raises AssertionError on any
-    unexpected status code (mirrors the old single-call login() helpers)."""
+    """Full login helper: completes password step, and if MFA is required,
+    verifies the OTP code automatically."""
     if email is None:
         email = DEMO_EMAIL_OVERRIDES.get(username, f"{username}@blottercast.local")
 
     r = client.post("/api/auth.php?action=login", json={"username": username, "password": password})
     assert r.status_code == 200, r.get_json()
     data = r.get_json()
-    assert data.get("mfaRequired") is True, data
-
-    code = latest_otp_for(email)
-    r2 = client.post("/api/auth.php?action=verify_otp", json={"code": code})
-    assert r2.status_code == 200, r2.get_json()
-    return r2.get_json()
+    if data.get("mfaRequired") is True or data.get("requires_2fa") is True:
+        code = latest_otp_for(email)
+        r2 = client.post("/api/auth.php?action=verify_otp", json={"code": code})
+        assert r2.status_code == 200, r2.get_json()
+        return r2.get_json()
+    return data

@@ -130,7 +130,7 @@
         <div class="flex items-center justify-between mb-5">
           <div class="flex items-center gap-3">
             <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>
-            <h2 class="font-display text-lg text-forest-800">7-Day Forecast — Expected Incidents (Top Risk Zones)</h2>
+            <h2 class="font-display text-lg text-forest-800" id="forecastTitle">7-Day Forecast — Expected Incidents (Top Risk Zones)</h2>
           </div>
           <select id="horizonSel" class="filter-input text-xs" onchange="renderOutputs()">
             <option value="7">Next 7 Days</option><option value="14">Next 14 Days</option>
@@ -175,7 +175,7 @@
             <tr>
               <th>Zone</th>
               <th>Hotspot Probability</th>
-              <th>Expected Incidents (7d)</th>
+              <th id="expectedCountHeader">Expected Incidents (7d)</th>
               <th>Risk Level</th>
               <th>Predicted Top Category</th>
               <th>Peak Time Window</th>
@@ -218,17 +218,21 @@
 //   type:       gradient_boosting
 //   hotspot:    gradient_boosting
 // ============================================================
+// ============================================================
+// Predictions page — evaluates scikit-learn models via ML microservice
+// Model architectures:
+//   occurrence: Random Forest Classifier (Accuracy evaluation)
+//   type:       Gradient Boosting Classifier (Macro F1-Score evaluation)
+//   hotspot:    Gradient Boosting Classifier (Hotspot Risk Accuracy)
+// ============================================================
 const TASKS = {
-  occurrence: { label: 'Incident Occurrence', models: ['random_forest'], metricKey: 'f1' },
-  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'macroF1' },
-  hotspot:    { label: 'Hotspot Risk', models: ['gradient_boosting'], metricKey: 'f1' },
+  occurrence: { label: 'Incident Occurrence', models: ['random_forest'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
+  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'macroF1', metricLabel: 'Macro F1' },
+  hotspot:    { label: 'Hotspot Risk', models: ['gradient_boosting'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
 };
 const MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
 let RESULT = null;
-// zone_id -> short landmark name (e.g. "Zone 6" -> "Pandi Residences 1"),
-// loaded from the Zones table so risk output can show *where* a zone
-// actually is, not just its bare id. Falls back to the id itself if the
-// lookup hasn't loaded yet (or a zone has no landmark name on record).
+
 let ZONE_LABELS = {};
 function zoneDisplay(zoneId) {
   const label = ZONE_LABELS[zoneId];
@@ -236,15 +240,16 @@ function zoneDisplay(zoneId) {
   const parts = label.split(' – ');
   return parts.length > 1 ? `${zoneId} · ${parts[1]}` : label;
 }
+
 async function loadZoneLabels() {
   try {
     const zones = await BCApi.zones();
     ZONE_LABELS = Object.fromEntries(zones.map(z => [z.zone_id, z.label]));
-  } catch (err) { /* falls back to bare zone ids if this fails */ }
+  } catch (err) { /* fallback to bare zone ids */ }
 }
-// Fixed per-task model — no user selection anymore.
+
 const ACTIVE = { occurrence: 'random_forest', type: 'gradient_boosting', hotspot: 'gradient_boosting' };
-let CAN_RETRAIN = false; // set from the signed-in user's role before first render
+let CAN_RETRAIN = false;
 let forecastChart = null;
 let categoryChart = null;
 const CATEGORY_COLORS = {
@@ -256,7 +261,7 @@ const CATEGORY_COLORS = {
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a7a64';
 
-const pct = v => (v * 100).toFixed(1) + '%';
+const pct = v => (Number(v) * 100).toFixed(1) + '%';
 
 function renderModelCards() {
   const el = document.getElementById('modelCardGroups');
@@ -264,9 +269,9 @@ function renderModelCards() {
   const icons = ['incident', 'predictions', 'heatmap'];
   el.innerHTML = Object.entries(TASKS).map(([task, cfg], i) => {
     const key = cfg.models[0];
-    const m = RESULT && RESULT[task] && RESULT[task].metrics[key];
-    const scoreLabel = task === 'type' ? 'Macro F1' : 'Accuracy';
-    const score = m ? pct(task === 'type' ? m.macroF1 : m.accuracy) : '…';
+    const m = RESULT && RESULT[task] && RESULT[task].metrics && RESULT[task].metrics[key];
+    const scoreVal = m ? (m[cfg.metricKey] ?? m.accuracy ?? m.macroF1 ?? m.f1) : null;
+    const score = scoreVal != null ? pct(scoreVal) : '…';
     return `
       <div class="stat-card-grad ${grads[i % grads.length]}">
         <div class="flex items-center justify-between mb-3">
@@ -274,21 +279,43 @@ function renderModelCards() {
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="${icons[i % icons.length]}" data-icon-size="16"></div>
         </div>
         <div class="font-display text-3xl text-white">${score}</div>
-        <div class="text-xs text-white/70 mt-1">${scoreLabel} · ${MODEL_LABELS[key]}</div>
+        <div class="text-xs text-white/70 mt-1">${cfg.metricLabel} · ${MODEL_LABELS[key]}</div>
       </div>`;
   }).join('');
 }
 
 function riskLevel(p) { return p >= 0.20 ? 'High' : p >= 0.13 ? 'Moderate' : 'Low'; }
 
+function evaluatePatrolTier(expectedCount) {
+  // CRITICAL: Expected incidents >= 3.0 (Assign 3 officers, prioritize high-risk time window)
+  // HIGH:     Expected incidents 2.0 - 2.9 (Assign 2 officers)
+  // MEDIUM:   Expected incidents 1.0 - 1.9 (Assign 1–2 officers)
+  // LOW:      Expected incidents < 1.0 (Assign 1 officer)
+  if (expectedCount >= 3.0) {
+    return { tier: 'Critical', officers: 3, officerText: '3 officers', badgeClass: 'badge-not-complied', isCritical: true };
+  }
+  if (expectedCount >= 2.0) {
+    return { tier: 'High', officers: 2, officerText: '2 officers', badgeClass: 'badge-ongoing', isCritical: false };
+  }
+  if (expectedCount >= 1.0) {
+    return { tier: 'Medium', officers: 2, officerText: '1–2 officers', badgeClass: 'badge-ongoing', isCritical: false };
+  }
+  return { tier: 'Low', officers: 1, officerText: '1 officer', badgeClass: 'badge-resolved', isCritical: false };
+}
+
 function renderOutputs() {
-  if (!RESULT) return;
+  if (!RESULT || !RESULT.zoneRisk) return;
   const horizon = Number(document.getElementById('horizonSel').value || 7);
   const ranked = [...RESULT.zoneRisk].sort((a, b) => b.meanDailyProb - a.meanDailyProb);
 
-  // Forecast chart — top 4 risk zones, actual day-by-day forecast probabilities
+  // Update dynamic titles
+  const forecastTitle = document.getElementById('forecastTitle');
+  if (forecastTitle) forecastTitle.textContent = `${horizon}-Day Forecast — Expected Incidents (Top Risk Zones)`;
+  const countHeader = document.getElementById('expectedCountHeader');
+  if (countHeader) countHeader.textContent = `Expected Incidents (${horizon}d)`;
+
+  // Forecast chart — top 4 risk zones across chosen horizon (7 vs 14 days)
   const top4 = ranked.slice(0, 4);
-  const scale = horizon / 7;
   const labels = dayLabels(top4[0], horizon);
   const zoneColors = ['#1a5730', '#c9a84c', '#0e7c86', '#8a6a2e'];
   if (forecastChart) forecastChart.destroy();
@@ -298,21 +325,31 @@ function renderOutputs() {
       labels,
       datasets: top4.map((z, i) => ({
         label: zoneDisplay(z.zone),
-        data: (z.dailyProbs || []).slice(0, horizon).map(p => +p.toFixed(3)),
+        data: (z.dailyProbs || []).slice(0, horizon).map(p => +Number(p).toFixed(3)),
         borderColor: zoneColors[i], backgroundColor: 'transparent',
         tension: 0.4, pointRadius: 3, borderWidth: 2.5,
       })),
     },
     options: {
-      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, usePointStyle: true } }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 } },
-      scales: { y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: 'Daily occurrence probability' } }, x: { grid: { display: false }, border: { display: false } } },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, usePointStyle: true } },
+        tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: 'Daily occurrence probability' } },
+        x: { grid: { display: false }, border: { display: false } }
+      },
     },
   });
 
-  // Risk table
+  // Table rendering with horizon-synchronized expected count
   document.getElementById('predTableBody').innerHTML = ranked.map(h => {
     const risk = riskLevel(h.meanDailyProb);
-    const expected = h.expectedCount7d * scale;
+    const daily = h.dailyProbs || [];
+    const expected = daily.length >= horizon
+      ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
+      : (horizon === 14 ? (h.expectedCount14d || h.expectedCount7d * 2) : h.expectedCount7d);
+
     return `<tr>
       <td class="font-semibold text-forest-700">${zoneDisplay(h.zone)}</td>
       <td>
@@ -329,17 +366,32 @@ function renderOutputs() {
     </tr>`;
   }).join('');
 
-  // Patrol recommendations — top 4 risk zones, real peak windows
-  const prios = ['Critical', 'High', 'High', 'Medium'];
-  document.getElementById('patrolRecs').innerHTML = top4.map((h, i) => `
-    <div class="bg-forest-50 rounded-xl p-3 border border-forest-100">
-      <div class="flex items-center justify-between mb-1">
-        <span class="font-bold text-forest-800 text-sm">${zoneDisplay(h.zone)}</span>
-        <span class="badge ${prios[i] === 'Critical' ? 'badge-not-complied' : prios[i] === 'High' ? 'badge-ongoing' : 'badge-resolved'} text-xs">${prios[i]}</span>
-      </div>
-      <div class="text-xs text-forest-500">⏰ ${h.peakWindow}</div>
-      <div class="text-xs text-forest-500 flex items-center gap-1"><span data-icon="shield" data-icon-size="13"></span> ${Math.max(1, Math.round(h.expectedCount7d / 1.2))} officer(s) · ${h.expectedCount7d.toFixed(1)} expected incidents/7d</div>
-    </div>`).join('');
+  // Patrol recommendations dynamically calculated from the chosen horizon
+  document.getElementById('patrolRecs').innerHTML = top4.map(h => {
+    const daily = h.dailyProbs || [];
+    const expected = daily.length >= horizon
+      ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
+      : (horizon === 14 ? (h.expectedCount14d || h.expectedCount7d * 2) : h.expectedCount7d);
+
+    const patrol = evaluatePatrolTier(expected);
+    const criticalNotice = patrol.isCritical
+      ? `<div class="text-[11px] font-semibold text-red-600 mt-1 flex items-center gap-1">⚠️ Prioritize patrol dispatch during ${h.peakWindow}</div>`
+      : '';
+
+    return `
+      <div class="bg-forest-50 rounded-xl p-3 border border-forest-100">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-bold text-forest-800 text-sm">${zoneDisplay(h.zone)}</span>
+          <span class="badge ${patrol.badgeClass} text-xs font-bold">${patrol.tier}</span>
+        </div>
+        <div class="text-xs text-forest-500">⏰ Peak: ${h.peakWindow}</div>
+        <div class="text-xs text-forest-600 font-medium flex items-center gap-1 mt-0.5">
+          <span data-icon="shield" data-icon-size="13"></span>
+          ${patrol.officerText} · ${expected.toFixed(1)} expected incidents / ${horizon}d
+        </div>
+        ${criticalNotice}
+      </div>`;
+  }).join('');
 
   populateCategoryZoneSelect();
   renderCategoryChart();

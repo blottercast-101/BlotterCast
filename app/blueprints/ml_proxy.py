@@ -87,6 +87,13 @@ def _forward(path: str, method: str = "GET", body=None):
         )
 
 
+@bp.route("/api/predict/insights", methods=["GET"])
+@login_required
+@permission_required("view_analytics")
+def predict_insights_direct():
+    return _forward("/latest")
+
+
 @bp.route("/api/ml_proxy.php", methods=["GET", "POST"])
 @login_required
 @permission_required("view_analytics")
@@ -100,7 +107,7 @@ def ml_proxy_router():
             return _forward("/health")
         return jsonify({"status": "down"}), 200
 
-    if action == "latest" and request.method == "GET":
+    if action in ("latest", "insights") and request.method == "GET":
         return _forward("/latest")
 
     if action == "predict" and request.method == "POST":

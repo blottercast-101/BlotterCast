@@ -1221,6 +1221,24 @@
       }
     }
 
+    let zoneDensityMap = {};
+    let topRiskZoneId = 'Zone 1';
+
+    async function loadZoneDensity() {
+      try {
+        const category = categoryFilter.value;
+        const params = {};
+        if (category && category !== 'all') params.category = category;
+        const res = await BCApi.zoneDensity(params);
+        if (res && Array.isArray(res.zones)) {
+          zoneDensityMap = Object.fromEntries(res.zones.map(z => [z.zone_id, z]));
+          topRiskZoneId = res.topRiskZone || (res.zones[0] ? res.zones[0].zone_id : 'Zone 1');
+        }
+      } catch (err) {
+        console.warn('Could not load dynamic zone density:', err);
+      }
+    }
+
     function renderSummary(mappedData, zoneCounts) {
       totalVisible.textContent = mappedData.length;
 
@@ -1234,17 +1252,17 @@
         pinCountEl.textContent = `${mappedData.length} Reported Incident${mappedData.length !== 1 ? 's' : ''}`;
       }
       const topZoneEl = document.getElementById('bottomTopZone');
-      if (topZoneEl && zoneCounts) {
-        const zoneEntries = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1]);
-        if (zoneEntries.length) {
-          const [zoneId, zoneCount] = zoneEntries[0];
-          const landmark = (ZONE_LANDMARK_COORDINATES || {})[zoneId];
-          topZoneEl.textContent = landmark
-            ? `${zoneId} — ${landmark.name} (${zoneCount})`
-            : `${zoneId} (${zoneCount})`;
-        } else {
-          topZoneEl.textContent = '—';
-        }
+      if (topZoneEl) {
+        // Synchronized with Predictions: use official top risk zone from ML model & incident frequency
+        const topZd = zoneDensityMap[topRiskZoneId] || {};
+        const topCount = zoneCounts[topRiskZoneId] ?? topZd.historicalCount ?? 0;
+        const landmark = (ZONE_LANDMARK_COORDINATES || {})[topRiskZoneId];
+        const probPct = topZd.predictedOccurrenceProb != null
+          ? ` · ${(topZd.predictedOccurrenceProb * 100).toFixed(1)}% Hotspot Risk`
+          : '';
+        topZoneEl.textContent = landmark
+          ? `${topRiskZoneId} — ${landmark.name} (${topCount} Incident${topCount !== 1 ? 's' : ''}${probPct})`
+          : `${topRiskZoneId} (${topCount} Incident${topCount !== 1 ? 's' : ''}${probPct})`;
       }
       // ────────────────────────────────────────────────────────────────────
 
@@ -1348,9 +1366,11 @@
       });
     }
 
-    function updateHeatMapPage() {
+    async function updateHeatMapPage() {
       const mappedOnly = getFilteredIncidents(true);
       const allFiltered = getFilteredIncidents(false);
+
+      await loadZoneDensity();
 
       const zoneCounts = getZoneIncidentCounts(mappedOnly);
       const tierEngine = computeDynamicDensityTiers(zoneCounts);
@@ -1371,7 +1391,7 @@
       try {
         await loadBoundary();
         await loadIncidents();
-        updateHeatMapPage();
+        await updateHeatMapPage();
       } catch (err) {
         console.error('Could not load incident data:', err);
       }
