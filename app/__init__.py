@@ -87,4 +87,9 @@ def create_app(config_class=Config):
     def root():
         return send_from_directory(FRONTEND_DIR, "index.html")
 
+    # Start autonomous server-side backup scheduler
+    if not app.config.get("TESTING"):
+        from .services.backup_scheduler import start_backup_scheduler
+        start_backup_scheduler(app)
+
     return app

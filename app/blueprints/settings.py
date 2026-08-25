@@ -3,19 +3,14 @@ import re
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, send_file, session
-from sqlalchemy import inspect, text
 
 from ..extensions import db
 from ..models import SystemBackup, SystemSetting
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
+from ..services.backup_scheduler import get_scheduler_status, reschedule_backup_job
+from ..services.backup_service import BACKUP_DIR, cleanup_old_backups, generate_sql_dump, run_database_backup
 
 bp = Blueprint("settings", __name__)
-
-BACKUP_DIR = os.path.join("/tmp", "backup") if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "..", "backup")
-try:
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-except OSError:
-    pass
 
 ML_TASK_KEYS = {
     "occurrence": {"setting": "ml_occurrence_model", "default": "random_forest",
@@ -27,6 +22,50 @@ ML_TASK_KEYS = {
 }
 
 
+@bp.route("/api/backup/cron-trigger", methods=["GET", "POST"])
+def backup_cron_trigger():
+    """Secure endpoint for external cloud cron runners (e.g. Render Cron, cron-job.org)
+    to trigger scheduled automated database backups."""
+    expected_secret = os.environ.get("CRON_SECRET", "blottercast-cron-secret-2026")
+    provided_secret = (
+        request.headers.get("X-Cron-Secret")
+        or request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+        or request.args.get("secret", "")
+    )
+
+    if not provided_secret or provided_secret != expected_secret:
+        return json_error("Unauthorized cron trigger request: invalid or missing CRON_SECRET", 401)
+
+    result = run_database_backup(triggered_by="system (automatic)")
+    if not result.get("success"):
+        return jsonify({"ok": False, "status": "error", "error": result.get("error")}), 500
+
+    return jsonify({
+        "ok": True,
+        "status": "success",
+        "file": result.get("file"),
+        "size": result.get("size"),
+        "by": "system (automatic)",
+        "cleaned_old_backups": result.get("cleaned_old_backups", 0),
+    }), 200
+
+
+@bp.route("/api/backup/status", methods=["GET"])
+@login_required
+@permission_required("system_settings")
+def backup_scheduler_status_route():
+    """Returns the current autonomous scheduler daemon status."""
+    return jsonify({"ok": True, **get_scheduler_status()})
+
+
+@bp.route("/api/backup/run", methods=["POST"])
+@login_required
+@permission_required("system_settings")
+def backup_run_direct():
+    """Direct alias for manual backup execution."""
+    return _backup()
+
+
 @bp.route("/api/settings.php", methods=["GET", "POST"])
 @login_required
 def settings_router():
@@ -34,8 +73,7 @@ def settings_router():
     method = request.method
 
     if action == "auto_backup_check" and method == "GET":
-        if not role_can(session.get("role", ""), "system_settings"):
-            return jsonify({"ran": False, "reason": "not_authorized"}), 200
+        # Keep legacy route functional
         return _auto_backup_check()
 
     if action == "ml_model" and method == "GET":
@@ -118,77 +156,53 @@ def admin_security_settings():
         db.session.add(sec_row)
 
     if "is_2fa_globally_enabled" in data or "enforce_2fa_all_users" in data:
-        val = data.get("is_2fa_globally_enabled", data.get("enforce_2fa_all_users"))
-        sec_row.is_2fa_globally_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+        val = bool(data.get("is_2fa_globally_enabled", data.get("enforce_2fa_all_users", False)))
+        sec_row.is_2fa_globally_enabled = val
+        sec_row.enforce_2fa_all_users = val
+
     if "is_idle_timeout_enabled" in data or "idle_timeout_enabled" in data:
-        val = data.get("is_idle_timeout_enabled", data.get("idle_timeout_enabled"))
-        sec_row.is_idle_timeout_enabled = bool(str(val).lower() in ("1", "true", "yes", "on", "t") or val is True)
+        val = bool(data.get("is_idle_timeout_enabled", data.get("idle_timeout_enabled", False)))
+        sec_row.is_idle_timeout_enabled = val
+        sec_row.idle_timeout_enabled = val
+
     if "idle_timeout_duration_minutes" in data or "session_timeout" in data:
-        val = data.get("idle_timeout_duration_minutes", data.get("session_timeout", 120))
-        sec_row.idle_timeout_duration_minutes = max(1, int(val))
-    sec_row.updated_by = session.get("user_id")
-    sec_row.updated_at = datetime.utcnow()
+        val = int(data.get("idle_timeout_duration_minutes", data.get("session_timeout", 120)))
+        sec_row.idle_timeout_duration_minutes = val
+        sec_row.session_timeout = val
 
-    # 2. Synchronize with key-value system_settings
-    updated_count = 0
-    mapping = {
-        "is_2fa_globally_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
-        "enforce_2fa_all_users": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
-        "is_idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
-        "idle_timeout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
-        "idle_timeout_duration_minutes": lambda v: str(max(1, int(v))),
-        "session_timeout": lambda v: str(max(1, int(v))),
-        "lockout_enabled": lambda v: "1" if (str(v).lower() in ("1", "true", "yes", "on", "t") or v is True) else "0",
-        "max_failed_logins": lambda v: str(max(1, int(v))),
-        "min_password_length": lambda v: str(max(4, int(v))),
-        "password_expiry_days": lambda v: str(max(0, int(v))),
-    }
+    if "lockout_enabled" in data:
+        sec_row.lockout_enabled = bool(data["lockout_enabled"])
 
-    for key, formatter in mapping.items():
-        if key in data:
-            val_str = formatter(data[key])
-            row = SystemSetting.query.get(key)
-            if row:
-                row.setting_value = val_str
-            else:
-                db.session.add(SystemSetting(setting_key=key, setting_value=val_str))
-            updated_count += 1
+    if "max_failed_logins" in data:
+        sec_row.max_failed_logins = int(data["max_failed_logins"])
 
-            # Sync aliases
-            if key in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
-                for alias in ("is_2fa_globally_enabled", "enforce_2fa_all_users"):
-                    al_row = SystemSetting.query.get(alias)
-                    if al_row:
-                        al_row.setting_value = val_str
-                    else:
-                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
-            elif key in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
-                for alias in ("is_idle_timeout_enabled", "idle_timeout_enabled"):
-                    al_row = SystemSetting.query.get(alias)
-                    if al_row:
-                        al_row.setting_value = val_str
-                    else:
-                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
-            elif key in ("idle_timeout_duration_minutes", "session_timeout"):
-                for alias in ("idle_timeout_duration_minutes", "session_timeout"):
-                    al_row = SystemSetting.query.get(alias)
-                    if al_row:
-                        al_row.setting_value = val_str
-                    else:
-                        db.session.add(SystemSetting(setting_key=alias, setting_value=val_str))
+    if "min_password_length" in data:
+        sec_row.min_password_length = int(data["min_password_length"])
+
+    if "password_expiry_days" in data:
+        sec_row.password_expiry_days = int(data["password_expiry_days"])
+
+    # 2. Also keep system_settings table in sync
+    for key, val in data.items():
+        clean_key = re.sub(r"[^a-zA-Z0-9_]", "", str(key))
+        str_val = "1" if val is True else ("0" if val is False else str(val))
+        row = SystemSetting.query.get(clean_key)
+        if row:
+            row.setting_value = str_val
+        else:
+            db.session.add(SystemSetting(setting_key=clean_key, setting_value=str_val))
 
     db.session.commit()
-    log_audit(session.get("username"), "Updated", "Security", f"Admin master security settings updated ({updated_count} fields)")
+    log_audit(session.get("username"), "Updated", "SecuritySettings", "Security and authentication settings updated")
 
-    settings = get_security_settings()
     return jsonify({
         "ok": True,
-        "success": True,
-        "message": "System-wide master security settings updated successfully.",
-        "settings": settings,
+        "status": "success",
+        "message": "Security settings updated successfully",
     })
 
 
+# ---------------- Helpers ----------------
 def _settings_map(keys=None):
     q = SystemSetting.query
     if keys:
@@ -205,8 +219,14 @@ def _save():
     if not d:
         return json_error("No settings provided")
 
+    has_backup_setting_changed = False
+    backup_keys = {"backup_frequency", "backup_time", "retain_backups_days"}
+
     for key, value in d.items():
         clean_key = re.sub(r"[^a-zA-Z0-9_]", "", str(key))
+        if clean_key in backup_keys:
+            has_backup_setting_changed = True
+
         row = SystemSetting.query.get(clean_key)
         if row:
             row.setting_value = str(value)
@@ -228,6 +248,10 @@ def _save():
                 db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=str(value)))
 
     db.session.commit()
+
+    # Dynamic reschedule if backup scheduling settings were updated
+    if has_backup_setting_changed:
+        reschedule_backup_job()
 
     log_audit(session.get("username"), "Updated", "Settings", "System settings saved")
     return jsonify({"ok": True, "updated": len(d)})
@@ -261,94 +285,15 @@ def _letterhead():
     return jsonify(_settings_map(["captain_name", "barangay_name"]))
 
 
-# ---------------- Backups (Postgres/SQLite-portable dump) ----------------
-def _generate_sql_dump() -> str:
-    """Dumps every table's data as INSERT statements (portable text format,
-    not a database-specific binary dump — works the same on SQLite/Postgres
-    and can be re-imported with a simple script, unlike mysqldump-style
-    CREATE TABLE dumps which are engine-specific)."""
-    lines = [
-        "-- BlotterCast database backup",
-        f"-- Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
-        f"-- Engine: {db.engine.url.get_backend_name()}",
-        "",
-    ]
-    inspector = inspect(db.engine)
-    table_names = inspector.get_table_names()
-
-    with db.engine.connect() as conn:
-        for table in table_names:
-            lines.append(f"-- Table: {table}")
-            result = conn.execute(text(f'SELECT * FROM "{table}"'))
-            columns = list(result.keys())
-            rows = result.fetchall()
-            for row in rows:
-                values = []
-                for v in row:
-                    if v is None:
-                        values.append("NULL")
-                    elif isinstance(v, (int, float)):
-                        values.append(str(v))
-                    else:
-                        escaped = str(v).replace("'", "''")
-                        values.append(f"'{escaped}'")
-                col_list = ", ".join(f'"{c}"' for c in columns)
-                lines.append(f'INSERT INTO "{table}" ({col_list}) VALUES ({", ".join(values)});')
-            lines.append("")
-    return "\n".join(lines)
-
-
-def _run_database_backup(triggered_by: str) -> dict:
-    filename = f"blottercast-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.sql"
-    file_path = os.path.join(BACKUP_DIR, filename)
-
-    success, err_msg = False, None
-    try:
-        sql = _generate_sql_dump()
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(sql)
-        success = os.path.isfile(file_path) and os.path.getsize(file_path) > 0
-        if not success:
-            err_msg = "Could not write backup file — check that the backup/ folder is writable."
-    except Exception as e:
-        err_msg = f"Backup failed: {e}"
-
-    size = os.path.getsize(file_path) if success else 0
-    status = "Success" if success else "Failed"
-
-    db.session.add(SystemBackup(file_name=filename, size_bytes=size, status=status, created_by=triggered_by))
-    db.session.commit()
-
-    detail = f"Database backup created: {filename}" if success else "Database backup failed"
-    log_audit(triggered_by, "Exported", "Backup", detail)
-
-    return {"success": success, "file": filename, "size": size, "error": err_msg}
-
-
-def _is_backup_due() -> bool:
-    settings = _settings_map(["backup_frequency", "backup_time"])
-    frequency = settings.get("backup_frequency", "Daily")
-
-    last = SystemBackup.query.filter_by(status="Success").order_by(SystemBackup.created_at.desc()).first()
-    if not last:
-        return True
-
-    interval_seconds = {"Every 12 hours": 12 * 3600, "Weekly": 7 * 24 * 3600}.get(frequency, 24 * 3600)
-    elapsed = (datetime.utcnow() - last.created_at).total_seconds()
-    return elapsed >= interval_seconds
-
-
 def _auto_backup_check():
-    if not _is_backup_due():
-        return jsonify({"ran": False})
-    result = _run_database_backup("system (automatic)")
+    result = run_database_backup("system (automatic)")
     return jsonify({"ran": True, **result})
 
 
 def _backup():
-    result = _run_database_backup(session.get("username", "system"))
-    if not result["success"]:
-        return jsonify({"ok": False, "error": result["error"]}), 500
+    result = run_database_backup(session.get("username", "admin"))
+    if not result.get("success"):
+        return jsonify({"ok": False, "error": result.get("error")}), 500
     return jsonify({
         "ok": True, "file": result["file"], "size": result["size"],
         "url": f"api/settings.php?action=download_backup&file={result['file']}",

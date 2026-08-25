@@ -349,7 +349,7 @@
             <input type="number" class="form-input" data-setting="retain_backups_days" value="30"/>
           </div>
         </div>
-        <p class="text-xs text-forest-400 mt-2">Frequency/time/destination/retention are scheduling preferences saved here; this prototype has no background cron worker, so backups run when you click the button below (or via a server cron job calling this same endpoint).</p>
+        <p class="text-xs text-forest-600 mt-2 flex items-center gap-1.5 font-medium"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Backups are scheduled and executed autonomously by the backend server worker in Asia/Manila standard time (UTC+8).</p>
         <div class="mt-4 flex gap-3">
           <button onclick="runBackupNow()" class="btn-primary text-sm" id="backupBtn"><span data-icon="play" data-icon-size="14"></span> Run Backup Now</button>
         </div>
