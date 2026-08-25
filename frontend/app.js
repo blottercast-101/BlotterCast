@@ -320,11 +320,9 @@ setInterval(() => {
 // object and checks required fields with a simple `if(...) { await bcAlert(...);
 // return; }`, so each validator just slots into that same pattern.
 
-// Letters (including accented ones like Ñ/ñ), spaces, and the
-// punctuation that legitimately appears in Filipino names — hyphens
-// (Dela Cruz-Santos), apostrophes (O'Brien, D'Souza), and periods
-// (Jr., Ma.). No digits or other symbols.
-const BC_NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ.'\- ]+$/;
+// Letters (including accented ones like Ñ/ñ), spaces, commas (e.g. "LastName, FirstName"),
+// hyphens (Dela Cruz-Santos), apostrophes (O'Brien, D'Souza), and periods (Jr., Ma.).
+const BC_NAME_RE = /^[a-zA-ZÀ-ÿñÑ\s,.'\-]+$/;
 function bcIsValidName(str) {
   return BC_NAME_RE.test((str || '').trim());
 }
