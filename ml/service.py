@@ -190,7 +190,18 @@ def load_incidents() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET', 'HEAD'])
+def root_health():
+    return jsonify({
+        'ok': True,
+        'status': 'ok',
+        'service': 'blottercast-ml',
+        'isWarm': ml_models['occurrence'] is not None or ml_models['cached_latest'] is not None,
+        'time': datetime.now().isoformat(),
+    }), 200
+
+
+@app.route('/health', methods=['GET', 'HEAD'])
 def health():
     return jsonify({
         'ok': True,
@@ -198,7 +209,7 @@ def health():
         'service': 'blottercast-ml',
         'isWarm': ml_models['occurrence'] is not None or ml_models['cached_latest'] is not None,
         'time': datetime.now().isoformat(),
-    })
+    }), 200
 
 
 @app.route('/train', methods=['POST'])

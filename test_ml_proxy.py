@@ -76,5 +76,24 @@ assert pdata.get("ok") is True
 assert "predictedCategory" in pdata
 assert "riskLevel" in pdata
 
+print("=== direct ML service root and health check (GET and HEAD) ===")
+from ml.service import app as ml_app
+ml_client = ml_app.test_client()
+
+r_root_get = ml_client.get("/")
+assert r_root_get.status_code == 200
+assert r_root_get.get_json()["status"] == "ok"
+
+r_root_head = ml_client.head("/")
+assert r_root_head.status_code == 200
+
+r_health_get = ml_client.get("/health")
+assert r_health_get.status_code == 200
+assert r_health_get.get_json()["status"] == "healthy"
+
+r_health_head = ml_client.head("/health")
+assert r_health_head.status_code == 200
+print("Direct GET/HEAD root and health endpoints: 200 OK")
+
 print("\nALL ML PROXY TESTS PASSED")
 
