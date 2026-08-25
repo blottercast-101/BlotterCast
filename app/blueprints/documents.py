@@ -21,10 +21,16 @@ MIN_RESIDENT_REGISTRATION_AGE = 3
 
 
 @bp.route("/api/documents.php", methods=["GET", "POST", "PUT", "DELETE"])
+@bp.route("/api/certificates/generate", methods=["POST"])
+@bp.route("/api/certificates/non-residency", methods=["GET", "POST"])
+@bp.route("/api/documents/non_residency", methods=["GET", "POST", "DELETE"])
 @login_required
 def documents_router():
     method = request.method
     dtype = request.args.get("type", "")
+    if not dtype:
+        if "non-residency" in request.path or "non_residency" in request.path or "certificates" in request.path:
+            dtype = "non_residency"
 
     if method == "PUT" and not role_can(session.get("role", ""), "edit_records"):
         return json_error("You do not have permission to perform this action.", 403)
@@ -271,17 +277,16 @@ def _resident_status_block(resident, cert_label, blocked_statuses):
 
 
 def _has_unresolved_blotter_as_respondent(resident):
-    """True if `resident` is named as a Respondent in any active/unresolved
-    blotter case (status in 'Pending', 'Ongoing'). If all blotter records where
-    the resident is a respondent are 'Resolved', or if they are only a complainant,
-    this returns False (issuance allowed)."""
+    """Returns list of active/unsettled blotter records where `resident` is named as a Respondent.
+    Any blotter whose status is NOT in ('Resolved', 'Settled', 'Dismissed', 'Complied') is considered unresolved."""
+    resolved_statuses = ["Resolved", "Settled", "Dismissed", "Complied", "RESOLVED", "SETTLED", "DISMISSED", "COMPLIED"]
     unresolved = BlotterRecord.query.filter(
         BlotterRecord.respondent_id == resident.id,
-        BlotterRecord.status.in_(["Pending", "Ongoing"]),
+        ~BlotterRecord.status.in_(resolved_statuses),
         (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
-    ).first()
+    ).all()
     if unresolved:
-        return True
+        return unresolved
 
     last, first = (resident.last_name or "").strip(), (resident.first_name or "").strip()
     if last and first:
@@ -289,13 +294,13 @@ def _has_unresolved_blotter_as_respondent(resident):
             BlotterRecord.respondent_id.is_(None),
             BlotterRecord.respondent.ilike(f"%{last}%"),
             BlotterRecord.respondent.ilike(f"%{first}%"),
-            BlotterRecord.status.in_(["Pending", "Ongoing"]),
+            ~BlotterRecord.status.in_(resolved_statuses),
             (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
-        ).first()
+        ).all()
         if unresolved_name:
-            return True
+            return unresolved_name
 
-    return False
+    return []
 
 
 # ---------------- BARANGAY CLEARANCE ----------------
@@ -426,11 +431,16 @@ def _non_residency():
         )
         if err:
             return err
-        if _has_unresolved_blotter_as_respondent(resident):
-            return json_error(
-                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
-                403,
-            )
+        pending_cases = _has_unresolved_blotter_as_respondent(resident)
+        if pending_cases:
+            return jsonify({
+                "ok": False,
+                "success": False,
+                "blocked": True,
+                "error": "CERTIFICATE_ISSUANCE_BLOCKED",
+                "message": "Cannot issue Certificate of Non-Residency. Resident has active/unsettled blotter cases.",
+                "pendingCases": [{"docketNo": c.docket_no, "status": c.status, "nature": c.nature} for c in pending_cases]
+            }), 422
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayNonResidency, "NR")
         or_no = d.get("orNo") or next_or_no()

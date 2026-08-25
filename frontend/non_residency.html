@@ -212,23 +212,19 @@
         <div><label class="form-label">O.R. Number</label><input type="text" id="nr_or_input" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Amount Paid (₱)</label><input type="number" id="nr_fee" class="form-input" value="20"/></div>
       </div>
-      <div id="nr_blotter_warning" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4">
-        <div class="flex items-start gap-2 mb-2">
-          <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="warning" data-icon-size="18"></span>
+      <div id="nr_blotter_warning" class="hidden bg-rose-50 border border-rose-300 rounded-xl p-4">
+        <div class="flex items-start gap-2.5 mb-2">
+          <span class="text-rose-600 text-lg flex-shrink-0" data-icon="alert" data-icon-size="20">⛔</span>
           <div>
-            <div class="font-semibold text-amber-800 text-sm">This resident has blotter record(s) on file</div>
-            <div class="text-xs text-amber-700 mt-0.5">Review before deciding whether to issue this certificate.</div>
+            <div class="font-bold text-rose-900 text-sm">Issuance Blocked</div>
+            <div class="text-xs text-rose-700 mt-0.5 leading-relaxed">This transferred resident has active derogatory records. Resolution via Lupon / Barangay Settlement is required before any certificate can be released.</div>
           </div>
         </div>
-        <div id="nr_blotter_list" class="space-y-2 mb-3"></div>
-        <label class="flex items-center gap-2 text-xs text-amber-800">
-          <input type="checkbox" id="nr_blotter_ack" class="rounded"/>
-          I have reviewed the blotter record(s) above and choose to proceed with issuing this certificate.
-        </label>
+        <div id="nr_blotter_list" class="space-y-2 mt-2"></div>
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('nonResidencyFormModal')" class="btn-secondary">Cancel</button>
-        <button onclick="issueNonResidency()" class="btn-primary">Issue & Preview</button>
+        <button id="nr_submit_btn" onclick="issueNonResidency()" class="btn-primary">Issue & Preview</button>
       </div>
     </div>
   </div>
@@ -273,34 +269,57 @@ async function loadNrResidentOptionsForPicker() {
 async function onNrResidentPicked(r) {
   const warningBox = document.getElementById('nr_blotter_warning');
   const listEl = document.getElementById('nr_blotter_list');
+  const submitBtn = document.getElementById('nr_submit_btn');
   document.getElementById('nr_name_display').value = r ? `${r.lastName}, ${r.firstName} ${r.middleName}`.trim() : '';
-  // Their Census address is very often the same as the "previous home
-  // address" being certified as no longer current — prefill it, but leave
-  // it editable since the actual former address on the request may differ
-  // in wording/detail from what Census has on file.
+
   if (r && r.address && !document.getElementById('nr_prevaddr_input').value) {
     document.getElementById('nr_prevaddr_input').value = r.address;
   }
 
-  document.getElementById('nr_blotter_ack').checked = false;
+  // Reset blocking state
   warningBox.classList.add('hidden');
   listEl.innerHTML = '';
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.removeAttribute('aria-disabled');
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    submitBtn.title = 'Issue & Preview Certificate';
+  }
+
   if (!r) return;
   try {
     const records = await BCApi.checkBlotterRecords(r.lastName, r.firstName, r.id);
-    if (records.length > 0) {
-      listEl.innerHTML = records.map(b => `
-        <div class="bg-white border border-amber-200 rounded-lg p-3 text-xs">
+    const resolvedStatuses = ['RESOLVED', 'SETTLED', 'DISMISSED', 'COMPLIED'];
+    const activeCases = records.filter(b => {
+      const isRespondent = b.role === 'Respondent' || (b.respondent && b.respondent.toLowerCase().includes(r.lastName.toLowerCase()));
+      const isUnresolved = !resolvedStatuses.includes(String(b.status).toUpperCase());
+      return isRespondent && isUnresolved;
+    });
+
+    if (activeCases.length > 0) {
+      // Hard Lockout: Disable submit button
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-disabled', 'true');
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        submitBtn.title = 'Issuance Blocked: Resident has active derogatory records';
+      }
+
+      listEl.innerHTML = activeCases.map(b => `
+        <div class="bg-white border border-rose-200 rounded-lg p-2.5 text-xs">
           <div class="flex justify-between items-center mb-1">
-            <span class="font-mono font-semibold text-forest-700">${b.docket_no}</span>
-            <span class="badge ${b.role === 'Complainant' ? 'badge-resolved' : 'badge-pending'}">${b.role}</span>
+            <span class="font-mono font-bold text-forest-800">${b.docket_no}</span>
+            <span class="badge badge-pending font-bold text-rose-700 bg-rose-100">UNRESOLVED RESPONDENT</span>
           </div>
-          <div class="text-forest-600"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
-          <div class="text-forest-500 mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: ${b.status}</div>
+          <div class="text-forest-700"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
+          <div class="text-forest-500 text-[11px] mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: <span class="text-rose-600 font-semibold">${b.status}</span></div>
         </div>`).join('');
       warningBox.classList.remove('hidden');
+      showToast('⛔ Issuance Blocked: This transferred resident has active blotter records.', 'error');
     }
-  } catch (e) { /* if the check fails, don't block issuance on it */ }
+  } catch (e) {
+    console.error('Blotter check error:', e);
+  }
 }
 
 async function loadNrLog() {
@@ -392,9 +411,23 @@ function resetNonResidencyForm(){
   document.getElementById('nr_purpose_input').value = '';
   document.getElementById('nr_or_input').value = '';
   document.getElementById('nr_fee').value = '20';
+  const submitBtn = document.getElementById('nr_submit_btn');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.removeAttribute('aria-disabled');
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+  document.getElementById('nr_blotter_warning').classList.add('hidden');
+  document.getElementById('nr_blotter_list').innerHTML = '';
 }
 
 async function issueNonResidency(){
+  const submitBtn = document.getElementById('nr_submit_btn');
+  if (submitBtn && submitBtn.disabled) {
+    await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active/unsettled blotter cases that require Lupon settlement first.', { title: 'Issuance Blocked' });
+    return;
+  }
+
   const residentId=document.getElementById('nr_residentId').value;
   const previousAddress=document.getElementById('nr_prevaddr_input').value.trim();
   const purpose=document.getElementById('nr_purpose_input').value.trim();
@@ -403,9 +436,10 @@ async function issueNonResidency(){
   if(!residentId){await bcAlert('Please select the person this certificate is for.');return;}
   if(!previousAddress){await bcAlert('Please enter their previous / former home address.');return;}
   if(!purpose){await bcAlert('Please enter who requested this certificate / the purpose.');return;}
+
   const warningVisible = !document.getElementById('nr_blotter_warning').classList.contains('hidden');
-  if (warningVisible && !document.getElementById('nr_blotter_ack').checked) {
-    await bcAlert('This resident has blotter record(s) on file. Please review them and check the acknowledgment box before issuing this certificate.');
+  if (warningVisible) {
+    await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active derogatory/blotter records that require Lupon resolution before release.', { title: 'Issuance Blocked' });
     return;
   }
 
@@ -416,15 +450,15 @@ async function issueNonResidency(){
 
     closeModal('nonResidencyFormModal');
     resetNonResidencyForm();
-    // Reload the log from the server, then reuse the same preview path as the
-    // "Preview" (eye) icon so the certificate always reflects what's actually
-    // in the database, instead of re-deriving it from the (possibly stale)
-    // client-side resident picker cache.
     await loadNrLog();
     previewNrLog(Number(result.id));
-    showToast('Certificate of Non-Residency issued! Preview updated.');
+    showToast('Certificate of Non-Residency issued! Preview updated.', 'success');
   } catch (err) {
-    showToast(err.message, 'error');
+    if (err.message && err.message.includes('CERTIFICATE_ISSUANCE_BLOCKED') || err.message.includes('active/unsettled blotter')) {
+      await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. Resident has active/unsettled blotter cases on file.', { title: 'Server Validation Block' });
+    } else {
+      showToast(err.message, 'error');
+    }
   }
 }
 

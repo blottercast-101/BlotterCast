@@ -12,6 +12,9 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
         self.app = create_app()
         self.app.config["TESTING"] = True
         self.client = self.app.test_client()
+        with self.app.app_context():
+            BlotterRecord.query.filter(BlotterRecord.docket_no.in_(["BLT-2025-999", "BLT-2025-777"])).delete(synchronize_session=False)
+            db.session.commit()
 
     def test_legacy_csv_import_creates_linked_incident_with_fallbacks(self):
         with self.app.app_context():
