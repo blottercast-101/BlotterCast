@@ -64,11 +64,11 @@ def records_router():
         if resp:
             return resp
 
-    if rtype == "incidents":
+    if rtype in ("incidents", "incident"):
         return _incidents()
-    if rtype == "blotter":
+    if rtype in ("blotter", "blotters"):
         return _blotter()
-    if rtype == "settlements":
+    if rtype in ("settlements", "settlement"):
         return _settlements()
     return json_error("Unknown type or method", 404)
 
@@ -165,6 +165,9 @@ def _incidents():
             incident.archived = False
             db.session.commit()
             return jsonify({"ok": True})
+
+        if incident.is_blotter:
+            return json_error(f"Record is an official Blotter case ({incident.blotter_docket_no or 'Elevated'}). Edits must be made in Blotter Records.", 403)
 
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
@@ -281,16 +284,27 @@ def _blotter():
             return json_error("Complainant and respondent cannot be the same person.")
 
         docket_no = d.get("docketNo") or next_seq_no(BlotterRecord, "docket_no", "BLT")
+        source_incident_id = d.get("sourceIncidentId") or d.get("source_incident_id")
         record = BlotterRecord(
             docket_no=docket_no, date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
             complainant=complainant, complainant_id=complainant_id, complainant_addr=d.get("complainantAddr", ""),
             respondent=respondent, respondent_id=respondent_id, respondent_addr=d.get("respondentAddr", ""),
             nature=d.get("nature", ""), case_type=d.get("type") or "CRIM", status=d.get("status") or "Pending",
             zone_id=d.get("zone"),
+            source_incident_id=source_incident_id,
+            incident_time=parse_time(d.get("incidentTime")) if d.get("incidentTime") else None,
+            narrative=d.get("narrative", "")
         )
         db.session.add(record)
+        if source_incident_id:
+            inc = Incident.query.get(source_incident_id)
+            if inc:
+                inc.is_blotter = True
+                inc.blotter_docket_no = docket_no
+                inc.status = "Elevated to Blotter"
+                inc.updated_at = datetime.utcnow()
         db.session.commit()
-        return jsonify({"ok": True, "id": record.id}), 201
+        return jsonify({"ok": True, "id": record.id, "docket_no": docket_no}), 201
 
     if method == "PUT":
         rid = int(request.args.get("id", 0))
