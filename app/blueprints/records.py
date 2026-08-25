@@ -181,7 +181,7 @@ def _incidents():
             db.session.commit()
             return jsonify({"ok": True})
 
-        if incident.is_blotter:
+        if incident.is_blotter or incident.status in ("Elevated to Blotter", "ELEVATED"):
             return json_error(f"Record is an official Blotter case ({incident.blotter_docket_no or 'Elevated'}). Edits must be made in Blotter Records.", 403)
 
         d = request.get_json(silent=True) or {}
@@ -384,6 +384,21 @@ def _blotter():
         record.case_type = d.get("type") or "CRIM"
         record.status = d.get("status") or "Pending"
         record.zone_id = d.get("zone")
+
+        # Single Source of Truth (SSOT): synchronize shared fields to linked Incident Report
+        if record.source_incident_id:
+            inc = Incident.query.get(record.source_incident_id)
+            if inc:
+                if d.get("dateFiled"):
+                    inc.incident_date = record.date_filed
+                if d.get("nature"):
+                    inc.description = record.nature
+                if d.get("type"):
+                    inc.category = d.get("type")
+                if d.get("zone"):
+                    inc.zone_id = d.get("zone")
+                inc.updated_at = datetime.utcnow()
+
         db.session.commit()
         return jsonify({"ok": True})
 

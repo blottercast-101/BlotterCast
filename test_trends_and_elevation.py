@@ -220,6 +220,29 @@ class TestTrendsAndElevation(unittest.TestCase):
         self.assertEqual(put_res.status_code, 403)
         self.assertIn("official Blotter case", put_res.get_json()["error"])
 
+        # 5. SSOT Synchronization: Update Blotter record and verify changes reflect on linked Incident
+        blotter_id = b_res.get_json()["id"]
+        update_blotter_payload = {
+            "dateFiled": "2026-08-21",
+            "complainant": "Maria Santos",
+            "complainantId": resident.id,
+            "respondent": "Identified Suspect",
+            "nature": "Aggravated Theft Incident",
+            "type": "Theft",
+            "zone": "Zone 2",
+            "status": "Under Investigation"
+        }
+        blotter_put_res = self.client.put(f'/api/records.php?type=blotters&id={blotter_id}', data=json.dumps(update_blotter_payload), content_type='application/json')
+        self.assertEqual(blotter_put_res.status_code, 200)
+
+        with self.app.app_context():
+            inc_synced = Incident.query.get(inc_id)
+            self.assertEqual(str(inc_synced.incident_date), "2026-08-21")
+            self.assertEqual(inc_synced.description, "Aggravated Theft Incident")
+            self.assertEqual(inc_synced.category, "Theft")
+            self.assertEqual(inc_synced.zone_id, "Zone 2")
+
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -605,6 +605,15 @@
               <button onclick="restoreIncident(${r.id})" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Restore to Active">
                 ${iconSvg('refresh', 16)}
               </button>
+              ` : (r.is_blotter || r.status === 'Elevated to Blotter') ? `
+              <!-- Locked Edit Action (Elevated) -->
+              <button onclick="bcAlert('This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.', { title: 'Incident Locked', okLabel: 'Understood' })" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center justify-center opacity-40 cursor-not-allowed" title="Elevated to Blotter — edits must be made in Blotter Records">
+                ${iconSvg('lock', 16)}
+              </button>
+              <!-- 3. Archive Action -->
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Archive Incident">
+                ${iconSvg('archive', 16)}
+              </button>
               ` : `
               <!-- 2. Edit Action -->
               <button onclick="editIncident(${r.id})" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="edit_records" title="Edit Incident">
@@ -1398,9 +1407,20 @@
     }
   }
 
-  function editIncident(id) {
+  async function editIncident(id) {
     const r = incidentData.find(x => x.id === id);
     if (!r) return;
+
+    const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
+    if (isElevated) {
+      await bcAlert(
+        `This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.`,
+        { title: 'Incident Locked', okLabel: 'View Details' }
+      );
+      viewIncident(id);
+      return;
+    }
+
     incEditId = id;
     document.getElementById('incModalTitle').textContent = 'Edit Incident Report';
     document.getElementById('if_reportNo').value = r.reportNo;
@@ -1441,7 +1461,6 @@
     const containerElevate = document.getElementById('elevateModalBtnContainer');
     if (containerElevate) containerElevate.classList.remove('hidden');
 
-    const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter');
     setIncidentFormLocked(isElevated, r.blotter_docket_no);
 
     if (r.lat != null && r.lng != null && !isNaN(r.lat) && !isNaN(r.lng) && r.lat !== 0) {
@@ -1463,10 +1482,6 @@
     if (!incEditId) return;
     const inc = incidentData.find(x => x.id === incEditId);
     if (!inc) return;
-    if (inc.is_blotter || inc.status === 'Elevated to Blotter') {
-      showToast(`Incident ${inc.reportNo} is already elevated as Blotter Entry (${inc.blotter_docket_no || 'BLT Case'}).`, 'warning');
-      return;
-    }
     pendingElevateIncident = inc;
     const targetEl = document.getElementById('elevateTargetReportNo');
     if (targetEl) targetEl.textContent = inc.reportNo || 'this incident';
@@ -1597,9 +1612,17 @@
 
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
+    const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
     const reporterBadge = r.isNonResident
       ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>'
       : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>';
+
+    const lockBanner = isElevated
+      ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">
+          <span class="text-base flex-shrink-0">🔒</span>
+          <span>This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Case'}). Please edit this case directly in the Blotter Records module.</span>
+        </div>`
+      : '';
 
     const rows = [
       ['Report No.', r.reportNo],
@@ -1613,9 +1636,9 @@
       ['Reporter', `${r.reporter} ${reporterBadge}`],
       ['Reporter Address', r.reporterAddress || '<span class="text-gray-400 italic">Not specified</span>'],
       ['Officer', r.officer],
-      ['Status', (r.is_blotter || r.status === 'Elevated to Blotter') ? 'ELEVATED' : r.status],
+      ['Status', isElevated ? 'ELEVATED' : r.status],
     ];
-    document.getElementById('incViewContent').innerHTML = rows.map(([k,v]) => `
+    document.getElementById('incViewContent').innerHTML = lockBanner + rows.map(([k,v]) => `
       <div class="flex gap-4 py-2 border-b border-forest-50">
         <span class="w-44 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
         <span class="text-forest-800">${v}</span>
