@@ -72,6 +72,48 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
             self.assertIsNotNone(incident.lng)
             self.assertEqual(incident.reporter, "Ramon Magsaysay")
 
+    def test_blotter_entry_and_settlement_routes(self):
+        with self.app.app_context():
+            mfa_login(self.client, "admin", "admin123")
+
+            # 1. Test POST /api/import/blotter-entry
+            entry_csv = (
+                "DOCKET NO.,DATE FILED,NAME OF COMPLAINANT,COMPLAINANT ADDRESS,NAME OF RESPONDENT,RESPONDENT ADDRESS,NATURE OF CASE,CRIM / CIVIL,ZONE\n"
+                "BLT-2025-777,2025-07-10,Everlie Marquez,Zone 1,Juan Dela Cruz,Zone 1,Physical Assault,CRIM,Zone 1\n"
+            )
+            resp1 = self.client.post(
+                "/api/import/blotter-entry",
+                data={"file": (io.BytesIO(entry_csv.encode("utf-8")), "blotter_entries.csv")},
+                content_type="multipart/form-data"
+            )
+            self.assertEqual(resp1.status_code, 200)
+            data1 = resp1.get_json()
+            self.assertTrue(data1["ok"])
+            self.assertEqual(data1["imported"], 1)
+
+            blt = BlotterRecord.query.filter_by(docket_no="BLT-2025-777").first()
+            self.assertIsNotNone(blt)
+            self.assertIsNotNone(blt.source_incident_id)
+
+            inc = Incident.query.get(blt.source_incident_id)
+            self.assertIsNotNone(inc)
+            self.assertEqual(inc.category, "Physical Assault")
+            self.assertEqual(inc.status, "Elevated to Blotter")
+
+            # 2. Test POST /api/import/blotter-settlement
+            settlement_csv = (
+                "DOCKET NO.,HEARING DATE,STAGE,SETTLEMENT STATUS,REMARKS\n"
+                "BLT-2025-777,2025-07-15,1st Patawag,Settled,Parties agreed amicably.\n"
+            )
+            resp2 = self.client.post(
+                "/api/import/blotter-settlement",
+                data={"file": (io.BytesIO(settlement_csv.encode("utf-8")), "blotter_settlements.csv")},
+                content_type="multipart/form-data"
+            )
+            self.assertEqual(resp2.status_code, 200)
+            data2 = resp2.get_json()
+            self.assertTrue(data2["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()
