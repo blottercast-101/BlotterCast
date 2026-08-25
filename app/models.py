@@ -266,10 +266,15 @@ class Incident(db.Model):
     status = db.Column(db.String(30), nullable=False, default="Under Investigation")
     is_blotter = db.Column(db.Boolean, nullable=False, default=False)
     blotter_docket_no = db.Column(db.String(50))
+    is_non_resident = db.Column(db.Boolean, nullable=False, default=False)
+    reporter_resident_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"), nullable=True)
+    reporter_address = db.Column(db.Text, nullable=True, default="")
     resolved_at = db.Column(db.DateTime)
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    reporter_resident = db.relationship("CensusRecord", foreign_keys=[reporter_resident_id], lazy="joined")
 
     def __init__(
         self,
@@ -289,6 +294,9 @@ class Incident(db.Model):
         status="Under Investigation",
         is_blotter=False,
         blotter_docket_no=None,
+        is_non_resident=False,
+        reporter_resident_id=None,
+        reporter_address="",
         resolved_at=None,
         archived=False,
         created_at=None,
@@ -317,6 +325,9 @@ class Incident(db.Model):
         self.status = status
         self.is_blotter = bool(is_blotter)
         self.blotter_docket_no = blotter_docket_no
+        self.is_non_resident = bool(is_non_resident)
+        self.reporter_resident_id = reporter_resident_id
+        self.reporter_address = reporter_address
         self.resolved_at = resolved_at
         self.archived = archived
         if created_at is not None:
@@ -339,6 +350,9 @@ class Incident(db.Model):
             "priority": self.priority, "status": self.status,
             "is_blotter": bool(self.is_blotter),
             "blotter_docket_no": self.blotter_docket_no,
+            "is_non_resident": bool(self.is_non_resident),
+            "reporter_resident_id": self.reporter_resident_id,
+            "reporter_address": self.reporter_address or "",
             "resolved_at": self.resolved_at.isoformat() if hasattr(self.resolved_at, "isoformat") else (str(self.resolved_at) if self.resolved_at else None),
             "archived": bool(self.archived),
         }

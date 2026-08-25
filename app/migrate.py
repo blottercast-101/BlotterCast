@@ -26,6 +26,11 @@ ADDITIVE_COLUMNS = [
     # Record archival columns
     ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
     ("incidents", "archived", "BOOLEAN", "FALSE", True),
+
+    # Incident Reporter Resident & Non-Resident handling
+    ("incidents", "is_non_resident", "BOOLEAN", "FALSE", True),
+    ("incidents", "reporter_resident_id", "INTEGER", "NULL", False),
+    ("incidents", "reporter_address", "TEXT", "NULL", False),
 ]
 
 

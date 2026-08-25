@@ -127,12 +127,27 @@ def _incidents():
         time_reported = parse_time(d.get("timeReported")) or datetime.utcnow().time().replace(microsecond=0)
         hour = time_reported.hour
 
+        reporter_resident_id = int(d["reporterResidentId"]) if d.get("reporterResidentId") else (int(d["reporter_resident_id"]) if d.get("reporter_resident_id") else None)
+        is_non_resident = bool(d.get("isNonResident") or d.get("is_non_resident"))
+        reporter_address = (d.get("reporterAddress") or d.get("reporter_address") or "").strip()
+
+        # If resident selected from Census, fetch and format address if not explicitly passed
+        if reporter_resident_id and not is_non_resident:
+            resident = CensusRecord.query.get(reporter_resident_id)
+            if resident:
+                if not reporter_address:
+                    parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
+                    reporter_address = ", ".join([p for p in parts if p])
+
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
             zone_id=zone_id, location=loc_text, lat=lat, lng=lng,
             category=d.get("category") or "Other", description=d.get("description", ""),
             reporter=d.get("reporter", ""), officer=d.get("officer", ""),
             priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
+            is_non_resident=is_non_resident,
+            reporter_resident_id=reporter_resident_id if not is_non_resident else None,
+            reporter_address=reporter_address,
             archived=False,
         )
         db.session.add(incident)
@@ -188,6 +203,17 @@ def _incidents():
 
         time_reported = parse_time(d.get("timeReported")) or parse_time("12:00:00")
 
+        reporter_resident_id = int(d["reporterResidentId"]) if d.get("reporterResidentId") else (int(d["reporter_resident_id"]) if d.get("reporter_resident_id") else None)
+        is_non_resident = bool(d.get("isNonResident") or d.get("is_non_resident"))
+        reporter_address = (d.get("reporterAddress") or d.get("reporter_address") or "").strip()
+
+        if reporter_resident_id and not is_non_resident:
+            resident = CensusRecord.query.get(reporter_resident_id)
+            if resident:
+                if not reporter_address:
+                    parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
+                    reporter_address = ", ".join([p for p in parts if p])
+
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
         incident.time_reported = time_reported
         incident.hour = time_reported.hour
@@ -198,6 +224,9 @@ def _incidents():
         incident.category = d.get("category") or "Other"
         incident.description = d.get("description", "")
         incident.reporter = d.get("reporter", "")
+        incident.is_non_resident = is_non_resident
+        incident.reporter_resident_id = reporter_resident_id if not is_non_resident else None
+        incident.reporter_address = reporter_address
         incident.officer = d.get("officer", "")
         incident.priority = d.get("priority") or "Medium"
         incident.status = d.get("status") or "Under Investigation"

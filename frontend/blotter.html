@@ -543,8 +543,11 @@
     bcRenderPagination(document.getElementById('paginationControls'), currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
   }
 
+  let elevateSourceIncidentId = null;
+
   function resetBlotterFormFields() {
     editingId = null;
+    elevateSourceIncidentId = null;
     document.getElementById('modalTitle').textContent = 'New Blotter Entry';
     document.getElementById('blotterForm').reset();
     bcResidentPickerClear('f_complainantSearch');
@@ -666,6 +669,9 @@
       type: document.getElementById('f_type').value,
       status: document.getElementById('f_status').value,
     };
+    if (!editingId && elevateSourceIncidentId) {
+      vals.sourceIncidentId = elevateSourceIncidentId;
+    }
     if (complainantOutside && respondentOutside) {
       await bcAlert('At least one of the complainant or respondent must be a registered Census resident.'); return;
     }
@@ -792,11 +798,65 @@
     }
   });
 
+  async function checkElevationPrefill() {
+    const isElevateUrl = new URLSearchParams(location.search).get('elevate') === '1';
+    const stored = sessionStorage.getItem('elevate_blotter_data');
+    if (isElevateUrl && stored) {
+      try {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('elevate_blotter_data');
+        history.replaceState(null, '', location.pathname);
+
+        await openAdd();
+        document.getElementById('modalTitle').textContent = `Elevate Incident to Blotter (${data.source_report_no || 'Incident'})`;
+        elevateSourceIncidentId = data.source_incident_id ? Number(data.source_incident_id) : null;
+
+        if (data.incident_date) {
+          document.getElementById('f_dateFiled').value = data.incident_date;
+        }
+        if (data.nature_of_case || data.incident_type) {
+          document.getElementById('f_nature').value = data.nature_of_case || data.incident_type;
+        }
+
+        const compName = data.complainant_name || '';
+        const compAddr = data.complainant_address || '';
+        const compId = data.complainant_id ? Number(data.complainant_id) : null;
+        const isNonRes = Boolean(data.is_complainant_non_resident);
+
+        if (isNonRes) {
+          document.getElementById('f_complainantOutside').checked = true;
+          _setOutsideMode('complainant', true);
+          document.getElementById('f_complainantFreeText').value = compName;
+          document.getElementById('f_complainant').value = compName;
+          document.getElementById('f_complainantId').value = '';
+        } else {
+          document.getElementById('f_complainantOutside').checked = false;
+          _setOutsideMode('complainant', false);
+          document.getElementById('f_complainantSearch').value = compName;
+          document.getElementById('f_complainant').value = compName;
+          if (compId) {
+            document.getElementById('f_complainantId').value = String(compId);
+          }
+        }
+
+        if (compAddr) {
+          document.getElementById('f_complainantAddr').value = compAddr;
+        }
+
+        _updateOutsideToggleAvailability();
+        showToast(`Elevating Incident ${data.source_report_no || ''} to Blotter. Complainant details pre-filled.`, 'info');
+      } catch (err) {
+        console.warn('Could not parse elevation data:', err);
+      }
+    }
+  }
+
   document.querySelector('[onclick="openModal(\'blotterModal\')"]').onclick = openAdd;
   (async function () {
     await requireAuth();
     try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
     try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    await checkElevationPrefill();
     if (new URLSearchParams(location.search).get('new') === '1') {
       openAdd();
       history.replaceState(null, '', location.pathname);

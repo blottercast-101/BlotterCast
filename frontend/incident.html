@@ -369,9 +369,42 @@
         </div>
       </div>
       <div><label class="form-label">Description</label><textarea id="if_description" class="form-input h-20 resize-none" placeholder="Detailed description of the incident…"></textarea></div>
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Reporter Name</label><input type="text" id="if_reporter" class="form-input" placeholder="Full name" data-no-numbers/></div>
-        <div><label class="form-label">Responding Officer</label><input type="text" id="if_officer" class="form-input" placeholder="e.g. PO1 Cruz"/></div>
+      <div class="grid grid-cols-2 gap-4 items-start">
+        <div class="relative">
+          <div class="flex items-end justify-between gap-2 mb-2 h-10">
+            <label class="form-label mb-0 leading-tight">
+              Reporter Name<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="if_reporterOutsideLabel">
+              <input type="checkbox" id="if_is_non_resident" class="rounded accent-forest-600" onchange="toggleReporterNonResident()"/> Non-Resident Reporter
+            </label>
+          </div>
+          <!-- Resident Mode (Default) -->
+          <input type="text" id="if_reporterSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
+          <!-- Non-Resident Mode -->
+          <input type="text" id="if_reporterFreeText" class="form-input hidden" placeholder="Full name (Non-resident)" data-no-numbers/>
+          <input type="hidden" id="if_reporter"/>
+          <input type="hidden" id="if_reporterResidentId"/>
+          <div id="if_reporterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+
+          <!-- Subtle Address Preview for Resident -->
+          <div id="if_reporterAddressBadge" class="hidden text-xs text-forest-700 mt-1.5 flex items-center gap-1.5 bg-forest-50/80 px-2.5 py-1 rounded-lg border border-forest-100">
+            <span data-icon="pin" data-icon-size="12"></span> <span id="if_reporterAddressText" class="truncate font-medium"></span>
+          </div>
+
+          <!-- Manual Address for Non-Resident -->
+          <div id="if_reporterAddressContainer" class="hidden mt-2">
+            <label class="form-label text-xs mb-1">Reporter Address (Municipality / Location)</label>
+            <input type="text" id="if_reporterAddressManual" class="form-input text-xs" placeholder="Outside Barangay / specify municipality or address"/>
+          </div>
+          <input type="hidden" id="if_reporterAddress"/>
+        </div>
+        <div>
+          <div class="flex items-end justify-between mb-2 h-10">
+            <label class="form-label mb-0 pb-0.5">Responding Officer</label>
+          </div>
+          <input type="text" id="if_officer" class="form-input" placeholder="e.g. PO1 Cruz"/>
+        </div>
       </div>
       <div>
         <label class="form-label">Status</label>
@@ -466,7 +499,11 @@
       dateReported: (m && d) ? `${m}/${d}/${y}` : r.incident_date,
       timeReported: time5, hour: r.hour, zone: r.zone_id, location: bcStripZonePrefix(r.location),
       lat: r.lat, lng: r.lng, category: r.category, description: r.description,
-      reporter: r.reporter, officer: r.officer, priority: r.priority, status: r.status,
+      reporter: r.reporter,
+      isNonResident: Boolean(r.is_non_resident),
+      reporterResidentId: r.reporter_resident_id ? Number(r.reporter_resident_id) : null,
+      reporterAddress: r.reporter_address || '',
+      officer: r.officer, priority: r.priority, status: r.status,
       is_blotter: Boolean(r.is_blotter), blotter_docket_no: r.blotter_docket_no
     };
   }
@@ -1203,6 +1240,71 @@
     }
   }
 
+  let censusResidentsForIncident = [];
+
+  async function loadCensusResidentsForIncidentPicker() {
+    try {
+      const raw = await BCApi.docList('census');
+      censusResidentsForIncident = raw.map(r => {
+        const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
+        return {
+          id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
+          age, address: r.address || '', householdNo: r.household_no || '', zone: r.zone_id || '', status: r.status || 'Active',
+        };
+      });
+      bcInitResidentPicker('if_reporterSearch', 'if_reporterResidentId', 'if_reporterSuggestions', censusResidentsForIncident, onIncidentReporterPicked);
+    } catch (err) {
+      console.warn('Could not load census residents for incident picker:', err);
+    }
+  }
+
+  function onIncidentReporterPicked(r) {
+    if (r) {
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
+      document.getElementById('if_reporter').value = fullName;
+      document.getElementById('if_reporterSearch').value = fullName;
+      document.getElementById('if_reporterResidentId').value = String(r.id);
+      
+      const addrParts = [r.address, r.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+      const fullAddr = addrParts.join(', ');
+      document.getElementById('if_reporterAddress').value = fullAddr;
+      document.getElementById('if_reporterAddressText').textContent = fullAddr;
+      document.getElementById('if_reporterAddressBadge').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    } else {
+      document.getElementById('if_reporter').value = '';
+      document.getElementById('if_reporterResidentId').value = '';
+      document.getElementById('if_reporterAddress').value = '';
+      document.getElementById('if_reporterAddressBadge').classList.add('hidden');
+    }
+  }
+
+  function toggleReporterNonResident() {
+    const isOutside = document.getElementById('if_is_non_resident').checked;
+    const searchEl = document.getElementById('if_reporterSearch');
+    const freeEl = document.getElementById('if_reporterFreeText');
+    const addrBadge = document.getElementById('if_reporterAddressBadge');
+    const manualAddrContainer = document.getElementById('if_reporterAddressContainer');
+    const manualAddrInput = document.getElementById('if_reporterAddressManual');
+
+    searchEl.classList.toggle('hidden', isOutside);
+    freeEl.classList.toggle('hidden', !isOutside);
+    manualAddrContainer.classList.toggle('hidden', !isOutside);
+
+    if (isOutside) {
+      bcResidentPickerClear('if_reporterSearch');
+      addrBadge.classList.add('hidden');
+      document.getElementById('if_reporterResidentId').value = '';
+      freeEl.focus();
+    } else {
+      freeEl.value = '';
+      manualAddrInput.value = '';
+      document.getElementById('if_reporter').value = '';
+      document.getElementById('if_reporterAddress').value = '';
+      addrBadge.classList.add('hidden');
+    }
+  }
+
   function setIncidentFormLocked(isLocked, docketNo = '') {
     const banner = document.getElementById('if_elevatedLockBanner');
     const bannerText = document.getElementById('if_elevatedLockBannerText');
@@ -1213,7 +1315,8 @@
     const inputs = [
       'if_dateReported', 'if_timeReported', 'if_zone', 'if_location',
       'if_category', 'if_priority', 'if_description', 'if_reporter',
-      'if_officer', 'if_status'
+      'if_reporterSearch', 'if_reporterFreeText', 'if_is_non_resident',
+      'if_reporterAddressManual', 'if_officer', 'if_status'
     ];
 
     inputs.forEach(id => {
@@ -1254,6 +1357,16 @@
     setIncidentFormLocked(false);
     const containerElevate = document.getElementById('elevateModalBtnContainer');
     if (containerElevate) containerElevate.classList.add('hidden');
+
+    document.getElementById('if_is_non_resident').checked = false;
+    toggleReporterNonResident();
+    document.getElementById('if_reporterFreeText').value = '';
+    document.getElementById('if_reporterAddressManual').value = '';
+    document.getElementById('if_reporterAddress').value = '';
+    document.getElementById('if_reporterResidentId').value = '';
+    document.getElementById('if_reporter').value = '';
+    document.getElementById('if_reporterAddressBadge').classList.add('hidden');
+    bcResidentPickerClear('if_reporterSearch');
 
     setPickerCoordinates(null, null);
     isLocationVerifiedInBoundary = false;
@@ -1298,9 +1411,32 @@
     document.getElementById('if_category').value = r.category;
     document.getElementById('if_priority').value = r.priority;
     document.getElementById('if_description').value = r.description;
-    document.getElementById('if_reporter').value = r.reporter;
     document.getElementById('if_officer').value = r.officer;
     document.getElementById('if_status').value = r.status;
+
+    const isNonRes = Boolean(r.isNonResident);
+    document.getElementById('if_is_non_resident').checked = isNonRes;
+    toggleReporterNonResident();
+
+    if (isNonRes) {
+      document.getElementById('if_reporterFreeText').value = r.reporter || '';
+      document.getElementById('if_reporterAddressManual').value = r.reporterAddress || '';
+      document.getElementById('if_reporter').value = r.reporter || '';
+      document.getElementById('if_reporterAddress').value = r.reporterAddress || '';
+      document.getElementById('if_reporterResidentId').value = '';
+    } else {
+      document.getElementById('if_reporterSearch').value = r.reporter || '';
+      document.getElementById('if_reporter').value = r.reporter || '';
+      document.getElementById('if_reporterResidentId').value = r.reporterResidentId ? String(r.reporterResidentId) : '';
+      document.getElementById('if_reporterAddress').value = r.reporterAddress || '';
+      if (r.reporterAddress) {
+        document.getElementById('if_reporterAddressText').textContent = r.reporterAddress;
+        document.getElementById('if_reporterAddressBadge').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      } else {
+        document.getElementById('if_reporterAddressBadge').classList.add('hidden');
+      }
+    }
 
     const containerElevate = document.getElementById('elevateModalBtnContainer');
     if (containerElevate) containerElevate.classList.remove('hidden');
@@ -1347,6 +1483,9 @@
       source_incident_id: inc.id,
       source_report_no: inc.reportNo,
       complainant_name: inc.reporter,
+      complainant_id: inc.reporterResidentId || null,
+      complainant_address: inc.reporterAddress || '',
+      is_complainant_non_resident: Boolean(inc.isNonResident),
       incident_date: inc.date,
       incident_time: inc.timeReported,
       zone_id: inc.zone,
@@ -1372,6 +1511,15 @@
       }
     }
 
+    const isNonRes = document.getElementById('if_is_non_resident').checked;
+    const reporterName = isNonRes
+      ? document.getElementById('if_reporterFreeText').value.trim()
+      : (document.getElementById('if_reporter').value.trim() || document.getElementById('if_reporterSearch').value.trim());
+    const reporterAddr = isNonRes
+      ? document.getElementById('if_reporterAddressManual').value.trim()
+      : document.getElementById('if_reporterAddress').value.trim();
+    const reporterResId = isNonRes ? null : (document.getElementById('if_reporterResidentId').value || null);
+
     const vals = {
       reportNo: incEditId ? document.getElementById('if_reportNo').value.trim() : '',
       date: document.getElementById('if_dateReported').value,
@@ -1380,14 +1528,20 @@
       category: document.getElementById('if_category').value,
       priority: document.getElementById('if_priority').value,
       description: document.getElementById('if_description').value.trim(),
-      reporter: document.getElementById('if_reporter').value.trim(),
+      reporter: reporterName,
+      isNonResident: isNonRes,
+      reporterResidentId: reporterResId,
+      reporterAddress: reporterAddr,
       officer: document.getElementById('if_officer').value.trim(),
       status: document.getElementById('if_status').value,
       zone: document.getElementById('if_zone').value,
       lat: document.getElementById('if_lat').value || null,
       lng: document.getElementById('if_lng').value || null,
     };
-    if (!vals.location || !vals.reporter) { await bcAlert('Please fill in required fields.'); return; }
+    if (!vals.location || !vals.reporter) {
+      await bcAlert(isNonRes ? 'Please fill in required fields (Location and Reporter Name).' : 'Please select the Reporter from Census, or check "Non-Resident Reporter" to enter their name directly.');
+      return;
+    }
     if (!vals.zone) { await bcAlert('Please select the Zone.'); return; }
     if (!vals.category) { await bcAlert('Please select the Category.'); return; }
     if (!vals.priority) { await bcAlert('Please select the Priority Level.'); return; }
@@ -1443,10 +1597,23 @@
 
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
+    const reporterBadge = r.isNonResident
+      ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>'
+      : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>';
+
     const rows = [
-      ['Report No.', r.reportNo], ['Date', r.dateReported], ['Time', bcFormatTime(r.timeReported)],
-      ['Zone', r.zone], ['Location', r.location], ['Category', r.category], ['Priority', r.priority],
-      ['Description', r.description], ['Reporter', r.reporter], ['Officer', r.officer], ['Status', r.status],
+      ['Report No.', r.reportNo],
+      ['Date', r.dateReported],
+      ['Time', bcFormatTime(r.timeReported)],
+      ['Zone', r.zone],
+      ['Location', r.location],
+      ['Category', r.category],
+      ['Priority', r.priority],
+      ['Description', r.description],
+      ['Reporter', `${r.reporter} ${reporterBadge}`],
+      ['Reporter Address', r.reporterAddress || '<span class="text-gray-400 italic">Not specified</span>'],
+      ['Officer', r.officer],
+      ['Status', (r.is_blotter || r.status === 'Elevated to Blotter') ? 'ELEVATED' : r.status],
     ];
     document.getElementById('incViewContent').innerHTML = rows.map(([k,v]) => `
       <div class="flex gap-4 py-2 border-b border-forest-50">
@@ -1484,7 +1651,7 @@
 
   (async function () {
     await requireAuth();
-    try { await Promise.all([loadIncidents(), loadZoneOptions()]); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    try { await Promise.all([loadIncidents(), loadZoneOptions(), loadCensusResidentsForIncidentPicker()]); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
     if (new URLSearchParams(location.search).get('new') === '1') {
       openAddIncident();
       history.replaceState(null, '', location.pathname);
