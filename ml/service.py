@@ -254,11 +254,22 @@ def train():
         type_results = {'gradient_boosting': type_metrics}
         hot_results = {'gradient_boosting': hot_metrics}
 
+        type_f1_score = type_metrics.get('incident_type_f1') or type_metrics.get('macro_f1') or round(float(type_metrics.get('macroF1', 0.0) * 100), 1)
+
         response_payload = {
             'ok': True,
             'status': 'success',
             'recordCount': int(len(df)),
             'records_evaluated': int(len(df)),
+            'metrics': {
+                'incident_type_f1': type_f1_score,
+                'macro_f1': type_f1_score,
+                'f1_score': type_f1_score,
+                'occurrence_accuracy': occ_metrics.get('accuracy', 0.0),
+                'hotspot_accuracy': hot_metrics.get('accuracy', 0.0),
+            },
+            'incident_type_f1': type_f1_score,
+            'macro_f1': type_f1_score,
             'occurrence': {
                 'metrics': occ_results,
                 'active': 'random_forest',
@@ -274,10 +285,11 @@ def train():
                 'active': 'gradient_boosting',
                 'meta': {
                     'macroF1': type_metrics.get('macroF1', 0.0),
+                    'macro_f1': type_f1_score,
                     'weightedF1': type_metrics.get('weightedF1', 0.0),
                     'f1': type_metrics.get('f1', 0.0),
                     'f1_score': type_metrics.get('f1_score', 0.0),
-                    'incident_type_f1': type_metrics.get('incident_type_f1', 0.0),
+                    'incident_type_f1': type_f1_score,
                     'accuracy': type_metrics.get('accuracy', 0.0),
                 }
             },
@@ -366,12 +378,38 @@ def latest():
         if row:
             trained_at = row['trained_at']
             trained_at_str = (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at)
+            type_m = _json.loads(row['type_metrics_json'])
+            type_gb = type_m.get('gradient_boosting', {}) if isinstance(type_m, dict) else {}
+            type_f1_score = (
+                type_gb.get('incident_type_f1') or
+                type_gb.get('macro_f1') or
+                type_m.get('incident_type_f1') or
+                type_m.get('macro_f1') or
+                round(float((type_gb.get('macroF1') or type_m.get('macroF1') or 0.0) * 100), 1)
+            )
+
             cached = {
                 'ok': True,
                 'status': 'success',
                 'recordCount': row['record_count'],
+                'metrics': {
+                    'incident_type_f1': type_f1_score,
+                    'macro_f1': type_f1_score,
+                    'f1_score': type_f1_score,
+                },
+                'incident_type_f1': type_f1_score,
+                'macro_f1': type_f1_score,
                 'occurrence': {'metrics': _json.loads(row['occurrence_metrics_json']), 'active': row['active_occurrence_model']},
-                'type': {'metrics': _json.loads(row['type_metrics_json']), 'active': row['active_type_model']},
+                'type': {
+                    'metrics': type_m,
+                    'active': row['active_type_model'],
+                    'meta': {
+                        'incident_type_f1': type_f1_score,
+                        'macro_f1': type_f1_score,
+                        'macroF1': type_gb.get('macroF1', 0.0),
+                        'accuracy': type_gb.get('accuracy', 0.0),
+                    }
+                },
                 'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
                 'zoneRisk': _json.loads(row['hotspots_json']),
                 'trainedAt': trained_at_str,

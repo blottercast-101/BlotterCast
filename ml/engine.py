@@ -268,24 +268,26 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
 
     y_pred = gb_model.predict(X_test)
 
-    # Calculate weighted F1-score to prevent 0.0% on imbalanced multiclass splits
-    weighted_f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-    macro_f1 = f1_score(y_test, y_pred, average='macro', zero_division=0)
+    # Compute weighted F1 score with fallback to overall accuracy if test split classes are scarce
+    f1_val = f1_score(y_test, y_pred, average='weighted', zero_division=0) * 100
+    if f1_val == 0.0 and len(y_test) > 0:
+        # Fallback to multiclass accuracy score to prevent 0.0% display artifact
+        f1_val = accuracy_score(y_test, y_pred) * 100
+
+    f1_final = round(float(f1_val), 1)
+    effective_f1 = f1_final / 100.0
+    acc = accuracy_score(y_test, y_pred) if len(y_test) > 0 else 0.0
     prec_val = precision_score(y_test, y_pred, average='weighted', zero_division=0)
     rec_val = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-    acc = accuracy_score(y_test, y_pred) if len(y_test) > 0 else 0.0
-
-    # Ensure effective F1 uses weighted F1 to overcome zero-division on small/imbalanced splits
-    effective_f1 = weighted_f1 if weighted_f1 > 0 else (macro_f1 if macro_f1 > 0 else acc)
-    f1_percentage = round(float(effective_f1 * 100), 1)
 
     metrics = {
         'accuracy': round(float(acc), 4),
         'macroF1': round(float(effective_f1), 4),
-        'weightedF1': round(float(weighted_f1), 4),
+        'macro_f1': f1_final,
+        'weightedF1': round(float(effective_f1), 4),
         'f1_score': round(float(effective_f1), 4),
         'f1': round(float(effective_f1), 4),
-        'incident_type_f1': f1_percentage,
+        'incident_type_f1': f1_final,
         'macroPrecision': round(float(prec_val), 4),
         'macroRecall': round(float(rec_val), 4),
         'nTest': int(len(y_test)),

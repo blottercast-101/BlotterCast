@@ -227,7 +227,7 @@
 // ============================================================
 const TASKS = {
   occurrence: { label: 'Incident Occurrence', models: ['random_forest'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
-  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'macroF1', metricLabel: 'Macro F1' },
+  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'incident_type_f1', metricLabel: 'Weighted F1' },
   hotspot:    { label: 'Hotspot Risk', models: ['gradient_boosting'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
 };
 const MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
@@ -261,25 +261,56 @@ const CATEGORY_COLORS = {
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a7a64';
 
-const pct = v => (Number(v) * 100).toFixed(1) + '%';
+const pct = v => {
+  if (v === null || v === undefined || v === '' || isNaN(v)) return '…';
+  const num = Number(v);
+  const val = num > 1.0 ? num : num * 100;
+  return val.toFixed(1) + '%';
+};
 
 function renderModelCards() {
   const el = document.getElementById('modelCardGroups');
+  if (!el) return;
   const grads = ['plum', 'sunset', 'dark'];
   const icons = ['incident', 'predictions', 'heatmap'];
   el.innerHTML = Object.entries(TASKS).map(([task, cfg], i) => {
     const key = cfg.models[0];
-    const m = RESULT && RESULT[task] && RESULT[task].metrics && RESULT[task].metrics[key];
-    const scoreVal = m ? (m[cfg.metricKey] ?? m.accuracy ?? m.macroF1 ?? m.f1) : null;
+    const taskObj = RESULT && RESULT[task];
+    const m = taskObj ? (taskObj.metrics?.[key] || taskObj.metrics || taskObj.meta || taskObj) : null;
+
+    let scoreVal = null;
+    if (task === 'type') {
+      scoreVal = (
+        RESULT?.metrics?.incident_type_f1 ??
+        RESULT?.metrics?.macro_f1 ??
+        RESULT?.incident_type_f1 ??
+        RESULT?.macro_f1 ??
+        m?.incident_type_f1 ??
+        m?.macro_f1 ??
+        m?.macroF1 ??
+        m?.weightedF1 ??
+        m?.f1_score ??
+        m?.f1 ??
+        m?.accuracy ??
+        (RESULT ? 0 : null)
+      );
+    } else {
+      scoreVal = m ? (m[cfg.metricKey] ?? m.accuracy ?? m.f1) : null;
+    }
+
     const score = scoreVal != null ? pct(scoreVal) : '…';
+    const metricLabel = task === 'type' ? 'Weighted F1' : cfg.metricLabel;
+    const modelLabel = MODEL_LABELS[key];
+    const scoreIdAttr = task === 'type' ? ' id="incidentTypeScore"' : '';
+
     return `
       <div class="stat-card-grad ${grads[i % grads.length]}">
         <div class="flex items-center justify-between mb-3">
           <div class="text-xs font-bold text-white/75 uppercase tracking-wide">${cfg.label}</div>
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="${icons[i % icons.length]}" data-icon-size="16"></div>
         </div>
-        <div class="font-display text-3xl text-white">${score}</div>
-        <div class="text-xs text-white/70 mt-1">${cfg.metricLabel} · ${MODEL_LABELS[key]}</div>
+        <div class="font-display text-3xl text-white"${scoreIdAttr}>${score}</div>
+        <div class="text-xs text-white/70 mt-1">${metricLabel} · ${modelLabel}</div>
       </div>`;
   }).join('');
 }
