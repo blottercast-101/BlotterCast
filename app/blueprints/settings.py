@@ -58,11 +58,78 @@ def backup_scheduler_status_route():
     return jsonify({"ok": True, **get_scheduler_status()})
 
 
+@bp.route("/api/backup/settings", methods=["GET", "POST"])
+@login_required
+@permission_required("system_settings")
+def backup_settings_endpoint():
+    if request.method == "GET":
+        cfg = _settings_map(["backup_frequency", "backup_time", "retain_backups_days", "auto_backup_enabled"])
+        freq = cfg.get("backup_frequency", "Daily")
+        time_str = cfg.get("backup_time", "02:00")
+        retain_days = int(cfg.get("retain_backups_days", 30))
+        enabled = cfg.get("auto_backup_enabled", "1") not in ("0", "false")
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "data": {
+                "auto_backup_enabled": enabled,
+                "schedule_time": time_str,
+                "frequency": freq,
+                "backup_frequency": freq,
+                "backup_time": time_str,
+                "retain_backups_days": retain_days,
+                "timezone": "Asia/Manila",
+            }
+        }), 200
+
+    # POST
+    d = request.get_json(silent=True) or {}
+    freq = d.get("backup_frequency") or d.get("frequency") or "Daily"
+    time_str = d.get("backup_time") or d.get("schedule_time") or "02:00"
+    retain_days = d.get("retain_backups_days", 30)
+    enabled = d.get("auto_backup_enabled") not in (False, "0", "false")
+
+    for k, v in [
+        ("backup_frequency", freq),
+        ("backup_time", time_str),
+        ("retain_backups_days", str(retain_days)),
+        ("auto_backup_enabled", "1" if enabled else "0")
+    ]:
+        row = SystemSetting.query.get(k)
+        if row:
+            row.setting_value = str(v)
+        else:
+            db.session.add(SystemSetting(setting_key=k, setting_value=str(v)))
+
+    db.session.commit()
+    reschedule_backup_job()
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "message": "Backup schedule settings updated successfully.",
+        "data": {
+            "backup_frequency": freq,
+            "backup_time": time_str,
+            "retain_backups_days": retain_days,
+            "auto_backup_enabled": enabled,
+        }
+    }), 200
+
+
+@bp.route("/api/backup/history", methods=["GET"])
+@login_required
+@permission_required("system_settings")
+def backup_history_endpoint():
+    return _backups()
+
+
+@bp.route("/api/backup/manual", methods=["POST"])
 @bp.route("/api/backup/run", methods=["POST"])
 @login_required
 @permission_required("system_settings")
 def backup_run_direct():
-    """Direct alias for manual backup execution."""
+    """Manual backup execution endpoint."""
     return _backup()
 
 
@@ -463,6 +530,28 @@ def _letterhead():
 
 
 def _auto_backup_check():
+    freq_row = SystemSetting.query.get("backup_frequency")
+    freq = (freq_row.setting_value if freq_row else "Daily").strip()
+
+    interval_hours = 24
+    if freq == "Every 12 hours":
+        interval_hours = 12
+    elif freq == "Weekly":
+        interval_hours = 168
+    elif freq == "Monthly":
+        interval_hours = 720
+
+    last = SystemBackup.query.order_by(SystemBackup.id.desc()).first()
+    if last and last.created_at:
+        elapsed_hours = (datetime.utcnow() - last.created_at).total_seconds() / 3600.0
+        if elapsed_hours < interval_hours:
+            return jsonify({
+                "ran": False,
+                "reason": "Not due yet",
+                "elapsed_hours": elapsed_hours,
+                "interval_hours": interval_hours
+            })
+
     result = run_database_backup("system (automatic)")
     return jsonify({"ran": True, **result})
 

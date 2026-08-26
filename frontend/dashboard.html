@@ -468,7 +468,6 @@
         }
       }
       refreshNotifBadge();
-      BCApi.autoBackupCheck().catch(() => {});
       try {
         const stats = await BCApi.dashboard();
 

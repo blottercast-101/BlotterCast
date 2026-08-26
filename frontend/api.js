@@ -284,6 +284,14 @@ const BCApi = {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
     });
   },
+  backupSettingsGet() {
+    return this._fetch(`${BC_API}/api/backup/settings`);
+  },
+  backupSettingsUpdate(values) {
+    return this._fetch(`${BC_API}/api/backup/settings`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
+    });
+  },
   runBackup() { return this._fetch(`${BC_API}/api/settings.php?action=backup`, { method: 'POST' }); },
   backupHistory() { return this._fetch(`${BC_API}/api/settings.php?action=backups`); },
 

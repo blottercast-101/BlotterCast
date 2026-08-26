@@ -697,6 +697,21 @@ async function toggleMyMfa() {
   }
 }
 
+async function loadBackupSettings() {
+  try {
+    const res = await (BCApi.backupSettingsGet ? BCApi.backupSettingsGet() : fetch('/api/backup/settings').then(r => r.json()));
+    const data = res?.data || res || {};
+    const freqEl = document.querySelector('[data-setting="backup_frequency"]');
+    const timeEl = document.querySelector('[data-setting="backup_time"]');
+    const retainEl = document.querySelector('[data-setting="retain_backups_days"]');
+    if (freqEl && data.backup_frequency) freqEl.value = data.backup_frequency;
+    if (timeEl && data.backup_time) timeEl.value = data.backup_time;
+    if (retainEl && data.retain_backups_days) retainEl.value = data.retain_backups_days;
+  } catch (err) {
+    console.warn('[settings.html] Could not fetch backup settings:', err);
+  }
+}
+
 (async function () {
   const user = await requireAuth();
   syncTimeFormatControls();
@@ -721,17 +736,8 @@ async function toggleMyMfa() {
     ]);
     const mergedValues = Object.assign({}, values, secValues);
     applySettings(mergedValues);
+    await loadBackupSettings();
     await loadBackupHistory();
-    // If it's been long enough since the last backup (per Backup Frequency
-    // below), this silently runs one now instead of waiting for someone to
-    // click "Run Backup Now" — then refreshes the history so it's visible.
-    try {
-      const auto = await BCApi.autoBackupCheck();
-      if (auto.ran) {
-        await loadBackupHistory();
-        showToast(auto.success ? 'Automatic backup completed (' + auto.file + ').' : 'Automatic backup failed: ' + auto.error, auto.success ? 'success' : 'error');
-      }
-    } catch (e) { /* not fatal — manual "Run Backup Now" still works */ }
   } catch (err) {
     showToast('Could not load settings: ' + err.message, 'error');
   }
