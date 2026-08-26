@@ -379,58 +379,60 @@
 
     <main class="flex-1 p-6 space-y-6">
 
-      <!-- Metadata Badges -->
-      <div class="space-y-2 mb-4">
-        <div class="flex flex-wrap items-center gap-2.5">
-          <!-- Badge 1: Barangay -->
-          <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-            <span>Barangay: <span id="heatmapBadgeBarangay" class="font-medium text-[#064e3b]">Mapulang Lupa</span></span>
-          </div>
-
-          <!-- Badge 2: Municipality -->
-          <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-            <span>Municipality: <span id="heatmapBadgeMunicipality" class="font-medium text-[#064e3b]">Pandi</span></span>
-          </div>
-
-          <!-- Badge 3: Source -->
-          <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-            <span>Source: <span class="font-medium text-[#064e3b]">Blotter records</span></span>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2.5">
-          <!-- Badge 4: Boundary File -->
-          <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-            <span>Boundary file: <span class="font-medium text-[#064e3b]">mapulang-lupa.geojson</span></span>
-          </div>
-        </div>
-      </div>
-
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div class="xl:col-span-2 card flex flex-col overflow-hidden">
           <!-- Header: padding applied here only — map flushes to bottom -->
-          <div class="p-5 pb-3 border-b border-forest-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
-              <div>
-                <h2 class="font-display text-lg text-forest-800">Mapulang Lupa Heat Map</h2>
-                <p class="text-sm text-forest-500">Visual density of reported incidents across Barangay Mapulang Lupa zones</p>
+          <div class="p-5 pb-4 border-b border-forest-50 flex flex-col gap-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
+                <div>
+                  <h2 class="font-display text-lg text-forest-800">Mapulang Lupa Heat Map</h2>
+                  <p class="text-sm text-forest-500">Visual density of reported incidents across Barangay Mapulang Lupa zones</p>
+                </div>
+              </div>
+
+              <div id="heatmapLegendContainer" class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
+                <span class="font-semibold text-forest-800 mr-1">Zone Density:</span>
+                <div class="flex items-center gap-1.5">
+                  <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText">Low</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText">Medium</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText">Elevated</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText">High</span>
+                </div>
               </div>
             </div>
 
-            <div id="heatmapLegendContainer" class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
-              <span class="font-semibold text-forest-800 mr-1">Zone Density:</span>
-              <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText">Low</span>
+            <!-- Metadata Badges inside heatmap container -->
+            <div class="space-y-2 pt-1">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Badge 1: Barangay -->
+                <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
+                  <span>Barangay: <span id="heatmapBadgeBarangay" class="font-medium text-[#064e3b]">Mapulang Lupa</span></span>
+                </div>
+
+                <!-- Badge 2: Municipality -->
+                <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
+                  <span>Municipality: <span id="heatmapBadgeMunicipality" class="font-medium text-[#064e3b]">Pandi</span></span>
+                </div>
+
+                <!-- Badge 3: Source -->
+                <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
+                  <span>Source: <span class="font-medium text-[#064e3b]">Incident Report</span></span>
+                </div>
               </div>
-              <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText">Medium</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText">Elevated</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText">High</span>
+
+              <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Badge 4: Boundary File -->
+                <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
+                  <span>Boundary file: <span class="font-medium text-[#064e3b]">mapulang-lupa.geojson</span></span>
+                </div>
               </div>
             </div>
           </div>
