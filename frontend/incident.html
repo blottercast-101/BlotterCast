@@ -456,7 +456,16 @@
       <button onclick="closeModal('incViewModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div id="incViewContent" class="space-y-2 text-sm"></div>
-    <div class="mt-6 flex justify-end"><button onclick="closeModal('incViewModal')" class="btn-secondary">Close</button></div>
+    <div class="mt-6 flex items-center justify-end gap-3" id="incViewModalFooter">
+      <button id="viewInHeatmapBtn" type="button" onclick="openIncidentInHeatmap()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        View in Heatmap
+      </button>
+      <button onclick="closeModal('incViewModal')" class="btn-secondary">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1610,8 +1619,31 @@
     }
   }
 
+  let currentViewingIncident = null;
+
+  function openIncidentInHeatmap() {
+    if (!currentViewingIncident) return;
+    const incidentId = currentViewingIncident.id || currentViewingIncident.reportNo || '';
+    const zone = currentViewingIncident.zone || '';
+    const lat = currentViewingIncident.lat != null ? currentViewingIncident.lat : '';
+    const lng = currentViewingIncident.lng != null ? currentViewingIncident.lng : '';
+    
+    const params = new URLSearchParams();
+    if (incidentId) params.set('incidentId', incidentId);
+    if (zone) params.set('zone', zone);
+    if (lat) params.set('lat', lat);
+    if (lng) params.set('lng', lng);
+    params.set('focus', 'marker');
+    params.set('highlight', 'true');
+
+    window.location.href = `heatmap.html?${params.toString()}`;
+  }
+
   function viewIncident(id) {
     const r = incidentData.find(x => x.id === id);
+    if (!r) return;
+    currentViewingIncident = r;
+
     const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
     const reporterBadge = r.isNonResident
       ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>'

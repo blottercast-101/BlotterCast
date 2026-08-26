@@ -1089,33 +1089,35 @@
       hasHandledInitialUrlParams = true;
 
       const params = new URLSearchParams(window.location.search);
+      const focusType = params.get('focus');
       const targetZone = params.get('zone');
       const isHighlight = params.get('highlight') === 'true' || params.has('highlight');
       const incidentIdParam = params.get('incidentId') || (params.get('highlight') !== 'true' ? params.get('highlight') : null);
+      const latParam = parseFloat(params.get('lat'));
+      const lngParam = parseFloat(params.get('lng'));
 
+      // 1. Zone Polygon Highlighting & Pulsing (if zone specified)
       if (targetZone && zonePolygonLayers[targetZone]) {
         const targetLayer = zonePolygonLayers[targetZone];
         const baseColor = getDensityColor(targetZone, zoneCounts);
 
-        // Center map to zone polygon
-        try {
-          const bounds = targetLayer.getBounds();
-          const center = bounds.getCenter();
-          map.flyTo(center, 16, { animate: true, duration: 1.0 });
-        } catch (e) {
-          const landmark = ZONE_LANDMARK_COORDINATES[targetZone];
-          if (landmark) {
-            map.flyTo([landmark.latitude, landmark.longitude], 16, { animate: true, duration: 1.0 });
+        if (focusType !== 'marker' && (!latParam || !lngParam)) {
+          try {
+            const bounds = targetLayer.getBounds();
+            const center = bounds.getCenter();
+            map.flyTo(center, 16, { animate: true, duration: 1.0 });
+          } catch (e) {
+            const landmark = ZONE_LANDMARK_COORDINATES[targetZone];
+            if (landmark) {
+              map.flyTo([landmark.latitude, landmark.longitude], 16, { animate: true, duration: 1.0 });
+            }
           }
         }
 
         if (isHighlight) {
-          // Add CSS pulsing class if layer has SVG element
           if (targetLayer._path) {
             targetLayer._path.classList.add('zone-pulse-active');
           }
-
-          // Temporary active pulse styling
           targetLayer.setStyle({
             color: baseColor,
             weight: 6,
@@ -1125,7 +1127,6 @@
           });
           targetLayer.openTooltip();
 
-          // Revert to standard density styling after 6 seconds
           setTimeout(() => {
             if (targetLayer._path) {
               targetLayer._path.classList.remove('zone-pulse-active');
@@ -1145,12 +1146,16 @@
         }
       }
 
-      // If specific incident was also requested, focus that incident pin
-      if (incidentIdParam) {
-        const numericId = parseInt(String(incidentIdParam).replace(/\D/g, ''), 10) || parseInt(incidentIdParam, 10);
-        if (numericId) {
-          setTimeout(() => focusIncidentOnMap(numericId), 600);
-        }
+      // 2. Incident Pin Direct Focus & Activation (if focus=marker or incidentId provided)
+      const numericId = incidentIdParam
+        ? (parseInt(String(incidentIdParam).replace(/\D/g, ''), 10) || parseInt(incidentIdParam, 10))
+        : null;
+
+      if (numericId) {
+        setTimeout(() => focusIncidentOnMap(numericId), 500);
+      } else if (focusType === 'marker' && !isNaN(latParam) && !isNaN(lngParam) && latParam !== 0 && lngParam !== 0) {
+        map.flyTo([latParam, lngParam], 17.5, { animate: true, duration: 1.2 });
+        triggerMarkerPulse(latParam, lngParam);
       }
     }
 
@@ -1295,13 +1300,19 @@
       // 5. Smooth fly & zoom to the exact incident coordinate
       map.flyTo([item.lat, item.lng], 18, { duration: 1.2 });
 
-      // 6. Auto-open popup on that marker
-      const marker = markerMap.get(item.id);
+      // 6. Auto-open popup on that marker and add temporary pulse glow ring
+      const marker = markerMap.get(item.id) || markerMap.get(Number(item.id)) || markerMap.get(String(item.id));
       if (marker) {
         marker.openPopup();
         map.once('moveend', () => {
           marker.openPopup();
         });
+        if (marker._path) {
+          marker._path.classList.add('focus-marker-pulse');
+          setTimeout(() => {
+            if (marker._path) marker._path.classList.remove('focus-marker-pulse');
+          }, 4000);
+        }
       }
     }
 
