@@ -247,6 +247,21 @@ function validateNonResidencySubmission(e) {
   return true;
 }
 
+/**
+ * Cleans up and ensures all certificate fillable line fields maintain clean formatting.
+ * Replaces any remaining literal underscore placeholders with empty clean strings
+ * so the CSS :empty::after pseudo-element creates a neat uniform line.
+ */
+function formatCertificateLines(container = document) {
+  const fields = container.querySelectorAll('.cert-line-field');
+  fields.forEach(field => {
+    const text = field.textContent.trim();
+    if (/^_+$/.test(text)) {
+      field.textContent = '';
+    }
+  });
+}
+
 // ── Global Reactive Event Listeners for Signatory Updates ──
 window.addEventListener('barangayConfigUpdated', (e) => {
   if (e.detail) {
@@ -258,9 +273,11 @@ window.addEventListener('barangayConfigUpdated', (e) => {
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      formatCertificateLines();
       bindCertificateCaptainName();
     });
   } else {
+    formatCertificateLines();
     bindCertificateCaptainName();
   }
 }
@@ -270,6 +287,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getOfficialCaptainName,
     getCaptainName,
     bindCertificateCaptainName,
+    formatCertificateLines,
     onNonResidencyResidentSelected,
     validateNonResidencySubmission,
   };

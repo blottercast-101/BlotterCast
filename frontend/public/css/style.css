@@ -1,6 +1,6 @@
 /**
  * frontend/public/css/style.css
- * Map Alert, Marker Animation & Permanent Zone Label Styles for BlotterCast
+ * Map Alert, Marker Animation, Permanent Zone Label & Certificate Typography Styles for BlotterCast
  */
 
 @keyframes zoneAlertPulse {
@@ -57,4 +57,71 @@ path.zone-pulse-active {
 /* Remove default Leaflet tooltip arrow */
 .zone-map-permanent-label::before {
   display: none !important;
+}
+
+/* ---------------- Certificate Typography & Fillable Field Underline Styling ---------------- */
+
+/* Standard Fillable Line Field */
+.cert-line-field {
+  display: inline-block;
+  border-bottom: 1.5px solid #1F2937;
+  padding: 0 4px;
+  margin: 0 2px;
+  text-align: center;
+  font-weight: 600;
+  color: #111827;
+  vertical-align: baseline;
+  line-height: 1.4;
+}
+
+/* Clean Blank State (when field is empty prior to filling) */
+.cert-line-field:empty::after {
+  content: "\00a0"; /* Non-breaking space to keep the underline visible and unbroken */
+}
+
+/* Typography Preservation */
+.cert-body-paragraph {
+  font-size: 14px;
+  line-height: 2.2; /* Generous line height prevents overlapping underlines */
+  color: #1F2937;
+  text-align: justify;
+}
+
+/* Width helpers for semantic span wrappers */
+.min-w-\[220px\] { min-width: 220px; }
+.min-w-\[200px\] { min-width: 200px; }
+.min-w-\[180px\] { min-width: 180px; }
+.min-w-\[160px\] { min-width: 160px; }
+.min-w-\[120px\] { min-width: 120px; }
+.min-w-\[90px\] { min-width: 90px; }
+.min-w-\[80px\] { min-width: 80px; }
+.min-w-\[60px\] { min-width: 60px; }
+.min-w-\[50px\] { min-width: 50px; }
+.min-w-\[45px\] { min-width: 45px; }
+.min-w-\[40px\] { min-width: 40px; }
+.min-w-\[35px\] { min-width: 35px; }
+.min-w-\[30px\] { min-width: 30px; }
+
+/* Print Preview & Actual Printing Strict Rules */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  body {
+    font-size: 14px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cert-line-field {
+    border-bottom: 1.5px solid #000000 !important;
+    color: #000000 !important;
+  }
+
+  .cert-body-paragraph {
+    font-size: 14px !important;
+    line-height: 2.2 !important;
+  }
 }
