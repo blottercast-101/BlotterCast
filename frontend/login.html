@@ -334,6 +334,29 @@
     }
     @keyframes pop { 0%{transform:scale(0)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
 
+    /* Animated SVG Checkmark & Success Badge */
+    .checkmark-path {
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      animation: drawCheckmark 0.65s cubic-bezier(0.65, 0, 0.45, 1) 0.15s forwards;
+    }
+    @keyframes drawCheckmark {
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+    .success-circle-pop {
+      animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes successPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+
     /* Divider */
     .divider { display: flex; align-items: center; gap: 12px; margin: 1.5rem 0; }
     .divider-line { flex: 1; height: 1px; background: #f3f4f6; }
@@ -428,9 +451,33 @@
 <div class="right-panel">
   <!-- Success Overlay -->
   <div class="success-overlay" id="successOverlay">
-    <div class="success-icon" data-icon="check" data-icon-size="30"></div>
-    <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#111827;">Welcome back!</div>
-    <div style="font-size:0.875rem;color:#9ca3af;" id="successMsg">Redirecting to dashboard…</div>
+    <!-- Success / Redirect State Container -->
+    <div id="redirectState" class="flex flex-col items-center justify-center text-center p-8 transition-all duration-500">
+      
+      <!-- Animated Checkmark Badge -->
+      <div class="success-badge-wrapper relative mb-6">
+        <div class="w-16 h-16 rounded-full bg-emerald-950 flex items-center justify-center shadow-lg success-circle-pop">
+          <svg class="w-8 h-8 text-emerald-300 checkmark-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline class="checkmark-path" points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <!-- Soft Ripple Glow behind -->
+        <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping pointer-events-none"></div>
+      </div>
+
+      <!-- Greeting & Role Subtitle -->
+      <h2 class="text-2xl font-bold text-emerald-950 mb-2 font-serif tracking-tight">Welcome back!</h2>
+      <p id="redirectSubtitle" class="text-xs text-emerald-800/80 font-medium flex items-center gap-1.5">
+        <span>Signed in as <strong id="redirectRole" class="font-semibold text-emerald-900">System Administrator</strong></span>
+        <span class="inline-block">— Redirecting</span>
+        <span class="inline-flex gap-0.5">
+          <span class="animate-bounce delay-100">.</span>
+          <span class="animate-bounce delay-200">.</span>
+          <span class="animate-bounce delay-300">.</span>
+        </span>
+      </p>
+      <div style="display:none;" id="successMsg"></div>
+    </div>
   </div>
 
   <!-- Form Header -->
@@ -643,8 +690,57 @@
 </div>
 
 <script src="api.js"></script>
-  <script src="icons.js"></script>
+<script src="icons.js"></script>
+<script src="public/js/login.js"></script>
 <script>
+  function showSuccessRedirect(userOrName, customSubtitle) {
+    const roleEl = document.getElementById('redirectRole');
+    const subtitleEl = document.getElementById('redirectSubtitle');
+    const overlay = document.getElementById('successOverlay');
+    const msgEl = document.getElementById('successMsg');
+    const checkmarkPath = document.querySelector('.checkmark-path');
+    const circlePop = document.querySelector('.success-circle-pop');
+
+    const nameOrRole = (typeof userOrName === 'object' && userOrName !== null)
+      ? (userOrName.full_name || userOrName.role || userOrName.username || 'System Administrator')
+      : (userOrName || 'System Administrator');
+
+    if (roleEl) {
+      roleEl.textContent = nameOrRole;
+    }
+
+    if (customSubtitle && subtitleEl) {
+      subtitleEl.innerHTML = `<span>${customSubtitle}</span>`;
+    } else if (subtitleEl) {
+      subtitleEl.innerHTML = `
+        <span>Signed in as <strong id="redirectRole" class="font-semibold text-emerald-900">${nameOrRole}</strong></span>
+        <span class="inline-block">— Redirecting</span>
+        <span class="inline-flex gap-0.5">
+          <span class="animate-bounce delay-100">.</span>
+          <span class="animate-bounce delay-200">.</span>
+          <span class="animate-bounce delay-300">.</span>
+        </span>`;
+    }
+
+    if (msgEl) {
+      msgEl.textContent = customSubtitle || `Signed in as ${nameOrRole} — Redirecting…`;
+    }
+
+    if (checkmarkPath) {
+      checkmarkPath.style.animation = 'none';
+      void checkmarkPath.offsetWidth;
+      checkmarkPath.style.animation = '';
+    }
+    if (circlePop) {
+      circlePop.style.animation = 'none';
+      void circlePop.offsetWidth;
+      circlePop.style.animation = '';
+    }
+
+    if (overlay) {
+      overlay.classList.add('show');
+    }
+  }
   function togglePassword() {
     toggleFieldPassword('password', 'togglePw');
   }
@@ -688,8 +784,7 @@
         // enough, so skip straight to the same success/redirect the OTP
         // step ends with.
         if (resendTimer) clearInterval(resendTimer);
-        document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
-        document.getElementById('successOverlay').classList.add('show');
+        showSuccessRedirect(result.user);
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
@@ -880,8 +975,7 @@
     try {
       await BCApi.resetPassword(newPassword);
       btn.classList.remove('loading');
-      document.getElementById('successMsg').textContent = 'Password reset! Redirecting to sign in…';
-      document.getElementById('successOverlay').classList.add('show');
+      showSuccessRedirect('User', 'Password reset! Redirecting to sign in…');
       setTimeout(() => {
         document.getElementById('successOverlay').classList.remove('show');
         document.getElementById('newPasswordForm').style.display = 'none';
@@ -914,8 +1008,7 @@
       const result = await BCApi.verifyOtp(code, currentPreAuthToken);
       btn.classList.remove('loading');
       if (resendTimer) clearInterval(resendTimer);
-      document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
-      document.getElementById('successOverlay').classList.add('show');
+      showSuccessRedirect(result.user);
       setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
     } catch (e2) {
       btn.classList.remove('loading');
@@ -999,8 +1092,7 @@
         showOtpStep(result);
       } else {
         if (resendTimer) clearInterval(resendTimer);
-        document.getElementById('successMsg').textContent = `Signed in as ${result.user.full_name} — Redirecting…`;
-        document.getElementById('successOverlay').classList.add('show');
+        showSuccessRedirect(result.user);
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
