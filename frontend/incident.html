@@ -642,20 +642,90 @@
     bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
   }
 
+  // Pre-loaded Mapulang Lupa boundary polygon vertices [lat, lng]
+  const MAPULANG_LUPA_BOUNDARY = [
+    [14.881000, 120.955500],
+    [14.883500, 120.956200],
+    [14.886000, 120.957500],
+    [14.887200, 120.959200],
+    [14.888400, 120.961500],
+    [14.889300, 120.963500],
+    [14.889600, 120.965800],
+    [14.889800, 120.967000],
+    [14.890200, 120.969500],
+    [14.890000, 120.972500],
+    [14.889000, 120.975500],
+    [14.887000, 120.978500],
+    [14.884000, 120.980000],
+    [14.880500, 120.979500],
+    [14.877500, 120.977500],
+    [14.876500, 120.975000],
+    [14.876000, 120.972000],
+    [14.876000, 120.969500],
+    [14.876200, 120.965500],
+    [14.876500, 120.962000],
+    [14.877500, 120.958500],
+    [14.879000, 120.956500],
+    [14.881000, 120.955500]
+  ];
+
+  /**
+   * Ray-casting point-in-polygon algorithm
+   * @param {number[]} point - [lat, lng]
+   * @param {number[][]} vs - Array of [lat, lng] vertices
+   * @returns {boolean}
+   */
+  function isPointInPolygon(point, vs) {
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+      const xi = vs[i][0], yi = vs[i][1];
+      const xj = vs[j][0], yj = vs[j][1];
+      const intersect = ((yi > y) !== (yj > y)) &&
+                        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
   let pickerMap = null;
   let pickerMarker = null;
   let pickerBoundaryLayer = null;
   let pickerBoundaryGeojson = null;
   let pickerZonesLayer = null;
   let pickerZonesGeojson = null;
+  let boundaryLoadingPromise = null;
   let isLocationVerifiedInBoundary = false;
   let isGeocoded = false;
+
+  async function ensurePickerBoundaryLoaded() {
+    if (pickerBoundaryGeojson && pickerZonesGeojson) return;
+    if (!boundaryLoadingPromise) {
+      boundaryLoadingPromise = (async () => {
+        try {
+          const [boundRes, zonesRes] = await Promise.all([
+            fetch('mapulang-lupa.geojson'),
+            fetch('mapulang-lupa-zones.geojson')
+          ]);
+          if (boundRes.ok) {
+            pickerBoundaryGeojson = await boundRes.json();
+          }
+          if (zonesRes.ok) {
+            pickerZonesGeojson = await zonesRes.json();
+          }
+        } catch (e) {
+          console.warn('Could not fetch boundary GeoJSON files:', e);
+        }
+      })();
+    }
+    await boundaryLoadingPromise;
+  }
 
   function setBoundaryStyle(isError) {
     if (pickerBoundaryLayer) {
       pickerBoundaryLayer.setStyle({
         color: isError ? '#e11d48' : '#064e3b',
-        weight: isError ? 3.5 : 3.5,
+        weight: 3.5,
         fillColor: 'transparent',
         fillOpacity: 0
       });
@@ -727,43 +797,33 @@
       attribution: '&copy; OpenStreetMap'
     }).addTo(pickerMap);
 
-    try {
-      const [boundRes, zonesRes] = await Promise.all([
-        fetch('mapulang-lupa.geojson'),
-        fetch('mapulang-lupa-zones.geojson')
-      ]);
+    await ensurePickerBoundaryLoaded();
 
-      if (zonesRes.ok) {
-        pickerZonesGeojson = await zonesRes.json();
-        const selectedZone = document.getElementById('if_zone').value;
+    if (pickerZonesGeojson) {
+      const selectedZone = document.getElementById('if_zone').value;
+      pickerZonesLayer = L.geoJSON(pickerZonesGeojson, {
+        style: (feature) => getPickerZoneStyle(feature, feature.properties.zone === selectedZone),
+        onEachFeature: (feature, layer) => {
+          const z = feature.properties;
+          layer.bindTooltip(`<strong>${z.zone}</strong> (${z.name})`, { sticky: true, className: 'text-xs' });
 
-        pickerZonesLayer = L.geoJSON(pickerZonesGeojson, {
-          style: (feature) => getPickerZoneStyle(feature, feature.properties.zone === selectedZone),
-          onEachFeature: (feature, layer) => {
-            const z = feature.properties;
-            layer.bindTooltip(`<strong>${z.zone}</strong> (${z.name})`, { sticky: true, className: 'text-xs' });
+          layer.on('click', (e) => {
+            setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
+          });
+        }
+      }).addTo(pickerMap);
+    }
 
-            layer.on('click', (e) => {
-              setPickerCoordinates(e.latlng.lat, e.latlng.lng, true);
-            });
-          }
-        }).addTo(pickerMap);
-      }
-
-      if (boundRes.ok) {
-        pickerBoundaryGeojson = await boundRes.json();
-        pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
-          style: {
-            color: '#1a5730',
-            weight: 3,
-            fillColor: 'transparent',
-            fillOpacity: 0
-          }
-        }).addTo(pickerMap);
-        pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
-      }
-    } catch (err) {
-      console.error('Picker boundary load error:', err);
+    if (pickerBoundaryGeojson) {
+      pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
+        style: {
+          color: '#1a5730',
+          weight: 3,
+          fillColor: 'transparent',
+          fillOpacity: 0
+        }
+      }).addTo(pickerMap);
+      pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
     }
 
     pickerMap.on('click', (e) => {
@@ -813,13 +873,28 @@
   }
 
   function isPickerPointInBoundary(lat, lng) {
-    if (!pickerBoundaryGeojson) return false;
-    try {
-      const pt = turf.point([Number(lng), Number(lat)]);
-      return turf.booleanPointInPolygon(pt, pickerBoundaryGeojson);
-    } catch (e) {
-      return false;
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return false;
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+
+    // 1. Primary ray-casting check against predefined boundary polygon
+    if (Array.isArray(MAPULANG_LUPA_BOUNDARY) && MAPULANG_LUPA_BOUNDARY.length > 0) {
+      if (isPointInPolygon([numLat, numLng], MAPULANG_LUPA_BOUNDARY)) {
+        return true;
+      }
     }
+
+    // 2. Turf GeoJSON validation fallback
+    if (pickerBoundaryGeojson) {
+      try {
+        const pt = turf.point([numLng, numLat]);
+        if (turf.booleanPointInPolygon(pt, pickerBoundaryGeojson)) {
+          return true;
+        }
+      } catch (e) {}
+    }
+
+    return false;
   }
 
   let isMapExpanded = false;
@@ -1073,6 +1148,10 @@
     if (btn) btn.innerHTML = '<span data-icon="loader" class="animate-spin" data-icon-size="12"></span> Locating…';
 
     try {
+      // 1. Ensure boundary is pre-loaded before processing geocoding & boundary check
+      await ensurePickerBoundaryLoaded();
+
+      // 2. Fetch geocoded coordinates
       const res = await fetch(`/api/records.php?type=geocode&q=${encodeURIComponent(loc)}&zone=${encodeURIComponent(zone)}`, { credentials: 'same-origin' });
       const data = await res.json();
       if (data && data.ok && data.lat && data.lng) {
@@ -1706,7 +1785,16 @@
 
   (async function () {
     await requireAuth();
-    try { await Promise.all([loadIncidents(), loadZoneOptions(), loadCensusResidentsForIncidentPicker()]); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
+    try {
+      await Promise.all([
+        loadIncidents(),
+        loadZoneOptions(),
+        loadCensusResidentsForIncidentPicker(),
+        ensurePickerBoundaryLoaded()
+      ]);
+    } catch (err) {
+      showToast('Could not load records: ' + err.message, 'error');
+    }
     if (new URLSearchParams(location.search).get('new') === '1') {
       openAddIncident();
       history.replaceState(null, '', location.pathname);
