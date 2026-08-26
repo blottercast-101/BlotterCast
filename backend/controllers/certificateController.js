@@ -1,6 +1,6 @@
 /**
  * backend/controllers/certificateController.js
- * Certificate Controller with Hard Guard for Non-Residency Issuance
+ * Certificate Controller with Hard Guard for Non-Residency Issuance & Active Leadership Data Binding
  */
 
 const { Pool } = require('pg');
@@ -10,8 +10,48 @@ const pool = new Pool({
 });
 
 /**
+ * Fetches the active Barangay Leadership (Punong Barangay / Captain) and jurisdiction configuration
+ * from the database settings table.
+ * @returns {Promise<Object>}
+ */
+async function getBarangayLeadershipConfig() {
+  try {
+    const res = await pool.query(
+      `SELECT setting_key, setting_value 
+       FROM system_settings 
+       WHERE setting_key IN ('punong_barangay', 'captain_name', 'municipality', 'province', 'official_logo_url', 'barangay_name')`
+    );
+    const map = {};
+    res.rows.forEach(r => {
+      map[r.setting_key] = r.setting_value;
+    });
+
+    const captain = map.punong_barangay || map.captain_name || 'HON. PUNONG BARANGAY';
+    return {
+      punong_barangay: captain,
+      captain_name: captain,
+      municipality: map.municipality || 'Pandi, Bulacan',
+      province: map.province || 'Bulacan',
+      barangay_name: map.barangay_name || 'Barangay Mapulang Lupa',
+      official_logo_url: map.official_logo_url || '',
+    };
+  } catch (e) {
+    console.warn('[certificateController] Could not query system_settings for leadership info, using fallback:', e.message);
+    return {
+      punong_barangay: 'HON. PUNONG BARANGAY',
+      captain_name: 'HON. PUNONG BARANGAY',
+      municipality: 'Pandi, Bulacan',
+      province: 'Bulacan',
+      barangay_name: 'Barangay Mapulang Lupa',
+      official_logo_url: '',
+    };
+  }
+}
+
+/**
  * POST /api/certificates/generate or POST /api/certificates/non-residency
- * Generates a Certificate of Non-Residency with strict hard guard against active blotters.
+ * Generates a Certificate of Non-Residency with strict hard guard against active blotters
+ * and dynamically bound Punong Barangay signatory information.
  */
 async function generateNonResidencyCertificate(req, res) {
   try {
@@ -37,7 +77,6 @@ async function generateNonResidencyCertificate(req, res) {
     const resident = residentQuery.rows[0];
 
     // 2. Strict Hard Guard: Check for any active/unsettled Blotter Records
-    // Status must NOT be 'SETTLED', 'RESOLVED', 'DISMISSED', or 'COMPLIED'
     const blotterCheckQuery = await pool.query(
       `SELECT id, docket_no, status, nature, complainant, date_filed
        FROM blotter_records
@@ -77,7 +116,10 @@ async function generateNonResidencyCertificate(req, res) {
     const officialOrNo = orNo || `OR-${currentYear}-${String(seq).padStart(4, '0')}`;
     const fullName = `${resident.last_name}, ${resident.first_name} ${resident.middle_name || ''}`.trim();
 
-    // 4. Insert Certificate Issuance Record
+    // 4. Fetch active leadership configuration for dynamic document payload
+    const leadershipConfig = await getBarangayLeadershipConfig();
+
+    // 5. Insert Certificate Issuance Record
     const insertRes = await pool.query(
       `INSERT INTO barangay_non_residency (
          resident_id, ctrl_no, full_name, previous_address, purpose,
@@ -105,10 +147,40 @@ async function generateNonResidencyCertificate(req, res) {
       id: insertRes.rows[0].id,
       ctrlNo,
       orNo: officialOrNo,
+      captain_name: leadershipConfig.captain_name,
+      punong_barangay: leadershipConfig.punong_barangay,
+      barangay_name: leadershipConfig.barangay_name,
+      municipality: leadershipConfig.municipality,
+      province: leadershipConfig.province,
+      official_logo_url: leadershipConfig.official_logo_url,
       message: 'Certificate of Non-Residency issued successfully.',
     });
   } catch (err) {
     console.error('[certificateController] Issuance error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+/**
+ * GET /api/certificates/preview or GET /api/certificates/details
+ * Returns document preview metadata with dynamically injected Punong Barangay signatory data.
+ */
+async function getCertificatePreviewDetails(req, res) {
+  try {
+    const leadershipConfig = await getBarangayLeadershipConfig();
+    return res.status(200).json({
+      ok: true,
+      success: true,
+      data: {
+        captain_name: leadershipConfig.captain_name,
+        punong_barangay: leadershipConfig.punong_barangay,
+        barangay_name: leadershipConfig.barangay_name,
+        municipality: leadershipConfig.municipality,
+        province: leadershipConfig.province,
+        official_logo_url: leadershipConfig.official_logo_url,
+      }
+    });
+  } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }
 }
@@ -147,6 +219,8 @@ async function checkResidentBlotterEligibility(req, res) {
 }
 
 module.exports = {
+  getBarangayLeadershipConfig,
   generateNonResidencyCertificate,
+  getCertificatePreviewDetails,
   checkResidentBlotterEligibility,
 };

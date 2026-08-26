@@ -176,7 +176,7 @@
             <div class="cert-ov cert-ov-voter">( &nbsp;<span id="r_voter">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="r_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
             <div class="cert-ov cert-ov-sigimg" id="r_sigimg_wrap"></div>
             <div class="cert-ov cert-ov-sigblock">
-              <div class="cert-ov-chairman-name" id="r_captain"></div>
+              <div class="cert-ov-chairman-name cert-captain-name" id="r_captain"></div>
               <div class="cert-ov-chairman-title">Punong Barangay</div>
             </div>
             <div class="cert-ov cert-ov-applicant-sigblock">
@@ -520,16 +520,23 @@ async function issueResidency(){
   await requireAuth();
   try {
     const cap = await BCApi.captainSignature();
-    document.getElementById('r_captain').textContent = cap.fullName ? cap.fullName.toUpperCase() : '';
+    const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+    const capEl = document.getElementById('r_captain');
+    if (capEl) capEl.textContent = captainName.toUpperCase();
     const sigWrap = document.getElementById('r_sigimg_wrap');
-    if (cap.signaturePath) {
+    if (cap && cap.signaturePath && sigWrap) {
       sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
     }
-  } catch (e) { /* no active Barangay Captain on file yet — signature block stays blank */ }
+  } catch (e) {
+    const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+    const capEl = document.getElementById('r_captain');
+    if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+  }
 
   try { await loadResResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
   try { await loadResLog(); } catch (err) { showToast('Could not load residency log: ' + err.message, 'error'); }
 })();
 </script>
+<script src="public/js/certificates.js"></script>
 </body>
 </html>

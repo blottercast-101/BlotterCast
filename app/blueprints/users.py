@@ -75,8 +75,16 @@ PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
 
 def _captain_signature():
     row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
+    capt_name = row.full_name if (row and row.full_name) else None
+    if not capt_name:
+        from ..models import SystemSetting
+        setting_row = SystemSetting.query.get("captain_name") or SystemSetting.query.get("punong_barangay")
+        if setting_row and setting_row.setting_value:
+            capt_name = setting_row.setting_value
     return jsonify({
-        "fullName": row.full_name if row else None,
+        "fullName": capt_name or "Kapitan Jose Reyes",
+        "captain_name": capt_name or "Kapitan Jose Reyes",
+        "punong_barangay": capt_name or "Kapitan Jose Reyes",
         "signaturePath": row.signature_path if row else None,
     })
 

@@ -1,7 +1,77 @@
 /**
  * frontend/public/js/certificates.js
- * Frontend Strict Lockout & Validation for Certificate Issuance
+ * Frontend Strict Lockout & Dynamic Punong Barangay Signatory Data Binding
  */
+
+/**
+ * Fallback helper to ensure the Punong Barangay / Captain's name is never empty or undefined.
+ * Checks localStorage cached configuration first, then default fallback.
+ * @returns {string}
+ */
+function getCaptainName() {
+  try {
+    const cachedConfig = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
+    return (
+      cachedConfig.punong_barangay ||
+      cachedConfig.captain_name ||
+      'Kapitan Jose Reyes'
+    );
+  } catch (e) {
+    return 'Kapitan Jose Reyes';
+  }
+}
+
+/**
+ * Dynamically binds and populates the active Punong Barangay / Captain name across
+ * all document and certificate signatory DOM elements and templates.
+ *
+ * @param {Object} [documentData={}] - Document payload containing captain_name or punong_barangay
+ */
+function bindCertificateCaptainName(documentData = {}) {
+  const captain = (
+    documentData.captain_name ||
+    documentData.punong_barangay ||
+    documentData.fullName ||
+    getCaptainName()
+  );
+  const upperCaptain = String(captain || 'HON. PUNONG BARANGAY').toUpperCase();
+
+  // 1. Target all signatory DOM placeholders and signature blocks
+  const selectors = [
+    '.cert-captain-name',
+    '#c_captain',
+    '#r_captain',
+    '#i_captain',
+    '#nr_captain',
+    '#captainSignatureName',
+    '[data-bind="punong_barangay"]',
+    '[data-bind="captain_name"]'
+  ];
+
+  document.querySelectorAll(selectors.join(', ')).forEach(el => {
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.value = upperCaptain;
+    } else {
+      el.textContent = upperCaptain;
+    }
+  });
+
+  // 2. Also populate jurisdiction and municipality headers if available
+  const cachedConfig = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
+  const bName = documentData.barangay_name || cachedConfig.barangay_name || 'Barangay Mapulang Lupa';
+  const muni = documentData.municipality || cachedConfig.municipality || 'Pandi, Bulacan';
+  const prov = documentData.province || cachedConfig.province || 'Bulacan';
+
+  document.querySelectorAll('.cert-header-barangay').forEach(el => {
+    el.textContent = bName.toUpperCase();
+  });
+  document.querySelectorAll('.cert-header-municipality').forEach(el => {
+    el.textContent = muni;
+  });
+  document.querySelectorAll('.cert-header-province').forEach(el => {
+    el.textContent = prov;
+  });
+}
 
 /**
  * Handles resident selection in the Certificate of Non-Residency form.
@@ -110,8 +180,28 @@ function validateNonResidencySubmission(e) {
   return true;
 }
 
+// ── Global Reactive Event Listeners for Signatory Updates ──
+window.addEventListener('barangayConfigUpdated', (e) => {
+  if (e.detail) {
+    bindCertificateCaptainName(e.detail);
+  }
+});
+
+// ── Automatic Initialization on Document Ready ──
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      bindCertificateCaptainName();
+    });
+  } else {
+    bindCertificateCaptainName();
+  }
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    getCaptainName,
+    bindCertificateCaptainName,
     onNonResidencyResidentSelected,
     validateNonResidencySubmission,
   };

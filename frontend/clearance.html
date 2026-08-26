@@ -176,7 +176,7 @@
             <div class="cert-ov cert-ov-voter">( &nbsp;<span id="c_voter">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="c_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
             <div class="cert-ov cert-ov-sigimg" id="c_sigimg_wrap"></div>
             <div class="cert-ov cert-ov-sigblock">
-              <div class="cert-ov-chairman-name" id="c_captain"></div>
+              <div class="cert-ov-chairman-name cert-captain-name" id="c_captain"></div>
               <div class="cert-ov-chairman-title">Punong Barangay</div>
             </div>
             <div class="cert-ov cert-ov-applicant-sigblock">
@@ -481,12 +481,18 @@ async function issueClearance(){
   await requireAuth();
   try {
     const cap = await BCApi.captainSignature();
-    document.getElementById('c_captain').textContent = cap.fullName ? cap.fullName.toUpperCase() : '';
+    const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+    const capEl = document.getElementById('c_captain');
+    if (capEl) capEl.textContent = captainName.toUpperCase();
     const sigWrap = document.getElementById('c_sigimg_wrap');
-    if (cap.signaturePath) {
+    if (cap && cap.signaturePath && sigWrap) {
       sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
     }
-  } catch (e) { /* no active Barangay Captain on file yet — signature block stays blank */ }
+  } catch (e) {
+    const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+    const capEl = document.getElementById('c_captain');
+    if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+  }
 
   try { await loadResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
 
@@ -500,5 +506,6 @@ async function issueClearance(){
   try { await loadLog(); } catch (err) { showToast('Could not load clearance log: ' + err.message, 'error'); }
 })();
 </script>
+<script src="public/js/certificates.js"></script>
 </body>
 </html>

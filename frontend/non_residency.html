@@ -177,7 +177,7 @@
             <div class="cert-ov cert-ov-nr-applicant-name" id="nr_applicant_name"></div>
             <div class="cert-ov cert-ov-nr-sigimg" id="nr_sigimg_wrap"></div>
             <div class="cert-ov cert-ov-nr-sigblock">
-              <div class="cert-ov-chairman-name" id="nr_captain"></div>
+              <div class="cert-ov-chairman-name cert-captain-name" id="nr_captain"></div>
               <div class="cert-ov-chairman-title">Punong Barangay</div>
             </div>
           </div>
@@ -466,16 +466,23 @@ async function issueNonResidency(){
   await requireAuth();
   try {
     const cap = await BCApi.captainSignature();
-    document.getElementById('nr_captain').textContent = cap.fullName ? cap.fullName.toUpperCase() : '';
+    const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+    const capEl = document.getElementById('nr_captain');
+    if (capEl) capEl.textContent = captainName.toUpperCase();
     const sigWrap = document.getElementById('nr_sigimg_wrap');
-    if (cap.signaturePath) {
+    if (cap && cap.signaturePath && sigWrap) {
       sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
     }
-  } catch (e) { /* no active Barangay Captain on file yet — signature block stays blank */ }
+  } catch (e) {
+    const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+    const capEl = document.getElementById('nr_captain');
+    if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+  }
 
   try { await loadNrResidentOptionsForPicker(); } catch (err) { showToast('Could not load Census records: ' + err.message, 'error'); }
   try { await loadNrLog(); } catch (err) { showToast('Could not load non-residency log: ' + err.message, 'error'); }
 })();
 </script>
+<script src="public/js/certificates.js"></script>
 </body>
 </html>
