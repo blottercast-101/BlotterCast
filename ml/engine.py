@@ -452,9 +452,21 @@ def compute_zone_forecasts(
         exp_7d = float(np.sum(probs7))
         exp_14d = float(np.sum(daily_probs))
 
+        # Past historical incidents for this zone
+        sub = raw_df[raw_df['zone'] == zone]
+        if not sub.empty:
+            df_date = pd.to_datetime(raw_df['date'])
+            end = df_date.max()
+            sub_date = pd.to_datetime(sub['date'])
+            past_14d = float(sub[(sub_date > end - timedelta(days=14))].shape[0])
+            past_7d = float(sub[(sub_date > end - timedelta(days=7))].shape[0])
+        else:
+            past_14d = 0.0
+            past_7d = 0.0
+
         # Peak time window calculation from real historical hours in this zone
         peak_win = compute_peak_window(raw_df, zone)
-        trend = compute_14d_trend(raw_df, zone)
+        trend = compute_14d_trend(raw_df, zone, exp_14d=exp_14d)
 
         # Top predicted category for current operational day
         top_cat, top_p = predict_top_category(type_model, type_cols, zone, current_dow, 20)
@@ -464,6 +476,8 @@ def compute_zone_forecasts(
             'meanDailyProb': round(mean_p, 4),
             'expectedCount7d': round(exp_7d, 2),
             'expectedCount14d': round(exp_14d, 2),
+            'historicalCount7d': round(past_7d, 1),
+            'historicalCount14d': round(past_14d, 1),
             'dailyProbs': daily_probs,
             'categorySeries': cat_series,
             'forecastDates': [(last_date + timedelta(days=s)).strftime('%Y-%m-%d') for s in range(1, horizon + 1)],
@@ -494,19 +508,32 @@ def compute_peak_window(df: pd.DataFrame, zone: str) -> str:
     return f"{fmt(h1)}–{fmt(h2)}"
 
 
-def compute_14d_trend(df: pd.DataFrame, zone: str) -> str:
-    """Evaluates 14-day velocity vs previous 14-day period."""
+def compute_14d_trend(df: pd.DataFrame, zone: str, exp_14d: float = None) -> str:
+    """Evaluates 14-day velocity vs previous 14-day period or expected forecast."""
     sub = df[df['zone'] == zone]
     if sub.empty:
         return '→'
     df_date = pd.to_datetime(df['date'])
     end = df_date.max()
     sub_date = pd.to_datetime(sub['date'])
-    last14 = sub[(sub_date > end - timedelta(days=14))].shape[0]
-    prev14 = sub[(sub_date <= end - timedelta(days=14)) & (sub_date > end - timedelta(days=28))].shape[0]
-    if last14 > prev14 * 1.15:
+    last14 = float(sub[(sub_date > end - timedelta(days=14))].shape[0])
+
+    if exp_14d is not None:
+        denom = max(1.0, last14)
+        delta_pct = ((exp_14d - last14) / denom) * 100.0
+        # Prevent anomalous rising arrows for low-risk zones with negligible counts
+        if delta_pct > 10.0 and exp_14d >= 0.5:
+            return '↑'
+        elif delta_pct < -10.0:
+            return '↓'
+        return '→'
+
+    prev14 = float(sub[(sub_date <= end - timedelta(days=14)) & (sub_date > end - timedelta(days=28))].shape[0])
+    denom = max(1.0, prev14)
+    delta_pct = ((last14 - prev14) / denom) * 100.0
+    if delta_pct > 10.0:
         return '↑'
-    if last14 < prev14 * 0.85:
+    if delta_pct < -10.0:
         return '↓'
     return '→'
 

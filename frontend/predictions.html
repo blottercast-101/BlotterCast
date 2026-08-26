@@ -179,7 +179,7 @@
               <th>Risk Level</th>
               <th>Predicted Top Category</th>
               <th>Peak Time Window</th>
-              <th>14-Day Trend</th>
+              <th id="trendHeader">14-Day Trend</th>
             </tr>
           </thead>
           <tbody id="predTableBody"></tbody>
@@ -334,6 +334,64 @@ function evaluatePatrolTier(expectedCount) {
   return { tier: 'Low', officers: 1, officerText: '1 officer', badgeClass: 'badge-resolved', isCritical: false };
 }
 
+/**
+ * Dynamically calculates the trend indicator (↑ Rising, ↓ Falling, → Stable)
+ * based on the forecasted trajectory vs historical baseline over the selected horizon (7 or 14 days).
+ * 
+ * Formula:
+ *   Delta_trend = ((Expected Incidents - Historical Incidents) / Math.max(1, Historical Incidents)) * 100
+ */
+function calculateTrend(zoneData, horizon = 14) {
+  if (!zoneData) {
+    return `<span class="text-gray-500 font-bold flex items-center gap-1" title="Projected trend: +0.0% over ${horizon} days">→ <span class="text-xs font-medium">(Stable)</span></span>`;
+  }
+
+  const daily = zoneData.dailyProbs || [];
+  const expected = daily.length >= horizon
+    ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
+    : (horizon === 14 ? (zoneData.expectedCount14d || zoneData.expectedCount7d * 2) : zoneData.expectedCount7d) || 0;
+
+  // Historical incidents baseline for the corresponding window
+  let historical = horizon === 14
+    ? (zoneData.historicalCount14d ?? zoneData.past14dCount ?? zoneData.histCount14d)
+    : (zoneData.historicalCount7d ?? zoneData.past7dCount ?? zoneData.histCount7d);
+
+  // If historical baseline is not provided by backend, derive trajectory slope from forecast probabilities
+  if (historical === undefined || historical === null) {
+    if (daily.length >= 4) {
+      const h = Math.min(horizon, daily.length);
+      const half = Math.floor(h / 2);
+      const firstHalfSum = daily.slice(0, half).reduce((a, b) => a + Number(b), 0);
+      historical = (firstHalfSum / half) * h;
+    } else {
+      historical = expected;
+    }
+  }
+
+  const denom = Math.max(1, Number(historical));
+  let deltaTrend = ((expected - Number(historical)) / denom) * 100;
+
+  // Sync with Expected Incidents & Risk Level:
+  // Low Risk Zones with negligible projected occurrences (< 0.5 incidents) should display Stable/Falling,
+  // preventing anomalous rising alerts from low-denominator artifacts.
+  const risk = typeof riskLevel === 'function' ? riskLevel(zoneData.meanDailyProb) : 'Low';
+  if (risk === 'Low' && expected < 0.5 && deltaTrend > 10) {
+    deltaTrend = 0;
+  }
+
+  const sign = deltaTrend > 0 ? '+' : '';
+  const formattedPct = `${sign}${deltaTrend.toFixed(1)}%`;
+  const tooltip = `Projected trend: ${formattedPct} over ${horizon} days`;
+
+  if (deltaTrend > 10) {
+    return `<span class="text-rose-600 font-bold flex items-center gap-1" title="${tooltip}">↑ <span class="text-xs font-medium">(Rising)</span></span>`;
+  } else if (deltaTrend < -10) {
+    return `<span class="text-emerald-600 font-bold flex items-center gap-1" title="${tooltip}">↓ <span class="text-xs font-medium">(Falling)</span></span>`;
+  } else {
+    return `<span class="text-gray-500 font-bold flex items-center gap-1" title="${tooltip}">→ <span class="text-xs font-medium">(Stable)</span></span>`;
+  }
+}
+
 function renderOutputs() {
   if (!RESULT || !RESULT.zoneRisk) return;
   const horizon = Number(document.getElementById('horizonSel').value || 7);
@@ -344,6 +402,8 @@ function renderOutputs() {
   if (forecastTitle) forecastTitle.textContent = `${horizon}-Day Forecast — Expected Incidents (Top Risk Zones)`;
   const countHeader = document.getElementById('expectedCountHeader');
   if (countHeader) countHeader.textContent = `Expected Incidents (${horizon}d)`;
+  const trendHeader = document.getElementById('trendHeader');
+  if (trendHeader) trendHeader.textContent = `${horizon}-Day Trend`;
 
   // Forecast chart — top 4 risk zones across chosen horizon (7 vs 14 days)
   const top4 = ranked.slice(0, 4);
@@ -373,13 +433,15 @@ function renderOutputs() {
     },
   });
 
-  // Table rendering with horizon-synchronized expected count
+  // Table rendering with horizon-synchronized expected count and dynamic trend calculation
   document.getElementById('predTableBody').innerHTML = ranked.map(h => {
     const risk = riskLevel(h.meanDailyProb);
     const daily = h.dailyProbs || [];
     const expected = daily.length >= horizon
       ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
       : (horizon === 14 ? (h.expectedCount14d || h.expectedCount7d * 2) : h.expectedCount7d);
+
+    const trendCell = calculateTrend(h, horizon);
 
     return `<tr>
       <td class="font-semibold text-forest-700">${zoneDisplay(h.zone)}</td>
@@ -393,7 +455,7 @@ function renderOutputs() {
       <td><span class="badge ${risk === 'High' ? 'badge-not-complied' : risk === 'Moderate' ? 'badge-ongoing' : 'badge-resolved'}">${risk}</span></td>
       <td class="text-sm">${h.topCategory} <span class="text-xs text-forest-400">(${pct(h.topCategoryProb)})</span></td>
       <td class="text-xs text-forest-500">${h.peakWindow}</td>
-      <td class="font-bold text-lg ${h.trend === '↑' ? 'text-red-500' : h.trend === '↓' ? 'text-forest-600' : 'text-amber-500'}">${h.trend}</td>
+      <td>${trendCell}</td>
     </tr>`;
   }).join('');
 
