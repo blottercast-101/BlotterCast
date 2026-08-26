@@ -1,6 +1,6 @@
 /**
  * frontend/public/css/style.css
- * Map Alert & Marker Animation Styles for BlotterCast
+ * Map Alert, Marker Animation & Permanent Zone Label Styles for BlotterCast
  */
 
 @keyframes zoneAlertPulse {
@@ -36,4 +36,25 @@ path.zone-pulse-active {
   animation: markerJitterPulse 1.2s ease-in-out infinite;
   z-index: 1000 !important;
   transform-origin: center center;
+}
+
+/* ---------------- Permanent Leaflet Zone Label Badge ---------------- */
+.zone-map-permanent-label {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #FFFFFF !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 9px !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+}
+
+/* Remove default Leaflet tooltip arrow */
+.zone-map-permanent-label::before {
+  display: none !important;
 }

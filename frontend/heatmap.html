@@ -1072,6 +1072,16 @@
       return '#10B981'; // Low (< 3 cases)
     }
 
+    const OFFICIAL_ZONE_LABELS = {
+      'Zone 1': 'Zone 1 - Residence 3',
+      'Zone 2': 'Zone 2 - Residence 1',
+      'Zone 3': 'Zone 3 - Pandi Village 2',
+      'Zone 4': 'Zone 4 - Mitay 1',
+      'Zone 5': 'Zone 5 - Sitio Gubat',
+      'Zone 6': 'Zone 6 - Bangko St.',
+      'Zone 7': 'Zone 7 - Barangka St.'
+    };
+
     function renderZoneChoropleth(data, tierEngine, zoneCounts) {
       if (zonesLayer) {
         map.removeLayer(zonesLayer);
@@ -1088,20 +1098,21 @@
           zonePolygonLayers[zoneId] = layer;
           const count = zoneCounts[zoneId] || 0;
           const tier = tierEngine.getTier(count);
+          const zoneLabelText = OFFICIAL_ZONE_LABELS[zoneId] || `${zoneId} - ${zProps.name || zProps.landmark}`;
 
-          // Tooltip on hover
-          layer.bindTooltip(`
-            <div class="font-sans text-xs">
-              <strong>${zProps.zone} (${zProps.name})</strong><br/>
-              <span style="color:${count > 0 ? tier.color : '#6B7280'}">${count} Incident${count !== 1 ? 's' : ''} (${count > 0 ? tier.label : 'None'})</span>
-            </div>
-          `, { sticky: true, className: 'zone-tooltip' });
+          // Permanent centered zone label badge
+          layer.bindTooltip(zoneLabelText, {
+            permanent: true,
+            direction: 'center',
+            className: 'zone-map-permanent-label',
+            interactive: false
+          });
 
           // Popup on click
           layer.bindPopup(`
             <div class="p-2 font-sans text-xs space-y-1.5">
               <div class="flex items-center justify-between gap-2 border-b pb-1.5">
-                <strong class="text-sm font-bold text-forest-900">${zProps.zone}</strong>
+                <strong class="text-sm font-bold text-forest-900">${zoneLabelText}</strong>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? tier.badgeClass : 'bg-gray-100 text-gray-700'}">${count > 0 ? tier.label : 'No Incidents'}</span>
               </div>
               <div><strong>Primary Landmark:</strong> ${zProps.landmark || zProps.name}</div>

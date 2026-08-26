@@ -1,7 +1,8 @@
 /**
  * frontend/public/js/heatmap.js
  * Heatmap Module: URL Parameter Deep-linking, Density Alert Pulsing,
- * Full-Width Toolbar, Real-time Search, and Reactive 7-Zone Filtering
+ * Full-Width Toolbar, Real-time Search, Reactive 7-Zone Filtering,
+ * and Permanent Leaflet Zone Centroid Labels
  */
 
 /**
@@ -18,6 +19,19 @@ const HEATMAP_OFFICIAL_ZONES = [
 ];
 
 /**
+ * Official permanent zone label dictionary
+ */
+const OFFICIAL_ZONE_LABELS = {
+  'Zone 1': 'Zone 1 - Residence 3',
+  'Zone 2': 'Zone 2 - Residence 1',
+  'Zone 3': 'Zone 3 - Pandi Village 2',
+  'Zone 4': 'Zone 4 - Mitay 1',
+  'Zone 5': 'Zone 5 - Sitio Gubat',
+  'Zone 6': 'Zone 6 - Bangko St.',
+  'Zone 7': 'Zone 7 - Barangka St.'
+};
+
+/**
  * Calculates the density color matching the zone incident frequency:
  * - High / Critical (>= 5 cases): #EF4444 (Red)
  * - Moderate (3 - 4 cases): #F59E0B (Amber / Yellow)
@@ -32,6 +46,28 @@ function getDensityColor(zoneId, zoneCounts = {}) {
   if (count >= 5) return '#EF4444'; // High / Critical (>= 5 cases)
   if (count >= 3) return '#F59E0B'; // Moderate (3 - 4 cases)
   return '#10B981'; // Low (< 3 cases)
+}
+
+/**
+ * Binds permanent centered zone labels to a Leaflet GeoJSON layer
+ *
+ * @param {L.GeoJSON} layer - Leaflet GeoJSON layer
+ * @param {Object} [labelMap=OFFICIAL_ZONE_LABELS] - Dictionary mapping zone IDs to label strings
+ */
+function bindPermanentZoneLabels(layer, labelMap = OFFICIAL_ZONE_LABELS) {
+  if (!layer || typeof layer.eachLayer !== 'function') return;
+
+  layer.eachLayer((poly) => {
+    const zoneId = poly.feature?.properties?.zone;
+    const labelText = labelMap[zoneId] || (zoneId ? `${zoneId}` : 'Zone');
+
+    poly.bindTooltip(labelText, {
+      permanent: true,
+      direction: 'center',
+      className: 'zone-map-permanent-label',
+      interactive: false
+    });
+  });
 }
 
 /**
@@ -204,7 +240,9 @@ function initHeatmapToolbarListeners(onFilterChange) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     HEATMAP_OFFICIAL_ZONES,
+    OFFICIAL_ZONE_LABELS,
     getDensityColor,
+    bindPermanentZoneLabels,
     initHeatmapDeepLink,
     filterIncidentList,
     paginateItems,
