@@ -1,8 +1,21 @@
 /**
  * frontend/public/js/heatmap.js
  * Heatmap Module: URL Parameter Deep-linking, Density Alert Pulsing,
- * Unified Client-side Pagination, Real-time Search, and Reactive Filtering
+ * Full-Width Toolbar, Real-time Search, and Reactive 7-Zone Filtering
  */
+
+/**
+ * Official 7-Zone mapping reference for Barangay Mapulang Lupa, Pandi, Bulacan
+ */
+const HEATMAP_OFFICIAL_ZONES = [
+  { id: 'Zone 1', name: 'Residence 3 (Barangay Hall)', label: 'Zone 1 - Residence 3 (Barangay Hall)' },
+  { id: 'Zone 2', name: 'Residence 1', label: 'Zone 2 - Residence 1' },
+  { id: 'Zone 3', name: 'Pandi Village 2 (Atlantica)', label: 'Zone 3 - Pandi Village 2 (Atlantica)' },
+  { id: 'Zone 4', name: 'Mitay 1', label: 'Zone 4 - Mitay 1' },
+  { id: 'Zone 5', name: 'Sitio Gubat', label: 'Zone 5 - Sitio Gubat' },
+  { id: 'Zone 6', name: 'Bangko St.', label: 'Zone 6 - Bangko St.' },
+  { id: 'Zone 7', name: 'Barangka St.', label: 'Zone 7 - Barangka St.' }
+];
 
 /**
  * Calculates the density color matching the zone incident frequency:
@@ -103,6 +116,7 @@ function initHeatmapDeepLink({ map, zonePolygonLayers = {}, zoneCounts = {}, foc
 
 /**
  * Filters a list of incident objects based on search query, zone, and category
+ * Matches both zone ID and full landmark label.
  *
  * @param {Array<Object>} incidents - Master incident list
  * @param {Object} filters
@@ -117,7 +131,10 @@ function filterIncidentList(incidents = [], { query = '', zone = 'ALL', category
   const c = category || 'ALL';
 
   return incidents.filter(item => {
-    if (z !== 'ALL' && item.zone !== z) return false;
+    if (z !== 'ALL') {
+      const zoneKey = String(item.zone || '');
+      if (zoneKey !== z && !z.startsWith(zoneKey) && !zoneKey.startsWith(z)) return false;
+    }
     if (c !== 'ALL' && item.category !== c) return false;
     if (q) {
       const idStr = String(item.id || '').toLowerCase();
@@ -167,11 +184,30 @@ function paginateItems(list = [], page = 1, pageSize = 8) {
   };
 }
 
+/**
+ * Initializes reactive filter event bindings for the heatmap toolbar
+ *
+ * @param {Function} onFilterChange - Callback executed whenever query or dropdown filters update
+ */
+function initHeatmapToolbarListeners(onFilterChange) {
+  if (typeof onFilterChange !== 'function') return;
+
+  const searchInput = document.getElementById('heatmapSearchInput');
+  const zoneFilter = document.getElementById('heatmapZoneFilter');
+  const categoryFilter = document.getElementById('heatmapCategoryFilter');
+
+  if (searchInput) searchInput.addEventListener('input', () => onFilterChange(true));
+  if (zoneFilter) zoneFilter.addEventListener('change', () => onFilterChange(true));
+  if (categoryFilter) categoryFilter.addEventListener('change', () => onFilterChange(true));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    HEATMAP_OFFICIAL_ZONES,
     getDensityColor,
     initHeatmapDeepLink,
     filterIncidentList,
-    paginateItems
+    paginateItems,
+    initHeatmapToolbarListeners
   };
 }
