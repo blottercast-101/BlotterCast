@@ -681,16 +681,14 @@
     };
 
     function updateLegendUI(tierEngine) {
-      if (!tierEngine || !tierEngine.ranges) return;
-      const r = tierEngine.ranges;
       const lowEl = document.getElementById('legendLowText');
       const medEl = document.getElementById('legendMedText');
       const eleEl = document.getElementById('legendEleText');
       const highEl = document.getElementById('legendHighText');
-      if (lowEl) lowEl.textContent = `Low (${r.low})`;
-      if (medEl) medEl.textContent = `Medium (${r.medium})`;
-      if (eleEl) eleEl.textContent = `Elevated (${r.elevated})`;
-      if (highEl) highEl.textContent = `High (${r.high})`;
+      if (lowEl) lowEl.textContent = 'Low';
+      if (medEl) medEl.textContent = 'Medium';
+      if (eleEl) eleEl.textContent = 'Elevated';
+      if (highEl) highEl.textContent = 'High';
     }
 
     function getZoneIncidentCounts(data) {
