@@ -125,3 +125,25 @@ path.zone-pulse-active {
     line-height: 2.2 !important;
   }
 }
+
+/* ---------------- Static Metric Cards Guard (No Click / Hover Affordances) ---------------- */
+.stat-card:not([role="button"]):not(a):not(.clickable-card),
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card),
+.metric-card:not([role="button"]):not(a):not(.clickable-card),
+.kpi-card:not([role="button"]):not(a):not(.clickable-card) {
+  cursor: default !important;
+  transform: none !important;
+  transition: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  pointer-events: auto;
+}
+
+.stat-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card):hover,
+.metric-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.kpi-card:not([role="button"]):not(a):not(.clickable-card):hover {
+  transform: none !important;
+  border-color: inherit !important;
+  background-color: inherit !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+}

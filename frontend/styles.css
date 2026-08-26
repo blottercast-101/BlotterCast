@@ -297,13 +297,26 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 
 /* ---------------- Stat cards ---------------- */
+/* ---------------- Stat cards ---------------- */
 .stat-card {
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
   box-shadow: var(--shadow-sm);
+  cursor: default;
+}
+.stat-card[role="button"],
+.stat-card.clickable-card,
+a.stat-card {
+  cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat-card[role="button"]:hover,
+.stat-card.clickable-card:hover,
+a.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
 .stat-icon-badge {
   width: 38px; height: 38px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
@@ -330,11 +343,23 @@ body { font-family: 'DM Sans', sans-serif; }
   padding: 1.25rem 1.5rem;
   color: #fff;
   box-shadow: var(--shadow-md);
-  transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
   overflow: hidden;
+  cursor: default;
 }
-.stat-card-grad:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-card-grad[role="button"],
+.stat-card-grad.clickable-card,
+a.stat-card-grad {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.stat-card-grad[role="button"]:hover,
+.stat-card-grad.clickable-card:hover,
+a.stat-card-grad:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
 .stat-card-grad.plum   { background: var(--grad-plum); }
 .stat-card-grad.sunset { background: var(--grad-sunset); }
 .stat-card-grad.dark   { background: var(--grad-dark); }
@@ -346,6 +371,28 @@ body { font-family: 'DM Sans', sans-serif; }
 }
 .stat-card-grad .stat-icon-badge {
   background: rgba(255,255,255,0.18); color: #fff;
+}
+
+/* Static metric cards with no click actions specificity guard */
+.stat-card:not([role="button"]):not(a):not(.clickable-card),
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card),
+.metric-card:not([role="button"]):not(a):not(.clickable-card),
+.kpi-card:not([role="button"]):not(a):not(.clickable-card) {
+  cursor: default !important;
+  transform: none !important;
+  transition: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  pointer-events: auto;
+}
+
+.stat-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card):hover,
+.metric-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.kpi-card:not([role="button"]):not(a):not(.clickable-card):hover {
+  transform: none !important;
+  border-color: inherit !important;
+  background-color: inherit !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Quick-action colour tiles (User Panel / Cloud Storage style grid) */
