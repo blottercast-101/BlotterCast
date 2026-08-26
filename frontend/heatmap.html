@@ -981,32 +981,13 @@
       const count = zoneCounts[zoneId] || 0;
       const tier = tierEngine.getTier(count);
       return {
-        fillColor: tier.color,
+        fillColor: tier.color === 'transparent' ? '#10B981' : tier.color,
         fillOpacity: tier.fillOpacity || tier.opacity,
         color: tier.border,
         weight: 1.5,
-        dashArray: '4',
+        dashArray: count === 0 ? '4, 4' : null,
       };
     }
-
-    function getDensityColor(zoneId, zoneCounts) {
-      const count = (zoneCounts && zoneCounts[zoneId] != null)
-        ? zoneCounts[zoneId]
-        : (getZoneIncidentCounts(getFilteredIncidents(true))[zoneId] || 0);
-      if (count >= 5) return '#EF4444'; // High / Critical (>= 5 cases)
-      if (count >= 3) return '#F59E0B'; // Moderate (3 - 4 cases)
-      return '#10B981'; // Low (< 3 cases)
-    }
-
-    const OFFICIAL_ZONE_LABELS = {
-      'Zone 1': 'Zone 1 - Residence 3',
-      'Zone 2': 'Zone 2 - Residence 1',
-      'Zone 3': 'Zone 3 - Pandi Village 2',
-      'Zone 4': 'Zone 4 - Mitay 1',
-      'Zone 5': 'Zone 5 - Sitio Gubat',
-      'Zone 6': 'Zone 6 - Bangko St.',
-      'Zone 7': 'Zone 7 - Barangka St.'
-    };
 
     function renderZoneChoropleth(data, tierEngine, zoneCounts) {
       if (zonesLayer) {
