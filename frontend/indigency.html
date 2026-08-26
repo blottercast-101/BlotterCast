@@ -173,26 +173,30 @@
               <p class="cert-body-paragraph">Issued this <span class="cert-line-field min-w-[40px]" id="i_day"></span> day of <span class="cert-line-field min-w-[90px]" id="i_month"></span>, <span class="cert-line-field min-w-[50px]" id="i_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.</p>
             </div>
             <div class="cert-ov cert-ov-sigimg" id="i_sigimg_wrap"></div>
-            <!-- Signatory Section Container (Bottom Baseline Aligned) -->
-            <div class="cert-ov cert-ov-signatories w-full flex justify-between items-end gap-12">
+            <!-- Signatory Section Container (Adjusted for Clean Print Margins) -->
+            <div class="cert-ov cert-ov-signatories w-full flex justify-between items-end gap-6 box-border">
               <!-- Left Signatory: Applicant -->
-              <div class="cert-signatory-col cert-ov-applicant-sigblock flex-1 max-w-[240px] text-center flex flex-col justify-end">
-                <div class="h-10 flex items-end justify-center pb-1">
-                  <span class="cert-ov-applicant-name font-bold text-xs text-black tracking-wide uppercase font-serif" id="i_applicant_name"></span>
+              <div class="cert-signatory-col cert-ov-applicant-sigblock w-[44%] max-w-[210px] text-center flex flex-col justify-end">
+                <!-- Blank space for wet signature / name -->
+                <div class="h-9 flex items-end justify-center pb-0.5">
+                  <span class="cert-ov-applicant-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="i_applicant_name"></span>
                 </div>
-                <div class="border-b-2 border-black w-full mb-1.5"></div>
-                <span class="cert-ov-applicant-title text-xs text-gray-800 font-serif block">Signature over Printed Name</span>
+                <!-- Bottom line -->
+                <div class="border-b-[1.5px] border-black w-full mb-1"></div>
+                <span class="cert-ov-applicant-title text-[11px] text-gray-800 font-serif tracking-tight block">Signature over Printed Name</span>
               </div>
 
               <!-- Right Signatory: Punong Barangay -->
-              <div class="cert-signatory-col cert-ov-sigblock flex-1 max-w-[240px] text-center flex flex-col justify-end">
-                <div class="h-10 flex items-end justify-center pb-1">
-                  <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif" id="i_captain">
+              <div class="cert-signatory-col cert-ov-sigblock w-[44%] max-w-[210px] text-center flex flex-col justify-end">
+                <!-- Captain Name above line -->
+                <div class="h-9 flex items-end justify-center pb-0.5">
+                  <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="i_captain">
                     HON. ALEX ROQUE CRUZ
                   </span>
                 </div>
-                <div class="border-b-2 border-black w-full mb-1.5"></div>
-                <span class="cert-ov-chairman-title text-xs text-gray-800 font-serif font-medium block">Punong Barangay</span>
+                <!-- Bottom line -->
+                <div class="border-b-[1.5px] border-black w-full mb-1"></div>
+                <span class="cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
               </div>
             </div>
           </div>
