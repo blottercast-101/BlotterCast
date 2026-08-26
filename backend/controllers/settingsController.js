@@ -16,6 +16,7 @@ const GENERAL_SETTING_KEYS = [
   'region',
   'captain_name',
   'punong_barangay',
+  'barangay_captain',
   'contact_number',
   'contact_no',
   'email',
@@ -41,7 +42,7 @@ async function getGeneralSettings(req, res) {
     const bName = configMap.barangay_name || 'Barangay Mapulang Lupa';
     const muni = configMap.municipality || 'Pandi';
     const prov = configMap.province || 'Bulacan';
-    const capt = configMap.captain_name || configMap.punong_barangay || 'Kapitan Jose Reyes';
+    const capt = configMap.barangay_captain || configMap.punong_barangay || configMap.captain_name || 'Kapitan Jose Reyes';
     const contact = configMap.contact_number || configMap.contact_no || '0917-000-0000';
     const email = configMap.email || 'mapulanglupa@pandi.gov.ph';
     const logo = configMap.official_logo_url || '';
@@ -52,8 +53,10 @@ async function getGeneralSettings(req, res) {
       municipality: muni,
       province: prov,
       region,
+      barangay_captain: capt,
       captain_name: capt,
       punong_barangay: capt,
+      signatory_captain: capt,
       contact_number: contact,
       contact_no: contact,
       email,
@@ -95,14 +98,12 @@ async function updateGeneralSettings(req, res) {
 
     await client.query('BEGIN');
 
-    // Normalize and persist each general setting key
     const updates = { ...body };
-
-    // Synchronize aliases
-    if (updates.punong_barangay && !updates.captain_name) {
-      updates.captain_name = updates.punong_barangay;
-    } else if (updates.captain_name && !updates.punong_barangay) {
-      updates.punong_barangay = updates.captain_name;
+    const captainVal = updates.barangay_captain || updates.punong_barangay || updates.captain_name;
+    if (captainVal) {
+      updates.barangay_captain = captainVal;
+      updates.punong_barangay = captainVal;
+      updates.captain_name = captainVal;
     }
 
     if (updates.contact_number && !updates.contact_no) {
@@ -141,7 +142,7 @@ async function updateGeneralSettings(req, res) {
     const bName = configMap.barangay_name || updates.barangay_name || 'Barangay Mapulang Lupa';
     const muni = configMap.municipality || updates.municipality || 'Pandi';
     const prov = configMap.province || updates.province || 'Bulacan';
-    const capt = configMap.captain_name || configMap.punong_barangay || updates.captain_name || 'Kapitan Jose Reyes';
+    const capt = configMap.barangay_captain || configMap.punong_barangay || configMap.captain_name || captainVal || 'Kapitan Jose Reyes';
     const contact = configMap.contact_number || configMap.contact_no || updates.contact_number || '0917-000-0000';
     const email = configMap.email || updates.email || 'mapulanglupa@pandi.gov.ph';
     const logo = configMap.official_logo_url || updates.official_logo_url || '';
@@ -152,8 +153,10 @@ async function updateGeneralSettings(req, res) {
       municipality: muni,
       province: prov,
       region,
+      barangay_captain: capt,
       captain_name: capt,
       punong_barangay: capt,
+      signatory_captain: capt,
       contact_number: contact,
       contact_no: contact,
       email,

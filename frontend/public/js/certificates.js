@@ -1,40 +1,101 @@
 /**
  * frontend/public/js/certificates.js
- * Frontend Strict Lockout & Dynamic Punong Barangay Signatory Data Binding
+ * Frontend Strict Lockout & Decoupled Settings-Driven Punong Barangay Signatory Data Binding
  */
 
 /**
- * Fallback helper to ensure the Punong Barangay / Captain's name is never empty or undefined.
- * Checks localStorage cached configuration first, then default fallback.
- * @returns {string}
+ * Asynchronously retrieves the official Barangay Captain / Punong Barangay name strictly
+ * from the Barangay Information settings endpoint (/api/settings/general) or persistent store,
+ * completely decoupled from the current logged-in user account session.
+ *
+ * @returns {Promise<string>}
  */
-function getCaptainName() {
+async function getOfficialCaptainName() {
   try {
-    const cachedConfig = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
-    return (
-      cachedConfig.punong_barangay ||
-      cachedConfig.captain_name ||
-      'Kapitan Jose Reyes'
-    );
-  } catch (e) {
-    return 'Kapitan Jose Reyes';
+    const res = await fetch('/api/settings/general', { credentials: 'include' });
+    if (res.ok) {
+      const json = await res.json();
+      const name = (
+        json.data?.barangay_captain ||
+        json.data?.punong_barangay ||
+        json.data?.captain_name ||
+        json.data?.signatory_captain
+      );
+      if (name) {
+        const stored = JSON.parse(
+          localStorage.getItem('barangay_info') ||
+          localStorage.getItem('barangayConfig') ||
+          '{}'
+        );
+        stored.barangay_captain = name;
+        stored.captain_name = name;
+        stored.punong_barangay = name;
+        localStorage.setItem('barangay_info', JSON.stringify(stored));
+        localStorage.setItem('barangayConfig', JSON.stringify(stored));
+        return name;
+      }
+    }
+  } catch (err) {
+    console.warn('[certificates.js] Failed to fetch barangay info from API, falling back to local store:', err);
   }
+
+  const localConfig = JSON.parse(
+    localStorage.getItem('barangay_info') ||
+    localStorage.getItem('barangayConfig') ||
+    '{}'
+  );
+  return (
+    localConfig.barangay_captain ||
+    localConfig.punong_barangay ||
+    localConfig.captain_name ||
+    'Alex Roque Cruz'
+  );
 }
 
 /**
- * Dynamically binds and populates the active Punong Barangay / Captain name across
+ * Synchronous cached reader for immediate DOM rendering
+ * @returns {string}
+ */
+function getCaptainName() {
+  const localConfig = JSON.parse(
+    localStorage.getItem('barangay_info') ||
+    localStorage.getItem('barangayConfig') ||
+    '{}'
+  );
+  return (
+    localConfig.barangay_captain ||
+    localConfig.punong_barangay ||
+    localConfig.captain_name ||
+    'Alex Roque Cruz'
+  );
+}
+
+/**
+ * Dynamically binds and populates the official Punong Barangay / Captain name across
  * all document and certificate signatory DOM elements and templates.
  *
- * @param {Object} [documentData={}] - Document payload containing captain_name or punong_barangay
+ * @param {Object} [certData={}] - Document payload containing signatory_captain or barangay_captain
  */
-function bindCertificateCaptainName(documentData = {}) {
-  const captain = (
-    documentData.captain_name ||
-    documentData.punong_barangay ||
-    documentData.fullName ||
-    getCaptainName()
+async function bindCertificateCaptainName(certData = {}) {
+  let captain = (
+    certData.signatory_captain ||
+    certData.barangay_captain ||
+    certData.punong_barangay ||
+    certData.captain_name
   );
-  const upperCaptain = String(captain || 'HON. PUNONG BARANGAY').toUpperCase();
+
+  if (!captain) {
+    captain = getCaptainName();
+  }
+
+  if (!captain || captain === 'HON. PUNONG BARANGAY') {
+    captain = await getOfficialCaptainName();
+  }
+
+  const rawCap = String(captain || 'Alex Roque Cruz').trim();
+  const upperCaptain = rawCap.toUpperCase().startsWith('HON.')
+    ? rawCap.toUpperCase()
+    : `HON. ${rawCap.toUpperCase()}`;
 
   // 1. Target all signatory DOM placeholders and signature blocks
   const selectors = [
@@ -45,7 +106,9 @@ function bindCertificateCaptainName(documentData = {}) {
     '#nr_captain',
     '#captainSignatureName',
     '[data-bind="punong_barangay"]',
-    '[data-bind="captain_name"]'
+    '[data-bind="captain_name"]',
+    '[data-bind="barangay_captain"]',
+    '[data-bind="signatory_captain"]'
   ];
 
   document.querySelectorAll(selectors.join(', ')).forEach(el => {
@@ -56,11 +119,15 @@ function bindCertificateCaptainName(documentData = {}) {
     }
   });
 
-  // 2. Also populate jurisdiction and municipality headers if available
-  const cachedConfig = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
-  const bName = documentData.barangay_name || cachedConfig.barangay_name || 'Barangay Mapulang Lupa';
-  const muni = documentData.municipality || cachedConfig.municipality || 'Pandi, Bulacan';
-  const prov = documentData.province || cachedConfig.province || 'Bulacan';
+  // 2. Also populate jurisdiction and municipality headers
+  const localConfig = JSON.parse(
+    localStorage.getItem('barangay_info') ||
+    localStorage.getItem('barangayConfig') ||
+    '{}'
+  );
+  const bName = certData.barangay_name || localConfig.barangay_name || 'Barangay Mapulang Lupa';
+  const muni = certData.municipality || localConfig.municipality || 'Pandi, Bulacan';
+  const prov = certData.province || localConfig.province || 'Bulacan';
 
   document.querySelectorAll('.cert-header-barangay').forEach(el => {
     el.textContent = bName.toUpperCase();
@@ -200,6 +267,7 @@ if (typeof document !== 'undefined') {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    getOfficialCaptainName,
     getCaptainName,
     bindCertificateCaptainName,
     onNonResidencyResidentSelected,
