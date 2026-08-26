@@ -195,19 +195,139 @@ def admin_security_settings():
     db.session.commit()
     log_audit(session.get("username"), "Updated", "SecuritySettings", "Security and authentication settings updated")
 
+    refreshed = get_security_settings()
+
     return jsonify({
         "ok": True,
         "status": "success",
         "message": "Security settings updated successfully",
+        "settings": refreshed,
     })
 
 
-# ---------------- Helpers ----------------
+# ---------------- Helpers & Routes ----------------
+GENERAL_SETTING_KEYS = [
+    "barangay_name", "municipality", "province", "region",
+    "captain_name", "punong_barangay", "contact_number", "contact_no",
+    "email", "official_logo_url"
+]
+
+
 def _settings_map(keys=None):
     q = SystemSetting.query
     if keys:
         q = q.filter(SystemSetting.setting_key.in_(keys))
     return {r.setting_key: r.setting_value for r in q.all()}
+
+
+@bp.route("/api/settings/general", methods=["GET", "POST", "PUT"])
+@login_required
+def general_settings_route():
+    if request.method == "GET":
+        cfg = _settings_map(GENERAL_SETTING_KEYS)
+        b_name = cfg.get("barangay_name", "Barangay Mapulang Lupa")
+        muni = cfg.get("municipality", "Pandi, Bulacan")
+        prov = cfg.get("province", "Bulacan")
+        capt = cfg.get("captain_name") or cfg.get("punong_barangay") or "Kapitan Jose Reyes"
+        contact = cfg.get("contact_number") or cfg.get("contact_no") or "0917-000-0000"
+        email = cfg.get("email", "mapulanglupa@pandi.gov.ph")
+        logo = cfg.get("official_logo_url", "")
+        region = cfg.get("region", "Region III – Central Luzon")
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "data": {
+                "barangay_name": b_name,
+                "municipality": muni,
+                "province": prov,
+                "region": region,
+                "captain_name": capt,
+                "punong_barangay": capt,
+                "contact_number": contact,
+                "contact_no": contact,
+                "email": email,
+                "official_logo_url": logo,
+            }
+        }), 200
+
+    # POST or PUT
+    if not role_can(session.get("role", ""), "system_settings"):
+        return json_error("You do not have permission to perform this action.", 403)
+
+    d = request.get_json(silent=True) or {}
+    if not d:
+        return json_error("No barangay information provided to update.", 400)
+
+    for key, value in d.items():
+        clean_key = re.sub(r"[^a-zA-Z0-9_]", "", str(key))
+        if not clean_key:
+            continue
+        row = SystemSetting.query.get(clean_key)
+        str_val = str(value) if value is not None else ""
+        if row:
+            row.setting_value = str_val
+        else:
+            db.session.add(SystemSetting(setting_key=clean_key, setting_value=str_val))
+
+    # Synchronize alias pairs
+    if "punong_barangay" in d and "captain_name" not in d:
+        row = SystemSetting.query.get("captain_name")
+        if row:
+            row.setting_value = str(d["punong_barangay"])
+        else:
+            db.session.add(SystemSetting(setting_key="captain_name", setting_value=str(d["punong_barangay"])))
+    elif "captain_name" in d and "punong_barangay" not in d:
+        row = SystemSetting.query.get("punong_barangay")
+        if row:
+            row.setting_value = str(d["captain_name"])
+        else:
+            db.session.add(SystemSetting(setting_key="punong_barangay", setting_value=str(d["captain_name"])))
+
+    if "contact_number" in d and "contact_no" not in d:
+        row = SystemSetting.query.get("contact_no")
+        if row:
+            row.setting_value = str(d["contact_number"])
+        else:
+            db.session.add(SystemSetting(setting_key="contact_no", setting_value=str(d["contact_number"])))
+    elif "contact_no" in d and "contact_number" not in d:
+        row = SystemSetting.query.get("contact_number")
+        if row:
+            row.setting_value = str(d["contact_no"])
+        else:
+            db.session.add(SystemSetting(setting_key="contact_number", setting_value=str(d["contact_no"])))
+
+    db.session.commit()
+    log_audit(session.get("username"), "Updated", "Settings", "Barangay general settings updated")
+
+    cfg = _settings_map(GENERAL_SETTING_KEYS)
+    b_name = cfg.get("barangay_name", "Barangay Mapulang Lupa")
+    muni = cfg.get("municipality", "Pandi, Bulacan")
+    prov = cfg.get("province", "Bulacan")
+    capt = cfg.get("captain_name") or cfg.get("punong_barangay") or "Kapitan Jose Reyes"
+    contact = cfg.get("contact_number") or cfg.get("contact_no") or "0917-000-0000"
+    email = cfg.get("email", "mapulanglupa@pandi.gov.ph")
+    logo = cfg.get("official_logo_url", "")
+    region = cfg.get("region", "Region III – Central Luzon")
+
+    res_data = {
+        "barangay_name": b_name,
+        "municipality": muni,
+        "province": prov,
+        "region": region,
+        "captain_name": capt,
+        "punong_barangay": capt,
+        "contact_number": contact,
+        "contact_no": contact,
+        "email": email,
+        "official_logo_url": logo,
+    }
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "message": "Barangay information updated successfully.",
+        "data": res_data
+    }), 200
 
 
 def _list():
@@ -247,6 +367,33 @@ def _save():
             else:
                 db.session.add(SystemSetting(setting_key="idle_timeout_duration_minutes", setting_value=str(value)))
 
+    # Synchronize alias pairs if present
+    if "punong_barangay" in d and "captain_name" not in d:
+        row = SystemSetting.query.get("captain_name")
+        if row:
+            row.setting_value = str(d["punong_barangay"])
+        else:
+            db.session.add(SystemSetting(setting_key="captain_name", setting_value=str(d["punong_barangay"])))
+    elif "captain_name" in d and "punong_barangay" not in d:
+        row = SystemSetting.query.get("punong_barangay")
+        if row:
+            row.setting_value = str(d["captain_name"])
+        else:
+            db.session.add(SystemSetting(setting_key="punong_barangay", setting_value=str(d["captain_name"])))
+
+    if "contact_number" in d and "contact_no" not in d:
+        row = SystemSetting.query.get("contact_no")
+        if row:
+            row.setting_value = str(d["contact_number"])
+        else:
+            db.session.add(SystemSetting(setting_key="contact_no", setting_value=str(d["contact_number"])))
+    elif "contact_no" in d and "contact_number" not in d:
+        row = SystemSetting.query.get("contact_number")
+        if row:
+            row.setting_value = str(d["contact_no"])
+        else:
+            db.session.add(SystemSetting(setting_key="contact_number", setting_value=str(d["contact_no"])))
+
     db.session.commit()
 
     # Dynamic reschedule if backup scheduling settings were updated
@@ -254,7 +401,37 @@ def _save():
         reschedule_backup_job()
 
     log_audit(session.get("username"), "Updated", "Settings", "System settings saved")
-    return jsonify({"ok": True, "updated": len(d)})
+
+    cfg = _settings_map(GENERAL_SETTING_KEYS)
+    b_name = cfg.get("barangay_name", "Barangay Mapulang Lupa")
+    muni = cfg.get("municipality", "Pandi, Bulacan")
+    prov = cfg.get("province", "Bulacan")
+    capt = cfg.get("captain_name") or cfg.get("punong_barangay") or "Kapitan Jose Reyes"
+    contact = cfg.get("contact_number") or cfg.get("contact_no") or "0917-000-0000"
+    email = cfg.get("email", "mapulanglupa@pandi.gov.ph")
+    logo = cfg.get("official_logo_url", "")
+    region = cfg.get("region", "Region III – Central Luzon")
+
+    res_data = {
+        "barangay_name": b_name,
+        "municipality": muni,
+        "province": prov,
+        "region": region,
+        "captain_name": capt,
+        "punong_barangay": capt,
+        "contact_number": contact,
+        "contact_no": contact,
+        "email": email,
+        "official_logo_url": logo,
+    }
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "message": "Barangay details successfully saved and updated.",
+        "updated": len(d),
+        "data": res_data
+    })
 
 
 def _ml_model_get():

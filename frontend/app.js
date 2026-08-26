@@ -29,7 +29,68 @@ document.addEventListener('DOMContentLoaded', () => {
   // itself stays fully selectable — only strictly-later dates are capped.
   const todayStr = bcTodayLocalStr();
   document.querySelectorAll('input[type="date"][data-no-future]').forEach(el => { el.max = todayStr; });
+
+  // Initial load fallback for Barangay Information across all views
+  bcInitBarangayConfig();
 });
+
+// ── Global Barangay Information Reactive Sync & Layout Handler ──
+function bcApplyBarangayConfig(config) {
+  if (!config) return;
+  const bName = config.barangay_name || 'Barangay Mapulang Lupa';
+  const muni = config.municipality || 'Pandi, Bulacan';
+  const prov = config.province || 'Bulacan';
+  const capt = config.captain_name || config.punong_barangay || 'Kapitan Jose Reyes';
+  const contact = config.contact_number || config.contact_no || '0917-000-0000';
+  const email = config.email || 'mapulanglupa@pandi.gov.ph';
+  const logo = config.official_logo_url || '';
+
+  // 1. Update Sidebar Branding & Header Subtitles
+  document.querySelectorAll('.brgy-name-display').forEach(el => { el.textContent = bName; });
+  document.querySelectorAll('.brgy-location-display').forEach(el => {
+    el.textContent = `${bName}, ${muni}${prov && !muni.includes(prov) ? `, ${prov}` : ''}`;
+  });
+  document.querySelectorAll('.brgy-captain-display').forEach(el => { el.textContent = capt; });
+  document.querySelectorAll('.brgy-contact-display').forEach(el => { el.textContent = contact; });
+  document.querySelectorAll('.brgy-email-display').forEach(el => { el.textContent = email; });
+
+  // 2. Update Dynamic Logo / Seal Elements
+  if (logo) {
+    document.querySelectorAll('.brgy-logo-img').forEach(img => { img.src = logo; });
+  }
+
+  // 3. Update Active Certificate Preview Headers (if currently open)
+  document.querySelectorAll('.cert-header-barangay').forEach(el => { el.textContent = bName.toUpperCase(); });
+  document.querySelectorAll('.cert-header-municipality').forEach(el => { el.textContent = muni; });
+  document.querySelectorAll('.cert-header-province').forEach(el => { el.textContent = prov; });
+  document.querySelectorAll('.cert-captain-name').forEach(el => { el.textContent = capt; });
+}
+
+window.addEventListener('barangayConfigUpdated', (e) => {
+  if (e.detail) bcApplyBarangayConfig(e.detail);
+});
+
+function bcInitBarangayConfig() {
+  try {
+    const raw = localStorage.getItem('barangayConfig');
+    if (raw) {
+      bcApplyBarangayConfig(JSON.parse(raw));
+    }
+  } catch (e) {}
+
+  if (typeof fetch === 'function') {
+    fetch('/api/settings/general', { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' })
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        const config = json?.data || json;
+        if (config && config.barangay_name) {
+          localStorage.setItem('barangayConfig', JSON.stringify(config));
+          bcApplyBarangayConfig(config);
+        }
+      })
+      .catch(() => {});
+  }
+}
 
 // Live character-stripping filters — remove disallowed characters the
 // moment they land in a field (typed, pasted, or autofilled), rather

@@ -498,8 +498,11 @@ async function saveSettings() {
     showToast('Barangay Captain name should only contain letters (no numbers).', 'error'); return;
   }
   try {
-    await BCApi.settingsSave(values);
-    showToast('Settings saved successfully!');
+    const res = await BCApi.settingsSave(values);
+    const updatedData = res?.data || values;
+    localStorage.setItem('barangayConfig', JSON.stringify(updatedData));
+    window.dispatchEvent(new CustomEvent('barangayConfigUpdated', { detail: updatedData }));
+    showToast('Barangay details successfully saved and updated.');
   } catch (err) {
     showToast(err.message, 'error');
   }

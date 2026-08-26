@@ -244,3 +244,24 @@ C:\Users\fhaly\OneDrive\Documents\RENDER CAP\BlotterCast\app\blueprints\..\..\ml
 127.0.0.1 - - [25/Aug/2026 18:01:55] "GET /health HTTP/1.1" 200 -
 127.0.0.1 - - [25/Aug/2026 18:01:55] "GET /latest HTTP/1.1" 200 -
 127.0.0.1 - - [25/Aug/2026 18:01:55] "POST /predict HTTP/1.1" 200 -
+[ML Singleton] Preloaded warm models from disk (trained at 2026-08-25T10:01:54.945276Z)
+ * Serving Flask app 'service'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.100.82:5001
+Press CTRL+C to quit
+127.0.0.1 - - [26/Aug/2026 11:49:36] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:36] "GET /latest HTTP/1.1" 200 -
+C:\Users\fhaly\OneDrive\Documents\RENDER CAP\BlotterCast\app\blueprints\..\..\ml\service.py:261: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  trained_at = datetime.utcnow()
+C:\Users\fhaly\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\default.py:952: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+  cursor.execute(statement, parameters)
+127.0.0.1 - - [26/Aug/2026 11:49:38] "POST /train HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:38] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:38] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:38] "GET /latest HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:38] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:40] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [26/Aug/2026 11:49:40] "GET /health HTTP/1.1" 200 -

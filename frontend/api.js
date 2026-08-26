@@ -268,6 +268,14 @@ const BCApi = {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
     });
   },
+  settingsGeneralGet() {
+    return this._fetch(`${BC_API}/api/settings/general`);
+  },
+  settingsGeneralSave(values) {
+    return this._fetch(`${BC_API}/api/settings/general`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
+    });
+  },
   adminSecuritySettingsGet() {
     return this._fetch(`${BC_API}/api/admin/security-settings`);
   },
