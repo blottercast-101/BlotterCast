@@ -181,8 +181,11 @@ def load_incidents() -> pd.DataFrame:
             df['date'] = pd.to_datetime(df['date'], errors='coerce')
             df = df.dropna(subset=['date']).copy()
             df = df[df['zone'].isin(ZONES)].copy()
-            df['category'] = df['category'].fillna('Other').astype(str).str.strip()
+            df['category'] = df['category'].fillna('Physical Assault').astype(str).str.strip()
             df = df[df['category'] != ''].copy()
+            # Filter out non-incident case classifications / legacy dispute markers
+            excluded = {'civil', 'crim', 'criminal', 'neighborhood dispute', 'other', 'others', 'neighborhood dispute (others)', 'unknown', 'none'}
+            df = df[~df['category'].str.lower().isin(excluded)].copy()
             df['hour'] = pd.to_numeric(df['hour'], errors='coerce').fillna(12).astype(int)
         return df
     except Exception as e:

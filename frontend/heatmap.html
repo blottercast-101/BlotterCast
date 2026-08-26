@@ -366,10 +366,12 @@
           <option value="all">All Categories</option>
           <option value="Physical Assault">Physical Assault</option>
           <option value="Theft">Theft</option>
+          <option value="Public Disturbance">Public Disturbance</option>
+          <option value="Vehicular Accident">Vehicular Accident</option>
           <option value="Domestic Dispute">Domestic Dispute</option>
+          <option value="Trespassing">Trespassing</option>
           <option value="Vandalism">Vandalism</option>
           <option value="Drug-Related Activity">Drug-Related Activity</option>
-          <option value="Public Disturbance">Public Disturbance</option>
         </select>
 
         <label class="flex items-center gap-2 bg-white border border-forest-200 rounded-xl px-3 py-2 text-sm text-forest-700">
@@ -519,7 +521,7 @@
               <option value="Domestic Dispute">Domestic Dispute</option>
               <option value="Trespassing">Trespassing</option>
               <option value="Vandalism">Vandalism</option>
-              <option value="Other">Other</option>
+              <option value="Drug-Related Activity">Drug-Related Activity</option>
             </select>
           </div>
         </div>
@@ -1196,10 +1198,25 @@
       });
     }
 
+    const EXCLUDED_HEATMAP_CATEGORIES = new Set([
+      'civil',
+      'crim',
+      'criminal',
+      'neighborhood dispute',
+      'other',
+      'others',
+      'neighborhood dispute (others)',
+      'unknown',
+      'none'
+    ]);
+
     function getCategoryCounts(data) {
       const counts = {};
       data.forEach(item => {
-        counts[item.category] = (counts[item.category] || 0) + 1;
+        const cat = (item.category || '').trim();
+        if (!cat) return;
+        if (EXCLUDED_HEATMAP_CATEGORIES.has(cat.toLowerCase())) return;
+        counts[cat] = (counts[cat] || 0) + 1;
       });
       return counts;
     }

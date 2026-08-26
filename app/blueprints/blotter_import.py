@@ -223,13 +223,13 @@ def blotter_import():
             t = (txt or "").lower()
             if any(k in t for k in ["pag-aaway", "suntukan", "sakitan", "pananakit", "assault", "physical", "bugbog"]): return "Physical Assault"
             if any(k in t for k in ["nakawan", "pagnanakaw", "theft", "robbery", "hold-up", "snatching", "kupit"]): return "Theft"
-            if any(k in t for k in ["alitan", "awayan", "kapitbahay", "neighborhood dispute", "boundary dispute"]): return "Neighborhood Dispute"
             if any(k in t for k in ["domestic", "mag-asawa", "pamilya", "family dispute", "marital"]): return "Domestic Dispute"
             if any(k in t for k in ["paninira", "vandalism", "damage to property", "sirang gamit"]): return "Vandalism"
             if any(k in t for k in ["trespass", "trespassing", "pagpasok"]): return "Trespassing"
             if any(k in t for k in ["droga", "drug", "shabu", "marijuana"]): return "Drug-Related Activity"
-            if any(k in t for k in ["ingay", "scandal", "public disturbance", "kaguluhan", "lasing"]): return "Public Disturbance"
-            return "Other"
+            if any(k in t for k in ["aksidente", "accident", "banggaan", "vehicular", "motorcycle", "kotse"]): return "Vehicular Accident"
+            if any(k in t for k in ["alitan", "awayan", "kapitbahay", "neighborhood dispute", "boundary dispute", "ingay", "scandal", "public disturbance", "kaguluhan", "lasing"]): return "Public Disturbance"
+            return "Public Disturbance"
 
         category = _map_cat(nature_desc)
         custom_docket = (str(row[col_docket]).strip() if col_docket >= 0 and col_docket < len(row) else "")

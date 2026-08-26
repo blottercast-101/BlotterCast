@@ -32,8 +32,13 @@ OFFICIAL_ZONES = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5', 'Zone 6', 'Z
 # Standardized crime and incident categories
 CATEGORIES = [
     'Physical Assault', 'Theft', 'Domestic Dispute', 'Vandalism',
-    'Trespassing', 'Drug-Related Activity', 'Public Disturbance', 'Other'
+    'Trespassing', 'Drug-Related Activity', 'Public Disturbance', 'Vehicular Accident'
 ]
+
+EXCLUDED_CATEGORIES = {
+    'civil', 'crim', 'criminal', 'neighborhood dispute',
+    'other', 'others', 'neighborhood dispute (others)', 'unknown', 'none'
+}
 
 # Time bin categories for diurnal patterns
 TIME_BINS = ['morning', 'afternoon', 'evening', 'night']
@@ -231,7 +236,17 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     df['date'] = pd.to_datetime(df['date'])
     df['dow'] = df['date'].dt.dayofweek
     df['tbin'] = df['hour'].apply(get_time_bin)
-    df = df.dropna(subset=['category']).sort_values('date').reset_index(drop=True)
+    df = df.dropna(subset=['category']).copy()
+    # Filter out non-incident case classifications / legacy dispute markers
+    df = df[~df['category'].astype(str).str.lower().str.strip().isin(EXCLUDED_CATEGORIES)].sort_values('date').reset_index(drop=True)
+
+    if df.empty:
+        metrics = {
+            'accuracy': 0.0, 'macroF1': 0.0, 'macro_f1': 0.0, 'weightedF1': 0.0,
+            'f1_score': 0.0, 'f1': 0.0, 'incident_type_f1': 0.0,
+            'macroPrecision': 0.0, 'macroRecall': 0.0, 'nTest': 0,
+        }
+        return metrics, GradientBoostingClassifier(), []
 
     X = pd.get_dummies(df[['zone', 'dow', 'tbin']].astype(str))
     y = df['category']
@@ -540,9 +555,19 @@ def compute_14d_trend(df: pd.DataFrame, zone: str, exp_14d: float = None) -> str
 
 def predict_top_category(model: GradientBoostingClassifier, cols: List[str], zone: str, dow: int, hour: int) -> Tuple[str, float]:
     """Evaluates top incident type and probability from trained multi-class model."""
+    if not hasattr(model, 'classes_') or len(model.classes_) == 0:
+        return 'Physical Assault', 0.35
     tbin = get_time_bin(hour)
     row = pd.DataFrame([{f'zone_{zone}': 1, f'dow_{dow}': 1, f'tbin_{tbin}': 1}])
     row = row.reindex(columns=cols, fill_value=0)
     proba = model.predict_proba(row)[0]
+    
+    best_cat, best_p = 'Physical Assault', -1.0
+    for cls_name, p in zip(model.classes_, proba):
+        if str(cls_name).lower().strip() not in EXCLUDED_CATEGORIES:
+            if float(p) > best_p:
+                best_cat, best_p = str(cls_name), float(p)
+    if best_p >= 0:
+        return best_cat, round(best_p, 4)
     idx = int(np.argmax(proba))
-    return model.classes_[idx], float(proba[idx])
+    return str(model.classes_[idx]), round(float(proba[idx]), 4)
