@@ -117,26 +117,10 @@ function updateDynamicLegendUI(breaks) {
   const eleEl = document.getElementById('legendEleText');
   const highEl = document.getElementById('legendHighText');
 
-  if (!breaks || breaks.maxCount === 0) {
-    if (lowEl) lowEl.textContent = 'Low (0)';
-    if (medEl) medEl.textContent = 'Medium (0)';
-    if (eleEl) eleEl.textContent = 'Elevated (0)';
-    if (highEl) highEl.textContent = 'High (0)';
-    return;
-  }
-
-  const lowText = `${breaks.minCount} – ${breaks.lowMax}`;
-  const medLow = breaks.lowMax + 1;
-  const medText = medLow >= breaks.medMax ? `${breaks.medMax}` : `${medLow} – ${breaks.medMax}`;
-  const eleLow = breaks.medMax + 1;
-  const eleText = eleLow >= breaks.elevMax ? `${breaks.elevMax}` : `${eleLow} – ${breaks.elevMax}`;
-  const highLow = breaks.elevMax + 1;
-  const highText = highLow >= breaks.maxCount ? `${breaks.maxCount}` : `${highLow} – ${breaks.maxCount}`;
-
-  if (lowEl) lowEl.textContent = `Low (${lowText})`;
-  if (medEl) medEl.textContent = `Medium (${medText})`;
-  if (eleEl) eleEl.textContent = `Elevated (${eleText})`;
-  if (highEl) highEl.textContent = `High (${highText})`;
+  if (lowEl) lowEl.textContent = 'Low';
+  if (medEl) medEl.textContent = 'Medium';
+  if (eleEl) eleEl.textContent = 'Elevated';
+  if (highEl) highEl.textContent = 'High';
 }
 
 /**
