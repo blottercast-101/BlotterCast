@@ -130,11 +130,19 @@
         <div class="flex items-center justify-between mb-5">
           <div class="flex items-center gap-3">
             <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>
-            <h2 class="font-display text-lg text-forest-800" id="forecastTitle">7-Day Forecast — Expected Incidents (Top Risk Zones)</h2>
+            <h2 class="font-display text-lg text-forest-800" id="forecastTitle">7-Day Forecast — Expected Incidents</h2>
           </div>
-          <select id="horizonSel" class="filter-input text-xs" onchange="renderOutputs()">
-            <option value="7">Next 7 Days</option><option value="14">Next 14 Days</option>
-          </select>
+          <div class="flex items-center gap-2">
+            <select id="zoneRiskChartFilter" class="filter-input text-xs" onchange="renderOutputs()">
+              <option value="HIGH" selected>High Risk Zones</option>
+              <option value="MODERATE">Moderate Risk Zones</option>
+              <option value="LOW">Low Risk Zones</option>
+              <option value="ALL">All Zones (1 - 7)</option>
+            </select>
+            <select id="horizonSel" class="filter-input text-xs" onchange="renderOutputs()">
+              <option value="7">Next 7 Days</option><option value="14">Next 14 Days</option>
+            </select>
+          </div>
         </div>
         <canvas id="forecastChart" height="120"></canvas>
       </div>
@@ -397,27 +405,50 @@ function renderOutputs() {
   const horizon = Number(document.getElementById('horizonSel').value || 7);
   const ranked = [...RESULT.zoneRisk].sort((a, b) => b.meanDailyProb - a.meanDailyProb);
 
+  // Risk level filter for forecast chart
+  const riskFilter = (document.getElementById('zoneRiskChartFilter')?.value || 'HIGH').toUpperCase();
+  let chartZones = [];
+  let filterLabel = 'High Risk Zones';
+
+  if (riskFilter === 'HIGH') {
+    chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'High');
+    filterLabel = 'High Risk Zones';
+    if (chartZones.length === 0) {
+      chartZones = ranked.slice(0, 3);
+      filterLabel = 'Top Risk Zones';
+    }
+  } else if (riskFilter === 'MODERATE') {
+    chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'Moderate');
+    filterLabel = 'Moderate Risk Zones';
+  } else if (riskFilter === 'LOW') {
+    chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'Low');
+    filterLabel = 'Low Risk Zones';
+  } else {
+    chartZones = ranked;
+    filterLabel = 'All Zones (1 - 7)';
+  }
+
   // Update dynamic titles
   const forecastTitle = document.getElementById('forecastTitle');
-  if (forecastTitle) forecastTitle.textContent = `${horizon}-Day Forecast — Expected Incidents (Top Risk Zones)`;
+  if (forecastTitle) forecastTitle.textContent = `${horizon}-Day Forecast — Expected Incidents (${filterLabel})`;
   const countHeader = document.getElementById('expectedCountHeader');
   if (countHeader) countHeader.textContent = `Expected Incidents (${horizon}d)`;
   const trendHeader = document.getElementById('trendHeader');
   if (trendHeader) trendHeader.textContent = `${horizon}-Day Trend`;
 
-  // Forecast chart — top 4 risk zones across chosen horizon (7 vs 14 days)
+  // Forecast chart — filtered zones across chosen horizon (7 vs 14 days)
   const top4 = ranked.slice(0, 4);
-  const labels = dayLabels(top4[0], horizon);
-  const zoneColors = ['#1a5730', '#c9a84c', '#0e7c86', '#8a6a2e'];
+  const labels = dayLabels(chartZones[0] || ranked[0], horizon);
+  const zoneColors = ['#1a5730', '#c9a84c', '#0e7c86', '#8a6a2e', '#dc2626', '#7c3aed', '#d97706'];
   if (forecastChart) forecastChart.destroy();
   forecastChart = new Chart(document.getElementById('forecastChart'), {
     type: 'line',
     data: {
       labels,
-      datasets: top4.map((z, i) => ({
+      datasets: chartZones.map((z, i) => ({
         label: zoneDisplay(z.zone),
         data: (z.dailyProbs || []).slice(0, horizon).map(p => +Number(p).toFixed(3)),
-        borderColor: zoneColors[i], backgroundColor: 'transparent',
+        borderColor: zoneColors[i % zoneColors.length], backgroundColor: 'transparent',
         tension: 0.4, pointRadius: 3, borderWidth: 2.5,
       })),
     },
