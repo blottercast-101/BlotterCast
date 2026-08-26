@@ -107,7 +107,7 @@
       <p class="text-forest-500 text-sm">ML-based incident risk forecasting by zone, time, and category</p>
     </div>
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 bg-forest-50 border border-forest-200 rounded-xl px-4 py-2 text-sm text-forest-600">
+      <div id="modelTrainedBadge" class="flex items-center gap-2 bg-forest-50 border border-forest-200 rounded-xl px-4 py-2 text-sm text-forest-600">
         <span class="pulse-dot"></span>
         <span id="trainedStamp">Training models…</span>
       </div>
@@ -216,6 +216,7 @@
 <script src="app.js"></script>
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
+<script src="public/js/predictions.js"></script>
 <script>
 // ============================================================
 // Predictions page — trains real scikit-learn models via the
@@ -605,11 +606,17 @@ async function loadCachedPredictions() {
     // 1. Instant Cached Load: fetch latest persisted predictions without training
     RESULT = await BCApi.mlLatest(activeAbortController.signal);
 
-    if (RESULT && RESULT.trainedAt) {
-      if (stamp) {
+    if (RESULT && (RESULT.trainedAt || RESULT.trained_at)) {
+      const trainedAt = RESULT.trainedAt || RESULT.trained_at;
+      const count = RESULT.recordCount ?? RESULT.records_evaluated ?? 0;
+      if (typeof updateModelTrainedBadge === 'function') {
+        updateModelTrainedBadge(trainedAt, count);
+      } else if (typeof formatModelTrainedDate === 'function') {
+        if (stamp) stamp.textContent = formatModelTrainedDate(trainedAt, count);
+      } else if (stamp) {
         stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
-          bcFormatTimestamp(RESULT.trainedAt) +
-          '</strong> · ' + (RESULT.recordCount || 0) + ' records';
+          bcFormatTimestamp(trainedAt) +
+          '</strong> · ' + count + ' records';
       }
       renderModelCards();
       renderOutputs();
@@ -630,7 +637,7 @@ async function loadCachedPredictions() {
 
 async function retrain() {
   if (!CAN_RETRAIN) return;
-  const btn = document.getElementById('retrainBtn');
+  const btn = document.getElementById('retrainBtn') || document.getElementById('btnRetrainModel');
   const stamp = document.getElementById('trainedStamp');
 
   // Background loading state inside button only — keeps charts/KPIs visible
@@ -646,15 +653,23 @@ async function retrain() {
 
   try {
     RESULT = await BCApi.mlTrain(ACTIVE, activeAbortController.signal);
-    if (stamp && RESULT) {
-      stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
-        bcFormatTimestamp(RESULT.trainedAt) +
-        '</strong> · ' + RESULT.recordCount + ' records';
+    if (RESULT) {
+      const trainedAt = RESULT.trainedAt || RESULT.trained_at || new Date().toISOString();
+      const count = RESULT.recordCount ?? RESULT.records_evaluated ?? 0;
+      if (typeof updateModelTrainedBadge === 'function') {
+        updateModelTrainedBadge(trainedAt, count);
+      } else if (typeof formatModelTrainedDate === 'function') {
+        if (stamp) stamp.textContent = formatModelTrainedDate(trainedAt, count);
+      } else if (stamp) {
+        stamp.innerHTML = 'Model trained: <strong class="ml-1">' +
+          bcFormatTimestamp(trainedAt) +
+          '</strong> · ' + count + ' records';
+      }
+      // Silently swap updated values and charts without requiring a full page refresh
+      renderModelCards();
+      renderOutputs();
+      showToast('Models successfully retrained on ' + count + ' records.');
     }
-    // Silently swap updated values and charts
-    renderModelCards();
-    renderOutputs();
-    showToast('Models successfully retrained on ' + (RESULT?.recordCount || 0) + ' records.');
   } catch (err) {
     if (err.name === 'AbortError') return;
     if (stamp) stamp.textContent = 'Retraining failed';
@@ -674,8 +689,13 @@ async function retrain() {
   if (!user) return;
   CAN_RETRAIN = roleCan(user.role, 'retrain_ml');
   if (!CAN_RETRAIN) {
-    const btn = document.getElementById('retrainBtn');
+    const btn = document.getElementById('retrainBtn') || document.getElementById('btnRetrainModel');
     if (btn) btn.style.display = 'none';
+  }
+
+  const altBtn = document.getElementById('btnRetrainModel');
+  if (altBtn && altBtn !== document.getElementById('retrainBtn')) {
+    altBtn.addEventListener('click', retrain);
   }
 
   await loadZoneLabels();

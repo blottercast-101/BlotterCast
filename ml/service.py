@@ -12,7 +12,7 @@ and joblib disk serialization for warm restarts.
 
 import json as _json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
@@ -261,8 +261,8 @@ def train():
             horizon=14
         )
 
-        trained_at = datetime.utcnow()
-        trained_at_iso = trained_at.isoformat() + 'Z'
+        trained_at = datetime.now(timezone.utc)
+        trained_at_iso = trained_at.isoformat()
 
         occ_results = {'random_forest': occ_metrics}
         type_results = {'gradient_boosting': type_metrics}
