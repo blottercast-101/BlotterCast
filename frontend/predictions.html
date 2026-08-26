@@ -235,7 +235,7 @@
 // ============================================================
 const TASKS = {
   occurrence: { label: 'Incident Occurrence', models: ['random_forest'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
-  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'incident_type_f1', metricLabel: 'Weighted F1' },
+  type:       { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'incident_type_f1', metricLabel: 'F1 Score' },
   hotspot:    { label: 'Hotspot Risk', models: ['gradient_boosting'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
 };
 const MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
@@ -307,8 +307,7 @@ function renderModelCards() {
     }
 
     const score = scoreVal != null ? pct(scoreVal) : '…';
-    const metricLabel = task === 'type' ? 'Weighted F1' : cfg.metricLabel;
-    const modelLabel = MODEL_LABELS[key];
+    const metricLabel = task === 'type' ? 'F1 Score' : cfg.metricLabel;
     const scoreIdAttr = task === 'type' ? ' id="incidentTypeScore"' : '';
 
     return `
@@ -318,7 +317,7 @@ function renderModelCards() {
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="${icons[i % icons.length]}" data-icon-size="16"></div>
         </div>
         <div class="font-display text-3xl text-white"${scoreIdAttr}>${score}</div>
-        <div class="text-xs text-white/70 mt-1">${metricLabel} · ${modelLabel}</div>
+        <div class="text-xs text-white/70 mt-1">${metricLabel}</div>
       </div>`;
   }).join('');
 }
