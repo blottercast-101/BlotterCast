@@ -1,0 +1,27 @@
+/**
+ * frontend/public/css/style.css
+ * Pulsing glow animation for active map zone SVG paths
+ */
+
+@keyframes zoneAlertPulse {
+  0% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+  }
+  50% {
+    stroke-width: 3px;
+    stroke-opacity: 0.5;
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3));
+  }
+  100% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+  }
+}
+
+.zone-pulse-active path,
+path.zone-pulse-active {
+  animation: zoneAlertPulse 1.5s ease-in-out infinite;
+}

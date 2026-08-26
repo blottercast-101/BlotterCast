@@ -949,6 +949,8 @@
     let boundaryGeojson = null;
     let zonesLayer = null;
     let zonesGeojson = null;
+    let zonePolygonLayers = {};
+    let hasHandledInitialUrlParams = false;
     let heatLayer = null;
     let markerLayer = L.layerGroup().addTo(map);
     let highlightLayer = L.layerGroup().addTo(map);
@@ -1009,18 +1011,30 @@
       };
     }
 
+    function getDensityColor(zoneId, zoneCounts) {
+      const count = (zoneCounts && zoneCounts[zoneId] != null)
+        ? zoneCounts[zoneId]
+        : (getZoneIncidentCounts(getFilteredIncidents(true))[zoneId] || 0);
+      if (count >= 5) return '#EF4444'; // High / Critical (>= 5 cases)
+      if (count >= 3) return '#F59E0B'; // Moderate (3 - 4 cases)
+      return '#10B981'; // Low (< 3 cases)
+    }
+
     function renderZoneChoropleth(data, tierEngine, zoneCounts) {
       if (zonesLayer) {
         map.removeLayer(zonesLayer);
         zonesLayer = null;
       }
+      zonePolygonLayers = {};
       if (!zonesGeojson) return;
 
       zonesLayer = L.geoJSON(zonesGeojson, {
         style: (feature) => getZonePolygonStyle(feature, tierEngine, zoneCounts),
         onEachFeature: (feature, layer) => {
           const zProps = feature.properties;
-          const count = zoneCounts[zProps.zone] || 0;
+          const zoneId = zProps.zone;
+          zonePolygonLayers[zoneId] = layer;
+          const count = zoneCounts[zoneId] || 0;
           const tier = tierEngine.getTier(count);
 
           // Tooltip on hover
@@ -1067,6 +1081,76 @@
 
       if (zonesLayer && zonesLayer.bringToBack) {
         zonesLayer.bringToBack();
+      }
+    }
+
+    function handleGeospatialDeepLink(zoneCounts, tierEngine) {
+      if (hasHandledInitialUrlParams) return;
+      hasHandledInitialUrlParams = true;
+
+      const params = new URLSearchParams(window.location.search);
+      const targetZone = params.get('zone');
+      const isHighlight = params.get('highlight') === 'true' || params.has('highlight');
+      const incidentIdParam = params.get('incidentId') || (params.get('highlight') !== 'true' ? params.get('highlight') : null);
+
+      if (targetZone && zonePolygonLayers[targetZone]) {
+        const targetLayer = zonePolygonLayers[targetZone];
+        const baseColor = getDensityColor(targetZone, zoneCounts);
+
+        // Center map to zone polygon
+        try {
+          const bounds = targetLayer.getBounds();
+          const center = bounds.getCenter();
+          map.flyTo(center, 16, { animate: true, duration: 1.0 });
+        } catch (e) {
+          const landmark = ZONE_LANDMARK_COORDINATES[targetZone];
+          if (landmark) {
+            map.flyTo([landmark.latitude, landmark.longitude], 16, { animate: true, duration: 1.0 });
+          }
+        }
+
+        if (isHighlight) {
+          // Add CSS pulsing class if layer has SVG element
+          if (targetLayer._path) {
+            targetLayer._path.classList.add('zone-pulse-active');
+          }
+
+          // Temporary active pulse styling
+          targetLayer.setStyle({
+            color: baseColor,
+            weight: 6,
+            fillColor: baseColor,
+            fillOpacity: 0.55,
+            dashArray: '6, 6'
+          });
+          targetLayer.openTooltip();
+
+          // Revert to standard density styling after 6 seconds
+          setTimeout(() => {
+            if (targetLayer._path) {
+              targetLayer._path.classList.remove('zone-pulse-active');
+            }
+            if (zonesLayer) {
+              zonesLayer.resetStyle(targetLayer);
+            } else {
+              targetLayer.setStyle({
+                color: baseColor,
+                weight: 3,
+                fillColor: baseColor,
+                fillOpacity: 0.25,
+                dashArray: null
+              });
+            }
+          }, 6000);
+        }
+      }
+
+      // If specific incident was also requested, focus that incident pin
+      if (incidentIdParam) {
+        const numericId = parseInt(String(incidentIdParam).replace(/\D/g, ''), 10) || parseInt(incidentIdParam, 10);
+        if (numericId) {
+          setTimeout(() => focusIncidentOnMap(numericId), 600);
+        }
       }
     }
 
@@ -1381,6 +1465,7 @@
       renderMarkers(mappedOnly, tierEngine, zoneCounts);
       renderSummary(mappedOnly, zoneCounts);
       renderTable(allFiltered);
+      handleGeospatialDeepLink(zoneCounts, tierEngine);
     }
 
     periodFilter.addEventListener('change', updateHeatMapPage);

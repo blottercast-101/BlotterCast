@@ -934,13 +934,30 @@ setInterval(() => {
 
 function resolveNotifLink(n) {
   let link = n.link || '#';
-  if (link !== '#') {
-    if (link.includes('highlight=') || link.includes('?id=')) return link;
+  if (link !== '#' && (link.includes('highlight=') || link.includes('?id='))) {
+    return link;
   }
-  
+
   // Extract key code (e.g. INC-2026-0064, BLT-2026-0012, STL-2026-0001, etc.) from title/body
   const codeMatch = (n.title + ' ' + (n.body || '')).match(/(INC-\d{4}-\d{2,6}|BLT-\d{4}-\d{2,6}|STL-\d{4}-\d{2,6}|RES-\d{4}-\d{2,6})/i);
   const code = codeMatch ? codeMatch[1] : (n.ref_id || '');
+
+  // Extract Zone if mentioned in title or body (e.g. Zone 1, Zone 2, etc.)
+  const zoneMatch = (n.title + ' ' + (n.body || '')).match(/(Zone\s*[1-7])/i);
+  const zoneName = zoneMatch ? zoneMatch[1].replace(/Zone\s*/i, 'Zone ') : (n.zone || '');
+
+  const isGeospatial = (
+    (n.type && (n.type.includes('heat') || n.type.includes('hotspot') || n.type.includes('spatial') || n.type.includes('geo') || n.type.includes('zone'))) ||
+    link.includes('heatmap.html')
+  );
+
+  if (isGeospatial) {
+    const params = [];
+    if (zoneName) params.push(`zone=${encodeURIComponent(zoneName)}`);
+    if (code) params.push(`incidentId=${encodeURIComponent(code)}`);
+    params.push('highlight=true');
+    return `heatmap.html?${params.join('&')}`;
+  }
 
   if (link === '#' || !link) {
     if (n.ref_table === 'incidents' || (n.type && n.type.includes('incident'))) link = 'incident.html';
