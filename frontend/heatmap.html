@@ -518,13 +518,58 @@
           </div>
           <div id="unmappedSummaryBadge" class="hidden"></div>
         </div>
-        <div class="table-wrap">
+
+        <!-- Search & Filtering Toolbar -->
+        <div class="px-6 py-3.5 bg-forest-50/40 border-b border-forest-50 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 flex-1 min-w-[240px] max-w-md">
+            <div class="relative w-full">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-forest-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </span>
+              <input type="text" id="tableSearchInput" placeholder="Search by ID, location, category, or reporter…" class="input-field pl-9 text-xs py-2 w-full bg-white">
+            </div>
+          </div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <select id="tableZoneFilter" class="select-field text-xs py-2 bg-white">
+              <option value="ALL">All Zones</option>
+              <option value="Zone 1">Zone 1</option>
+              <option value="Zone 2">Zone 2</option>
+              <option value="Zone 3">Zone 3</option>
+              <option value="Zone 4">Zone 4</option>
+              <option value="Zone 5">Zone 5</option>
+              <option value="Zone 6">Zone 6</option>
+              <option value="Zone 7">Zone 7</option>
+            </select>
+            <select id="tableCategoryFilter" class="select-field text-xs py-2 bg-white">
+              <option value="ALL">All Categories</option>
+              <option value="Physical Assault">Physical Assault</option>
+              <option value="Theft">Theft</option>
+              <option value="Public Disturbance">Public Disturbance</option>
+              <option value="Vehicular Accident">Vehicular Accident</option>
+              <option value="Domestic Dispute">Domestic Dispute</option>
+              <option value="Trespassing">Trespassing</option>
+              <option value="Vandalism">Vandalism</option>
+              <option value="Other">Other</option>
+            </select>
+            <button id="btnClearTableFilters" type="button" class="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-1.5" title="Reset search and filters">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
           <table class="data-table">
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Date</th>
                 <th>Category</th>
+                <th>Zone</th>
                 <th>Location</th>
                 <th>Latitude</th>
                 <th>Longitude</th>
@@ -534,6 +579,12 @@
             </thead>
             <tbody id="incidentTableBody"></tbody>
           </table>
+        </div>
+
+        <!-- Unified Pagination Controls -->
+        <div class="flex items-center justify-between px-6 py-4 border-t border-forest-50">
+          <span class="text-sm text-forest-500" id="tablePaginationInfo">Showing 0 to 0 of 0 incidents</span>
+          <div class="flex gap-2" id="tablePaginationControls"></div>
         </div>
       </div>
     </main>
@@ -1267,6 +1318,151 @@
       }
     }
 
+    const TABLE_PAGE_SIZE = 8;
+    let tableCurrentPage = 1;
+    let currentTableFilteredData = [];
+
+    const tableSearchInput = document.getElementById('tableSearchInput');
+    const tableZoneFilter = document.getElementById('tableZoneFilter');
+    const tableCategoryFilter = document.getElementById('tableCategoryFilter');
+    const btnClearTableFilters = document.getElementById('btnClearTableFilters');
+
+    function applyTableFilters(resetPage = true) {
+      if (resetPage) tableCurrentPage = 1;
+      const q = (tableSearchInput ? tableSearchInput.value : '').toLowerCase().trim();
+      const zFilter = tableZoneFilter ? tableZoneFilter.value : 'ALL';
+      const cFilter = tableCategoryFilter ? tableCategoryFilter.value : 'ALL';
+
+      const baseData = getFilteredIncidents(false);
+
+      currentTableFilteredData = baseData.filter(item => {
+        if (zFilter !== 'ALL' && item.zone !== zFilter) return false;
+        if (cFilter !== 'ALL' && item.category !== cFilter) return false;
+        if (q) {
+          const idStr = String(item.id || '').toLowerCase();
+          const repNoStr = String(item.reportNo || item.report_no || '').toLowerCase();
+          const locStr = String(item.location || '').toLowerCase();
+          const descStr = String(item.description || '').toLowerCase();
+          const repStr = String(item.reporter || '').toLowerCase();
+          const catStr = String(item.category || '').toLowerCase();
+          const zoneStr = String(item.zone || '').toLowerCase();
+
+          const matches = idStr.includes(q) ||
+                          repNoStr.includes(q) ||
+                          locStr.includes(q) ||
+                          descStr.includes(q) ||
+                          repStr.includes(q) ||
+                          catStr.includes(q) ||
+                          zoneStr.includes(q);
+          if (!matches) return false;
+        }
+        return true;
+      });
+
+      renderTablePage();
+    }
+
+    function renderTablePage() {
+      incidentTableBody.innerHTML = '';
+      const total = currentTableFilteredData.length;
+      const totalPages = Math.ceil(total / TABLE_PAGE_SIZE) || 1;
+      tableCurrentPage = Math.max(1, Math.min(tableCurrentPage, totalPages));
+
+      const unmappedCount = currentTableFilteredData.filter(i => i.isUnmapped).length;
+      const mappedCount = currentTableFilteredData.filter(i => !i.isUnmapped).length;
+
+      const subtitleEl = document.getElementById('tableSubtitle');
+      if (subtitleEl) {
+        if (total === 0) {
+          subtitleEl.textContent = 'No incident records match the active search and filter criteria.';
+        } else if (unmappedCount > 0) {
+          subtitleEl.innerHTML = `Displaying filtered incidents (<strong class="text-amber-800 font-semibold">${unmappedCount} unmapped record${unmappedCount > 1 ? 's' : ''}</strong> excluded from map canvas).`;
+        } else {
+          subtitleEl.textContent = `All ${mappedCount} filtered incidents are mapped within the loaded barangay boundary.`;
+        }
+      }
+
+      const unmappedBadge = document.getElementById('unmappedSummaryBadge');
+      if (unmappedBadge) {
+        if (unmappedCount > 0) {
+          unmappedBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200';
+          unmappedBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> ${unmappedCount} Unmapped / Outside Boundary`;
+        } else {
+          unmappedBadge.className = 'hidden';
+        }
+      }
+
+      const start = (tableCurrentPage - 1) * TABLE_PAGE_SIZE;
+      const pageSlice = currentTableFilteredData.slice(start, start + TABLE_PAGE_SIZE);
+
+      const infoEl = document.getElementById('tablePaginationInfo');
+      if (infoEl) {
+        infoEl.textContent = total === 0
+          ? 'Showing 0 to 0 of 0 incidents'
+          : `Showing ${start + 1} to ${Math.min(start + TABLE_PAGE_SIZE, total)} of ${total} incident${total !== 1 ? 's' : ''}`;
+      }
+
+      const pagControls = document.getElementById('tablePaginationControls');
+      if (pagControls && typeof bcRenderPagination === 'function') {
+        bcRenderPagination(pagControls, tableCurrentPage, totalPages, (newPage) => {
+          tableCurrentPage = newPage;
+          renderTablePage();
+        });
+      }
+
+      if (!pageSlice.length) {
+        incidentTableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-8 text-forest-400 text-sm font-medium">No incident records match the active search and filters.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      pageSlice.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.id = `incident-row-${item.id}`;
+        if (activeRowId === item.id) {
+          tr.classList.add('active-incident-row');
+        }
+
+        const locationCol = item.isUnmapped
+          ? `<div>
+               <div class="text-forest-800 font-medium">${item.location}</div>
+               <span class="inline-flex items-center mt-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                 Unmapped / Outside Boundary
+               </span>
+             </div>`
+          : `<div class="text-forest-800 font-medium">${item.location}</div>`;
+
+        const coordsContent = !item.isUnmapped && item.lat != null && item.lng != null
+          ? `<td class="font-mono text-xs text-forest-700 font-medium">${item.lat.toFixed(5)}</td><td class="font-mono text-xs text-forest-700 font-medium">${item.lng.toFixed(5)}</td>`
+          : `<td colspan="2" class="text-xs text-gray-400 font-mono text-center">N/A</td>`;
+
+        const actionBtn = !item.isUnmapped && item.lat != null && item.lng != null
+          ? `<button onclick="focusIncidentOnMap(${item.id})" class="icon-btn text-forest-700 hover:text-forest-900" title="View on Map"><span data-icon="view" data-icon-size="16"></span></button>`
+          : `<button disabled class="icon-btn opacity-40 cursor-not-allowed text-gray-400" title="Cannot locate on map: location is outside barangay boundary or unmapped"><span data-icon="view" data-icon-size="16"></span></button>`;
+
+        tr.innerHTML = `
+          <td class="font-semibold text-forest-700">#${item.id}</td>
+          <td>${item.date}</td>
+          <td>${getCategoryBadge(item.category)}</td>
+          <td><span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">${item.zone || 'Unassigned'}</span></td>
+          <td>${locationCol}</td>
+          ${coordsContent}
+          <td><span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forest-50 text-forest-700 border border-forest-100">${item.weight.toFixed(2)}</span></td>
+          <td class="text-center w-24">
+            ${actionBtn}
+          </td>
+        `;
+        incidentTableBody.appendChild(tr);
+      });
+
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+      }
+    }
+
     function focusIncidentOnMap(id) {
       const item = incidents.find(r => r.id === id);
       if (!item || item.isUnmapped || item.lat == null || item.lng == null) {
@@ -1276,19 +1472,27 @@
         return;
       }
 
-      // 1. Ensure markers layer is active/visible
+      // 1. Ensure incident is displayed on active table pagination page
+      let itemIdx = currentTableFilteredData.findIndex(r => r.id === id);
+      if (itemIdx === -1) {
+        if (tableSearchInput) tableSearchInput.value = '';
+        if (tableZoneFilter) tableZoneFilter.value = 'ALL';
+        if (tableCategoryFilter) tableCategoryFilter.value = 'ALL';
+        applyTableFilters(false);
+        itemIdx = currentTableFilteredData.findIndex(r => r.id === id);
+      }
+      if (itemIdx !== -1) {
+        const targetPage = Math.floor(itemIdx / TABLE_PAGE_SIZE) + 1;
+        if (tableCurrentPage !== targetPage) {
+          tableCurrentPage = targetPage;
+          renderTablePage();
+        }
+      }
+
+      // 2. Ensure markers layer is active/visible
       if (!showMarkers.checked) {
         showMarkers.checked = true;
         renderMarkers(getFilteredIncidents(true));
-      }
-
-      // 2. Smoothly scroll viewport up to the map canvas if needed
-      const mapCard = document.getElementById('map');
-      if (mapCard) {
-        const rect = mapCard.getBoundingClientRect();
-        if (rect.top < 60 || rect.bottom > window.innerHeight) {
-          mapCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
       }
 
       // 3. Highlight the table row
@@ -1387,78 +1591,7 @@
     }
 
     function renderTable(allFilteredData) {
-      incidentTableBody.innerHTML = '';
-
-      const unmappedCount = allFilteredData.filter(i => i.isUnmapped).length;
-      const mappedCount = allFilteredData.filter(i => !i.isUnmapped).length;
-
-      const subtitleEl = document.getElementById('tableSubtitle');
-      if (subtitleEl) {
-        if (allFilteredData.length === 0) {
-          subtitleEl.textContent = 'No incident records recorded in the system.';
-        } else if (unmappedCount > 0) {
-          subtitleEl.innerHTML = `Only incidents inside the loaded barangay boundary are displayed on the map canvas (<strong class="text-amber-800 font-semibold">${unmappedCount} unmapped record${unmappedCount > 1 ? 's' : ''}</strong> excluded from map view).`;
-        } else {
-          subtitleEl.textContent = `All ${mappedCount} filtered incidents are mapped within the loaded barangay boundary.`;
-        }
-      }
-
-      const unmappedBadge = document.getElementById('unmappedSummaryBadge');
-      if (unmappedBadge) {
-        if (unmappedCount > 0) {
-          unmappedBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200';
-          unmappedBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> ${unmappedCount} Unmapped / Outside Boundary`;
-        } else {
-          unmappedBadge.className = 'hidden';
-        }
-      }
-
-      if (!allFilteredData.length) {
-        incidentTableBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center py-8 text-forest-400 text-sm font-medium">No incident records recorded in the system.</td>
-          </tr>
-        `;
-        return;
-      }
-
-      allFilteredData.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.id = `incident-row-${item.id}`;
-        if (activeRowId === item.id) {
-          tr.classList.add('active-incident-row');
-        }
-
-        const locationCol = item.isUnmapped
-          ? `<div>
-               <div class="text-forest-800 font-medium">${item.location}</div>
-               <span class="inline-flex items-center mt-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                 Unmapped / Outside Boundary
-               </span>
-             </div>`
-          : `<div class="text-forest-800 font-medium">${item.location}</div>`;
-
-        const coordsContent = !item.isUnmapped && item.lat != null && item.lng != null
-          ? `<td class="font-mono text-xs text-forest-700 font-medium">${item.lat.toFixed(5)}</td><td class="font-mono text-xs text-forest-700 font-medium">${item.lng.toFixed(5)}</td>`
-          : `<td colspan="2" class="text-xs text-gray-400 font-mono text-center">N/A</td>`;
-
-        const actionBtn = !item.isUnmapped && item.lat != null && item.lng != null
-          ? `<button onclick="focusIncidentOnMap(${item.id})" class="icon-btn text-forest-700 hover:text-forest-900" title="View on Map"><span data-icon="view" data-icon-size="16"></span></button>`
-          : `<button disabled class="icon-btn opacity-40 cursor-not-allowed text-gray-400" title="Cannot locate on map: location is outside barangay boundary or unmapped"><span data-icon="view" data-icon-size="16"></span></button>`;
-
-        tr.innerHTML = `
-          <td class="font-semibold text-forest-700">#${item.id}</td>
-          <td>${item.date}</td>
-          <td>${getCategoryBadge(item.category)}</td>
-          <td>${locationCol}</td>
-          ${coordsContent}
-          <td><span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-forest-50 text-forest-700 border border-forest-100">${item.weight.toFixed(2)}</span></td>
-          <td class="text-center w-24">
-            ${actionBtn}
-          </td>
-        `;
-        incidentTableBody.appendChild(tr);
-      });
+      applyTableFilters(false);
     }
 
     async function updateHeatMapPage() {
@@ -1482,6 +1615,24 @@
     periodFilter.addEventListener('change', updateHeatMapPage);
     categoryFilter.addEventListener('change', updateHeatMapPage);
     showMarkers.addEventListener('change', updateHeatMapPage);
+
+    if (tableSearchInput) {
+      tableSearchInput.addEventListener('input', () => applyTableFilters(true));
+    }
+    if (tableZoneFilter) {
+      tableZoneFilter.addEventListener('change', () => applyTableFilters(true));
+    }
+    if (tableCategoryFilter) {
+      tableCategoryFilter.addEventListener('change', () => applyTableFilters(true));
+    }
+    if (btnClearTableFilters) {
+      btnClearTableFilters.addEventListener('click', () => {
+        if (tableSearchInput) tableSearchInput.value = '';
+        if (tableZoneFilter) tableZoneFilter.value = 'ALL';
+        if (tableCategoryFilter) tableCategoryFilter.value = 'ALL';
+        applyTableFilters(true);
+      });
+    }
 
     (async function () {
       try {

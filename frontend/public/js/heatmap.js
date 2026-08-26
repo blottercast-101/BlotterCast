@@ -1,6 +1,7 @@
 /**
  * frontend/public/js/heatmap.js
- * Heatmap URL Parameter Listener, Zone Alert Pulse, and Incident Marker Focus Handler
+ * Heatmap Module: URL Parameter Deep-linking, Density Alert Pulsing,
+ * Unified Client-side Pagination, Real-time Search, and Reactive Filtering
  */
 
 /**
@@ -100,6 +101,77 @@ function initHeatmapDeepLink({ map, zonePolygonLayers = {}, zoneCounts = {}, foc
   }
 }
 
+/**
+ * Filters a list of incident objects based on search query, zone, and category
+ *
+ * @param {Array<Object>} incidents - Master incident list
+ * @param {Object} filters
+ * @param {string} [filters.query=''] - Search term
+ * @param {string} [filters.zone='ALL'] - Selected zone
+ * @param {string} [filters.category='ALL'] - Selected category
+ * @returns {Array<Object>}
+ */
+function filterIncidentList(incidents = [], { query = '', zone = 'ALL', category = 'ALL' } = {}) {
+  const q = String(query || '').toLowerCase().trim();
+  const z = zone || 'ALL';
+  const c = category || 'ALL';
+
+  return incidents.filter(item => {
+    if (z !== 'ALL' && item.zone !== z) return false;
+    if (c !== 'ALL' && item.category !== c) return false;
+    if (q) {
+      const idStr = String(item.id || '').toLowerCase();
+      const repNoStr = String(item.reportNo || item.report_no || '').toLowerCase();
+      const locStr = String(item.location || '').toLowerCase();
+      const descStr = String(item.description || '').toLowerCase();
+      const repStr = String(item.reporter || '').toLowerCase();
+      const catStr = String(item.category || '').toLowerCase();
+      const zoneStr = String(item.zone || '').toLowerCase();
+
+      const matches = idStr.includes(q) ||
+                      repNoStr.includes(q) ||
+                      locStr.includes(q) ||
+                      descStr.includes(q) ||
+                      repStr.includes(q) ||
+                      catStr.includes(q) ||
+                      zoneStr.includes(q);
+      if (!matches) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Returns a paginated slice of an array
+ *
+ * @param {Array} list - Array of items
+ * @param {number} page - Current 1-based page number
+ * @param {number} pageSize - Number of items per page
+ * @returns {{ slice: Array, totalPages: number, totalItems: number, currentPage: number, startIndex: number, endIndex: number }}
+ */
+function paginateItems(list = [], page = 1, pageSize = 8) {
+  const totalItems = list.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.max(1, Math.min(page, totalPages));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const slice = list.slice(startIndex, endIndex);
+
+  return {
+    slice,
+    totalPages,
+    totalItems,
+    currentPage,
+    startIndex,
+    endIndex
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { getDensityColor, initHeatmapDeepLink };
+  module.exports = {
+    getDensityColor,
+    initHeatmapDeepLink,
+    filterIncidentList,
+    paginateItems
+  };
 }
