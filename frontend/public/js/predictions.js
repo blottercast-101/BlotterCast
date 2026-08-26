@@ -3,6 +3,66 @@
  * Predictive Insights & ML Model Synchronization Module for BlotterCast
  */
 
+let retrainStepInterval = null;
+const RETRAIN_STEPS = [
+  'Aggregating live blotter & incident records...',
+  'Building spatiotemporal zone features...',
+  'Fitting Random Forest & Gradient Boosting models...',
+  'Evaluating accuracy & 14-day risk forecasts...',
+  'Finalizing predictions...'
+];
+
+/**
+ * Opens and animates the centered Loading / Progress Modal for model retraining.
+ */
+function showRetrainModal() {
+  const modal = document.getElementById('retrainModal') || document.getElementById('trainModal');
+  const content = document.getElementById('retrainModalContent');
+  const stepText = document.getElementById('retrainStepText');
+  
+  if (stepText) stepText.textContent = RETRAIN_STEPS[0];
+  
+  if (modal) {
+    modal.classList.remove('hidden');
+    // Trigger reflow for smooth opacity transition
+    void modal.offsetWidth;
+    modal.classList.remove('opacity-0');
+    modal.classList.add('opacity-100');
+  }
+  if (content) {
+    content.classList.remove('scale-95');
+    content.classList.add('scale-100');
+  }
+
+  let stepIdx = 0;
+  clearInterval(retrainStepInterval);
+  retrainStepInterval = setInterval(() => {
+    stepIdx = (stepIdx + 1) % RETRAIN_STEPS.length;
+    if (stepText) stepText.textContent = RETRAIN_STEPS[stepIdx];
+  }, 1200);
+}
+
+/**
+ * Smoothly hides and closes the Retrain Loading Modal.
+ */
+function hideRetrainModal() {
+  clearInterval(retrainStepInterval);
+  const modal = document.getElementById('retrainModal') || document.getElementById('trainModal');
+  const content = document.getElementById('retrainModalContent');
+  
+  if (modal) {
+    modal.classList.remove('opacity-100');
+    modal.classList.add('opacity-0');
+  }
+  if (content) {
+    content.classList.remove('scale-100');
+    content.classList.add('scale-95');
+  }
+  setTimeout(() => {
+    if (modal) modal.classList.add('hidden');
+  }, 300);
+}
+
 /**
  * Parses an ISO trainedAt timestamp and formats it in the client's local timezone (Asia/Manila)
  * with the evaluated record count.
@@ -52,5 +112,11 @@ function updateModelTrainedBadge(isoString, recordCount) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { formatModelTrainedDate, updateModelTrainedBadge };
+  module.exports = {
+    showRetrainModal,
+    hideRetrainModal,
+    formatModelTrainedDate,
+    updateModelTrainedBadge,
+    RETRAIN_STEPS
+  };
 }
