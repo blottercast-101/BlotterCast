@@ -555,6 +555,7 @@
   <script src="app.js"></script>
   <script src="icons.js"></script>
   <script src="custom-controls.js"></script>
+  <script src="public/js/heatmap.js"></script>
   <script>
     // Approximate center of Mapulang Lupa, Pandi, Bulacan
     const MAP_CENTER = [14.8831, 120.9651];
@@ -576,81 +577,55 @@
     };
 
     function getCategoryBadge(category) {
-      const style = CATEGORY_STYLES[category] || { bg: '#dcf0e0', color: '#1a5730', border: '#b8e0c0' };
+      const style = CATEGORY_STYLES[category] || CATEGORY_STYLES['Other'];
       return `<span class="cat-badge" style="background:${style.bg}; color:${style.color}; border:1px solid ${style.border};">${category}</span>`;
     }
 
     const computeDynamicDensityTiers = (zoneCounts) => {
-      const counts = Object.values(zoneCounts || {});
-      const maxCount = counts.length > 0 ? Math.max(...counts, 0) : 0;
-
-      // If no incidents exist
-      if (maxCount === 0) {
-        return {
-          maxCount: 0,
-          getTier: () => ({
-            label: 'No Incidents',
-            color: '#E2E8F0',
-            border: '#94A3B8',
-            opacity: 0.20,
-            fillOpacity: 0.20,
-            badgeClass: 'bg-slate-100 text-slate-700'
-          }),
-          ranges: { low: '0', medium: '0', elevated: '0', high: '0' }
-        };
-      }
-
-      // Calculate dynamic step thresholds (25%, 50%, 75% of maxCount)
-      let lowLimit, medLimit, eleLimit;
-      if (maxCount <= 3) {
-        lowLimit = 1;
-        medLimit = Math.min(2, maxCount);
-        eleLimit = Math.min(3, maxCount);
-      } else {
-        lowLimit = Math.max(1, Math.round(maxCount * 0.25));
-        medLimit = Math.max(lowLimit + 1, Math.round(maxCount * 0.50));
-        eleLimit = Math.max(medLimit + 1, Math.round(maxCount * 0.75));
-      }
+      const breaks = typeof computeDensityBreaks === 'function'
+        ? computeDensityBreaks(zoneCounts)
+        : { lowMax: 0, medMax: 0, elevMax: 0, maxCount: 0, minCount: 0 };
 
       const getTier = (count) => {
-        if (count === 0 || count == null) {
+        const n = Number(count || 0);
+        if (!n || n <= 0) {
           return {
-            label: 'None',
-            color: '#E2E8F0',
+            label: 'No Incidents',
+            color: 'transparent',
             border: '#94A3B8',
-            opacity: 0.20,
-            fillOpacity: 0.20,
+            opacity: 0.08,
+            fillOpacity: 0.08,
             badgeClass: 'bg-slate-100 text-slate-700'
           };
         }
-        if (count > eleLimit) {
+        if (n > breaks.elevMax) {
           return {
             label: 'High',
             color: '#EF4444',
             border: '#DC2626',
             opacity: 0.50,
-            fillOpacity: 0.50,
+            fillOpacity: 0.45,
             badgeClass: 'bg-red-500 text-white'
           };
         }
-        if (count > medLimit) {
+        if (n > breaks.medMax) {
           return {
             label: 'Elevated',
-            color: '#FB923C',
+            color: '#F97316',
             border: '#EA580C',
             opacity: 0.45,
             fillOpacity: 0.45,
-            badgeClass: 'bg-orange-400 text-white'
+            badgeClass: 'bg-orange-500 text-white'
           };
         }
-        if (count > lowLimit) {
+        if (n > breaks.lowMax) {
           return {
             label: 'Medium',
-            color: '#FACC15',
-            border: '#CA8A04',
+            color: '#F59E0B',
+            border: '#D97706',
             opacity: 0.40,
-            fillOpacity: 0.40,
-            badgeClass: 'bg-yellow-400 text-gray-900'
+            fillOpacity: 0.45,
+            badgeClass: 'bg-yellow-500 text-white'
           };
         }
         return {
@@ -658,37 +633,31 @@
           color: '#10B981',
           border: '#059669',
           opacity: 0.35,
-          fillOpacity: 0.35,
+          fillOpacity: 0.45,
           badgeClass: 'bg-emerald-500 text-white'
         };
       };
 
-      const ranges = {
-        low: `1 – ${lowLimit}`,
-        medium: lowLimit < medLimit ? `${lowLimit + 1} – ${medLimit}` : `${medLimit}`,
-        elevated: medLimit < eleLimit ? `${medLimit + 1} – ${eleLimit}` : `${eleLimit}`,
-        high: eleLimit < maxCount ? `${eleLimit + 1} – ${maxCount}` : `${maxCount}+`
-      };
-
       return {
-        maxCount,
-        lowLimit,
-        medLimit,
-        eleLimit,
-        getTier,
-        ranges
+        breaks,
+        maxCount: breaks.maxCount,
+        getTier
       };
     };
 
     function updateLegendUI(tierEngine) {
-      const lowEl = document.getElementById('legendLowText');
-      const medEl = document.getElementById('legendMedText');
-      const eleEl = document.getElementById('legendEleText');
-      const highEl = document.getElementById('legendHighText');
-      if (lowEl) lowEl.textContent = 'Low';
-      if (medEl) medEl.textContent = 'Medium';
-      if (eleEl) eleEl.textContent = 'Elevated';
-      if (highEl) highEl.textContent = 'High';
+      if (typeof updateDynamicLegendUI === 'function' && tierEngine && tierEngine.breaks) {
+        updateDynamicLegendUI(tierEngine.breaks);
+      } else {
+        const lowEl = document.getElementById('legendLowText');
+        const medEl = document.getElementById('legendMedText');
+        const eleEl = document.getElementById('legendEleText');
+        const highEl = document.getElementById('legendHighText');
+        if (lowEl) lowEl.textContent = 'Low';
+        if (medEl) medEl.textContent = 'Medium';
+        if (eleEl) eleEl.textContent = 'Elevated';
+        if (highEl) highEl.textContent = 'High';
+      }
     }
 
     function getZoneIncidentCounts(data) {

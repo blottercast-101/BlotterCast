@@ -1,8 +1,8 @@
 /**
  * frontend/public/js/heatmap.js
- * Heatmap Module: URL Parameter Deep-linking, Density Alert Pulsing,
- * Full-Width Toolbar, Real-time Search, Reactive 7-Zone Filtering,
- * and Permanent Leaflet Zone Centroid Labels
+ * Heatmap Module: Dynamic Min-Max Quartile Zone Density Classification,
+ * Dynamic Legend UI Range Injection, URL Parameter Deep-linking,
+ * Alert Pulsing, Reactive 7-Zone Toolbar Filtering, and Permanent Centroid Labels
  */
 
 /**
@@ -32,20 +32,136 @@ const OFFICIAL_ZONE_LABELS = {
 };
 
 /**
- * Calculates the density color matching the zone incident frequency:
- * - High / Critical (>= 5 cases): #EF4444 (Red)
- * - Moderate (3 - 4 cases): #F59E0B (Amber / Yellow)
- * - Low (< 3 cases): #10B981 (Green)
+ * Computes dynamic break intervals based on 4 equal steps (Min-Max / Quartiles)
+ * from the active dataset's incident frequency across zones.
+ *
+ * @param {Object.<string, number>} [zoneCounts={}] - Map of incident count per zone
+ * @returns {{ lowMax: number, medMax: number, elevMax: number, maxCount: number, minCount: number, step: number }}
+ */
+function computeDensityBreaks(zoneCounts = {}) {
+  const counts = Object.values(zoneCounts || {})
+    .map(Number)
+    .filter(c => !isNaN(c) && c > 0);
+
+  if (counts.length === 0) {
+    return {
+      lowMax: 0,
+      medMax: 0,
+      elevMax: 0,
+      maxCount: 0,
+      minCount: 0,
+      step: 0
+    };
+  }
+
+  const max = Math.max(...counts);
+  const min = Math.min(...counts);
+  const step = (max - min) / 4;
+
+  return {
+    lowMax: Math.round(min + step),
+    medMax: Math.round(min + (step * 2)),
+    elevMax: Math.round(min + (step * 3)),
+    maxCount: max,
+    minCount: min,
+    step: step
+  };
+}
+
+/**
+ * Evaluates the dynamic zone classification color based on relative density breaks:
+ * - High (Red): #EF4444 - Zone(s) with the highest incident volume (top range)
+ * - Elevated (Orange): #F97316 - Upper-middle range nearing the high threshold
+ * - Medium (Yellow): #F59E0B - Lower-middle range with moderate incidents
+ * - Low (Green): #10B981 - Lowest non-zero range
+ * - Zero / Inactive: 'transparent' - Zones with 0 incidents
+ *
+ * @param {number} count - Incident count for the zone
+ * @param {Object} [breaks] - Output from computeDensityBreaks()
+ * @returns {string} Hex color string or 'transparent'
+ */
+function getDynamicZoneColor(count, breaks = null) {
+  const n = Number(count || 0);
+  if (!n || n <= 0) return 'transparent';
+  if (!breaks || breaks.maxCount === 0) return '#10B981';
+
+  if (n > breaks.elevMax) return '#EF4444'; // High (Red) - pinakamarami
+  if (n > breaks.medMax)  return '#F97316'; // Elevated (Orange) - malapit sa high
+  if (n > breaks.lowMax)  return '#F59E0B'; // Medium (Yellow) - medyo marami
+  return '#10B981';                             // Low (Green) - kaunti pa lang
+}
+
+/**
+ * Calculates the dynamic density color for a specific zone ID.
  *
  * @param {string} zoneId - e.g. 'Zone 1'
  * @param {Object.<string, number>} [zoneCounts={}] - Map of incident count per zone
+ * @param {Object} [breaks=null] - Optional precomputed breaks
  * @returns {string} Hex color string
  */
-function getDensityColor(zoneId, zoneCounts = {}) {
+function getDensityColor(zoneId, zoneCounts = {}, breaks = null) {
   const count = Number(zoneCounts[zoneId] || 0);
-  if (count >= 5) return '#EF4444'; // High / Critical (>= 5 cases)
-  if (count >= 3) return '#F59E0B'; // Moderate (3 - 4 cases)
-  return '#10B981'; // Low (< 3 cases)
+  const b = breaks || computeDensityBreaks(zoneCounts);
+  return getDynamicZoneColor(count, b);
+}
+
+/**
+ * Dynamically updates the Heat Map Legend labels to display the calculated
+ * range intervals based on the current dataset distribution.
+ *
+ * @param {Object} breaks - Output from computeDensityBreaks()
+ */
+function updateDynamicLegendUI(breaks) {
+  const lowEl = document.getElementById('legendLowText');
+  const medEl = document.getElementById('legendMedText');
+  const eleEl = document.getElementById('legendEleText');
+  const highEl = document.getElementById('legendHighText');
+
+  if (!breaks || breaks.maxCount === 0) {
+    if (lowEl) lowEl.textContent = 'Low (0)';
+    if (medEl) medEl.textContent = 'Medium (0)';
+    if (eleEl) eleEl.textContent = 'Elevated (0)';
+    if (highEl) highEl.textContent = 'High (0)';
+    return;
+  }
+
+  const lowText = `${breaks.minCount} – ${breaks.lowMax}`;
+  const medLow = breaks.lowMax + 1;
+  const medText = medLow >= breaks.medMax ? `${breaks.medMax}` : `${medLow} – ${breaks.medMax}`;
+  const eleLow = breaks.medMax + 1;
+  const eleText = eleLow >= breaks.elevMax ? `${breaks.elevMax}` : `${eleLow} – ${breaks.elevMax}`;
+  const highLow = breaks.elevMax + 1;
+  const highText = highLow >= breaks.maxCount ? `${breaks.maxCount}` : `${highLow} – ${breaks.maxCount}`;
+
+  if (lowEl) lowEl.textContent = `Low (${lowText})`;
+  if (medEl) medEl.textContent = `Medium (${medText})`;
+  if (eleEl) eleEl.textContent = `Elevated (${eleText})`;
+  if (highEl) highEl.textContent = `High (${highText})`;
+}
+
+/**
+ * Leaflet GeoJSON layer feature styling function using dynamic relative breaks.
+ *
+ * @param {Object} feature - GeoJSON feature object
+ * @param {Object.<string, number>} [zoneCounts={}] - Map of incident count per zone
+ * @param {Object} [breaks=null] - Precalculated density breaks
+ * @returns {Object} Leaflet path style options
+ */
+function getDynamicZoneStyle(feature, zoneCounts = {}, breaks = null) {
+  const zoneName = feature?.properties?.zone || feature?.properties?.zone_name || feature?.properties?.name;
+  const count = Number(zoneCounts[zoneName] || 0);
+  const calculatedBreaks = breaks || computeDensityBreaks(zoneCounts);
+  const fillColor = getDynamicZoneColor(count, calculatedBreaks);
+  const isZero = count === 0;
+
+  return {
+    fillColor: fillColor === 'transparent' ? '#10B981' : fillColor,
+    fillOpacity: isZero ? 0.08 : 0.45,
+    color: isZero ? '#94A3B8' : (fillColor === 'transparent' ? '#10B981' : fillColor),
+    weight: isZero ? 1.5 : 2,
+    dashArray: isZero ? '4, 4' : null,
+    opacity: 0.85
+  };
 }
 
 /**
@@ -112,9 +228,9 @@ function initHeatmapDeepLink({ map, zonePolygonLayers = {}, zoneCounts = {}, foc
       }
 
       targetLayer.setStyle({
-        color: baseColor,
+        color: baseColor === 'transparent' ? '#10B981' : baseColor,
         weight: 6,
-        fillColor: baseColor,
+        fillColor: baseColor === 'transparent' ? '#10B981' : baseColor,
         fillOpacity: 0.55,
         dashArray: '6, 6'
       });
@@ -128,11 +244,11 @@ function initHeatmapDeepLink({ map, zonePolygonLayers = {}, zoneCounts = {}, foc
           targetLayer._path.classList.remove('zone-pulse-active');
         }
         targetLayer.setStyle({
-          color: baseColor,
-          weight: 3,
-          fillColor: baseColor,
-          fillOpacity: 0.25,
-          dashArray: null
+          color: baseColor === 'transparent' ? '#94A3B8' : baseColor,
+          weight: 2,
+          fillColor: baseColor === 'transparent' ? '#10B981' : baseColor,
+          fillOpacity: baseColor === 'transparent' ? 0.08 : 0.45,
+          dashArray: baseColor === 'transparent' ? '4, 4' : null
         });
       }, 6000);
     }
@@ -241,7 +357,11 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     HEATMAP_OFFICIAL_ZONES,
     OFFICIAL_ZONE_LABELS,
+    computeDensityBreaks,
+    getDynamicZoneColor,
     getDensityColor,
+    updateDynamicLegendUI,
+    getDynamicZoneStyle,
     bindPermanentZoneLabels,
     initHeatmapDeepLink,
     filterIncidentList,
