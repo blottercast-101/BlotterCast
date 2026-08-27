@@ -1876,3 +1876,53 @@ path.zone-pulse-active {
   background-color: inherit !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
+
+/* ---------------- User Profile Badge Skeleton Shimmers & View Transitions ---------------- */
+[data-user-name]:empty {
+  display: block;
+  width: 90px;
+  max-width: 100%;
+  height: 14px;
+  margin: 3px 0;
+  background: rgba(16, 185, 129, 0.25);
+  border-radius: 4px;
+  animation: bcSkeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+[data-user-role]:empty {
+  display: block;
+  width: 60px;
+  max-width: 100%;
+  height: 10px;
+  margin: 2px 0;
+  background: rgba(16, 185, 129, 0.18);
+  border-radius: 3px;
+  animation: bcSkeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+[data-user-avatar]:empty {
+  background: rgba(16, 185, 129, 0.3) !important;
+  color: transparent !important;
+  animation: bcSkeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bcSkeletonPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Smooth page navigation view transitions */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 150ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+

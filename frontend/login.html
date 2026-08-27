@@ -700,6 +700,12 @@
     const checkmarkPath = document.querySelector('.checkmark-path');
     const circlePop = document.querySelector('.success-circle-pop');
 
+    if (typeof userOrName === 'object' && userOrName !== null) {
+      try {
+        localStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
+      } catch (e) {}
+    }
+
     const nameOrRole = (typeof userOrName === 'object' && userOrName !== null)
       ? (userOrName.full_name || userOrName.role || userOrName.username || 'System Administrator')
       : (userOrName || 'System Administrator');

@@ -150,15 +150,79 @@ function bcPrewarmMLService() {
   }, 1200);
 }
 
+// ── Instant Session Hydration ──────────────────────────────
+function bcHydrateCachedSession() {
+  let user = null;
+  if (typeof bcGetCachedUser === 'function') {
+    user = bcGetCachedUser();
+  } else {
+    try {
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      user = raw ? JSON.parse(raw) : null;
+    } catch (e) {}
+  }
+  if (!user) return;
+
+  const nameEl = document.querySelector('[data-user-name]');
+  const roleEl = document.querySelector('[data-user-role]');
+  const avatarEl = document.querySelector('[data-user-avatar]');
+  const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
+
+  if (nameEl && user.full_name) nameEl.textContent = user.full_name;
+  if (roleEl && user.role) roleEl.textContent = user.role;
+  if (avatarEl && user.full_name) avatarEl.textContent = bcInitials(user.full_name);
+  if (greetingEl && user.full_name) {
+    const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
+    greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+  }
+  if (user.role && typeof applyNavPermissions === 'function') {
+    applyNavPermissions(user.role);
+  }
+}
+
+// Immediately hydrate cached user profile on script load and DOMContentLoaded
+bcHydrateCachedSession();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
+}
+
+// ── Smooth In-App Navigation Transition ─────────────────────
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('aside nav a.nav-link, a.sidebar-nav-link, a.tile-action');
+  if (!link) return;
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('http') || link.target === '_blank') return;
+
+  if (document.startViewTransition) {
+    e.preventDefault();
+    document.startViewTransition(() => {
+      window.location.href = href;
+    });
+  }
+});
+
 async function requireAuth() {
   if (_bcAuthGuardRunning) return null;
   _bcAuthGuardRunning = true;
+  
+  // Instant visual hydration before awaiting network
+  bcHydrateCachedSession();
+
   try {
     const status = await BCApi.me();
     if (!status || !status.authenticated) {
+      try {
+        localStorage.removeItem('bc_cached_user');
+        sessionStorage.removeItem('bc_cached_user');
+      } catch (e) {}
       _handleUnauthenticatedRedirect();
       return null;
     }
+
+    // Persist verified user session
+    try {
+      localStorage.setItem('bc_cached_user', JSON.stringify(status.user));
+    } catch (e) {}
 
     const role = status.user.role;
     if (typeof enforcePageAccess === 'function' && !enforcePageAccess(role)) {
@@ -184,6 +248,10 @@ async function requireAuth() {
     _bcStartIdleTracker();
     return status.user;
   } catch (e) {
+    try {
+      localStorage.removeItem('bc_cached_user');
+      sessionStorage.removeItem('bc_cached_user');
+    } catch (_) {}
     _handleUnauthenticatedRedirect();
     return null;
   } finally {
@@ -358,7 +426,11 @@ function bcInitials(fullName) {
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
   _bcStopIdleTracker();
-  try { localStorage.removeItem('bc_last_active_timestamp'); } catch (e) {}
+  try {
+    localStorage.removeItem('bc_last_active_timestamp');
+    localStorage.removeItem('bc_cached_user');
+    sessionStorage.removeItem('bc_cached_user');
+  } catch (e) {}
   try { await BCApi.logout(); } catch (e) {}
   window.location.replace('login.html');
 }

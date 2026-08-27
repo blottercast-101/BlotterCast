@@ -110,6 +110,15 @@ function applyElementPermissionsLive(role) {
   window._bcPermObserver.observe(document.body, { childList: true, subtree: true });
 }
 
+function bcGetCachedUser() {
+  try {
+    const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Block direct navigation to a gated page the current role can't use.
 // Returns true if access is allowed, false if the page redirected away.
 function enforcePageAccess(role) {
@@ -121,3 +130,16 @@ function enforcePageAccess(role) {
   }
   return true;
 }
+
+// Early synchronous hydration of nav permissions from cached session
+(function () {
+  const cached = bcGetCachedUser();
+  if (cached && cached.role) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => applyNavPermissions(cached.role), { once: true });
+    } else {
+      applyNavPermissions(cached.role);
+    }
+  }
+})();
+
