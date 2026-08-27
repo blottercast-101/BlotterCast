@@ -1535,4 +1535,64 @@ path.zone-pulse-active {
   background: #334155;
 }
 
+/* ---------------- Selected Row Highlight ---------------- */
+.data-table tbody tr.row-selected,
+.data-table tbody tr.row-selected td {
+  background-color: #f0fdf4 !important; /* light emerald/forest tint */
+}
+.data-table tbody tr.row-selected:hover,
+.data-table tbody tr.row-selected:hover td {
+  background-color: #dcfce7 !important;
+}
+
+/* ---------------- Table Selection Info Banner ---------------- */
+.bc-selection-banner-wrap {
+  margin-bottom: 0.65rem;
+}
+.bc-selection-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #16a34a;
+  border-radius: 8px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.8125rem;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.bc-selection-banner strong {
+  color: #0f172a;
+}
+.bc-selection-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.bc-selection-banner-btn {
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #15803d;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+.bc-selection-banner-btn:hover {
+  color: #166534;
+}
+.bc-selection-banner-btn.clear {
+  color: #64748b;
+  text-decoration: none;
+}
+.bc-selection-banner-btn.clear:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+
 

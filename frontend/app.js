@@ -978,6 +978,21 @@ class BcBatchManager {
     this._barEl = el;
   }
 
+  _ensureBanner() {
+    const selectAllCb = document.getElementById(this.opts.selectAllId);
+    if (!selectAllCb) return null;
+    const tableWrap = selectAllCb.closest('.overflow-x-auto') || selectAllCb.closest('table');
+    if (!tableWrap || !tableWrap.parentNode) return null;
+
+    let banner = tableWrap.previousElementSibling;
+    if (!banner || !banner.classList.contains('bc-selection-banner-wrap')) {
+      banner = document.createElement('div');
+      banner.className = 'bc-selection-banner-wrap';
+      tableWrap.parentNode.insertBefore(banner, tableWrap);
+    }
+    return banner;
+  }
+
   has(id) {
     return this.selectedIds.has(Number(id));
   }
@@ -989,15 +1004,35 @@ class BcBatchManager {
     } else {
       this.selectedIds.delete(numId);
     }
+
+    // Immediate visual DOM feedback
+    const tr = document.querySelector(`tr[data-id="${numId}"]`);
+    if (tr) {
+      tr.classList.toggle('row-selected', checked);
+      const cb = tr.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked !== checked) cb.checked = checked;
+    }
+
     this.updateUI();
   }
 
   toggleSelectAll(checked, items) {
     const targetItems = items || this.opts.getPageItems() || [];
     targetItems.forEach(item => {
-      const id = Number(item.id);
-      if (checked) this.selectedIds.add(id);
-      else this.selectedIds.delete(id);
+      const numId = Number(item.id);
+      if (checked) {
+        this.selectedIds.add(numId);
+      } else {
+        this.selectedIds.delete(numId);
+      }
+
+      // Immediate visual row update
+      const tr = document.querySelector(`tr[data-id="${numId}"]`);
+      if (tr) {
+        tr.classList.toggle('row-selected', checked);
+        const cb = tr.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked !== checked) cb.checked = checked;
+      }
     });
     this.updateUI();
   }
@@ -1005,22 +1040,53 @@ class BcBatchManager {
   selectAllAcrossFiltered() {
     const all = this.opts.getAllItems() || [];
     all.forEach(item => this.selectedIds.add(Number(item.id)));
+
+    // Highlight all visible page rows
+    const pageItems = this.opts.getPageItems() || [];
+    pageItems.forEach(item => {
+      const tr = document.querySelector(`tr[data-id="${item.id}"]`);
+      if (tr) {
+        tr.classList.add('row-selected');
+        const cb = tr.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = true;
+      }
+    });
+
     this.updateUI();
   }
 
   clearSelection() {
     this.selectedIds.clear();
+
+    // Clear highlights and checkboxes on visible rows
+    const pageItems = this.opts.getPageItems() || [];
+    pageItems.forEach(item => {
+      const tr = document.querySelector(`tr[data-id="${item.id}"]`);
+      if (tr) {
+        tr.classList.remove('row-selected');
+        const cb = tr.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = false;
+      }
+    });
+
     this.updateUI();
   }
 
   updateUI() {
-    const selectAllCb = document.getElementById(this.opts.selectAllId);
     const pageItems = this.opts.getPageItems() || [];
+    const allItems = this.opts.getAllItems() || [];
+    const pageCount = pageItems.length;
+    const allCount = allItems.length;
+    const selectedOnPage = pageItems.filter(item => this.selectedIds.has(Number(item.id))).length;
+    const totalSelected = this.selectedIds.size;
+
+    // 1. Sync header select all checkbox state (checked / indeterminate / unchecked)
+    const selectAllCb = document.getElementById(this.opts.selectAllId);
     if (selectAllCb) {
-      if (pageItems.length > 0 && pageItems.every(item => this.selectedIds.has(Number(item.id)))) {
+      if (pageCount > 0 && selectedOnPage === pageCount) {
         selectAllCb.checked = true;
         selectAllCb.indeterminate = false;
-      } else if (pageItems.some(item => this.selectedIds.has(Number(item.id)))) {
+      } else if (selectedOnPage > 0) {
         selectAllCb.checked = false;
         selectAllCb.indeterminate = true;
       } else {
@@ -1029,35 +1095,87 @@ class BcBatchManager {
       }
     }
 
-    const count = this.selectedIds.size;
-    if (count === 0) {
+    // 2. Render In-Table Selection Info Banner
+    const banner = this._ensureBanner();
+    if (banner) {
+      if (totalSelected > 0) {
+        const isAllPageSelected = pageCount > 0 && selectedOnPage === pageCount;
+        const isAllGlobalSelected = totalSelected >= allCount && allCount > 0;
+        const entityLabel = totalSelected === 1 ? this.opts.entityName : this.opts.entityPlural;
+
+        if (isAllGlobalSelected) {
+          banner.innerHTML = `
+            <div class="bc-selection-banner">
+              <div>
+                All <strong>${allCount}</strong> ${this.opts.entityPlural} across all pages are selected.
+              </div>
+              <div class="bc-selection-banner-actions">
+                <button type="button" class="bc-selection-banner-btn clear" id="bcBannerClearBtn">Clear selection</button>
+              </div>
+            </div>`;
+        } else if (isAllPageSelected && allCount > pageCount) {
+          banner.innerHTML = `
+            <div class="bc-selection-banner">
+              <div>
+                All <strong>${pageCount}</strong> ${this.opts.entityPlural} on this page are selected.
+              </div>
+              <div class="bc-selection-banner-actions">
+                <button type="button" class="bc-selection-banner-btn" id="bcBannerSelectAllGlobalBtn">Select all ${allCount} ${this.opts.entityPlural} across all pages</button>
+                <span style="color:#94a3b8">•</span>
+                <button type="button" class="bc-selection-banner-btn clear" id="bcBannerClearBtn">Clear selection</button>
+              </div>
+            </div>`;
+        } else {
+          banner.innerHTML = `
+            <div class="bc-selection-banner">
+              <div>
+                <strong>${totalSelected}</strong> ${entityLabel} selected.
+              </div>
+              <div class="bc-selection-banner-actions">
+                ${allCount > totalSelected ? `<button type="button" class="bc-selection-banner-btn" id="bcBannerSelectAllGlobalBtn">Select all ${allCount} ${this.opts.entityPlural}</button><span style="color:#94a3b8">•</span>` : ''}
+                <button type="button" class="bc-selection-banner-btn clear" id="bcBannerClearBtn">Clear selection</button>
+              </div>
+            </div>`;
+        }
+        banner.style.display = '';
+
+        document.getElementById('bcBannerClearBtn')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('bcBannerSelectAllGlobalBtn')?.addEventListener('click', () => this.selectAllAcrossFiltered());
+      } else {
+        banner.innerHTML = '';
+        banner.style.display = 'none';
+      }
+    }
+
+    // 3. Render Floating Action Toolbar
+    if (totalSelected === 0) {
       if (this._barEl) this._barEl.classList.remove('visible');
       return;
     }
 
     const isArchived = this.opts.isArchivedView();
-    const entityLabel = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+    const entityLabel = totalSelected === 1 ? this.opts.entityName : this.opts.entityPlural;
 
     this._barEl.innerHTML = `
       <div class="bc-batch-count">
-        <span class="bc-batch-count-badge">${count}</span>
-        <span>${count} ${entityLabel} selected</span>
+        <span class="bc-batch-count-badge">${totalSelected}</span>
+        <span>${totalSelected} ${entityLabel} selected</span>
       </div>
       <div class="bc-batch-actions">
         ${isArchived ? `
           <button id="bcBatchRestoreBtn" class="bc-batch-btn restore" title="Restore Selected">
-            ${typeof iconSvg === 'function' ? iconSvg('refresh', 14) : ''} Restore
+            ${typeof iconSvg === 'function' ? iconSvg('refresh', 14) : ''} Restore Selected (${totalSelected})
           </button>
           <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger" title="Permanently Delete Selected">
-            ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete
+            ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
           </button>
         ` : `
           <button id="bcBatchArchiveBtn" class="bc-batch-btn archive" title="Archive Selected">
-            ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive
+            ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
           </button>
         `}
         <button id="bcBatchDeselectBtn" class="bc-batch-btn ghost" title="Clear selection">
-          Deselect
+          Deselect All
         </button>
       </div>
     `;
@@ -1082,7 +1200,7 @@ class BcBatchManager {
 
     const confirmed = await bcConfirm(
       `Archive ${count} selected ${label}? They will be moved to the archive view and can be restored later.`,
-      { title: `Batch Archive ${this.opts.entityPlural.toUpperCase()}`, danger: true, okLabel: `Archive (${count})` }
+      { title: `Batch Archive ${this.opts.entityPlural.toUpperCase()}`, danger: true, okLabel: `Archive Selected (${count})` }
     );
     if (!confirmed) return;
 
@@ -1104,7 +1222,7 @@ class BcBatchManager {
 
     const confirmed = await bcConfirm(
       `Restore ${count} selected ${label} back to the active list?`,
-      { title: `Batch Restore ${this.opts.entityPlural.toUpperCase()}`, okLabel: `Restore (${count})` }
+      { title: `Batch Restore ${this.opts.entityPlural.toUpperCase()}`, okLabel: `Restore Selected (${count})` }
     );
     if (!confirmed) return;
 
