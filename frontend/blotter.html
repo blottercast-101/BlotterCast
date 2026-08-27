@@ -1032,7 +1032,11 @@
         }
 
         _updateOutsideToggleAvailability();
-        showToast(`Elevating Incident ${data.source_report_no || ''} to Blotter. Complainant details pre-filled.`, 'info');
+        if (data.reporter_name && data.complainant_name && data.reporter_name !== data.complainant_name) {
+          showToast(`Elevating Incident ${data.source_report_no || ''}. Legal Complainant set to ${data.complainant_name} (Initial Reporter: ${data.reporter_name}).`, 'info');
+        } else {
+          showToast(`Elevating Incident ${data.source_report_no || ''} to Blotter. Complainant details pre-filled.`, 'info');
+        }
       } catch (err) {
         console.warn('Could not parse elevation data:', err);
       }

@@ -356,11 +356,19 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="form-label">Category</label>
-          <select id="if_category" class="form-input" required>
+          <select id="if_category" class="form-input" required onchange="onIncidentCategoryChanged()">
             <option value="" disabled selected hidden>-Select-</option>
-            <option>Physical Assault</option><option>Theft</option><option>Domestic Dispute</option>
-            <option>Vandalism</option><option>Trespassing</option><option>Drug-Related Activity</option>
-            <option>Public Disturbance</option><option>Other</option>
+            <option>Vehicular Accident</option>
+            <option>Physical Assault</option>
+            <option>Theft</option>
+            <option>Domestic Dispute</option>
+            <option>Vandalism</option>
+            <option>Trespassing</option>
+            <option>Drug-Related Activity</option>
+            <option>Public Disturbance</option>
+            <option>Fire Incident</option>
+            <option>Public Hazard</option>
+            <option>Other</option>
           </select>
         </div>
         <div>
@@ -407,6 +415,55 @@
             <label class="form-label mb-0 pb-0.5">Responding Officer</label>
           </div>
           <input type="text" id="if_officer" class="form-input" placeholder="e.g. PO1 Cruz"/>
+        </div>
+      </div>
+
+      <!-- Minor Reporter Guardian Section (Rule 1) -->
+      <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2">
+        <div class="flex items-start gap-2">
+          <span class="text-amber-600 font-bold text-base">⚠️</span>
+          <div>
+            <div class="text-xs font-bold text-amber-900">Reporter is a minor (&lt;15 years old)</div>
+            <div class="text-[11px] text-amber-700">A parent or adult legal guardian (18+) must be assigned as the legal Complainant.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="relative">
+            <label class="form-label text-xs mb-1 text-amber-950 font-semibold">Parent / Legal Guardian<span class="text-red-500">*</span></label>
+            <input type="text" id="if_guardianSearch" class="form-input text-xs bg-white" placeholder="Search adult resident from Census…" autocomplete="off"/>
+            <input type="hidden" id="if_guardianName"/>
+            <input type="hidden" id="if_guardianResidentId"/>
+            <input type="hidden" id="if_guardianAddress"/>
+            <div id="if_guardianSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+          </div>
+          <div>
+            <label class="form-label text-xs mb-1 text-amber-950 font-semibold">Guardian Relationship / Notes</label>
+            <input type="text" id="if_guardianRole" class="form-input text-xs bg-white" placeholder="e.g. Mother, Father, Legal Guardian"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicular / Eyewitness Involved Parties Section (Rule 2) -->
+      <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2">
+        <div class="flex items-start gap-2">
+          <span class="text-blue-600 font-bold text-base">ℹ️</span>
+          <div>
+            <div class="text-xs font-bold text-blue-900">Eyewitness / Public Incident Category</div>
+            <div class="text-[11px] text-blue-700">Reporter is treated as an eyewitness. Please specify the actual aggrieved victims or involved drivers.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="relative">
+            <label class="form-label text-xs mb-1 text-blue-950 font-semibold">Primary Complainant / Victim (Resident)</label>
+            <input type="text" id="if_complainantSearch" class="form-input text-xs bg-white" placeholder="Search victim/driver from Census…" autocomplete="off"/>
+            <input type="hidden" id="if_complainant"/>
+            <input type="hidden" id="if_complainantResidentId"/>
+            <div id="if_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+          </div>
+          <div>
+            <label class="form-label text-xs mb-1 text-blue-950 font-semibold">Involved Drivers / Parties / Plate Numbers</label>
+            <input type="text" id="if_involvedParties" class="form-input text-xs bg-white" placeholder="e.g. Driver A (ABC-1234) vs Driver B (XYZ-5678)"/>
+          </div>
         </div>
       </div>
       <div>
@@ -1381,6 +1438,8 @@
         };
       });
       bcInitResidentPicker('if_reporterSearch', 'if_reporterResidentId', 'if_reporterSuggestions', censusResidentsForIncident, onIncidentReporterPicked, validateIncidentReporter);
+      bcInitResidentPicker('if_guardianSearch', 'if_guardianResidentId', 'if_guardianSuggestions', censusResidentsForIncident, onGuardianPicked, validateGuardianEligibility);
+      bcInitResidentPicker('if_complainantSearch', 'if_complainantResidentId', 'if_complainantSuggestions', censusResidentsForIncident, onComplainantPicked);
     } catch (err) {
       console.warn('Could not load census residents for incident picker:', err);
     }
@@ -1389,6 +1448,17 @@
   function validateIncidentReporter(r) {
     if (r && r.status === 'Deceased') {
       return 'Deceased residents cannot be filed as complainants/reporters.';
+    }
+    return null;
+  }
+
+  function validateGuardianEligibility(r) {
+    if (!r) return null;
+    if (r.status === 'Deceased') {
+      return 'Deceased residents cannot be filed as guardians/complainants.';
+    }
+    if (r.age !== null && r.age < 18) {
+      return `${r.firstName} ${r.lastName} is ${r.age} years old. A legal guardian must be an adult (18 years or older).`;
     }
     return null;
   }
@@ -1406,12 +1476,63 @@
       document.getElementById('if_reporterAddressText').textContent = fullAddr;
       document.getElementById('if_reporterAddressBadge').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
+
+      // Rule 1: Minor Age Watcher (<15 years old)
+      const isMinor = r.age !== null && r.age < 15;
+      const guardianSec = document.getElementById('if_guardianSection');
+      if (guardianSec) {
+        guardianSec.classList.toggle('hidden', !isMinor);
+        if (!isMinor) {
+          document.getElementById('if_guardianName').value = '';
+          document.getElementById('if_guardianSearch').value = '';
+          document.getElementById('if_guardianResidentId').value = '';
+          document.getElementById('if_guardianAddress').value = '';
+        }
+      }
     } else {
       document.getElementById('if_reporter').value = '';
       document.getElementById('if_reporterResidentId').value = '';
       document.getElementById('if_reporterAddress').value = '';
       document.getElementById('if_reporterAddressBadge').classList.add('hidden');
+      const guardianSec = document.getElementById('if_guardianSection');
+      if (guardianSec) guardianSec.classList.add('hidden');
     }
+  }
+
+  function onGuardianPicked(r) {
+    if (r) {
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
+      document.getElementById('if_guardianName').value = fullName;
+      document.getElementById('if_guardianSearch').value = fullName;
+      document.getElementById('if_guardianResidentId').value = String(r.id);
+      const addrParts = [r.address, r.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+      document.getElementById('if_guardianAddress').value = addrParts.join(', ');
+    } else {
+      document.getElementById('if_guardianName').value = '';
+      document.getElementById('if_guardianSearch').value = '';
+      document.getElementById('if_guardianResidentId').value = '';
+      document.getElementById('if_guardianAddress').value = '';
+    }
+  }
+
+  function onComplainantPicked(r) {
+    if (r) {
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
+      document.getElementById('if_complainant').value = fullName;
+      document.getElementById('if_complainantSearch').value = fullName;
+      document.getElementById('if_complainantResidentId').value = String(r.id);
+    } else {
+      document.getElementById('if_complainant').value = '';
+      document.getElementById('if_complainantSearch').value = '';
+      document.getElementById('if_complainantResidentId').value = '';
+    }
+  }
+
+  function onIncidentCategoryChanged() {
+    const cat = document.getElementById('if_category').value;
+    const isVehicularOrPublic = ['Vehicular Accident', 'Fire Incident', 'Public Hazard'].includes(cat);
+    const sec = document.getElementById('if_involvedPartiesSection');
+    if (sec) sec.classList.toggle('hidden', !isVehicularOrPublic);
   }
 
   function toggleReporterNonResident() {
@@ -1509,6 +1630,22 @@
     document.getElementById('if_reporterAddressBadge').classList.add('hidden');
     bcResidentPickerClear('if_reporterSearch');
 
+    // Reset Guardian & Involved Parties
+    const guardianSec = document.getElementById('if_guardianSection');
+    if (guardianSec) guardianSec.classList.add('hidden');
+    document.getElementById('if_guardianName').value = '';
+    document.getElementById('if_guardianResidentId').value = '';
+    document.getElementById('if_guardianAddress').value = '';
+    document.getElementById('if_guardianSearch').value = '';
+    if (document.getElementById('if_guardianRole')) document.getElementById('if_guardianRole').value = '';
+
+    const involvedSec = document.getElementById('if_involvedPartiesSection');
+    if (involvedSec) involvedSec.classList.add('hidden');
+    document.getElementById('if_complainant').value = '';
+    document.getElementById('if_complainantResidentId').value = '';
+    document.getElementById('if_complainantSearch').value = '';
+    if (document.getElementById('if_involvedParties')) document.getElementById('if_involvedParties').value = '';
+
     setPickerCoordinates(null, null);
     isLocationVerifiedInBoundary = false;
     isGeocoded = false;
@@ -1590,6 +1727,30 @@
       }
     }
 
+    // Restore Guardian / Minor state
+    const guardianSec = document.getElementById('if_guardianSection');
+    const hasGuardian = Boolean(r.guardian_name || r.guardian_resident_id);
+    if (guardianSec) {
+      guardianSec.classList.toggle('hidden', !hasGuardian);
+      document.getElementById('if_guardianName').value = r.guardian_name || '';
+      document.getElementById('if_guardianSearch').value = r.guardian_name || '';
+      document.getElementById('if_guardianResidentId').value = r.guardian_resident_id ? String(r.guardian_resident_id) : '';
+      document.getElementById('if_guardianAddress').value = r.guardian_address || '';
+    }
+
+    // Restore Involved Parties / Vehicular state
+    const isVehicular = ['Vehicular Accident', 'Fire Incident', 'Public Hazard'].includes(r.category);
+    const involvedSec = document.getElementById('if_involvedPartiesSection');
+    if (involvedSec) {
+      involvedSec.classList.toggle('hidden', !isVehicular);
+      document.getElementById('if_complainant').value = r.complainant || '';
+      document.getElementById('if_complainantSearch').value = r.complainant || '';
+      document.getElementById('if_complainantResidentId').value = r.complainant_resident_id ? String(r.complainant_resident_id) : '';
+      if (document.getElementById('if_involvedParties')) {
+        document.getElementById('if_involvedParties').value = r.involved_parties || '';
+      }
+    }
+
     const containerElevate = document.getElementById('elevateModalBtnContainer');
     if (containerElevate) containerElevate.classList.remove('hidden');
 
@@ -1626,18 +1787,46 @@
     closeModal('elevateConfirmModal');
     closeModal('incidentModal');
 
+    // Rule 1: Minor reporter -> legal complainant is Guardian
+    let legalComplainantName = inc.reporter;
+    let legalComplainantId = inc.reporterResidentId || null;
+    let legalComplainantAddress = inc.reporterAddress || '';
+    let isNonResident = Boolean(inc.isNonResident);
+
+    if (inc.guardian_name || inc.guardian_resident_id) {
+      legalComplainantName = inc.guardian_name;
+      legalComplainantId = inc.guardian_resident_id;
+      legalComplainantAddress = inc.guardian_address || inc.reporterAddress || '';
+    } else if (['Vehicular Accident', 'Fire Incident', 'Public Hazard'].includes(inc.category)) {
+      // Rule 2: In vehicular/eyewitness incidents, separate complainant from eyewitness reporter
+      if (inc.complainant || inc.complainant_resident_id) {
+        legalComplainantName = inc.complainant;
+        legalComplainantId = inc.complainant_resident_id;
+      } else if (inc.involved_parties) {
+        legalComplainantName = inc.involved_parties;
+        legalComplainantId = null;
+      } else {
+        legalComplainantName = '';
+        legalComplainantId = null;
+      }
+    }
+
     const elevatePayload = {
       source_incident_id: inc.id,
       source_report_no: inc.reportNo,
-      complainant_name: inc.reporter,
-      complainant_id: inc.reporterResidentId || null,
-      complainant_address: inc.reporterAddress || '',
-      is_complainant_non_resident: Boolean(inc.isNonResident),
+      complainant_name: legalComplainantName,
+      complainant_id: legalComplainantId,
+      complainant_address: legalComplainantAddress,
+      is_complainant_non_resident: isNonResident,
+      reporter_name: inc.reporter,
+      reporter_id: inc.reporterResidentId,
+      guardian_name: inc.guardian_name || null,
+      guardian_id: inc.guardian_resident_id || null,
       incident_date: inc.date,
       incident_time: inc.timeReported,
       zone_id: inc.zone,
       nature_of_case: inc.category,
-      incident_type: inc.category,
+      incident_type: inc.category === 'Vehicular Accident' ? 'CIVIL' : 'CRIM',
       narrative: inc.description
     };
     sessionStorage.setItem('elevate_blotter_data', JSON.stringify(elevatePayload));
@@ -1667,6 +1856,14 @@
       : document.getElementById('if_reporterAddress').value.trim();
     const reporterResId = isNonRes ? null : (document.getElementById('if_reporterResidentId').value || null);
 
+    const guardianName = document.getElementById('if_guardianName').value.trim() || document.getElementById('if_guardianSearch').value.trim();
+    const guardianResId = document.getElementById('if_guardianResidentId').value || null;
+    const guardianAddr = document.getElementById('if_guardianAddress').value.trim();
+
+    const complainantName = document.getElementById('if_complainant').value.trim() || document.getElementById('if_complainantSearch').value.trim();
+    const complainantResId = document.getElementById('if_complainantResidentId').value || null;
+    const involvedParties = (document.getElementById('if_involvedParties') ? document.getElementById('if_involvedParties').value.trim() : '');
+
     const vals = {
       reportNo: incEditId ? document.getElementById('if_reportNo').value.trim() : '',
       date: document.getElementById('if_dateReported').value,
@@ -1679,6 +1876,12 @@
       isNonResident: isNonRes,
       reporterResidentId: reporterResId,
       reporterAddress: reporterAddr,
+      guardianName: guardianName,
+      guardianResidentId: guardianResId,
+      guardianAddress: guardianAddr,
+      complainant: complainantName,
+      complainantResidentId: complainantResId,
+      involvedParties: involvedParties,
       officer: document.getElementById('if_officer').value.trim(),
       status: document.getElementById('if_status').value,
       zone: document.getElementById('if_zone').value,
@@ -1695,6 +1898,15 @@
     if (!vals.status) { await bcAlert('Please select the Status.'); return; }
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
+
+    // Rule 1: Minor reporter validation
+    if (reporterResId) {
+      const repObj = censusResidentsForIncident.find(x => x.id === Number(reporterResId));
+      if (repObj && repObj.age !== null && repObj.age < 15 && !guardianName && !guardianResId) {
+        await bcAlert('Reporter is a minor (<15 years old). A parent or adult legal guardian must be selected as the primary complainant.');
+        return;
+      }
+    }
 
     // Hard Submission Guard: Strict Point-in-Polygon Geofence Validation
     if (!isLocationVerifiedInBoundary || !vals.lat || !vals.lng) {

@@ -108,6 +108,7 @@ def update_settlement_status(settlement_id):
 
 
 @bp.route("/api/incidents/<int:incident_id>/elevate", methods=["POST"])
+@bp.route("/api/incidents/<int:incident_id>/elevate-to-blotter", methods=["POST"])
 @login_required
 def elevate_incident_endpoint(incident_id):
     inc = Incident.query.get(incident_id)
@@ -117,8 +118,59 @@ def elevate_incident_endpoint(incident_id):
         return json_error("Incident is already elevated to Blotter.", 400)
 
     d = request.get_json(silent=True) or {}
-    complainant = d.get("complainant") or inc.reporter
-    complainant_id = int(d["complainantId"]) if d.get("complainantId") else inc.reporter_resident_id
+
+    # Rule 1: Minor / Age Hierarchy (Under 15 Years Old)
+    guardian_name = (d.get("guardianName") or d.get("guardian_name") or inc.guardian_name or "").strip()
+    guardian_id = int(d["guardianResidentId"]) if d.get("guardianResidentId") else (
+        int(d["guardian_id"]) if d.get("guardian_id") else (
+            int(d["guardian_resident_id"]) if d.get("guardian_resident_id") else inc.guardian_resident_id
+        )
+    )
+    guardian_addr = d.get("guardianAddress") or d.get("guardian_address") or inc.guardian_address or ""
+
+    rep_age = None
+    if inc.reporter_resident_id:
+        rep_resident = CensusRecord.query.get(inc.reporter_resident_id)
+        if rep_resident and rep_resident.date_of_birth:
+            rep_age = compute_age(rep_resident.date_of_birth)
+
+    is_reporter_minor = rep_age is not None and rep_age < MIN_BLOTTER_PARTY_AGE
+    g_res = None
+    if guardian_id:
+        g_res = CensusRecord.query.get(guardian_id)
+
+    if is_reporter_minor:
+        if not guardian_id and not guardian_name:
+            return json_error("Reporter is a minor (<15). A parent/guardian must be assigned as the legal Complainant.", 422)
+        if guardian_id and g_res:
+            if g_res.status == "Deceased":
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+            g_age = compute_age(g_res.date_of_birth)
+            if g_age is not None and g_age < 18:
+                return json_error("Guardian must be an adult (18 years or older).", 422)
+
+    # Rule 2: Incident Category Exception (Vehicular Accident / Public Incident)
+    is_vehicular_or_public = inc.category in ("Vehicular Accident", "Vehicular", "Fire Incident", "Public Hazard")
+
+    if is_reporter_minor:
+        complainant = guardian_name or (f"{g_res.first_name} {g_res.last_name}" if g_res else "Parent / Guardian")
+        complainant_id = guardian_id
+        complainant_addr = guardian_addr
+    elif is_vehicular_or_public:
+        complainant = d.get("complainant") or inc.complainant or d.get("involved_parties") or inc.involved_parties or ""
+        complainant_id = int(d["complainantId"]) if d.get("complainantId") else (
+            int(d["complainant_id"]) if d.get("complainant_id") else inc.complainant_resident_id
+        )
+        complainant_addr = d.get("complainantAddr") or d.get("complainant_addr") or ""
+        if not complainant and not complainant_id:
+            return json_error("For vehicular/public accidents, the reporter is treated as an eyewitness. Please specify the actual drivers/victims/involved parties.", 422)
+    else:
+        complainant = d.get("complainant") or inc.complainant or inc.reporter
+        complainant_id = int(d["complainantId"]) if d.get("complainantId") else (
+            int(d["complainant_id"]) if d.get("complainant_id") else (inc.complainant_resident_id or inc.reporter_resident_id)
+        )
+        complainant_addr = d.get("complainantAddr") or d.get("complainant_addr") or inc.reporter_address or ""
+
     respondent = d.get("respondent", "")
     respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
 
@@ -154,12 +206,12 @@ def elevate_incident_endpoint(incident_id):
         date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
         complainant=complainant,
         complainant_id=complainant_id,
-        complainant_addr=d.get("complainantAddr", ""),
+        complainant_addr=complainant_addr,
         respondent=respondent,
         respondent_id=respondent_id,
         respondent_addr=d.get("respondentAddr", ""),
         nature=d.get("nature") or inc.category or "Incident Escalation",
-        case_type=d.get("type") or "CRIM",
+        case_type=d.get("type") or ("CIVIL" if is_vehicular_or_public else "CRIM"),
         status="Pending",
         zone_id=inc.zone_id,
         source_incident_id=inc.id,
@@ -179,9 +231,9 @@ def elevate_incident_endpoint(incident_id):
     stl = Settlement(
         blotter_id=record.id,
         case_no=stl_case_no,
-        case_title=f"{complainant} vs. {respondent}",
+        case_title=f"{complainant} vs. {respondent}" if respondent else f"{complainant} (Accident / Incident)",
         complaint_title=record.nature or "Blotter Case",
-        nature="Criminal" if record.case_type == "CRIM" else "Civil",
+        nature="Civil" if (record.case_type == "CIVIL" or is_vehicular_or_public) else "Criminal",
         date_filed=record.date_filed,
         status="Pending",
         archived=False,
@@ -423,12 +475,31 @@ def _incidents():
         is_non_resident = bool(d.get("isNonResident") or d.get("is_non_resident"))
         reporter_address = (d.get("reporterAddress") or d.get("reporter_address") or "").strip()
 
-        # Validate reporter is not deceased in Census
+        guardian_name = (d.get("guardianName") or d.get("guardian_name") or "").strip()
+        guardian_resident_id = int(d["guardianResidentId"]) if d.get("guardianResidentId") else (
+            int(d["guardian_resident_id"]) if d.get("guardian_resident_id") else (
+                int(d["guardian_id"]) if d.get("guardian_id") else None
+            )
+        )
+        guardian_address = (d.get("guardianAddress") or d.get("guardian_address") or "").strip()
+        complainant = (d.get("complainant") or "").strip()
+        complainant_resident_id = int(d["complainantResidentId"]) if d.get("complainantResidentId") else (
+            int(d["complainant_resident_id"]) if d.get("complainant_resident_id") else (
+                int(d["complainant_id"]) if d.get("complainant_id") else None
+            )
+        )
+        involved_parties = (d.get("involvedParties") or d.get("involved_parties") or "").strip()
+
+        # Validate reporter is not deceased in Census and check age
         if reporter_resident_id and not is_non_resident:
             resident = CensusRecord.query.get(reporter_resident_id)
             if resident and resident.status == "Deceased":
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if resident:
+                rep_age = compute_age(resident.date_of_birth)
+                if rep_age is not None and rep_age < MIN_BLOTTER_PARTY_AGE:
+                    if not guardian_name and not guardian_resident_id:
+                        return json_error("Reporter is a minor (<15). A parent/guardian must be assigned as the legal Complainant.", 422)
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
@@ -441,6 +512,18 @@ def _incidents():
             if dec:
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
+        if guardian_resident_id:
+            g_res = CensusRecord.query.get(guardian_resident_id)
+            if g_res and g_res.status == "Deceased":
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+            if g_res and not guardian_address:
+                parts = [g_res.address, g_res.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
+                guardian_address = ", ".join([p for p in parts if p])
+            if g_res:
+                g_age = compute_age(g_res.date_of_birth)
+                if g_age is not None and g_age < 18:
+                    return json_error("Guardian must be an adult (18 years or older).", 422)
+
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
             zone_id=zone_id, location=loc_text, lat=lat, lng=lng,
@@ -450,6 +533,12 @@ def _incidents():
             is_non_resident=is_non_resident,
             reporter_resident_id=reporter_resident_id if not is_non_resident else None,
             reporter_address=reporter_address,
+            complainant=complainant,
+            complainant_resident_id=complainant_resident_id,
+            guardian_name=guardian_name,
+            guardian_resident_id=guardian_resident_id,
+            guardian_address=guardian_address,
+            involved_parties=involved_parties,
             archived=False,
         )
         db.session.add(incident)
@@ -509,11 +598,30 @@ def _incidents():
         is_non_resident = bool(d.get("isNonResident") or d.get("is_non_resident"))
         reporter_address = (d.get("reporterAddress") or d.get("reporter_address") or "").strip()
 
+        guardian_name = (d.get("guardianName") or d.get("guardian_name") or "").strip()
+        guardian_resident_id = int(d["guardianResidentId"]) if d.get("guardianResidentId") else (
+            int(d["guardian_resident_id"]) if d.get("guardian_resident_id") else (
+                int(d["guardian_id"]) if d.get("guardian_id") else None
+            )
+        )
+        guardian_address = (d.get("guardianAddress") or d.get("guardian_address") or "").strip()
+        complainant = (d.get("complainant") or "").strip()
+        complainant_resident_id = int(d["complainantResidentId"]) if d.get("complainantResidentId") else (
+            int(d["complainant_resident_id"]) if d.get("complainant_resident_id") else (
+                int(d["complainant_id"]) if d.get("complainant_id") else None
+            )
+        )
+        involved_parties = (d.get("involvedParties") or d.get("involved_parties") or "").strip()
+
         if reporter_resident_id and not is_non_resident:
             resident = CensusRecord.query.get(reporter_resident_id)
             if resident and resident.status == "Deceased":
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if resident:
+                rep_age = compute_age(resident.date_of_birth)
+                if rep_age is not None and rep_age < MIN_BLOTTER_PARTY_AGE:
+                    if not guardian_name and not guardian_resident_id:
+                        return json_error("Reporter is a minor (<15). A parent/guardian must be assigned as the legal Complainant.", 422)
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
@@ -525,6 +633,18 @@ def _incidents():
             ).first()
             if dec:
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+
+        if guardian_resident_id:
+            g_res = CensusRecord.query.get(guardian_resident_id)
+            if g_res and g_res.status == "Deceased":
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+            if g_res and not guardian_address:
+                parts = [g_res.address, g_res.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
+                guardian_address = ", ".join([p for p in parts if p])
+            if g_res:
+                g_age = compute_age(g_res.date_of_birth)
+                if g_age is not None and g_age < 18:
+                    return json_error("Guardian must be an adult (18 years or older).", 422)
 
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
         incident.time_reported = time_reported
@@ -539,6 +659,12 @@ def _incidents():
         incident.is_non_resident = is_non_resident
         incident.reporter_resident_id = reporter_resident_id if not is_non_resident else None
         incident.reporter_address = reporter_address
+        incident.complainant = complainant
+        incident.complainant_resident_id = complainant_resident_id
+        incident.guardian_name = guardian_name
+        incident.guardian_resident_id = guardian_resident_id
+        incident.guardian_address = guardian_address
+        incident.involved_parties = involved_parties
         incident.officer = d.get("officer", "")
         incident.priority = d.get("priority") or "Medium"
         incident.status = d.get("status") or "Under Investigation"

@@ -677,6 +677,101 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertEqual(res.status_code, 422)
         self.assertIn("Deceased residents cannot be filed as complainants/reporters.", res.get_json().get("error", ""))
 
+    def test_rule_1_minor_reporter_and_guardian_mapping(self):
+        self.login_as(role="System Admin")
+        # 1. Setup minor resident (<15) and adult guardian (>=18)
+        minor_child = CensusRecord(resident_no="RES-MIN1", last_name="Dela Cruz", first_name="Timmy", sex="Male", status="Active", date_of_birth=date(2016, 5, 10))
+        adult_parent = CensusRecord(resident_no="RES-ADU1", last_name="Dela Cruz", first_name="Maria", sex="Female", status="Active", date_of_birth=date(1985, 3, 15))
+        adult_resp = CensusRecord(resident_no="RES-RSP1", last_name="Reyes", first_name="Mario", sex="Male", status="Active", date_of_birth=date(1980, 8, 20))
+        db.session.add_all([minor_child, adult_parent, adult_resp])
+        db.session.flush()
+
+        # 2. Attempt to file Incident with minor reporter and NO guardian -> MUST FAIL WITH 422
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "reportNo": "INC-2026-MIN1",
+            "date": "2026-08-27",
+            "timeReported": "14:00",
+            "reporter": "Timmy Dela Cruz",
+            "reporterResidentId": minor_child.id,
+            "category": "Physical Assault",
+            "location": "Zone 1 Corner",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Reporter is a minor (<15)", res.get_json().get("error", ""))
+
+        # 3. File Incident WITH adult guardian -> MUST SUCCEED (201)
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "reportNo": "INC-2026-MIN2",
+            "date": "2026-08-27",
+            "timeReported": "14:00",
+            "reporter": "Timmy Dela Cruz",
+            "reporterResidentId": minor_child.id,
+            "guardianName": "Maria Dela Cruz",
+            "guardianResidentId": adult_parent.id,
+            "category": "Physical Assault",
+            "location": "Zone 1 Corner",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 201)
+        inc_id = res.get_json()["id"]
+
+        # 4. Elevate Incident to Blotter -> Guardian MUST become the official legal complainant
+        res_elev = self.client.post(f"/api/incidents/{inc_id}/elevate", json={
+            "respondent": "Mario Reyes",
+            "respondentId": adult_resp.id,
+            "nature": "Physical Assault on Minor",
+        })
+        self.assertEqual(res_elev.status_code, 201)
+        blt_id = res_elev.get_json()["id"]
+
+        blt = BlotterRecord.query.get(blt_id)
+        self.assertIsNotNone(blt)
+        self.assertEqual(blt.complainant_id, adult_parent.id)
+        self.assertIn("Maria Dela Cruz", blt.complainant)
+        self.assertEqual(blt.source_incident_id, inc_id)
+
+    def test_rule_2_vehicular_accident_complainant_decoupling(self):
+        self.login_as(role="System Admin")
+        # 1. Setup Eyewitness Tanod, Driver A (Victim), and Driver B (Respondent)
+        tanod = CensusRecord(resident_no="RES-TND1", last_name="Bautista", first_name="Juan", sex="Male", status="Active", date_of_birth=date(1975, 1, 1))
+        driver_a = CensusRecord(resident_no="RES-DRV1", last_name="Gomez", first_name="Carlos", sex="Male", status="Active", date_of_birth=date(1990, 4, 12))
+        driver_b = CensusRecord(resident_no="RES-DRV2", last_name="Navarro", first_name="Lando", sex="Male", status="Active", date_of_birth=date(1988, 7, 25))
+        db.session.add_all([tanod, driver_a, driver_b])
+        db.session.flush()
+
+        # 2. File Vehicular Accident with Tanod as Eyewitness Reporter and Driver A as Complainant / Victim
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "reportNo": "INC-2026-VEH1",
+            "date": "2026-08-27",
+            "timeReported": "16:30",
+            "reporter": "Juan Bautista",
+            "reporterResidentId": tanod.id,
+            "complainant": "Carlos Gomez",
+            "complainantResidentId": driver_a.id,
+            "involvedParties": "Carlos Gomez (Toyota ABC-123) vs Lando Navarro (Honda XYZ-789)",
+            "category": "Vehicular Accident",
+            "location": "Zone 1 Highway",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 201)
+        inc_id = res.get_json()["id"]
+
+        # 3. Elevate to Blotter -> Complainant must be Carlos Gomez (Driver A), NOT Juan Bautista (Tanod)
+        res_elev = self.client.post(f"/api/incidents/{inc_id}/elevate", json={
+            "respondent": "Lando Navarro",
+            "respondentId": driver_b.id,
+            "nature": "Vehicular Collision & Property Damage",
+        })
+        self.assertEqual(res_elev.status_code, 201)
+        blt_id = res_elev.get_json()["id"]
+
+        blt = BlotterRecord.query.get(blt_id)
+        self.assertIsNotNone(blt)
+        self.assertEqual(blt.complainant_id, driver_a.id)
+        self.assertEqual(blt.complainant, "Carlos Gomez")
+        self.assertNotEqual(blt.complainant, "Juan Bautista")
+
 
 if __name__ == "__main__":
     unittest.main()

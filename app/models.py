@@ -269,12 +269,20 @@ class Incident(db.Model):
     is_non_resident = db.Column(db.Boolean, nullable=False, default=False)
     reporter_resident_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"), nullable=True)
     reporter_address = db.Column(db.Text, nullable=True, default="")
+    complainant = db.Column(db.String(150), nullable=True)
+    complainant_resident_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"), nullable=True)
+    guardian_name = db.Column(db.String(150), nullable=True)
+    guardian_resident_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"), nullable=True)
+    guardian_address = db.Column(db.Text, nullable=True, default="")
+    involved_parties = db.Column(db.Text, nullable=True)
     resolved_at = db.Column(db.DateTime)
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
 
     reporter_resident = db.relationship("CensusRecord", foreign_keys=[reporter_resident_id], lazy="joined")
+    complainant_resident = db.relationship("CensusRecord", foreign_keys=[complainant_resident_id], lazy="joined")
+    guardian_resident = db.relationship("CensusRecord", foreign_keys=[guardian_resident_id], lazy="joined")
 
     def __init__(
         self,
@@ -297,6 +305,12 @@ class Incident(db.Model):
         is_non_resident=False,
         reporter_resident_id=None,
         reporter_address="",
+        complainant="",
+        complainant_resident_id=None,
+        guardian_name="",
+        guardian_resident_id=None,
+        guardian_address="",
+        involved_parties="",
         resolved_at=None,
         archived=False,
         created_at=None,
@@ -328,6 +342,12 @@ class Incident(db.Model):
         self.is_non_resident = bool(is_non_resident)
         self.reporter_resident_id = reporter_resident_id
         self.reporter_address = reporter_address
+        self.complainant = complainant
+        self.complainant_resident_id = complainant_resident_id
+        self.guardian_name = guardian_name
+        self.guardian_resident_id = guardian_resident_id
+        self.guardian_address = guardian_address
+        self.involved_parties = involved_parties
         self.resolved_at = resolved_at
         self.archived = archived
         if created_at is not None:
@@ -353,6 +373,12 @@ class Incident(db.Model):
             "is_non_resident": bool(self.is_non_resident),
             "reporter_resident_id": self.reporter_resident_id,
             "reporter_address": self.reporter_address or "",
+            "complainant": self.complainant or "",
+            "complainant_resident_id": self.complainant_resident_id,
+            "guardian_name": self.guardian_name or "",
+            "guardian_resident_id": self.guardian_resident_id,
+            "guardian_address": self.guardian_address or "",
+            "involved_parties": self.involved_parties or "",
             "resolved_at": self.resolved_at.isoformat() if hasattr(self.resolved_at, "isoformat") else (str(self.resolved_at) if self.resolved_at else None),
             "archived": bool(self.archived),
         }
