@@ -14,7 +14,7 @@ from ..helpers import (
     resolve_coordinates_by_zone_and_text,
 )
 from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
-from ..permissions import json_error, log_audit, login_required, permission_required
+from ..permissions import json_error, log_audit, login_required, permission_required, role_can
 
 bp = Blueprint("records", __name__)
 
@@ -347,6 +347,8 @@ def _handle_batch(rtype, action):
 
     try:
         if action in ("batch_archive", "archive"):
+            if not role_can(session.get("role", ""), "archive_records"):
+                return json_error("You do not have permission to archive records.", 403)
             rows = model.query.filter(model.id.in_(clean_ids)).all()
             if not rows:
                 return json_error("No matching records found to archive", 404)
@@ -771,6 +773,9 @@ def _incidents():
 
             return jsonify({"ok": True, "deleted": True, "id": rid})
 
+        if not role_can(session.get("role", ""), "archive_records"):
+            return json_error("You do not have permission to archive records.", 403)
+
         incident.archived = True
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
@@ -1027,6 +1032,9 @@ def _blotter():
 
             return jsonify({"ok": True, "deleted": True, "id": rid})
 
+        if not role_can(session.get("role", ""), "archive_records"):
+            return json_error("You do not have permission to archive records.", 403)
+
         record.archived = True
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
@@ -1156,6 +1164,9 @@ def _settlements():
             log_audit(username, "PERMANENT_DELETE", "settlements", f"Permanently deleted settlement case {case_no} (ID: {rid})")
 
             return jsonify({"ok": True, "deleted": True, "id": rid})
+
+        if not role_can(session.get("role", ""), "archive_records"):
+            return json_error("You do not have permission to archive records.", 403)
 
         settlement.archived = True
         db.session.commit()

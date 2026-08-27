@@ -651,7 +651,7 @@
               <button onclick="permanentDeleteRecord(${r.id}, '${r.docketNo || ''}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
               ` : `
               <button onclick="editRecord(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="archiveRecord(${r.id})" class="icon-btn danger" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              <button onclick="archiveRecord(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
               `}
             </div>
           </td>

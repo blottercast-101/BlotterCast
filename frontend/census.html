@@ -416,7 +416,7 @@ function renderResidents(){
           <button onclick="restoreResident(${r.id})" class="icon-btn edit" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
           ` : `
           <button onclick="editResident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-          <button onclick="archiveResident(${r.id})" class="icon-btn danger" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+          <button onclick="archiveResident(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
           `}
         </div>
       </td>

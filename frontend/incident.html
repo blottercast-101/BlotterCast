@@ -713,7 +713,7 @@
                 ${iconSvg('lock', 16)}
               </button>
               <!-- 3. Archive Action -->
-              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Archive Incident">
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="archive_records" title="Archive Incident">
                 ${iconSvg('archive', 16)}
               </button>
               ` : `
@@ -722,7 +722,7 @@
                 ${iconSvg('edit', 16)}
               </button>
               <!-- 3. Archive Action -->
-              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Archive Incident">
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="archive_records" title="Archive Incident">
                 ${iconSvg('archive', 16)}
               </button>
               `}

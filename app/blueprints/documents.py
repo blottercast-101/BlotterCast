@@ -257,6 +257,8 @@ def _census():
         return jsonify({"ok": True})
 
     if method == "DELETE":
+        if not role_can(session.get("role", ""), "archive_records"):
+            return json_error("You do not have permission to archive records.", 403)
         rid = int(request.args.get("id", 0))
         if not rid:
             return json_error("id required")

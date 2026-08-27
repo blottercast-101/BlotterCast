@@ -510,7 +510,7 @@
               <button onclick="permanentDeleteSettlement(${r.id}, '${r.caseNo || ''}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
               ` : `
               <button onclick="editSettlement(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
               `}
             </div>
           </td>

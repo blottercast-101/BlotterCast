@@ -1226,6 +1226,7 @@ class BcBatchManager {
     const entityLabel = totalSelected === 1 ? this.opts.entityName : this.opts.entityPlural;
     const activeRole = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE) || (window.CURRENT_USER && window.CURRENT_USER.role);
     const canDelete = (typeof roleCan === 'function') ? roleCan(activeRole, 'delete_records') : (activeRole === 'System Admin');
+    const canArchive = (typeof roleCan === 'function') ? roleCan(activeRole, 'archive_records') : (activeRole !== 'Data Encoder');
 
     this._barEl.innerHTML = `
       <div class="bc-batch-count">
@@ -1246,8 +1247,12 @@ class BcBatchManager {
             ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
           </button>
           `}
-        ` : `
+        ` : canArchive ? `
           <button id="bcBatchArchiveBtn" class="bc-batch-btn archive" title="Archive Selected">
+            ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
+          </button>
+        ` : `
+          <button id="bcBatchArchiveBtn" class="bc-batch-btn archive opacity-40 cursor-not-allowed" disabled title="Data Encoders are not authorized to archive records.">
             ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
           </button>
         `}
@@ -1265,7 +1270,9 @@ class BcBatchManager {
         document.getElementById('bcBatchPermDeleteBtn')?.addEventListener('click', () => this.executeBatchPermanentDelete());
       }
     } else {
-      document.getElementById('bcBatchArchiveBtn')?.addEventListener('click', () => this.executeBatchArchive());
+      if (canArchive) {
+        document.getElementById('bcBatchArchiveBtn')?.addEventListener('click', () => this.executeBatchArchive());
+      }
     }
 
     this._barEl.classList.add('visible');
