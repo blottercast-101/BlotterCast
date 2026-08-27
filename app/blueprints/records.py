@@ -1005,7 +1005,7 @@ def _blotter():
         stl = Settlement.query.filter_by(blotter_id=record.id, archived=False).first()
         if stl:
             if stl.status in ("Settled", "Complied", "Resolved"):
-                record.status = "Settled"
+                record.status = "Resolved" if stl.status == "Resolved" else "Settled"
             elif stl.status in ("Dismissed", "CFA Issued"):
                 record.status = stl.status
             elif stl.status in ("Ongoing", "Hearing Scheduled", "Under Mediation"):
@@ -1088,8 +1088,8 @@ def _sync_settlement_to_blotter_and_incident(settlement):
     st = (settlement.status or "Pending").strip()
     act_lower = (settlement.action_taken or "").lower()
 
-    if st in ("Settled", "Complied", "Resolved") or "settled" in act_lower or "amicable" in act_lower:
-        b.status = "Settled"
+    if st in ("Settled", "Complied", "Resolved") or "settled" in act_lower or "amicable" in act_lower or "resolved" in act_lower:
+        b.status = "Resolved" if st == "Resolved" else "Settled"
         b.resolved_at = datetime.utcnow()
         if b.source_incident_id:
             inc = Incident.query.get(b.source_incident_id)

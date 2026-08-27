@@ -180,7 +180,6 @@
         </select>
         <select id="statusFilter" class="filter-input" onchange="currentPage=1; renderTable()">
           <option value="">All Statuses</option>
-          <option value="Ongoing">Ongoing</option>
           <option value="Pending">Pending</option>
           <option value="Resolved">Resolved</option>
         </select>
@@ -299,11 +298,7 @@
           <select id="f_status" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Pending">Pending</option>
-            <option value="Ongoing">Ongoing</option>
-            <option value="Under Mediation">Under Mediation</option>
-            <option value="Settled">Settled</option>
             <option value="Resolved">Resolved</option>
-            <option value="Dismissed">Dismissed</option>
           </select>
           <div id="f_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
             🔒 Status is driven by Settlement Monitor

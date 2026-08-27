@@ -142,7 +142,7 @@
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
         </div>
         <div class="font-display text-3xl text-white" id="kpiSettlementRate">—</div>
-        <div class="text-xs text-white/70 mt-1" id="kpiSettlementSub">Amicably settled cases</div>
+        <div class="text-xs text-white/70 mt-1" id="kpiSettlementSub">Amicably resolved cases</div>
       </div>
     </div>
 
@@ -320,7 +320,7 @@ function renderFromData(data) {
   document.getElementById('kpiElevated').textContent = totalBlottered;
   document.getElementById('kpiElevationRate').textContent = `${Number(elevationRate).toFixed(1)}%`;
   document.getElementById('kpiSettlementRate').textContent = `${Number(settlementRate).toFixed(1)}%`;
-  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases settled`;
+  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases resolved`;
 
   const prevYearTotal = summary.prevYearTotal ?? data?.prevYearTotal ?? 0;
   if (prevYearTotal > 0) {

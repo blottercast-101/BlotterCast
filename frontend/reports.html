@@ -122,8 +122,8 @@
           <div class="font-semibold text-forest-800 mb-1">Incident Summary Report</div>
           <div class="text-xs text-forest-500">All incidents in a selected date range with category and status breakdown.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
-            <span class="badge badge-ongoing text-xs">Excel</span>
+            <span class="badge badge-pdf text-xs">PDF</span>
+            <span class="badge badge-excel text-xs">Excel</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Predictive Risk Assessment')">
@@ -131,7 +131,7 @@
           <div class="font-semibold text-forest-800 mb-1">Predictive Risk Assessment</div>
           <div class="text-xs text-forest-500">Zone-level risk forecast with patrol deployment recommendations.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
+            <span class="badge badge-pdf text-xs">PDF Only</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Patrol Deployment Plan')">
@@ -139,8 +139,8 @@
           <div class="font-semibold text-forest-800 mb-1">Patrol Deployment Plan</div>
           <div class="text-xs text-forest-500">Recommended patrol schedules by zone, time, and risk level.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
-            <span class="badge badge-ongoing text-xs">Excel</span>
+            <span class="badge badge-pdf text-xs">PDF</span>
+            <span class="badge badge-excel text-xs">Excel</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Trend Analysis Report')">
@@ -148,8 +148,8 @@
           <div class="font-semibold text-forest-800 mb-1">Trend Analysis Report</div>
           <div class="text-xs text-forest-500">Historical patterns, seasonal trends, and category comparisons.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
-            <span class="badge badge-ongoing text-xs">Excel</span>
+            <span class="badge badge-pdf text-xs">PDF</span>
+            <span class="badge badge-excel text-xs">Excel</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Settlement Compliance Report')">
@@ -157,7 +157,7 @@
           <div class="font-semibold text-forest-800 mb-1">Settlement Compliance Report</div>
           <div class="text-xs text-forest-500">Status of all active settlement agreements and compliance tracking.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
+            <span class="badge badge-pdf text-xs">PDF Only</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Comparative Period Report')">
@@ -165,8 +165,8 @@
           <div class="font-semibold text-forest-800 mb-1">Comparative Period Report</div>
           <div class="text-xs text-forest-500">Side-by-side comparison of two date ranges (e.g. Q1 vs Q2).</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-resolved text-xs">PDF</span>
-            <span class="badge badge-ongoing text-xs">Excel</span>
+            <span class="badge badge-pdf text-xs">PDF</span>
+            <span class="badge badge-excel text-xs">Excel</span>
           </div>
         </div>
       </div>
@@ -220,10 +220,17 @@
       </div>
       <div>
         <label class="form-label">Export Format</label>
-        <div class="flex gap-3 mt-1">
-          <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="fmt" value="pdf" checked class="accent-forest-600"/> PDF</label>
-          <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="fmt" value="excel" class="accent-forest-600"/> Excel</label>
+        <div class="flex flex-wrap gap-3 mt-1.5" id="formatSelectorGroup">
+          <label class="format-selector-label" id="fmt_pdf_wrap">
+            <input type="radio" name="fmt" id="fmt_pdf" value="pdf" checked class="accent-forest-600"/>
+            <span class="flex items-center gap-1.5"><span data-icon="file" data-icon-size="15"></span> PDF Document</span>
+          </label>
+          <label class="format-selector-label" id="fmt_excel_wrap">
+            <input type="radio" name="fmt" id="fmt_excel" value="excel" class="accent-forest-600"/>
+            <span class="flex items-center gap-1.5"><span data-icon="table" data-icon-size="15"></span> Excel / CSV</span>
+          </label>
         </div>
+        <p id="gen_fmt_note" class="text-xs text-forest-500 mt-2 hidden"></p>
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('generateModal')" class="btn-secondary">Cancel</button>
@@ -239,6 +246,15 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
+const REPORT_FORMAT_SUPPORT = {
+  'Incident Summary Report': ['pdf', 'excel'],
+  'Predictive Risk Assessment': ['pdf'],
+  'Patrol Deployment Plan': ['pdf', 'excel'],
+  'Trend Analysis Report': ['pdf', 'excel'],
+  'Settlement Compliance Report': ['pdf'],
+  'Comparative Period Report': ['pdf', 'excel'],
+};
+
 // Scheduled-report toggles remain a static demo (no cron system in this
 // prototype), but "Generate Report" below produces real files from MySQL.
 const scheduled = [
@@ -250,10 +266,10 @@ const scheduled = [
 document.getElementById('schedTableBody').innerHTML = scheduled.map((s,i)=>`
   <tr>
     <td class="font-medium text-forest-800">${s.report}</td>
-    <td><span class="badge badge-ongoing">${s.freq}</span></td>
+    <td><span class="badge badge-resolved text-xs">${s.freq}</span></td>
     <td class="text-sm text-forest-600">${s.next}</td>
     <td class="text-xs text-forest-400">${s.recipients}</td>
-    <td><span class="badge badge-resolved text-xs">${s.format}</span></td>
+    <td><span class="badge ${s.format === 'PDF' ? 'badge-pdf' : 'badge-excel'} text-xs">${s.format}</span></td>
     <td><button class="sched-toggle ${s.on?'on':'off'}" id="tog${i}" onclick="toggleSched(${i})"></button></td>
   </tr>`).join('');
 
@@ -279,7 +295,7 @@ async function loadRecentReports() {
           <td class="text-sm text-forest-500">${r.generated_by}</td>
           <td class="text-sm text-forest-400">${bcFormatDate(r.created_at)}</td>
           <td class="text-xs text-forest-400">${r.period_from || ''}${r.period_to ? ' – ' + r.period_to : ''}</td>
-          <td><span class="badge badge-resolved text-xs">${r.format}</span></td>
+          <td><span class="badge ${r.format && r.format.toLowerCase() === 'pdf' ? 'badge-pdf' : 'badge-excel'} text-xs">${r.format}</span></td>
           <td>
             <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>
           </td>
@@ -295,7 +311,33 @@ let currentReportType = 'Incident Summary Report';
 
 function openGenerateModal(title) {
   currentReportType = title;
-  document.getElementById('genModalTitle').textContent = 'Generate: ' + title;
+  const modalTitle = document.getElementById('genModalTitle');
+  if (modalTitle) modalTitle.textContent = 'Generate: ' + title;
+
+  const supported = REPORT_FORMAT_SUPPORT[title] || ['pdf'];
+  const excelWrap = document.getElementById('fmt_excel_wrap');
+  const excelRadio = document.getElementById('fmt_excel');
+  const pdfRadio = document.getElementById('fmt_pdf');
+  const fmtNote = document.getElementById('gen_fmt_note');
+
+  if (supported.includes('excel')) {
+    if (excelWrap) excelWrap.style.display = 'flex';
+    if (excelRadio) excelRadio.disabled = false;
+    if (fmtNote) fmtNote.classList.add('hidden');
+  } else {
+    if (excelWrap) excelWrap.style.display = 'none';
+    if (excelRadio) {
+      excelRadio.disabled = true;
+      excelRadio.checked = false;
+    }
+    if (fmtNote) {
+      fmtNote.textContent = 'Note: This report is generated exclusively in official PDF format.';
+      fmtNote.classList.remove('hidden');
+    }
+  }
+
+  if (pdfRadio) pdfRadio.checked = true;
+  if (typeof renderIcons === 'function') renderIcons();
   openModal('generateModal');
 }
 
@@ -303,7 +345,8 @@ async function simulateGenerate() {
   const from = document.getElementById('gen_from').value;
   const to = document.getElementById('gen_to').value;
   const zone = document.getElementById('gen_zone').value;
-  const format = document.querySelector('input[name="fmt"]:checked').value;
+  const fmtInput = document.querySelector('input[name="fmt"]:checked');
+  const format = fmtInput ? fmtInput.value : 'pdf';
   const btn = document.getElementById('genBtn');
 
   btn.disabled = true; btn.textContent = 'Generating…';
@@ -323,6 +366,7 @@ async function simulateGenerate() {
     btn.disabled = false; btn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> Generate';
   }
 }
+
 
 window.initReports = async function () {
   try {

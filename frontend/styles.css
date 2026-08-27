@@ -474,12 +474,50 @@ a.stat-card-grad:hover {
 .badge-referred      { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .badge-not-complied  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .badge-closed        { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.badge-pdf           { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-excel         { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+/* Export format selector labels */
+.format-selector-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--forest-100);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--forest-700);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.format-selector-label:hover {
+  background: var(--forest-50);
+  border-color: var(--forest-300);
+}
+.format-selector-label input[type="radio"] {
+  accent-color: var(--forest-600);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.format-selector-label:has(input[type="radio"]:checked) {
+  border-color: var(--forest-500);
+  background: var(--forest-50);
+  color: var(--forest-800);
+  font-weight: 600;
+}
+
 
 /* Priority / status chips (Incident Reports) */
 .priority-high   { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .priority-medium { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .priority-low    { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.status-investigating { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.status-investigating { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.status-pending       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.status-elevated      { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .status-resolved       { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .status-closed         { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 .status-referred       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }

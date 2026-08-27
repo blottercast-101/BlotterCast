@@ -173,10 +173,12 @@
         </select>
         <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
           <option value="">All Statuses</option>
+          <option value="Resolved">Resolved</option>
           <option value="Complied">Complied</option>
           <option value="Not Complied">Not Complied</option>
           <option value="Pending">Pending</option>
           <option value="Ongoing">Ongoing</option>
+          <option value="CFA Issued">CFA Issued</option>
         </select>
       </div>
 
@@ -255,12 +257,11 @@
           <label class="form-label">Status of Compliance / Resolution</label>
           <select id="sf_status" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Complied">Complied / Settled</option>
-            <option value="Settled">Settled / Agreement Signed</option>
+            <option value="Resolved">Resolved / Agreement Signed</option>
+            <option value="Complied">Complied</option>
             <option value="Ongoing">Ongoing / Under Mediation</option>
             <option value="Pending">Pending</option>
             <option value="Not Complied">Not Complied</option>
-            <option value="Dismissed">Dismissed</option>
             <option value="CFA Issued">CFA Issued</option>
           </select>
         </div>
@@ -268,11 +269,8 @@
       </div>
       <div class="flex items-center justify-between gap-3 pt-3 border-t border-forest-100">
         <div class="flex items-center gap-2">
-          <button type="button" onclick="quickSetSettled()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
-            ✓ Mark as Settled
-          </button>
-          <button type="button" onclick="quickSetDismissed()" class="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition">
-            ✕ Mark as Dismissed / CFA
+          <button type="button" onclick="quickSetResolved()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
+            ✓ Mark as Resolved
           </button>
         </div>
         <div class="flex gap-2">
@@ -501,7 +499,7 @@
           <td><span class="badge ${r.nature==='Criminal'?'badge-criminal':'badge-civil'}">${r.nature}</span></td>
           <td class="text-xs">${r.dateFiled||''}</td>
           <td class="text-xs font-medium text-forest-700">${r.actionTaken||''}</td>
-          <td><span class="badge ${r.status==='Complied'?'badge-complied':r.status==='Not Complied'?'badge-not-complied':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}" style="white-space:nowrap">${r.status}</span></td>
+          <td><span class="badge ${r.status==='Complied'||r.status==='Resolved'||r.status==='Settled'?'badge-resolved':r.status==='Not Complied'?'badge-not-complied':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}" style="white-space:nowrap">${r.status==='Settled'?'Resolved':r.status}</span></td>
           <td>
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
@@ -630,8 +628,8 @@
     }
   }
 
-  function quickSetSettled() {
-    document.getElementById('sf_status').value = 'Settled';
+  function quickSetResolved() {
+    document.getElementById('sf_status').value = 'Resolved';
     if (!document.getElementById('sf_actionTaken').value) {
       document.getElementById('sf_actionTaken').value = 'Mediation (M)';
     }
@@ -642,23 +640,10 @@
     if (!document.getElementById('sf_mainPoint').value) {
       document.getElementById('sf_mainPoint').value = 'Amicable agreement reached and signed by all parties.';
     }
-    showToast('Form pre-filled as Settled. Click "Save Record" to finalize.', 'info');
+    showToast('Form pre-filled as Resolved. Click "Save Record" to finalize.', 'info');
   }
-
-  function quickSetDismissed() {
-    document.getElementById('sf_status').value = 'Dismissed';
-    if (!document.getElementById('sf_actionTaken').value) {
-      document.getElementById('sf_actionTaken').value = 'C46+';
-    }
-    const today = new Date().toISOString().split('T')[0];
-    if (!document.getElementById('sf_dateSettlement').value) {
-      document.getElementById('sf_dateSettlement').value = today;
-    }
-    if (!document.getElementById('sf_mainPoint').value) {
-      document.getElementById('sf_mainPoint').value = 'Certificate to File Action (CFA) issued / Case dismissed.';
-    }
-    showToast('Form pre-filled as Dismissed. Click "Save Record" to finalize.', 'info');
-  }
+  window.quickSetSettled = quickSetResolved;
+  window.quickSetResolved = quickSetResolved;
 
   async function archiveSettlement(id) {
     if (!(await bcConfirm('Archive this settlement record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
