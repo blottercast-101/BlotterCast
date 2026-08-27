@@ -1380,10 +1380,17 @@
           age, address: r.address || '', householdNo: r.household_no || '', zone: r.zone_id || '', status: r.status || 'Active',
         };
       });
-      bcInitResidentPicker('if_reporterSearch', 'if_reporterResidentId', 'if_reporterSuggestions', censusResidentsForIncident, onIncidentReporterPicked);
+      bcInitResidentPicker('if_reporterSearch', 'if_reporterResidentId', 'if_reporterSuggestions', censusResidentsForIncident, onIncidentReporterPicked, validateIncidentReporter);
     } catch (err) {
       console.warn('Could not load census residents for incident picker:', err);
     }
+  }
+
+  function validateIncidentReporter(r) {
+    if (r && r.status === 'Deceased') {
+      return 'Deceased residents cannot be filed as complainants/reporters.';
+    }
+    return null;
   }
 
   function onIncidentReporterPicked(r) {

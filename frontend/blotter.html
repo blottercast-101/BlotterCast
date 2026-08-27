@@ -462,22 +462,28 @@
         age, address: r.address || '', householdNo: r.household_no || '', status: r.status || 'Active',
       };
     });
-    bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked, validateBlotterParty);
-    bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked, validateBlotterParty);
+    bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked, validateComplainantParty);
+    bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked, validateRespondentParty);
   }
 
   const MIN_BLOTTER_PARTY_AGE = 15;
 
-  // Mirrors the server-side rule in api/records.php — a resident marked
-  // Deceased, or under the minimum age, can't be named as a blotter party.
-  // Returning a string here blocks the pick and shows it as a toast.
-  function validateBlotterParty(r) {
-    const name = `${r.firstName} ${r.lastName}`;
+  function validateComplainantParty(r) {
     if (r.status === 'Deceased') {
-      return `${name} is recorded as deceased and cannot be used for a new blotter record.`;
+      return 'Deceased residents cannot be filed as complainants/reporters.';
     }
     if (r.age != null && r.age < MIN_BLOTTER_PARTY_AGE) {
-      return `${name} is ${r.age} years old. Residents must be at least ${MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record.`;
+      return `${r.firstName} ${r.lastName} is ${r.age} years old. Residents must be at least ${MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record.`;
+    }
+    return null;
+  }
+
+  function validateRespondentParty(r) {
+    if (r.status === 'Deceased') {
+      return 'Deceased residents cannot be recorded as respondents.';
+    }
+    if (r.age != null && r.age < MIN_BLOTTER_PARTY_AGE) {
+      return `${r.firstName} ${r.lastName} is ${r.age} years old. Residents must be at least ${MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record.`;
     }
     return null;
   }

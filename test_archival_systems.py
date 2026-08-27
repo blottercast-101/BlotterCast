@@ -605,6 +605,78 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertIsNotNone(blt.resolved_at)
         self.assertEqual(inc.status, "Resolved")
 
+    def test_tc_blt_009_deceased_respondent_validation(self):
+        self.login_as(role="System Admin")
+        # 1. Setup Census residents: active complainant & deceased respondent
+        active_comp = CensusRecord(resident_no="RES-9901", last_name="Rivera", first_name="Clara", sex="Female", status="Active", date_of_birth=date(1990, 1, 1))
+        deceased_resp = CensusRecord(resident_no="RES-9902", last_name="Torres", first_name="Ernesto", sex="Male", status="Deceased", date_of_birth=date(1950, 1, 1))
+        db.session.add_all([active_comp, deceased_resp])
+        db.session.flush()
+
+        # 2. Attempt to file Blotter record with deceased respondent -> MUST FAIL WITH 422
+        res = self.client.post("/api/records.php?type=blotter", json={
+            "complainant": "Clara Rivera",
+            "complainantId": active_comp.id,
+            "respondent": "Ernesto Torres",
+            "respondentId": deceased_resp.id,
+            "nature": "Property Dispute",
+            "type": "CIVIL",
+            "dateFiled": "2026-08-27",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Deceased residents cannot be recorded as respondents.", res.get_json().get("error", ""))
+
+        # 3. Create active incident and attempt to elevate with deceased respondent -> MUST FAIL WITH 422
+        inc = Incident(report_no="INC-2026-DEC1", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", status="Pending", reporter="Clara Rivera", reporter_resident_id=active_comp.id)
+        db.session.add(inc)
+        db.session.commit()
+
+        res = self.client.post(f"/api/incidents/{inc.id}/elevate", json={
+            "complainant": "Clara Rivera",
+            "complainantId": active_comp.id,
+            "respondent": "Ernesto Torres",
+            "respondentId": deceased_resp.id,
+        })
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Deceased residents cannot be recorded as respondents.", res.get_json().get("error", ""))
+
+    def test_tc_blt_010_deceased_complainant_validation(self):
+        self.login_as(role="System Admin")
+        # 1. Setup Census residents: deceased complainant & active respondent
+        deceased_comp = CensusRecord(resident_no="RES-9903", last_name="Aquino", first_name="Gloria", sex="Female", status="Deceased", date_of_birth=date(1945, 1, 1))
+        active_resp = CensusRecord(resident_no="RES-9904", last_name="Mendoza", first_name="Dario", sex="Male", status="Active", date_of_birth=date(1985, 1, 1))
+        db.session.add_all([deceased_comp, active_resp])
+        db.session.flush()
+
+        # 2. Attempt to file Incident report with deceased reporter -> MUST FAIL WITH 422
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "reportNo": "INC-2026-DEC2",
+            "date": "2026-08-27",
+            "timeReported": "10:00",
+            "reporter": "Gloria Aquino",
+            "reporterResidentId": deceased_comp.id,
+            "category": "Theft",
+            "location": "Zone 1 Main St",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Deceased residents cannot be filed as complainants/reporters.", res.get_json().get("error", ""))
+
+        # 3. Attempt to file Blotter record with deceased complainant -> MUST FAIL WITH 422
+        res = self.client.post("/api/records.php?type=blotter", json={
+            "complainant": "Gloria Aquino",
+            "complainantId": deceased_comp.id,
+            "respondent": "Dario Mendoza",
+            "respondentId": active_resp.id,
+            "nature": "Noise Disturbance",
+            "type": "CIVIL",
+            "dateFiled": "2026-08-27",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 422)
+        self.assertIn("Deceased residents cannot be filed as complainants/reporters.", res.get_json().get("error", ""))
+
 
 if __name__ == "__main__":
     unittest.main()

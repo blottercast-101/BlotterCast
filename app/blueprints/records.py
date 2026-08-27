@@ -25,15 +25,16 @@ def _blotter_party_error(resident: CensusRecord, role_label: str):
     """None if `resident` is eligible to be named as a blotter party;
     otherwise the json_error() response describing why not."""
     if resident.status == "Deceased":
-        return json_error(
-            f"{role_label} \"{resident.first_name} {resident.last_name}\" is recorded as deceased "
-            "and cannot be used for a new blotter record."
-        )
+        if role_label.lower() in ("respondent", "respondents"):
+            return json_error("Deceased residents cannot be recorded as respondents.", 422)
+        else:
+            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
     age = compute_age(resident.date_of_birth)
     if age is not None and age < MIN_BLOTTER_PARTY_AGE:
         return json_error(
             f"{role_label} \"{resident.first_name} {resident.last_name}\" is {age} years old. "
-            f"Residents must be at least {MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record."
+            f"Residents must be at least {MIN_BLOTTER_PARTY_AGE} to be involved in a blotter record.",
+            422
         )
     return None
 
@@ -104,6 +105,91 @@ def update_settlement_status(settlement_id):
         "blotter_status": b.status if b else None,
         "incident_status": inc.status if inc else None,
     })
+
+
+@bp.route("/api/incidents/<int:incident_id>/elevate", methods=["POST"])
+@login_required
+def elevate_incident_endpoint(incident_id):
+    inc = Incident.query.get(incident_id)
+    if not inc:
+        return json_error("Incident not found.", 404)
+    if inc.is_blotter:
+        return json_error("Incident is already elevated to Blotter.", 400)
+
+    d = request.get_json(silent=True) or {}
+    complainant = d.get("complainant") or inc.reporter
+    complainant_id = int(d["complainantId"]) if d.get("complainantId") else inc.reporter_resident_id
+    respondent = d.get("respondent", "")
+    respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
+
+    # Check for deceased complainant / reporter
+    if complainant_id:
+        c_res = CensusRecord.query.get(complainant_id)
+        if c_res and c_res.status == "Deceased":
+            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+    elif complainant:
+        c_dec = CensusRecord.query.filter(
+            CensusRecord.status == "Deceased",
+            (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
+        ).first()
+        if c_dec:
+            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+
+    # Check for deceased respondent
+    if respondent_id:
+        r_res = CensusRecord.query.get(respondent_id)
+        if r_res and r_res.status == "Deceased":
+            return json_error("Deceased residents cannot be recorded as respondents.", 422)
+    elif respondent:
+        r_dec = CensusRecord.query.filter(
+            CensusRecord.status == "Deceased",
+            (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
+        ).first()
+        if r_dec:
+            return json_error("Deceased residents cannot be recorded as respondents.", 422)
+
+    docket_no = d.get("docketNo") or next_seq_no(BlotterRecord, "docket_no", "BLT")
+    record = BlotterRecord(
+        docket_no=docket_no,
+        date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
+        complainant=complainant,
+        complainant_id=complainant_id,
+        complainant_addr=d.get("complainantAddr", ""),
+        respondent=respondent,
+        respondent_id=respondent_id,
+        respondent_addr=d.get("respondentAddr", ""),
+        nature=d.get("nature") or inc.category or "Incident Escalation",
+        case_type=d.get("type") or "CRIM",
+        status="Pending",
+        zone_id=inc.zone_id,
+        source_incident_id=inc.id,
+        incident_time=inc.time_reported,
+        narrative=d.get("narrative") or inc.description or "",
+    )
+    db.session.add(record)
+    db.session.flush()
+
+    inc.is_blotter = True
+    inc.blotter_docket_no = docket_no
+    inc.status = "Elevated to Blotter"
+    inc.updated_at = datetime.utcnow()
+
+    # Auto-initialize 1:1 Settlement
+    stl_case_no = next_seq_no(Settlement, "case_no", "STL")
+    stl = Settlement(
+        blotter_id=record.id,
+        case_no=stl_case_no,
+        case_title=f"{complainant} vs. {respondent}",
+        complaint_title=record.nature or "Blotter Case",
+        nature="Criminal" if record.case_type == "CRIM" else "Civil",
+        date_filed=record.date_filed,
+        status="Pending",
+        archived=False,
+    )
+    db.session.add(stl)
+    db.session.commit()
+
+    return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
 
 
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
@@ -337,13 +423,23 @@ def _incidents():
         is_non_resident = bool(d.get("isNonResident") or d.get("is_non_resident"))
         reporter_address = (d.get("reporterAddress") or d.get("reporter_address") or "").strip()
 
-        # If resident selected from Census, fetch and format address if not explicitly passed
+        # Validate reporter is not deceased in Census
         if reporter_resident_id and not is_non_resident:
             resident = CensusRecord.query.get(reporter_resident_id)
+            if resident and resident.status == "Deceased":
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if resident:
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
+        elif d.get("reporter") and not is_non_resident:
+            rep_name = (d.get("reporter") or "").strip()
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{rep_name}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
@@ -415,10 +511,20 @@ def _incidents():
 
         if reporter_resident_id and not is_non_resident:
             resident = CensusRecord.query.get(reporter_resident_id)
+            if resident and resident.status == "Deceased":
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if resident:
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
+        elif d.get("reporter") and not is_non_resident:
+            rep_name = (d.get("reporter") or "").strip()
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{rep_name}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
         incident.time_reported = time_reported
@@ -534,6 +640,23 @@ def _blotter():
                 if err:
                     return err
 
+        # Name-based check for deceased residents
+        if not complainant_id and complainant:
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+
+        if not respondent_id and respondent:
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be recorded as respondents.", 422)
+
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (
             complainant and respondent and complainant.strip().lower() == respondent.strip().lower()
@@ -616,6 +739,23 @@ def _blotter():
                 err = _blotter_party_error(resident, label)
                 if err:
                     return err
+
+        # Name-based check for deceased residents
+        if not complainant_id and complainant:
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+
+        if not respondent_id and respondent:
+            dec = CensusRecord.query.filter(
+                CensusRecord.status == "Deceased",
+                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
+            ).first()
+            if dec:
+                return json_error("Deceased residents cannot be recorded as respondents.", 422)
 
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (
