@@ -772,6 +772,68 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertEqual(blt.complainant, "Carlos Gomez")
         self.assertNotEqual(blt.complainant, "Juan Bautista")
 
+    def test_incidents_api_get_and_null_safety(self):
+        self.login_as(role="Desk Officer")
+        # 1. Create incident with null/optional fields
+        inc = Incident(
+            report_no="INC-2026-NULL1",
+            incident_date=date(2026, 8, 27),
+            time_reported=time(10, 0),
+            zone_id="Zone 1",
+            category="Theft",
+            priority="High",
+            status="Under Investigation",
+            location="Zone 1 Park",
+            reporter="Anonymous",
+            reporter_resident_id=None,
+            complainant_resident_id=None,
+            guardian_resident_id=None
+        )
+        db.session.add(inc)
+        db.session.commit()
+
+        # 2. Query incidents via GET /api/records.php?type=incidents
+        res = self.client.get("/api/records.php?type=incidents")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIsInstance(data, list)
+        self.assertTrue(any(x.get("report_no") == "INC-2026-NULL1" for x in data))
+
+        # 3. Query incidents via REST alias GET /api/records?type=incidents
+        res_alias = self.client.get("/api/records?type=incidents")
+        self.assertEqual(res_alias.status_code, 200)
+        self.assertIsInstance(res_alias.get_json(), list)
+
+    def test_dashboard_analytics_kpi_and_zero_counts(self):
+        self.login_as(role="Barangay Captain")
+        # 1. Test Dashboard endpoint with empty / active data
+        res = self.client.get("/api/analytics.php?action=dashboard")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data.get("ok"))
+        self.assertIn("blotterCount", data)
+        self.assertIn("incidentCount", data)
+        self.assertIn("resolutionRate", data)
+        self.assertIn("stats", data)
+        self.assertIn("high_priority", data["stats"])
+        self.assertIn("under_investigation", data["stats"])
+
+        # 2. Test REST alias /api/dashboard
+        res_dash = self.client.get("/api/dashboard")
+        self.assertEqual(res_dash.status_code, 200)
+        data_dash = res_dash.get_json()
+        self.assertEqual(data_dash.get("status", "") or "success", "success")
+
+    def test_api_error_handling_returns_json_not_html(self):
+        self.login_as(role="System Admin")
+        # 1. 404 on /api/ non-existent endpoint
+        res = self.client.get("/api/non_existent_route")
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.content_type, "application/json")
+        data = res.get_json()
+        self.assertFalse(data.get("ok"))
+        self.assertIn("not found", data.get("error", "").lower())
+
 
 if __name__ == "__main__":
     unittest.main()

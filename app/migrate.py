@@ -26,11 +26,25 @@ ADDITIVE_COLUMNS = [
     # Record archival columns
     ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
     ("incidents", "archived", "BOOLEAN", "FALSE", True),
+    ("settlements", "archived", "BOOLEAN", "FALSE", True),
 
-    # Incident Reporter Resident & Non-Resident handling
+    # Incident Reporter, Guardian, Complainant, Involved Parties & Resolution
     ("incidents", "is_non_resident", "BOOLEAN", "FALSE", True),
     ("incidents", "reporter_resident_id", "INTEGER", "NULL", False),
     ("incidents", "reporter_address", "TEXT", "NULL", False),
+    ("incidents", "complainant", "VARCHAR(150)", "NULL", False),
+    ("incidents", "complainant_resident_id", "INTEGER", "NULL", False),
+    ("incidents", "guardian_name", "VARCHAR(150)", "NULL", False),
+    ("incidents", "guardian_resident_id", "INTEGER", "NULL", False),
+    ("incidents", "guardian_address", "TEXT", "NULL", False),
+    ("incidents", "involved_parties", "TEXT", "NULL", False),
+    ("incidents", "resolved_at", "TIMESTAMP", "NULL", False),
+
+    # Blotter Records resident links & resolution
+    ("blotter_records", "complainant_id", "INTEGER", "NULL", False),
+    ("blotter_records", "respondent_id", "INTEGER", "NULL", False),
+    ("blotter_records", "source_incident_id", "INTEGER", "NULL", False),
+    ("blotter_records", "resolved_at", "TIMESTAMP", "NULL", False),
 ]
 
 

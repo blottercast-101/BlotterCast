@@ -87,6 +87,64 @@ def create_app(config_class=Config):
     def root():
         return send_from_directory(FRONTEND_DIR, "index.html")
 
+    @app.errorhandler(400)
+    def handle_400(e):
+        from flask import request, jsonify
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "success": False, "error": getattr(e, "description", "Bad Request"), "status": 400}), 400
+        return e
+
+    @app.errorhandler(404)
+    def handle_404(e):
+        from flask import request, jsonify
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "success": False, "error": "Endpoint or record not found", "status": 404}), 404
+        return e
+
+    @app.errorhandler(405)
+    def handle_405(e):
+        from flask import request, jsonify
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "success": False, "error": "Method not allowed", "status": 405}), 405
+        return e
+
+    @app.errorhandler(500)
+    def handle_500(e):
+        import traceback
+        from flask import request, jsonify
+        app.logger.error(f"500 Internal Server Error at {request.path}: {traceback.format_exc()}")
+        if request.path.startswith("/api/"):
+            err_msg = str(getattr(e, "description", None) or getattr(e, "original_exception", None) or e or "Internal server error")
+            return jsonify({
+                "ok": False,
+                "success": False,
+                "error": err_msg,
+                "detail": traceback.format_exc() if app.debug or app.config.get("ENV") == "development" else None,
+                "status": 500
+            }), 500
+        return e
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        import traceback
+        from flask import request, jsonify
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            if request.path.startswith("/api/"):
+                return jsonify({"ok": False, "success": False, "error": e.description, "status": e.code}), e.code
+            return e
+
+        app.logger.error(f"Unhandled Exception at {request.path}: {traceback.format_exc()}")
+        if request.path.startswith("/api/"):
+            return jsonify({
+                "ok": False,
+                "success": False,
+                "error": str(e) or "An internal server error occurred",
+                "detail": traceback.format_exc() if app.debug or app.config.get("ENV") == "development" else None,
+                "status": 500
+            }), 500
+        raise e
+
     # Start autonomous server-side backup scheduler
     if not app.config.get("TESTING"):
         from .services.backup_scheduler import start_backup_scheduler

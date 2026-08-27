@@ -244,51 +244,69 @@ def elevate_incident_endpoint(incident_id):
     return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
 
 
+@bp.route("/api/records", methods=["GET", "POST", "PUT", "DELETE"])
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
+@bp.route("/api/incidents", methods=["GET", "POST", "PUT", "DELETE"])
+@bp.route("/api/blotter", methods=["GET", "POST", "PUT", "DELETE"])
+@bp.route("/api/settlements", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def records_router():
-    rtype = request.args.get("type", "")
-    if rtype == "geocode":
-        q = request.args.get("q", "")
-        zone = request.args.get("zone", "")
-        res = forward_geocode(q, zone)
-        if res:
-            return jsonify({"ok": True, **res})
-        return jsonify({"ok": False, "message": "Location could not be geocoded within Barangay Mapulang Lupa boundary."}), 404
+    try:
+        path = request.path.lower()
+        rtype = request.args.get("type", "")
+        if not rtype:
+            if "incident" in path:
+                rtype = "incidents"
+            elif "blotter" in path:
+                rtype = "blotter"
+            elif "settlement" in path:
+                rtype = "settlements"
 
-    action = request.args.get("action", "")
-    batch = request.args.get("batch", "")
-    if action.startswith("batch_") or batch:
-        batch_act = action if action.startswith("batch_") else f"batch_{batch}"
-        return _handle_batch(rtype, batch_act)
+        if rtype == "geocode":
+            q = request.args.get("q", "")
+            zone = request.args.get("zone", "")
+            res = forward_geocode(q, zone)
+            if res:
+                return jsonify({"ok": True, **res})
+            return jsonify({"ok": False, "message": "Location could not be geocoded within Barangay Mapulang Lupa boundary."}), 404
 
-    if request.method == "PUT":
-        resp = _enforce("edit_records")
-        if resp:
-            return resp
-    elif request.method == "DELETE":
-        is_permanent = request.args.get("permanent") == "1"
-        if is_permanent:
-            resp = _enforce("delete_records")
+        action = request.args.get("action", "")
+        batch = request.args.get("batch", "")
+        if action.startswith("batch_") or batch:
+            batch_act = action if action.startswith("batch_") else f"batch_{batch}"
+            return _handle_batch(rtype, batch_act)
+
+        if request.method == "PUT":
+            resp = _enforce("edit_records")
             if resp:
                 return resp
-        else:
-            resp = _enforce("view_records")
+        elif request.method == "DELETE":
+            is_permanent = request.args.get("permanent") == "1"
+            if is_permanent:
+                resp = _enforce("delete_records")
+                if resp:
+                    return resp
+            else:
+                resp = _enforce("view_records")
+                if resp:
+                    return resp
+        elif request.method == "POST":
+            perm = "add_blotter" if rtype in ("blotter", "blotters") else "edit_records"
+            resp = _enforce(perm)
             if resp:
                 return resp
-    elif request.method == "POST":
-        perm = "add_blotter" if request.args.get("type") == "blotter" else "edit_records"
-        resp = _enforce(perm)
-        if resp:
-            return resp
 
-    if rtype in ("incidents", "incident"):
-        return _incidents()
-    if rtype in ("blotter", "blotters"):
-        return _blotter()
-    if rtype in ("settlements", "settlement"):
-        return _settlements()
-    return json_error("Unknown type or method", 404)
+        if rtype in ("incidents", "incident"):
+            return _incidents()
+        if rtype in ("blotter", "blotters"):
+            return _blotter()
+        if rtype in ("settlements", "settlement"):
+            return _settlements()
+        return json_error("Unknown type or method", 404)
+    except Exception as e:
+        import traceback
+        current_app_logger = getattr(bp, "logger", None)
+        return json_error(f"Server error processing records: {str(e)}", 500)
 
 
 def _handle_batch(rtype, action):
@@ -430,23 +448,62 @@ def _incidents():
     method = request.method
 
     if method == "GET":
-        if request.args.get("peek"):
-            return jsonify({"seqNo": next_seq_no(Incident, "report_no", "INC", 4)})
-        show_archived = request.args.get("archived") == "1"
-        if show_archived:
-            q = Incident.query.filter(Incident.archived == True)
-        else:
-            q = Incident.query.filter((Incident.archived == False) | (Incident.archived == None))
-        if request.args.get("from"):
-            q = q.filter(Incident.incident_date >= request.args["from"])
-        if request.args.get("to"):
-            q = q.filter(Incident.incident_date <= request.args["to"])
-        if request.args.get("zone"):
-            q = q.filter(Incident.zone_id == request.args["zone"])
-        if request.args.get("category"):
-            q = q.filter(Incident.category == request.args["category"])
-        rows = q.order_by(Incident.incident_date.desc(), Incident.id.desc()).all()
-        return jsonify([r.to_dict() for r in rows])
+        try:
+            if request.args.get("peek"):
+                return jsonify({"seqNo": next_seq_no(Incident, "report_no", "INC", 4)})
+            show_archived = request.args.get("archived") == "1"
+            if show_archived:
+                q = Incident.query.filter(Incident.archived == True)
+            else:
+                q = Incident.query.filter((Incident.archived == False) | (Incident.archived == None))
+            if request.args.get("from"):
+                q = q.filter(Incident.incident_date >= request.args["from"])
+            if request.args.get("to"):
+                q = q.filter(Incident.incident_date <= request.args["to"])
+            if request.args.get("zone"):
+                q = q.filter(Incident.zone_id == request.args["zone"])
+            if request.args.get("category"):
+                q = q.filter(Incident.category == request.args["category"])
+            rows = q.order_by(Incident.incident_date.desc(), Incident.id.desc()).all()
+            
+            result = []
+            for r in rows:
+                try:
+                    result.append(r.to_dict())
+                except Exception:
+                    result.append({
+                        "id": getattr(r, "id", None),
+                        "report_no": getattr(r, "report_no", ""),
+                        "incident_date": r.incident_date.isoformat() if getattr(r, "incident_date", None) else None,
+                        "time_reported": r.time_reported.isoformat() if getattr(r, "time_reported", None) else None,
+                        "hour": getattr(r, "hour", 0),
+                        "zone_id": getattr(r, "zone_id", "Zone 1"),
+                        "location": getattr(r, "location", ""),
+                        "lat": float(r.lat) if getattr(r, "lat", None) is not None else None,
+                        "lng": float(r.lng) if getattr(r, "lng", None) is not None else None,
+                        "category": getattr(r, "category", "Other"),
+                        "description": getattr(r, "description", ""),
+                        "reporter": getattr(r, "reporter", ""),
+                        "officer": getattr(r, "officer", ""),
+                        "priority": getattr(r, "priority", "Medium"),
+                        "status": getattr(r, "status", "Under Investigation"),
+                        "is_blotter": bool(getattr(r, "is_blotter", False)),
+                        "blotter_docket_no": getattr(r, "blotter_docket_no", None),
+                        "is_non_resident": bool(getattr(r, "is_non_resident", False)),
+                        "reporter_resident_id": getattr(r, "reporter_resident_id", None),
+                        "reporter_address": getattr(r, "reporter_address", "") or "",
+                        "complainant": getattr(r, "complainant", "") or "",
+                        "complainant_resident_id": getattr(r, "complainant_resident_id", None),
+                        "guardian_name": getattr(r, "guardian_name", "") or "",
+                        "guardian_resident_id": getattr(r, "guardian_resident_id", None),
+                        "guardian_address": getattr(r, "guardian_address", "") or "",
+                        "involved_parties": getattr(r, "involved_parties", "") or "",
+                        "resolved_at": r.resolved_at.isoformat() if getattr(r, "resolved_at", None) else None,
+                        "archived": bool(getattr(r, "archived", False)),
+                    })
+            return jsonify(result)
+        except Exception as e:
+            return json_error(f"Failed to fetch incident records: {str(e)}", 500)
 
     if method == "POST":
         d = request.get_json(silent=True) or {}
