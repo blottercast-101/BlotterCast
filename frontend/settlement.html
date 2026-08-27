@@ -252,19 +252,33 @@
       <div><label class="form-label">Main Point of Agreement</label><textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms of the agreement…"></textarea></div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Status of Compliance</label>
+          <label class="form-label">Status of Compliance / Resolution</label>
           <select id="sf_status" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Complied">Complied</option>
-            <option value="Not Complied">Not Complied</option>
+            <option value="Complied">Complied / Settled</option>
+            <option value="Settled">Settled / Agreement Signed</option>
+            <option value="Ongoing">Ongoing / Under Mediation</option>
             <option value="Pending">Pending</option>
+            <option value="Not Complied">Not Complied</option>
+            <option value="Dismissed">Dismissed</option>
+            <option value="CFA Issued">CFA Issued</option>
           </select>
         </div>
         <div><label class="form-label">Remarks</label><input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/></div>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveSettlement()" class="btn-primary">Save Record</button>
+      <div class="flex items-center justify-between gap-3 pt-3 border-t border-forest-100">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="quickSetSettled()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
+            ✓ Mark as Settled
+          </button>
+          <button type="button" onclick="quickSetDismissed()" class="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition">
+            ✕ Mark as Dismissed / CFA
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary">Cancel</button>
+          <button type="button" onclick="saveSettlement()" class="btn-primary">Save Record</button>
+        </div>
       </div>
     </form>
   </div>
@@ -607,6 +621,36 @@
     } catch (err) {
       showToast(err.message, 'error');
     }
+  }
+
+  function quickSetSettled() {
+    document.getElementById('sf_status').value = 'Settled';
+    if (!document.getElementById('sf_actionTaken').value) {
+      document.getElementById('sf_actionTaken').value = 'Mediation (M)';
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (!document.getElementById('sf_dateSettlement').value) {
+      document.getElementById('sf_dateSettlement').value = today;
+    }
+    if (!document.getElementById('sf_mainPoint').value) {
+      document.getElementById('sf_mainPoint').value = 'Amicable agreement reached and signed by all parties.';
+    }
+    showToast('Form pre-filled as Settled. Click "Save Record" to finalize.', 'info');
+  }
+
+  function quickSetDismissed() {
+    document.getElementById('sf_status').value = 'Dismissed';
+    if (!document.getElementById('sf_actionTaken').value) {
+      document.getElementById('sf_actionTaken').value = 'C46+';
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (!document.getElementById('sf_dateSettlement').value) {
+      document.getElementById('sf_dateSettlement').value = today;
+    }
+    if (!document.getElementById('sf_mainPoint').value) {
+      document.getElementById('sf_mainPoint').value = 'Certificate to File Action (CFA) issued / Case dismissed.';
+    }
+    showToast('Form pre-filled as Dismissed. Click "Save Record" to finalize.', 'info');
   }
 
   async function archiveSettlement(id) {

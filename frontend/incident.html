@@ -414,10 +414,14 @@
         <select id="if_status" class="form-input" required>
           <option value="" disabled selected hidden>-Select-</option>
           <option value="Under Investigation">Under Investigation</option>
+          <option value="Elevated to Blotter">Elevated to Blotter</option>
           <option value="Resolved">Resolved</option>
           <option value="Closed">Closed</option>
           <option value="Referred">Referred</option>
         </select>
+        <div id="if_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
+          🔒 Status is driven by Settlement Monitor (<span id="if_status_docket"></span>)
+        </div>
       </div>
       <div class="flex items-center justify-between pt-4 border-t border-forest-100 mt-6">
         <!-- LEFT: Elevate Trigger -->
@@ -1457,8 +1461,12 @@
     if (isLocked) {
       if (banner) {
         banner.classList.remove('hidden');
-        if (bannerText) bannerText.textContent = `This incident has been elevated to an official Blotter Record (${docketNo || 'BLT Case'}). Details are locked from further editing.`;
+        if (bannerText) bannerText.textContent = `This incident has been elevated to an official Blotter Record (${docketNo || 'BLT Case'}). Status is driven by Settlement Monitor.`;
       }
+      const noteEl = document.getElementById('if_status_note');
+      const docketSpan = document.getElementById('if_status_docket');
+      if (noteEl) noteEl.classList.remove('hidden');
+      if (docketSpan) docketSpan.textContent = docketNo || 'Blotter Case';
       if (btnElevate) btnElevate.classList.add('hidden');
       if (btnElevated) {
         btnElevated.classList.remove('hidden');
@@ -1467,6 +1475,8 @@
       if (btnSave) btnSave.classList.add('hidden');
     } else {
       if (banner) banner.classList.add('hidden');
+      const noteEl = document.getElementById('if_status_note');
+      if (noteEl) noteEl.classList.add('hidden');
       if (btnElevate) btnElevate.classList.remove('hidden');
       if (btnElevated) btnElevated.classList.add('hidden');
       if (btnSave) btnSave.classList.remove('hidden');

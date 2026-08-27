@@ -521,10 +521,89 @@ class TestArchivalSystems(unittest.TestCase):
         })
         self.assertEqual(res.status_code, 200)
 
-        # 5. Verify Blotter and Incident are synced to Resolved
-        self.assertEqual(BlotterRecord.query.get(blt.id).status, "Resolved")
+        # 5. Verify Blotter and Incident are synced to Settled / Resolved
+        self.assertEqual(BlotterRecord.query.get(blt.id).status, "Settled")
         self.assertIsNotNone(BlotterRecord.query.get(blt.id).resolved_at)
         self.assertEqual(Incident.query.get(inc.id).status, "Resolved")
+
+    def test_auto_forwarding_blotter_to_settlement_on_creation(self):
+        self.login_as(role="System Admin")
+        # 0. Create Census Resident
+        res_comp = CensusRecord(resident_no="RES-0991", last_name="Santos", first_name="Pedro", sex="Male")
+        db.session.add(res_comp)
+        db.session.flush()
+
+        # 1. Create Incident Report
+        inc = Incident(report_no="INC-2026-FWD1", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", status="Pending")
+        db.session.add(inc)
+        db.session.commit()
+
+        # 2. Elevate Incident to Blotter via POST
+        res = self.client.post("/api/records.php?type=blotter", json={
+            "sourceIncidentId": inc.id,
+            "complainant": "Pedro Santos",
+            "complainantId": res_comp.id,
+            "respondent": "Juan Luna",
+            "nature": "Boundary Dispute",
+            "type": "CIVIL",
+            "dateFiled": "2026-08-27",
+            "zone": "Zone 1"
+        })
+        self.assertEqual(res.status_code, 201)
+        blt_id = res.get_json()["id"]
+
+        # 3. Verify that a 1:1 Settlement record was automatically initialized
+        stl = Settlement.query.filter_by(blotter_id=blt_id).first()
+        self.assertIsNotNone(stl, "Settlement record was not auto-initialized!")
+        self.assertEqual(stl.case_title, "Pedro Santos vs. Juan Luna")
+        self.assertEqual(stl.complaint_title, "Boundary Dispute")
+        self.assertEqual(stl.status, "Pending")
+
+        # 4. Verify Incident is marked elevated
+        db.session.refresh(inc)
+        self.assertTrue(inc.is_blotter)
+        self.assertEqual(inc.status, "Elevated to Blotter")
+
+    def test_patch_settlement_status_cascades_atomically(self):
+        self.login_as(role="System Admin")
+        # 1. Setup chain: Incident -> Blotter -> Settlement
+        inc = Incident(report_no="INC-2026-PATCH1", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Physical Injury", status="Elevated to Blotter")
+        db.session.add(inc)
+        db.session.flush()
+
+        blt = BlotterRecord(docket_no="BLT-2026-PATCH1", date_filed=date(2026, 8, 1), source_incident_id=inc.id, complainant="Ana", respondent="Ben", nature="Assault", case_type="CRIM", status="Pending", zone_id="Zone 1")
+        db.session.add(blt)
+        db.session.flush()
+
+        stl = Settlement(blotter_id=blt.id, case_no="STL-2026-PATCH1", status="Pending", nature="Criminal")
+        db.session.add(stl)
+        db.session.commit()
+
+        # 2. Call dedicated PATCH endpoint to update status to "Under Mediation"
+        res = self.client.patch(f"/api/settlements/{stl.id}/status", json={
+            "status": "Ongoing",
+            "actionTaken": "1st Confrontation Hearing"
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()["blotter_status"], "Ongoing")
+
+        # 3. Call dedicated PATCH endpoint to mark Settled
+        res = self.client.patch(f"/api/settlements/{stl.id}/status", json={
+            "status": "Settled",
+            "actionTaken": "Amicable Agreement Signed",
+            "dateSettlement": "2026-08-27",
+            "mainPoint": "Respondent agreed to cover medical expenses."
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()["blotter_status"], "Settled")
+        self.assertEqual(res.get_json()["incident_status"], "Resolved")
+
+        # Verify DB state
+        db.session.refresh(blt)
+        db.session.refresh(inc)
+        self.assertEqual(blt.status, "Settled")
+        self.assertIsNotNone(blt.resolved_at)
+        self.assertEqual(inc.status, "Resolved")
 
 
 if __name__ == "__main__":

@@ -300,8 +300,14 @@
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Pending">Pending</option>
             <option value="Ongoing">Ongoing</option>
+            <option value="Under Mediation">Under Mediation</option>
+            <option value="Settled">Settled</option>
             <option value="Resolved">Resolved</option>
+            <option value="Dismissed">Dismissed</option>
           </select>
+          <div id="f_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
+            🔒 Status is driven by Settlement Monitor
+          </div>
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-2">
@@ -620,6 +626,9 @@
     document.getElementById('f_respondentFreeText').classList.add('hidden');
     document.getElementById('f_respondentFreeText').value = '';
     document.getElementById('f_docketNo').value = '';
+    document.getElementById('f_status').disabled = false;
+    const noteEl = document.getElementById('f_status_note');
+    if (noteEl) noteEl.classList.add('hidden');
     _updateOutsideToggleAvailability();
     resetFormDropdowns('blotterForm');
   }
@@ -693,6 +702,9 @@
     document.getElementById('f_nature').value = r.nature;
     document.getElementById('f_type').value = r.type;
     document.getElementById('f_status').value = r.status;
+    document.getElementById('f_status').disabled = true;
+    const noteEl = document.getElementById('f_status_note');
+    if (noteEl) noteEl.classList.remove('hidden');
     openModal('blotterModal');
   }
 

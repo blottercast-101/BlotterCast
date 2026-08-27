@@ -56,6 +56,56 @@ def batch_restore_direct(module):
     return _handle_batch(module, "batch_restore")
 
 
+@bp.route("/api/settlements/<int:settlement_id>/status", methods=["PATCH", "PUT"])
+@bp.route("/api/settlements/<int:settlement_id>/resolve", methods=["POST", "PATCH", "PUT"])
+@login_required
+def update_settlement_status(settlement_id):
+    settlement = Settlement.query.get(settlement_id)
+    if not settlement:
+        return json_error("Settlement record not found.", 404)
+
+    d = request.get_json(silent=True) or {}
+    new_status = d.get("status")
+    if not new_status:
+        return json_error("Status is required.", 400)
+
+    settlement.status = new_status
+    if d.get("actionTaken") or d.get("action_taken"):
+        settlement.action_taken = d.get("actionTaken") or d.get("action_taken")
+    if d.get("dateSettlement") or d.get("date_settlement"):
+        settlement.date_settlement = parse_date(d.get("dateSettlement") or d.get("date_settlement"))
+    if d.get("dateExecution") or d.get("date_execution"):
+        settlement.date_execution = parse_date(d.get("dateExecution") or d.get("date_execution"))
+    if d.get("dateConfrontation") or d.get("date_confrontation"):
+        settlement.date_confrontation = parse_date(d.get("dateConfrontation") or d.get("date_confrontation"))
+    if d.get("mainPoint") or d.get("main_point"):
+        settlement.main_point = d.get("mainPoint") or d.get("main_point")
+    if d.get("remarks"):
+        settlement.remarks = d.get("remarks")
+
+    _sync_settlement_to_blotter_and_incident(settlement)
+    db.session.commit()
+
+    b = BlotterRecord.query.get(settlement.blotter_id) if settlement.blotter_id else None
+    inc = Incident.query.get(b.source_incident_id) if (b and b.source_incident_id) else None
+
+    username = session.get("username", "System")
+    log_audit(
+        username,
+        "STATUS_SYNC",
+        "settlement",
+        f"Settlement #{settlement.case_no} updated to {new_status}. Synced Blotter #{b.docket_no if b else 'N/A'} -> {b.status if b else 'N/A'}, Incident #{inc.report_no if inc else 'N/A'} -> {inc.status if inc else 'N/A'}"
+    )
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "settlement": settlement.to_dict(),
+        "blotter_status": b.status if b else None,
+        "incident_status": inc.status if inc else None,
+    })
+
+
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def records_router():
@@ -504,6 +554,8 @@ def _blotter():
             narrative=d.get("narrative", "")
         )
         db.session.add(record)
+        db.session.flush()
+
         if source_incident_id:
             inc = Incident.query.get(source_incident_id)
             if inc:
@@ -511,8 +563,28 @@ def _blotter():
                 inc.blotter_docket_no = docket_no
                 inc.status = "Elevated to Blotter"
                 inc.updated_at = datetime.utcnow()
+
+        # Auto-Forward / Auto-Initialize 1:1 Settlement Record
+        existing_stl = Settlement.query.filter_by(blotter_id=record.id).first()
+        stl_case_no = None
+        if not existing_stl:
+            stl_case_no = next_seq_no(Settlement, "case_no", "STL")
+            settlement = Settlement(
+                blotter_id=record.id,
+                case_no=stl_case_no,
+                case_title=f"{complainant} vs. {respondent}",
+                complaint_title=record.nature or "Blotter Case",
+                nature="Criminal" if record.case_type == "CRIM" else "Civil",
+                date_filed=record.date_filed,
+                status="Pending",
+                archived=False,
+            )
+            db.session.add(settlement)
+        else:
+            stl_case_no = existing_stl.case_no
+
         db.session.commit()
-        return jsonify({"ok": True, "id": record.id, "docket_no": docket_no}), 201
+        return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
 
     if method == "PUT":
         rid = int(request.args.get("id", 0))
@@ -561,8 +633,21 @@ def _blotter():
         record.respondent_addr = d.get("respondentAddr", "")
         record.nature = d.get("nature", "")
         record.case_type = d.get("type") or "CRIM"
-        record.status = d.get("status") or "Pending"
         record.zone_id = d.get("zone")
+
+        # Resolution Driver: if linked to settlement, status is driven by Settlement Monitor
+        stl = Settlement.query.filter_by(blotter_id=record.id, archived=False).first()
+        if stl:
+            if stl.status in ("Settled", "Complied", "Resolved"):
+                record.status = "Settled"
+            elif stl.status in ("Dismissed", "CFA Issued"):
+                record.status = stl.status
+            elif stl.status in ("Ongoing", "Hearing Scheduled", "Under Mediation"):
+                record.status = "Ongoing"
+            else:
+                record.status = "Pending"
+        else:
+            record.status = d.get("status") or "Pending"
 
         # Single Source of Truth (SSOT): synchronize shared fields to linked Incident Report
         if record.source_incident_id:
@@ -600,12 +685,10 @@ def _blotter():
             # Reset linked incident if any
             if record.source_incident_id:
                 inc = Incident.query.get(record.source_incident_id)
-                if inc and (inc.blotter_docket_no == record.docket_no or inc.is_blotter):
+                if inc:
                     inc.is_blotter = False
                     inc.blotter_docket_no = None
-                    if inc.status == "Elevated to Blotter":
-                        inc.status = "Under Investigation"
-                    inc.updated_at = datetime.utcnow()
+                    inc.status = "Pending"
 
             # Clean up notifications referencing this blotter record
             Notification.query.filter(
@@ -616,7 +699,7 @@ def _blotter():
             db.session.delete(record)
             db.session.commit()
 
-            username = session.get("username", "system")
+            username = session.get("username", "System")
             log_audit(username, "PERMANENT_DELETE", "blotter", f"Permanently deleted blotter record {docket_no} (ID: {rid})")
 
             return jsonify({"ok": True, "deleted": True, "id": rid})
@@ -633,11 +716,11 @@ def _sync_settlement_to_blotter_and_incident(settlement):
     if not b:
         return
 
-    st = settlement.status or "Pending"
+    st = (settlement.status or "Pending").strip()
     act_lower = (settlement.action_taken or "").lower()
 
     if st in ("Settled", "Complied", "Resolved") or "settled" in act_lower or "amicable" in act_lower:
-        b.status = "Resolved"
+        b.status = "Settled"
         b.resolved_at = datetime.utcnow()
         if b.source_incident_id:
             inc = Incident.query.get(b.source_incident_id)
@@ -651,7 +734,7 @@ def _sync_settlement_to_blotter_and_incident(settlement):
             inc = Incident.query.get(b.source_incident_id)
             if inc:
                 inc.status = "Resolved"
-    elif st in ("Ongoing", "Pending", "Hearing Scheduled"):
+    elif st in ("Ongoing", "Pending", "Hearing Scheduled", "Under Mediation", "Not Complied"):
         b.status = "Ongoing"
         b.resolved_at = None
         if b.source_incident_id:
