@@ -649,9 +649,50 @@
     <a href="#features">Features</a>
     <a href="#how-it-works">How It Works</a>
     <a href="login.html">Sign In</a>
-    <a href="#">Privacy Policy</a>
+    <a href="javascript:void(0)" onclick="openPrivacyModal()">Privacy Policy</a>
   </div>
 </footer>
+
+<!-- Privacy Policy Modal -->
+<div id="privacyPolicyModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-all duration-300">
+  <div class="bg-[#0e2e1a] border border-[#2f8a4c]/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl transform transition-all text-left">
+    <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-lg bg-[#2f8a4c]/20 border border-[#2f8a4c]/40 flex items-center justify-center text-[#4fa868]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </span>
+        <h3 class="font-display text-lg font-bold text-white">Privacy Policy &amp; Data Protection</h3>
+      </div>
+      <button onclick="closePrivacyModal()" class="text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="text-xs text-gray-300 space-y-3 max-h-80 overflow-y-auto pr-1">
+      <p class="leading-relaxed">
+        <strong class="text-white font-medium">Compliance:</strong> BlotterCast complies strictly with the <strong class="text-[#86c895]">Data Privacy Act of 2012 (Republic Act No. 10173)</strong> of the Philippines.
+      </p>
+      <p class="leading-relaxed">
+        <strong class="text-white font-medium">Data Collection &amp; Use:</strong> Personal identifiers, blotter entries, census data, and incident records stored in BlotterCast are strictly processed for authorized barangay administrative, law enforcement, and Lupon Tagapamayapa dispute resolution functions.
+      </p>
+      <p class="leading-relaxed">
+        <strong class="text-white font-medium">Role-Based Access Control:</strong> Access to sensitive records is restricted by authenticated user roles (Admin, Barangay Captain, Desk Officer, Data Encoder). All write, export, and deletion actions are logged to immutable audit trails.
+      </p>
+      <p class="leading-relaxed">
+        <strong class="text-white font-medium">Data Retention &amp; Security:</strong> Records are encrypted in transit and at rest. Automated cryptographic backup retention rules safeguard historical data integrity.
+      </p>
+    </div>
+    <div class="mt-6 flex justify-end">
+      <button onclick="closePrivacyModal()" class="px-5 py-2 rounded-xl bg-[#2f8a4c] hover:bg-[#3ea55f] text-white text-xs font-semibold shadow-md transition-all">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Logged Out Confirmation Modal -->
 <div id="bcLoggedOutModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-all duration-300">
@@ -703,6 +744,22 @@
 
   function closeBcLoggedOutModal() {
     const modal = document.getElementById('bcLoggedOutModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function openPrivacyModal() {
+    const modal = document.getElementById('privacyPolicyModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closePrivacyModal() {
+    const modal = document.getElementById('privacyPolicyModal');
     if (modal) {
       modal.classList.add('hidden');
       modal.classList.remove('flex');

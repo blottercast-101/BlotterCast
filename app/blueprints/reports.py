@@ -13,7 +13,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
-    NextPageTemplate,
     PageTemplate,
     Paragraph,
     Spacer,

@@ -1776,6 +1776,103 @@ path.zone-pulse-active {
   color: #dc2626;
 }
 
+/* ---------------- Map Alert, Marker Animation & Permanent Zone Labels ---------------- */
+@keyframes zoneAlertPulse {
+  0% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+  }
+  50% {
+    stroke-width: 3px;
+    stroke-opacity: 0.5;
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3));
+  }
+  100% {
+    stroke-width: 6px;
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+  }
+}
 
+.zone-pulse-active path,
+path.zone-pulse-active {
+  animation: zoneAlertPulse 1.5s ease-in-out infinite;
+}
 
+@keyframes markerJitterPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0.8)); }
+  50% { transform: scale(1.3); filter: drop-shadow(0 0 8px rgba(16, 185, 129, 1)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)); }
+}
 
+.focus-marker-pulse {
+  animation: markerJitterPulse 1.2s ease-in-out infinite;
+  z-index: 1000 !important;
+  transform-origin: center center;
+}
+
+.zone-map-permanent-label {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #FFFFFF !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 9px !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  letter-spacing: 0.3px !important;
+  text-transform: uppercase !important;
+}
+
+.zone-map-permanent-label::before {
+  display: none !important;
+}
+
+/* ---------------- Certificate Typography & Fillable Field Underline Styling ---------------- */
+.cert-line-field {
+  display: inline-block;
+  border-bottom: 1.5px solid #1F2937;
+  padding: 0 4px;
+  margin: 0 2px;
+  text-align: center;
+  font-weight: 600;
+  color: #111827;
+  vertical-align: baseline;
+  line-height: 1.4;
+}
+
+.cert-line-field:empty::after {
+  content: "\00a0";
+}
+
+.cert-body-paragraph {
+  font-size: 14px;
+  line-height: 2.2;
+  color: #1F2937;
+  text-align: justify;
+}
+
+/* ---------------- Static Metric Cards Guard (No Click / Hover Affordances) ---------------- */
+.stat-card:not([role="button"]):not(a):not(.clickable-card),
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card),
+.metric-card:not([role="button"]):not(a):not(.clickable-card),
+.kpi-card:not([role="button"]):not(a):not(.clickable-card) {
+  cursor: default !important;
+  transform: none !important;
+  transition: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+  pointer-events: auto;
+}
+
+.stat-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.stat-card-grad:not([role="button"]):not(a):not(.clickable-card):hover,
+.metric-card:not([role="button"]):not(a):not(.clickable-card):hover,
+.kpi-card:not([role="button"]):not(a):not(.clickable-card):hover {
+  transform: none !important;
+  border-color: inherit !important;
+  background-color: inherit !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+}

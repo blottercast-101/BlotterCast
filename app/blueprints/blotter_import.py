@@ -1,16 +1,16 @@
 import csv
 import io
+import random
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from openpyxl import load_workbook
 
 from ..extensions import db
-from ..helpers import find_census_resident_id_by_name, is_name_a_census_resident, next_seq_no, parse_date, zone_coords
+from ..helpers import find_census_resident_id_by_name, next_seq_no, parse_date, zone_coords
 from ..models import BlotterRecord, Incident, Settlement
 from ..permissions import json_error, log_audit, login_required, permission_required
-from flask import session
 
 bp = Blueprint("blotter_import", __name__)
 
@@ -236,8 +236,6 @@ def blotter_import():
         docket_no = custom_docket or next_seq_no(BlotterRecord, "docket_no", "BLT")
         inc_report_no = next_seq_no(Incident, "report_no", "INC")
         base_lat, base_lng = zone_coords(zone_id)
-        
-        import random
         lat = round(base_lat + random.uniform(-0.0008, 0.0008), 6)
         lng = round(base_lng + random.uniform(-0.0008, 0.0008), 6)
 

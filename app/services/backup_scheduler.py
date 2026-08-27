@@ -1,7 +1,7 @@
 import logging
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from .backup_service import MANILA_TZ, run_database_backup
 

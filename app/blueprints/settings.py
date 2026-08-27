@@ -8,7 +8,7 @@ from ..extensions import db
 from ..models import SystemBackup, SystemSetting
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
 from ..services.backup_scheduler import get_scheduler_status, reschedule_backup_job
-from ..services.backup_service import BACKUP_DIR, cleanup_old_backups, generate_sql_dump, run_database_backup
+from ..services.backup_service import BACKUP_DIR, run_database_backup
 
 bp = Blueprint("settings", __name__)
 

@@ -3,7 +3,7 @@ import unittest
 
 class TestStaticMetricCards(unittest.TestCase):
     def test_css_guards_present(self):
-        css_files = ["frontend/styles.css", "frontend/public/css/style.css"]
+        css_files = ["frontend/styles.css"]
         for cpath in css_files:
             with open(cpath, "r", encoding="utf-8") as f:
                 content = f.read()

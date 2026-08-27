@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 from ..extensions import db
 from ..models import AuditLog, NotificationRead, OtpCode, PasswordHistory, User
-from ..permissions import get_security_settings, json_error, log_audit, login_required, permission_required
+from ..permissions import get_security_settings, json_error, log_audit, login_required
 
 bp = Blueprint("users", __name__)
 

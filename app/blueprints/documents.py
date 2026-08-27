@@ -590,7 +590,7 @@ def _non_residency():
                 "blocked": True,
                 "error": "CERTIFICATE_ISSUANCE_BLOCKED",
                 "message": "Cannot issue Certificate of Non-Residency. Resident has active/unsettled blotter cases.",
-                "pendingCases": [{"docketNo": c.docket_no, "status": c.status, "nature": c.nature} for c in pending_cases]
+                "pendingCases": [{"docketNo": c.get("docket_no"), "status": c.get("status"), "nature": c.get("nature")} for c in pending_cases]
             }), 422
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayNonResidency, "NR")

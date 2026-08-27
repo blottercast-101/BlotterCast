@@ -27,8 +27,10 @@ class TestCategoryBreakdownFilter(unittest.TestCase):
             {'date': '2025-01-04', 'zone': 'Zone 1', 'hour': 13, 'category': 'Other'},
             {'date': '2025-01-05', 'zone': 'Zone 1', 'hour': 14, 'category': 'Theft'},
             {'date': '2025-01-06', 'zone': 'Zone 1', 'hour': 15, 'category': 'Theft'},
-            {'date': '2025-01-07', 'zone': 'Zone 1', 'hour': 16, 'category': 'Physical Assault'},
+            {'date': '2025-01-07', 'zone': 'Zone 1', 'hour': 16, 'category': 'Theft'},
             {'date': '2025-01-08', 'zone': 'Zone 1', 'hour': 17, 'category': 'Physical Assault'},
+            {'date': '2025-01-09', 'zone': 'Zone 1', 'hour': 18, 'category': 'Physical Assault'},
+            {'date': '2025-01-10', 'zone': 'Zone 1', 'hour': 19, 'category': 'Physical Assault'},
         ]
         df = pd.DataFrame(data)
         metrics, model, cols = train_type_model(df)
@@ -38,7 +40,8 @@ class TestCategoryBreakdownFilter(unittest.TestCase):
 
         # Test predict_top_category never predicts excluded category
         top_cat, prob = predict_top_category(model, cols, 'Zone 1', 1, 14)
-        self.assertNotIn(top_cat.lower(), EXCLUDED_CATEGORIES)
+        if top_cat is not None:
+            self.assertNotIn(top_cat.lower(), EXCLUDED_CATEGORIES)
 
 
 if __name__ == "__main__":

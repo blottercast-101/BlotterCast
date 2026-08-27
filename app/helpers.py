@@ -1,8 +1,6 @@
-import random
 from datetime import date, datetime, time
 
-from .extensions import db
-from .models import Zone, CensusRecord
+from .models import CensusRecord, Zone
 
 
 def next_seq_no(model, column_name: str, prefix: str, digits: int = 3) -> str:

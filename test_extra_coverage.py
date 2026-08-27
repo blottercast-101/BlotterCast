@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from app import create_app
 from app.extensions import db
-from app.models import SystemBackup, User
+from app.models import SystemBackup, SystemSecuritySetting, SystemSetting, User
 from test_mfa_helper import login as mfa_login
 
 app = create_app()
@@ -79,11 +79,21 @@ with app.app_context():
 # ------------------------------------------------------------------
 print("\n=== SESSION TIMEOUT EXPIRY ===")
 login("admin", "admin123")
+with app.app_context():
+    sec_row = db.session.get(SystemSecuritySetting, 1)
+    if not sec_row:
+        sec_row = SystemSecuritySetting(id=1, is_idle_timeout_enabled=True, idle_timeout_duration_minutes=30)
+        db.session.add(sec_row)
+    else:
+        sec_row.is_idle_timeout_enabled = True
+        sec_row.idle_timeout_duration_minutes = 30
+    db.session.commit()
+
 r = c.get("/api/auth.php?action=me")
 print("me (fresh session):", r.status_code, r.get_json())
 assert r.get_json()["authenticated"] is True
 
-# force last_activity far enough in the past to exceed the 30-min default timeout
+# force last_activity far enough in the past to exceed the 30-min timeout
 with c.session_transaction() as sess:
     sess["last_activity"] = (datetime.utcnow() - timedelta(minutes=31)).timestamp()
 
@@ -94,6 +104,13 @@ assert r.get_json()["authenticated"] is False, "session should have expired"
 r = c.get("/api/records.php?type=incidents")
 print("records after expiry (should 401):", r.status_code, r.get_json())
 assert r.status_code == 401
+
+with app.app_context():
+    sec_row = db.session.get(SystemSecuritySetting, 1)
+    if sec_row:
+        sec_row.is_idle_timeout_enabled = False
+        sec_row.idle_timeout_duration_minutes = 120
+        db.session.commit()
 
 # ------------------------------------------------------------------
 print("\n=== SIGNATURE UPLOAD / REMOVAL ===")

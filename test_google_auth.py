@@ -15,6 +15,12 @@ class GoogleAuthTestCase(unittest.TestCase):
         self.client = self.app.test_client()
 
         with self.app.app_context():
+            from app.models import SystemSecuritySetting
+            sec = db.session.get(SystemSecuritySetting, 1)
+            if sec:
+                sec.is_2fa_globally_enabled = False
+                db.session.commit()
+
             # Setup test active user with MFA enabled
             self.user_mfa = User.query.filter_by(username="test_mfa_user").first()
             if not self.user_mfa:
