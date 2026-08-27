@@ -185,6 +185,9 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th style="width: 40px; text-align: center;">
+                <input type="checkbox" id="selectAllSettlements" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="stlBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+              </th>
               <th>Case No.</th>
               <th>Case Title</th>
               <th>Complaint Title</th>
@@ -325,6 +328,7 @@
   async function toggleArchivedView() {
     viewingArchived = !viewingArchived;
     stlPage = 1;
+    stlBatchManager.clearSelection();
     document.getElementById('stlTitle').textContent = viewingArchived ? 'Archived Settlement Records' : 'Settlement Records';
     document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
       ? '<span data-icon="settlement" data-icon-size="14"></span> Back to Active'
@@ -442,6 +446,21 @@
     );
   }
 
+  const stlBatchManager = new BcBatchManager({
+    entityName: 'settlement record',
+    entityPlural: 'settlement records',
+    apiType: 'settlements',
+    selectAllId: 'selectAllSettlements',
+    getPageItems: () => {
+      const filtered = getStlFiltered();
+      const start = (stlPage - 1) * STL_ROWS;
+      return filtered.slice(start, start + STL_ROWS);
+    },
+    getAllItems: () => getStlFiltered(),
+    isArchivedView: () => viewingArchived,
+    onRefresh: async () => { await loadSettlements(); },
+  });
+
   function renderSettlements() {
     const filtered = getStlFiltered();
     const total = filtered.length;
@@ -450,9 +469,12 @@
 
     const tbody = document.getElementById('settlementTableBody');
     tbody.innerHTML = page.length === 0
-      ? `<tr><td colspan="8" class="text-center py-10 text-forest-400">No settlement records found.</td></tr>`
+      ? `<tr><td colspan="9" class="text-center py-10 text-forest-400">No settlement records found.</td></tr>`
       : page.map(r => `
         <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}">
+          <td style="width: 40px; text-align: center;">
+            <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${stlBatchManager.has(r.id) ? 'checked' : ''} onchange="stlBatchManager.toggle(${r.id}, this.checked)" />
+          </td>
           <td class="font-semibold text-forest-700">${r.caseNo}</td>
           <td class="font-medium text-sm">${r.caseTitle||''}</td>
           <td class="text-sm">${r.complaintTitle||''}</td>
@@ -477,6 +499,7 @@
     document.getElementById('stlPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
     const totalPages = Math.ceil(total/STL_ROWS)||1;
     bcRenderPagination(document.getElementById('stlPaginationControls'), stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
+    stlBatchManager.updateUI();
   }
 
   async function openAddSettlement() {

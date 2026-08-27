@@ -948,6 +948,199 @@ function bcConfirmPermanentDelete(message, opts = {}) {
   return new Promise(resolve => { _bcPermDeleteResolve = resolve; });
 }
 
+// ── Reusable Batch Action Manager for Records Tables ──
+class BcBatchManager {
+  constructor(opts) {
+    this.opts = Object.assign({
+      entityName: 'record',
+      entityPlural: 'records',
+      apiType: 'incidents',
+      selectAllId: 'selectAllCheckbox',
+      getPageItems: () => [],
+      getAllItems: () => [],
+      isArchivedView: () => false,
+      onRefresh: async () => {},
+    }, opts);
+
+    this.selectedIds = new Set();
+    this._barEl = null;
+    this._ensureToolbar();
+  }
+
+  _ensureToolbar() {
+    let el = document.getElementById('bcBatchFloatingBar');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'bcBatchFloatingBar';
+      el.className = 'bc-batch-bar';
+      document.body.appendChild(el);
+    }
+    this._barEl = el;
+  }
+
+  has(id) {
+    return this.selectedIds.has(Number(id));
+  }
+
+  toggle(id, checked) {
+    const numId = Number(id);
+    if (checked) {
+      this.selectedIds.add(numId);
+    } else {
+      this.selectedIds.delete(numId);
+    }
+    this.updateUI();
+  }
+
+  toggleSelectAll(checked, items) {
+    const targetItems = items || this.opts.getPageItems() || [];
+    targetItems.forEach(item => {
+      const id = Number(item.id);
+      if (checked) this.selectedIds.add(id);
+      else this.selectedIds.delete(id);
+    });
+    this.updateUI();
+  }
+
+  selectAllAcrossFiltered() {
+    const all = this.opts.getAllItems() || [];
+    all.forEach(item => this.selectedIds.add(Number(item.id)));
+    this.updateUI();
+  }
+
+  clearSelection() {
+    this.selectedIds.clear();
+    this.updateUI();
+  }
+
+  updateUI() {
+    const selectAllCb = document.getElementById(this.opts.selectAllId);
+    const pageItems = this.opts.getPageItems() || [];
+    if (selectAllCb) {
+      if (pageItems.length > 0 && pageItems.every(item => this.selectedIds.has(Number(item.id)))) {
+        selectAllCb.checked = true;
+        selectAllCb.indeterminate = false;
+      } else if (pageItems.some(item => this.selectedIds.has(Number(item.id)))) {
+        selectAllCb.checked = false;
+        selectAllCb.indeterminate = true;
+      } else {
+        selectAllCb.checked = false;
+        selectAllCb.indeterminate = false;
+      }
+    }
+
+    const count = this.selectedIds.size;
+    if (count === 0) {
+      if (this._barEl) this._barEl.classList.remove('visible');
+      return;
+    }
+
+    const isArchived = this.opts.isArchivedView();
+    const entityLabel = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+
+    this._barEl.innerHTML = `
+      <div class="bc-batch-count">
+        <span class="bc-batch-count-badge">${count}</span>
+        <span>${count} ${entityLabel} selected</span>
+      </div>
+      <div class="bc-batch-actions">
+        ${isArchived ? `
+          <button id="bcBatchRestoreBtn" class="bc-batch-btn restore" title="Restore Selected">
+            ${typeof iconSvg === 'function' ? iconSvg('refresh', 14) : ''} Restore
+          </button>
+          <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger" title="Permanently Delete Selected">
+            ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete
+          </button>
+        ` : `
+          <button id="bcBatchArchiveBtn" class="bc-batch-btn archive" title="Archive Selected">
+            ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive
+          </button>
+        `}
+        <button id="bcBatchDeselectBtn" class="bc-batch-btn ghost" title="Clear selection">
+          Deselect
+        </button>
+      </div>
+    `;
+
+    document.getElementById('bcBatchDeselectBtn')?.addEventListener('click', () => this.clearSelection());
+
+    if (isArchived) {
+      document.getElementById('bcBatchRestoreBtn')?.addEventListener('click', () => this.executeBatchRestore());
+      document.getElementById('bcBatchPermDeleteBtn')?.addEventListener('click', () => this.executeBatchPermanentDelete());
+    } else {
+      document.getElementById('bcBatchArchiveBtn')?.addEventListener('click', () => this.executeBatchArchive());
+    }
+
+    this._barEl.classList.add('visible');
+  }
+
+  async executeBatchArchive() {
+    const ids = Array.from(this.selectedIds);
+    if (!ids.length) return;
+    const count = ids.length;
+    const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+
+    const confirmed = await bcConfirm(
+      `Archive ${count} selected ${label}? They will be moved to the archive view and can be restored later.`,
+      { title: `Batch Archive ${this.opts.entityPlural.toUpperCase()}`, danger: true, okLabel: `Archive (${count})` }
+    );
+    if (!confirmed) return;
+
+    try {
+      await BCApi.batchArchive(this.opts.apiType, ids);
+      showToast(`${count} ${label} archived successfully.`);
+      this.clearSelection();
+      await this.opts.onRefresh();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async executeBatchRestore() {
+    const ids = Array.from(this.selectedIds);
+    if (!ids.length) return;
+    const count = ids.length;
+    const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+
+    const confirmed = await bcConfirm(
+      `Restore ${count} selected ${label} back to the active list?`,
+      { title: `Batch Restore ${this.opts.entityPlural.toUpperCase()}`, okLabel: `Restore (${count})` }
+    );
+    if (!confirmed) return;
+
+    try {
+      await BCApi.batchRestore(this.opts.apiType, ids);
+      showToast(`${count} ${label} restored to active list.`);
+      this.clearSelection();
+      await this.opts.onRefresh();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async executeBatchPermanentDelete() {
+    const ids = Array.from(this.selectedIds);
+    if (!ids.length) return;
+    const count = ids.length;
+    const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+
+    const confirmed = await bcConfirmPermanentDelete(
+      `Are you sure you want to permanently delete ${count} selected ${label}? This action is IRREVERSIBLE and will hard-delete matching data from the database.`,
+      { title: `Batch Permanent Delete (${count} ${label})` }
+    );
+    if (!confirmed) return;
+
+    try {
+      await BCApi.batchPermanentDelete(this.opts.apiType, ids);
+      showToast(`${count} ${label} permanently deleted.`);
+      this.clearSelection();
+      await this.opts.onRefresh();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+}
+
 // ── Sidebar shared HTML builder (call once per page) ───────
 function buildSidebar(activePage) {
   const pages = [

@@ -38,6 +38,24 @@ def _blotter_party_error(resident: CensusRecord, role_label: str):
     return None
 
 
+@bp.route("/api/<string:module>/batch-archive", methods=["POST"])
+@login_required
+def batch_archive_direct(module):
+    return _handle_batch(module, "batch_archive")
+
+
+@bp.route("/api/<string:module>/batch-permanent-delete", methods=["POST", "DELETE"])
+@login_required
+def batch_perm_delete_direct(module):
+    return _handle_batch(module, "batch_permanent_delete")
+
+
+@bp.route("/api/<string:module>/batch-restore", methods=["POST"])
+@login_required
+def batch_restore_direct(module):
+    return _handle_batch(module, "batch_restore")
+
+
 @bp.route("/api/records.php", methods=["GET", "POST", "PUT", "DELETE"])
 @login_required
 def records_router():
@@ -49,6 +67,12 @@ def records_router():
         if res:
             return jsonify({"ok": True, **res})
         return jsonify({"ok": False, "message": "Location could not be geocoded within Barangay Mapulang Lupa boundary."}), 404
+
+    action = request.args.get("action", "")
+    batch = request.args.get("batch", "")
+    if action.startswith("batch_") or batch:
+        batch_act = action if action.startswith("batch_") else f"batch_{batch}"
+        return _handle_batch(rtype, batch_act)
 
     if request.method == "PUT":
         resp = _enforce("edit_records")
@@ -71,6 +95,123 @@ def records_router():
     if rtype in ("settlements", "settlement"):
         return _settlements()
     return json_error("Unknown type or method", 404)
+
+
+def _handle_batch(rtype, action):
+    resp = _enforce("delete_records")
+    if resp:
+        return resp
+
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids", [])
+    if not ids or not isinstance(ids, list):
+        return json_error("ids array is required for batch operations", 400)
+
+    try:
+        clean_ids = [int(x) for x in ids if str(x).strip().isdigit() or isinstance(x, int)]
+    except (ValueError, TypeError):
+        return json_error("Invalid ID format in batch request", 400)
+
+    if not clean_ids:
+        return json_error("No valid IDs provided", 400)
+
+    if rtype in ("incidents", "incident"):
+        model = Incident
+        module_name = "incidents"
+    elif rtype in ("blotter", "blotters"):
+        model = BlotterRecord
+        module_name = "blotter"
+    elif rtype in ("settlements", "settlement"):
+        model = Settlement
+        module_name = "settlements"
+    else:
+        return json_error("Unknown module for batch operation", 404)
+
+    username = session.get("username", "system")
+
+    try:
+        if action in ("batch_archive", "archive"):
+            rows = model.query.filter(model.id.in_(clean_ids)).all()
+            if not rows:
+                return json_error("No matching records found to archive", 404)
+
+            for r in rows:
+                r.archived = True
+
+            db.session.commit()
+            log_audit(username, "BATCH_ARCHIVE", module_name, f"Batch archived {len(rows)} records (IDs: {clean_ids})")
+            return jsonify({"ok": True, "count": len(rows), "archived": True})
+
+        elif action in ("batch_restore", "restore"):
+            rows = model.query.filter(model.id.in_(clean_ids)).all()
+            if not rows:
+                return json_error("No matching records found to restore", 404)
+
+            for r in rows:
+                r.archived = False
+
+            db.session.commit()
+            log_audit(username, "BATCH_RESTORE", module_name, f"Batch restored {len(rows)} records (IDs: {clean_ids})")
+            return jsonify({"ok": True, "count": len(rows), "restored": True})
+
+        elif action in ("batch_permanent_delete", "permanent_delete", "delete"):
+            rows = model.query.filter(model.id.in_(clean_ids)).all()
+            if not rows:
+                return json_error("No matching records found to delete", 404)
+
+            unarchived = [r.id for r in rows if not r.archived]
+            if unarchived:
+                return json_error(
+                    f"Only archived records can be permanently deleted. {len(unarchived)} record(s) are still active.",
+                    400
+                )
+
+            if model == Incident:
+                BlotterRecord.query.filter(BlotterRecord.source_incident_id.in_(clean_ids)).update(
+                    {"source_incident_id": None}, synchronize_session=False
+                )
+                Notification.query.filter(
+                    Notification.ref_table == "incidents",
+                    Notification.ref_id.in_(clean_ids)
+                ).delete(synchronize_session=False)
+
+            elif model == BlotterRecord:
+                Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).delete(synchronize_session=False)
+                dockets = [r.docket_no for r in rows if r.docket_no]
+                if dockets:
+                    Incident.query.filter(Incident.blotter_docket_no.in_(dockets)).update(
+                        {"is_blotter": False, "blotter_docket_no": None, "status": "Under Investigation"},
+                        synchronize_session=False
+                    )
+                Notification.query.filter(
+                    Notification.ref_table.in_(["blotter", "blotter_records"]),
+                    Notification.ref_id.in_(clean_ids)
+                ).delete(synchronize_session=False)
+
+            elif model == Settlement:
+                Notification.query.filter(
+                    Notification.ref_table == "settlements",
+                    Notification.ref_id.in_(clean_ids)
+                ).delete(synchronize_session=False)
+
+            for r in rows:
+                db.session.delete(r)
+
+            db.session.commit()
+            log_audit(
+                username,
+                "BATCH_PERMANENT_DELETE",
+                module_name,
+                f"Batch permanently deleted {len(rows)} records (IDs: {clean_ids})"
+            )
+            return jsonify({"ok": True, "count": len(rows), "deleted": True})
+
+        else:
+            return json_error("Unknown batch action", 400)
+
+    except Exception as e:
+        db.session.rollback()
+        return json_error(f"Batch operation failed: {str(e)}", 500)
 
 
 def _enforce(permission):

@@ -122,6 +122,21 @@ const BCApi = {
   permanentDelete(type, id) {
     return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}&permanent=1`, { method: 'DELETE' });
   },
+  batchArchive(type, ids) {
+    return this._fetch(`${BC_API}/api/records.php?type=${type}&action=batch_archive`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+    });
+  },
+  batchRestore(type, ids) {
+    return this._fetch(`${BC_API}/api/records.php?type=${type}&action=batch_restore`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+    });
+  },
+  batchPermanentDelete(type, ids) {
+    return this._fetch(`${BC_API}/api/records.php?type=${type}&action=batch_permanent_delete&permanent=1`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+    });
+  },
   // Restores an archived blotter record — a dedicated call so it only ever
   // touches the archived flag, never the record's other fields.
   restore(type, id) {

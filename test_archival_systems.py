@@ -306,6 +306,72 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertIsNone(Settlement.query.get(stl_id))
         self.assertIsNotNone(BlotterRecord.query.get(blotter_id))
 
+    def test_batch_archive_and_restore_incidents(self):
+        self.login_as()
+        inc1 = Incident(report_no="INC-2026-B001", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", archived=False)
+        inc2 = Incident(report_no="INC-2026-B002", incident_date=date(2026, 8, 2), time_reported=time(11, 0), zone_id="Zone 1", category="Assault", archived=False)
+        db.session.add_all([inc1, inc2])
+        db.session.commit()
+        ids = [inc1.id, inc2.id]
+
+        # Batch archive
+        res = self.client.post("/api/incidents/batch-archive", json={"ids": ids})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json().get("count"), 2)
+        self.assertTrue(res.get_json().get("archived"))
+
+        # Verify in DB
+        self.assertTrue(Incident.query.get(inc1.id).archived)
+        self.assertTrue(Incident.query.get(inc2.id).archived)
+
+        # Batch restore
+        res = self.client.post("/api/records.php?type=incidents&action=batch_restore", json={"ids": ids})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json().get("count"), 2)
+        self.assertTrue(res.get_json().get("restored"))
+
+        # Verify restored in DB
+        self.assertFalse(Incident.query.get(inc1.id).archived)
+        self.assertFalse(Incident.query.get(inc2.id).archived)
+
+    def test_batch_permanent_delete_with_validation_and_cascade(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0301", last_name="Batch", first_name="User1", sex="Male")
+        res_r = CensusRecord(resident_no="RES-0302", last_name="Batch", first_name="User2", sex="Female")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+
+        b1 = BlotterRecord(docket_no="BLT-2026-B001", date_filed=date(2026, 8, 1), complainant="Batch User1", complainant_id=res_c.id, respondent="Batch User2", respondent_id=res_r.id, nature="Dispute", archived=False)
+        b2 = BlotterRecord(docket_no="BLT-2026-B002", date_filed=date(2026, 8, 2), complainant="Batch User1", complainant_id=res_c.id, respondent="Batch User2", respondent_id=res_r.id, nature="Noise", archived=False)
+        db.session.add_all([b1, b2])
+        db.session.commit()
+        b_ids = [b1.id, b2.id]
+
+        stl1 = Settlement(blotter_id=b1.id, case_no="STL-2026-B001", status="Pending", nature="Civil")
+        db.session.add(stl1)
+        db.session.commit()
+        stl1_id = stl1.id
+
+        # 1. Attempt batch permanent delete on active records (MUST FAIL)
+        res = self.client.post("/api/blotter/batch-permanent-delete", json={"ids": b_ids})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Only archived records", res.get_json().get("error", ""))
+
+        # 2. Batch archive first
+        res = self.client.post("/api/blotter/batch-archive", json={"ids": b_ids})
+        self.assertEqual(res.status_code, 200)
+
+        # 3. Now batch permanent delete
+        res = self.client.post("/api/blotter/batch-permanent-delete", json={"ids": b_ids})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json().get("count"), 2)
+        self.assertTrue(res.get_json().get("deleted"))
+
+        # 4. Verify blotter records and child settlement are purged
+        self.assertIsNone(BlotterRecord.query.get(b1.id))
+        self.assertIsNone(BlotterRecord.query.get(b2.id))
+        self.assertIsNone(Settlement.query.get(stl1_id))
+
 
 if __name__ == "__main__":
     unittest.main()
