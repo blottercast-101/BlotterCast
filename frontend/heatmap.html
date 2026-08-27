@@ -837,33 +837,56 @@
       const mockKeywords = ['test', 'mock', 'sample', 'fake', 'dummy', 'sdada', 'asdf', 'qwe', 'nanaman', 'placeholder'];
       if (mockKeywords.some(kw => loc.includes(kw))) return false;
 
+      // If boundary GeoJSON is not loaded yet, allow authentic coordinates
+      if (!boundaryGeoJSON) return true;
+
       // 3. Strict Point-in-Polygon check (Turf expects [longitude, latitude])
-      if (!boundaryGeoJSON) return false;
       try {
-        const point = turf.point([lng, lat]);
-        if (turf.booleanPointInPolygon(point, boundaryGeoJSON)) {
-          return true;
+        if (typeof turf !== 'undefined' && turf.booleanPointInPolygon && turf.point) {
+          const pt = turf.point([lng, lat]);
+          const targetPoly = (boundaryGeoJSON.type === 'FeatureCollection' && Array.isArray(boundaryGeoJSON.features) && boundaryGeoJSON.features.length > 0)
+            ? boundaryGeoJSON.features[0]
+            : boundaryGeoJSON;
+          if (targetPoly && turf.booleanPointInPolygon(pt, targetPoly)) {
+            return true;
+          }
         }
       } catch (err) {}
 
       // 4. Mathematical Ray-Casting algorithm fallback on polygon coordinates [lng, lat]
       try {
-        const coords = boundaryGeoJSON.geometry ? boundaryGeoJSON.geometry.coordinates[0] : (boundaryGeoJSON.coordinates ? boundaryGeoJSON.coordinates[0] : null);
-        if (!coords || !coords.length) return false;
+        let coords = null;
+        if (boundaryGeoJSON.type === 'FeatureCollection' && Array.isArray(boundaryGeoJSON.features) && boundaryGeoJSON.features.length > 0) {
+          const feat = boundaryGeoJSON.features[0];
+          coords = feat?.geometry?.coordinates ? feat.geometry.coordinates[0] : null;
+        } else if (boundaryGeoJSON.geometry?.coordinates) {
+          coords = boundaryGeoJSON.geometry.coordinates[0];
+        } else if (Array.isArray(boundaryGeoJSON.coordinates)) {
+          coords = boundaryGeoJSON.coordinates[0];
+        }
+
+        if (!coords || !Array.isArray(coords) || coords.length < 3) return true;
+
         let inside = false;
-        for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
-          const xi = coords[i][0], yi = coords[i][1]; // xi = lng, yi = lat
-          const xj = coords[j][0], yj = coords[j][1]; // xj = lng, yj = lat
-          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        const n = coords.length;
+        for (let i = 0, j = n - 1; i < n; j = i++) {
+          const p1 = coords[i];
+          const p2 = coords[j];
+          if (!Array.isArray(p1) || !Array.isArray(p2) || p1.length < 2 || p2.length < 2) continue;
+          const xi = p1[0], yi = p1[1]; // xi = lng, yi = lat
+          const xj = p2[0], yj = p2[1]; // xj = lng, yj = lat
+          const denom = (yj - yi) || 1e-12;
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / denom + xi);
           if (intersect) inside = !inside;
         }
         return inside;
       } catch (e) {
-        return false;
+        return true;
       }
     }
 
     function updateIncidentBoundaryStatuses() {
+      if (!Array.isArray(incidents)) return;
       incidents.forEach(item => {
         const valid = isRecordValidAndWithinBoundary(item, boundaryGeojson);
         item.isInsideBoundary = valid;
@@ -919,20 +942,55 @@
         incidents = [];
         bcSetStatsLoading(['totalVisible', 'topCategory', 'bottomPinCount', 'bottomTopZone'], false, '0');
         bcSetTableError('incidentTableBody', 'Could not load heatmap incident records.', 'loadIncidents()', 9);
-        showToast('Could not load heatmap data: ' + err.message, 'error');
+        if (typeof showToast === 'function') {
+          showToast('Could not load heatmap data: ' + err.message, 'error');
+        }
       }
+    }
+
+    // ── Prevent Leaflet Map Duplicate Instances and Thread Freezes ──
+    if (window.heatmapInstance) {
+      try {
+        window.heatmapInstance.remove();
+      } catch (e) {
+        console.warn('Error removing previous heatmap instance:', e);
+      }
+      window.heatmapInstance = null;
+    }
+    const mapContainer = document.getElementById('map');
+    if (mapContainer && mapContainer._leaflet_id) {
+      mapContainer._leaflet_id = null;
     }
 
     const map = L.map('map', {
       zoomControl: true,
       preferCanvas: true
     }).setView(MAP_CENTER, 16);
+    window.heatmapInstance = map;
 
-    setTimeout(() => map.invalidateSize(), 250);
-    window.addEventListener('load', () => map.invalidateSize());
-    window.addEventListener('resize', () => map.invalidateSize());
-    if (window.ResizeObserver) {
-      new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
+    function safeInvalidateMapSize() {
+      if (window.heatmapInstance && window.heatmapInstance._container && window.heatmapInstance._container.offsetWidth > 0) {
+        try {
+          window.heatmapInstance.invalidateSize();
+        } catch (_) {}
+      }
+    }
+
+    setTimeout(safeInvalidateMapSize, 300);
+    window.addEventListener('load', safeInvalidateMapSize);
+    window.addEventListener('resize', safeInvalidateMapSize);
+
+    // Debounced ResizeObserver to prevent layout thrashing and infinite loops
+    if (window.ResizeObserver && mapContainer) {
+      if (window._heatmapResizeObserver) {
+        try { window._heatmapResizeObserver.disconnect(); } catch (_) {}
+      }
+      let _resizeDebounce = null;
+      window._heatmapResizeObserver = new ResizeObserver(() => {
+        if (_resizeDebounce) clearTimeout(_resizeDebounce);
+        _resizeDebounce = setTimeout(safeInvalidateMapSize, 150);
+      });
+      window._heatmapResizeObserver.observe(mapContainer);
     }
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
@@ -963,13 +1021,17 @@
 
     async function loadBoundary() {
       try {
-        const [boundRes, zonesRes] = await Promise.all([
+        const [boundRes, zonesRes] = await Promise.allSettled([
           fetch('mapulang-lupa.geojson'),
           fetch('mapulang-lupa-zones.geojson')
         ]);
 
-        if (boundRes.ok) {
-          boundaryGeojson = await boundRes.json();
+        if (boundRes.status === 'fulfilled' && boundRes.value.ok) {
+          boundaryGeojson = await boundRes.value.json();
+          if (boundaryLayer && map) {
+            try { map.removeLayer(boundaryLayer); } catch (_) {}
+            boundaryLayer = null;
+          }
           boundaryLayer = L.geoJSON(boundaryGeojson, {
             interactive: false,
             style: {
@@ -981,13 +1043,15 @@
             }
           }).addTo(map);
 
-          map.invalidateSize();
-          map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+          safeInvalidateMapSize();
+          try {
+            map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+          } catch (_) {}
           updateIncidentBoundaryStatuses();
         }
 
-        if (zonesRes.ok) {
-          zonesGeojson = await zonesRes.json();
+        if (zonesRes.status === 'fulfilled' && zonesRes.value.ok) {
+          zonesGeojson = await zonesRes.value.json();
         }
       } catch (err) {
         console.error('Boundary file error:', err);
@@ -995,9 +1059,9 @@
     }
 
     function getZonePolygonStyle(feature, tierEngine, zoneCounts) {
-      const zoneId = feature.properties.zone;
-      const count = zoneCounts[zoneId] || 0;
-      const tier = tierEngine.getTier(count);
+      const zoneId = feature?.properties?.zone;
+      const count = (zoneCounts && zoneId) ? (zoneCounts[zoneId] || 0) : 0;
+      const tier = tierEngine ? tierEngine.getTier(count) : { color: '#10B981', border: '#059669', opacity: 0.35, fillOpacity: 0.45 };
       return {
         fillColor: tier.color === 'transparent' ? '#10B981' : tier.color,
         fillOpacity: tier.fillOpacity || tier.opacity,
@@ -1008,67 +1072,82 @@
     }
 
     function renderZoneChoropleth(data, tierEngine, zoneCounts) {
-      if (zonesLayer) {
-        map.removeLayer(zonesLayer);
+      if (zonesLayer && map) {
+        try {
+          map.removeLayer(zonesLayer);
+        } catch (_) {}
         zonesLayer = null;
       }
       zonePolygonLayers = {};
       if (!zonesGeojson) return;
 
-      zonesLayer = L.geoJSON(zonesGeojson, {
-        style: (feature) => getZonePolygonStyle(feature, tierEngine, zoneCounts),
-        onEachFeature: (feature, layer) => {
-          const zProps = feature.properties;
-          const zoneId = zProps.zone;
-          zonePolygonLayers[zoneId] = layer;
-          const count = zoneCounts[zoneId] || 0;
-          const tier = tierEngine.getTier(count);
-          const zoneLabelText = OFFICIAL_ZONE_LABELS[zoneId] || `${zoneId} - ${zProps.name || zProps.landmark}`;
+      try {
+        zonesLayer = L.geoJSON(zonesGeojson, {
+          style: (feature) => getZonePolygonStyle(feature, tierEngine, zoneCounts),
+          onEachFeature: (feature, layer) => {
+            if (!feature || !feature.properties) return;
+            const zProps = feature.properties;
+            const zoneId = zProps.zone;
+            if (zoneId) zonePolygonLayers[zoneId] = layer;
+            const count = (zoneCounts && zoneId) ? (zoneCounts[zoneId] || 0) : 0;
+            const tier = tierEngine ? tierEngine.getTier(count) : { badgeClass: 'bg-gray-100 text-gray-700', label: 'No Incidents', color: '#6B7280' };
+            const zoneLabelText = (typeof OFFICIAL_ZONE_LABELS !== 'undefined' && OFFICIAL_ZONE_LABELS[zoneId]) || `${zoneId} - ${zProps.name || zProps.landmark || 'Zone'}`;
 
-          // Permanent centered zone label badge
-          layer.bindTooltip(zoneLabelText, {
-            permanent: true,
-            direction: 'center',
-            className: 'zone-map-permanent-label',
-            interactive: false
-          });
+            // Permanent centered zone label badge
+            try {
+              layer.bindTooltip(zoneLabelText, {
+                permanent: true,
+                direction: 'center',
+                className: 'zone-map-permanent-label',
+                interactive: false
+              });
+            } catch (_) {}
 
-          // Popup on click
-          layer.bindPopup(`
-            <div class="p-2 font-sans text-xs space-y-1.5">
-              <div class="flex items-center justify-between gap-2 border-b pb-1.5">
-                <strong class="text-sm font-bold text-forest-900">${zoneLabelText}</strong>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? tier.badgeClass : 'bg-gray-100 text-gray-700'}">${count > 0 ? tier.label : 'No Incidents'}</span>
-              </div>
-              <div><strong>Primary Landmark:</strong> ${zProps.landmark || zProps.name}</div>
-              <div><strong>Total Incidents:</strong> <span class="font-bold text-forest-800">${count}</span></div>
-              <div><strong>Density Tier:</strong> <span style="color:${count > 0 ? tier.color : '#6B7280'}; font-weight:600;">${count > 0 ? tier.label : 'Zero Activity'}</span></div>
-            </div>
-          `);
+            // Popup on click
+            try {
+              layer.bindPopup(`
+                <div class="p-2 font-sans text-xs space-y-1.5">
+                  <div class="flex items-center justify-between gap-2 border-b pb-1.5">
+                    <strong class="text-sm font-bold text-forest-900">${zoneLabelText}</strong>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${count > 0 ? tier.badgeClass : 'bg-gray-100 text-gray-700'}">${count > 0 ? tier.label : 'No Incidents'}</span>
+                  </div>
+                  <div><strong>Primary Landmark:</strong> ${zProps.landmark || zProps.name || '—'}</div>
+                  <div><strong>Total Incidents:</strong> <span class="font-bold text-forest-800">${count}</span></div>
+                  <div><strong>Density Tier:</strong> <span style="color:${count > 0 ? tier.color : '#6B7280'}; font-weight:600;">${count > 0 ? tier.label : 'Zero Activity'}</span></div>
+                </div>
+              `);
+            } catch (_) {}
 
-          layer.on('mouseover', (e) => {
-            const l = e.target;
-            l.setStyle({
-              weight: 3,
-              color: '#111827',
-              fillOpacity: 0.65,
-              dashArray: ''
+            layer.on('mouseover', (e) => {
+              try {
+                const l = e.target;
+                l.setStyle({
+                  weight: 3,
+                  color: '#111827',
+                  fillOpacity: 0.65,
+                  dashArray: ''
+                });
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                  l.bringToFront();
+                }
+              } catch (_) {}
             });
-            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-              l.bringToFront();
-            }
-          });
 
-          layer.on('mouseout', (e) => {
-            if (zonesLayer) {
-              zonesLayer.resetStyle(e.target);
-            }
-          });
+            layer.on('mouseout', (e) => {
+              try {
+                if (zonesLayer) {
+                  zonesLayer.resetStyle(e.target);
+                }
+              } catch (_) {}
+            });
+          }
+        }).addTo(map);
+
+        if (zonesLayer && zonesLayer.bringToBack) {
+          zonesLayer.bringToBack();
         }
-      }).addTo(map);
-
-      if (zonesLayer && zonesLayer.bringToBack) {
-        zonesLayer.bringToBack();
+      } catch (err) {
+        console.error('Error rendering zone choropleth:', err);
       }
     }
 
@@ -1087,7 +1166,7 @@
       // 1. Zone Polygon Highlighting & Pulsing (if zone specified)
       if (targetZone && zonePolygonLayers[targetZone]) {
         const targetLayer = zonePolygonLayers[targetZone];
-        const baseColor = getDensityColor(targetZone, zoneCounts);
+        const baseColor = typeof getDensityColor === 'function' ? getDensityColor(targetZone, zoneCounts) : '#10B981';
 
         if (focusType !== 'marker' && (!latParam || !lngParam)) {
           try {
@@ -1103,34 +1182,38 @@
         }
 
         if (isHighlight) {
-          if (targetLayer._path) {
-            targetLayer._path.classList.add('zone-pulse-active');
-          }
-          targetLayer.setStyle({
-            color: baseColor,
-            weight: 6,
-            fillColor: baseColor,
-            fillOpacity: 0.55,
-            dashArray: '6, 6'
-          });
-          targetLayer.openTooltip();
-
-          setTimeout(() => {
+          try {
             if (targetLayer._path) {
-              targetLayer._path.classList.remove('zone-pulse-active');
+              targetLayer._path.classList.add('zone-pulse-active');
             }
-            if (zonesLayer) {
-              zonesLayer.resetStyle(targetLayer);
-            } else {
-              targetLayer.setStyle({
-                color: baseColor,
-                weight: 3,
-                fillColor: baseColor,
-                fillOpacity: 0.25,
-                dashArray: null
-              });
+            targetLayer.setStyle({
+              color: baseColor,
+              weight: 6,
+              fillColor: baseColor,
+              fillOpacity: 0.55,
+              dashArray: '6, 6'
+            });
+            if (typeof targetLayer.openTooltip === 'function') {
+              targetLayer.openTooltip();
             }
-          }, 6000);
+
+            setTimeout(() => {
+              if (targetLayer._path) {
+                targetLayer._path.classList.remove('zone-pulse-active');
+              }
+              if (zonesLayer) {
+                zonesLayer.resetStyle(targetLayer);
+              } else {
+                targetLayer.setStyle({
+                  color: baseColor,
+                  weight: 3,
+                  fillColor: baseColor,
+                  fillOpacity: 0.25,
+                  dashArray: null
+                });
+              }
+            }, 6000);
+          } catch (_) {}
         }
       }
 
@@ -1148,10 +1231,11 @@
     }
 
     function getFilteredIncidents(onlyMapped = false) {
-      const period = periodFilter.value;
-      const category = categoryFilter.value;
+      const period = periodFilter ? periodFilter.value : 'all';
+      const category = categoryFilter ? categoryFilter.value : 'all';
 
-      return incidents.filter(item => {
+      return (incidents || []).filter(item => {
+        if (!item) return false;
         const periodMatch = period === 'all' ? true : (period === 'month' ? (item.period === 'month' || item.period === 'week') : item.period === period);
         const categoryMatch = category === 'all' ? true : item.category === category;
         if (!periodMatch || !categoryMatch) return false;
@@ -1174,7 +1258,8 @@
 
     function getCategoryCounts(data) {
       const counts = {};
-      data.forEach(item => {
+      (data || []).forEach(item => {
+        if (!item) return;
         const cat = (item.category || '').trim();
         if (!cat) return;
         if (EXCLUDED_HEATMAP_CATEGORIES.has(cat.toLowerCase())) return;
@@ -1184,52 +1269,79 @@
     }
 
     function renderHeatMap(data) {
-      if (heatLayer) map.removeLayer(heatLayer);
+      if (heatLayer && map) {
+        try {
+          map.removeLayer(heatLayer);
+        } catch (_) {}
+        heatLayer = null;
+      }
 
-      // Only plot points that strictly fall inside the boundary with authentic coordinates
-      const heatPoints = data
-        .filter(item => !item.isUnmapped && item.lat != null && item.lng != null)
-        .map(item => [item.lat, item.lng, item.weight]);
+      if (!Array.isArray(data) || data.length === 0) return;
+      if (typeof L === 'undefined' || typeof L.heatLayer !== 'function') {
+        console.warn('Leaflet.heat plugin is not loaded');
+        return;
+      }
 
-      heatLayer = L.heatLayer(heatPoints, {
-        radius: 30,
-        blur: 22,
-        maxZoom: 17,
-        minOpacity: 0.35,
-        gradient: {
-          0.2: '#10B981', // Green (Low: 1–24)
-          0.5: '#FACC15', // Yellow (Medium: 25–49)
-          0.8: '#FB923C', // Orange (Elevated: 50–100)
-          1.0: '#EF4444'  // Red (High: 101+)
+      // Safe clean [lat, lng, weight] flat array without blocking CPU operations
+      const heatPoints = [];
+      const maxPoints = Math.min(data.length, 5000);
+      for (let i = 0; i < maxPoints; i++) {
+        const item = data[i];
+        if (item && !item.isUnmapped && item.lat != null && item.lng != null && !isNaN(item.lat) && !isNaN(item.lng) && item.lat !== 0 && item.lng !== 0) {
+          const w = typeof item.weight === 'number' && !isNaN(item.weight) ? item.weight : 0.6;
+          heatPoints.push([Number(item.lat), Number(item.lng), Number(w)]);
         }
-      }).addTo(map);
+      }
+
+      if (heatPoints.length === 0) return;
+
+      try {
+        heatLayer = L.heatLayer(heatPoints, {
+          radius: 30,
+          blur: 22,
+          maxZoom: 17,
+          minOpacity: 0.35,
+          gradient: {
+            0.2: '#10B981', // Green (Low: 1–24)
+            0.5: '#FACC15', // Yellow (Medium: 25–49)
+            0.8: '#FB923C', // Orange (Elevated: 50–100)
+            1.0: '#EF4444'  // Red (High: 101+)
+          }
+        }).addTo(map);
+      } catch (err) {
+        console.error('Error adding heatLayer:', err);
+      }
     }
 
     function renderMarkers(data, tierEngine, zoneCounts) {
-      markerLayer.clearLayers();
+      if (markerLayer) {
+        markerLayer.clearLayers();
+      }
       markerMap.clear();
-      if (!showMarkers.checked) return;
+      if (!showMarkers || !showMarkers.checked) return;
 
       // Only render markers for authentic verified coordinates within the barangay boundary
-      data.filter(item => !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
-        const zoneCount = zoneCounts[item.zone] || 1;
+      (data || []).filter(item => item && !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
+        const zoneCount = (zoneCounts && item.zone) ? (zoneCounts[item.zone] || 1) : 1;
         const tier = tierEngine ? tierEngine.getTier(zoneCount) : null;
 
-        const marker = L.circleMarker([item.lat, item.lng], {
-          radius: 7,
-          color: '#ffffff',
-          weight: 2,
-          fillColor: tier ? tier.color : '#10B981',
-          fillOpacity: 0.95
-        }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
+        try {
+          const marker = L.circleMarker([item.lat, item.lng], {
+            radius: 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: tier ? tier.color : '#10B981',
+            fillOpacity: 0.95
+          }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
 
-        marker.on('click', () => {
-          triggerMarkerPulse(item.lat, item.lng);
-          highlightTableRow(item.id);
-        });
+          marker.on('click', () => {
+            triggerMarkerPulse(item.lat, item.lng);
+            highlightTableRow(item.id);
+          });
 
-        markerMap.set(item.id, marker);
-        markerLayer.addLayer(marker);
+          markerMap.set(item.id, marker);
+          markerLayer.addLayer(marker);
+        } catch (_) {}
       });
     }
 

@@ -269,6 +269,22 @@ async function bcNavigate(targetUrl, pushState = true) {
       document.title = doc.title;
     }
 
+    // Clean up previous map instances & observers if navigating away
+    if (window.heatmapInstance) {
+      try {
+        window.heatmapInstance.remove();
+      } catch (e) {
+        console.warn('Map cleanup notice:', e);
+      }
+      window.heatmapInstance = null;
+    }
+    if (window._heatmapResizeObserver) {
+      try {
+        window._heatmapResizeObserver.disconnect();
+      } catch (_) {}
+      window._heatmapResizeObserver = null;
+    }
+
     // Dismiss open modals before swapping
     document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
       m.classList.remove('show');
@@ -301,6 +317,22 @@ async function bcNavigate(targetUrl, pushState = true) {
     }
 
     window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Load any page stylesheets (e.g. Leaflet CSS) if not already in document.head
+    const linkTags = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+    for (const l of linkTags) {
+      const href = l.getAttribute('href');
+      if (href && !document.querySelector(`link[href="${href}"]`)) {
+        try {
+          const newLink = document.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = href;
+          if (l.integrity) newLink.integrity = l.integrity;
+          if (l.crossOrigin) newLink.crossOrigin = l.crossOrigin;
+          document.head.appendChild(newLink);
+        } catch (_) {}
+      }
+    }
 
     // Load any page external scripts first (e.g. Chart.js, Leaflet, public/js/certificates.js, etc.)
     const scriptTags = Array.from(doc.querySelectorAll('script'));
