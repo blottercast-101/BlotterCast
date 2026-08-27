@@ -582,14 +582,20 @@ function renderFromData(data) {
   });
 }
 
-(async function () {
-  await requireAuth();
+window.initTrends = async function () {
   try {
-    await initYears();
-  } catch (err) {
-    showToast('Could not load trends: ' + err.message, 'error');
+    await requireAuth();
+    try {
+      await initYears();
+    } catch (err) {
+      showToast('Could not load trends: ' + (err.message || err), 'error');
+    }
+  } catch (initErr) {
+    console.error('initTrends error:', initErr);
   }
-})();
+};
+initTrends();
+
 </script>
 </body>
 </html>

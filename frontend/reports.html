@@ -324,10 +324,16 @@ async function simulateGenerate() {
   }
 }
 
-(async function () {
-  await requireAuth();
-  await loadRecentReports();
-})();
+window.initReports = async function () {
+  try {
+    await requireAuth();
+    await loadRecentReports();
+  } catch (initErr) {
+    console.error('initReports error:', initErr);
+  }
+};
+initReports();
+
 </script>
 </body>
 </html>

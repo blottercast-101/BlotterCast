@@ -716,10 +716,16 @@
     openModal('stlViewModal');
   }
 
-  (async function () {
-    await requireAuth();
-    try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
-  })();
+  window.initSettlement = async function () {
+    try {
+      await requireAuth();
+      try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
+    } catch (initErr) {
+      console.error('initSettlement error:', initErr);
+    }
+  };
+  initSettlement();
+
 </script>
 </body>
 </html>

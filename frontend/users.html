@@ -632,14 +632,20 @@ window.addEventListener('bc-time-format-changed', () => {
   loadAuditLog().catch(() => {});
 });
 
-(async function () {
-  await requireAuth();
+window.initUsers = async function () {
   try {
-    await Promise.all([loadUsers(), loadAuditLog()]);
-  } catch (err) {
-    showToast('Could not load users: ' + err.message, 'error');
+    await requireAuth();
+    try {
+      await Promise.all([loadUsers(), loadAuditLog()]);
+    } catch (err) {
+      showToast('Could not load users: ' + (err.message || err), 'error');
+    }
+  } catch (initErr) {
+    console.error('initUsers error:', initErr);
   }
-})();
+};
+initUsers();
+
 </script>
 </body>
 </html>

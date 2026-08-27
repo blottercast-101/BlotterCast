@@ -129,10 +129,10 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-6">
+    <div class="grid grid-cols-2 gap-6 items-stretch">
 
       <!-- Issuance Log -->
-      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden flex flex-col h-full">
         <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
           <div class="stat-icon-badge" data-icon="indigency" data-icon-size="17"></div>
           <h2 class="font-display text-lg text-forest-800">Issuance Log</h2>
@@ -140,17 +140,20 @@
         <div class="filter-bar">
           <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="14"></span><input type="text" id="indSearch" placeholder="Search…" class="filter-input text-sm pl-8 w-full" oninput="indPage=1;renderIndLog()"/></span>
         </div>
-        <table class="data-table">
-          <thead><tr>
-            <th>Control No.</th><th>Name</th><th>Purpose</th><th>Date Issued</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="indLog"></tbody>
-        </table>
-        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50">
+        <div class="flex-1 overflow-x-auto min-h-[320px] flex flex-col">
+          <table class="data-table w-full">
+            <thead><tr>
+              <th>Control No.</th><th>Name</th><th>Purpose</th><th>Date Issued</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="indLog"></tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50 mt-auto bg-white">
           <span class="text-sm text-forest-500" id="indPaginationInfo"></span>
           <div class="flex gap-2" id="indPaginationControls"></div>
         </div>
       </div>
+
 
       <!-- Certificate Preview -->
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
@@ -406,7 +409,7 @@ function renderIndLog(){
   const pageRows=rows.slice(start,start+IND_ROWS);
   const tbody = document.getElementById('indLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('indLog', 'No certificates issued yet matching your search.', 'indigency', 5);
+    bcSetTableEmpty('indLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'indigency', 5);
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>
@@ -483,25 +486,31 @@ async function issueIndigency(){
   }
 }
 
-(async function () {
-  await requireAuth();
+window.initIndigency = async function () {
   try {
-    const cap = await BCApi.captainSignature();
-    const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
-    const capEl = document.getElementById('i_captain');
-    if (capEl) capEl.textContent = captainName.toUpperCase();
-    const sigWrap = document.getElementById('i_sigimg_wrap');
-    if (cap && cap.signaturePath && sigWrap) {
-      sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+    await requireAuth();
+    try {
+      const cap = await BCApi.captainSignature();
+      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+      const capEl = document.getElementById('i_captain');
+      if (capEl) capEl.textContent = captainName.toUpperCase();
+      const sigWrap = document.getElementById('i_sigimg_wrap');
+      if (cap && cap.signaturePath && sigWrap) {
+        sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+      }
+    } catch (e) {
+      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+      const capEl = document.getElementById('i_captain');
+      if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
     }
-  } catch (e) {
-    const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
-    const capEl = document.getElementById('i_captain');
-    if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+    try { await loadIndResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
+    try { await loadIndLog(); } catch (err) { showToast('Could not load indigency log: ' + (err.message || err), 'error'); }
+  } catch (initErr) {
+    console.error('initIndigency error:', initErr);
   }
-  try { await loadIndResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
-  try { await loadIndLog(); } catch (err) { showToast('Could not load indigency log: ' + err.message, 'error'); }
-})();
+};
+initIndigency();
+
 </script>
 <script src="public/js/certificates.js"></script>
 </body>

@@ -751,22 +751,30 @@ def _me():
 @login_required
 def _change_password_impl():
     data = request.get_json(silent=True) or {}
-    current_password = data.get("currentPassword") or ""
-    new_password = data.get("newPassword") or ""
+    current_password = data.get("currentPassword") or data.get("current_password") or ""
+    new_password = data.get("newPassword") or data.get("new_password") or ""
+    confirm_password = data.get("confirmPassword") or data.get("confirm_password") or data.get("confirmNewPassword")
+
     if not current_password or not new_password:
-        return json_error("Current and new password are both required")
+        return json_error("Current and new password are both required.", 400)
+
+    if confirm_password is not None and confirm_password != new_password:
+        return json_error("New passwords do not match.", 400)
 
     user = db.session.get(User, session["user_id"])
     if not user or not _check_password(current_password, user.password):
-        return json_error("Current password is incorrect", 401)
+        return json_error("Current password is incorrect.", 400)
+
+    if current_password == new_password or _check_password(new_password, user.password):
+        return json_error("New password cannot be the same as your current password.", 400)
 
     settings = get_security_settings()
     if len(new_password) < settings["min_password_length"]:
-        return json_error(f"New password must be at least {settings['min_password_length']} characters long")
+        return json_error(f"New password must be at least {settings['min_password_length']} characters long.", 400)
 
     # Password Reuse Prevention Check
     if _check_password_reuse(user.id, user.password, new_password):
-        return json_error(PASSWORD_REUSE_ERROR, 400)
+        return json_error("New password cannot be the same as your current password.", 400)
 
     # Save previous password hash into history before updating
     _record_password_history(user.id, user.password)
@@ -779,7 +787,8 @@ def _change_password_impl():
 
     session["must_change_password"] = False
     log_audit(user.username, "Updated", "System", "Password changed")
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "message": "Password changed successfully."})
+
 
 
 def _change_password():

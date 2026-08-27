@@ -34,7 +34,8 @@ login("msantos", "officer123")
 r = c.post("/api/auth.php?action=change_password",
            json={"currentPassword": "wrongpass", "newPassword": "newpass123"})
 print("wrong current password:", r.status_code, r.get_json())
-assert r.status_code == 401
+assert r.status_code == 400
+
 
 r = c.post("/api/auth.php?action=change_password",
            json={"currentPassword": "officer123", "newPassword": "short"})

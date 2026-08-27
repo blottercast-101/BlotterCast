@@ -1562,9 +1562,9 @@
       handleGeospatialDeepLink(zoneCounts, tierEngine);
     }
 
-    periodFilter.addEventListener('change', updateHeatMapPage);
-    categoryFilter.addEventListener('change', updateHeatMapPage);
-    showMarkers.addEventListener('change', updateHeatMapPage);
+    if (periodFilter) periodFilter.addEventListener('change', updateHeatMapPage);
+    if (categoryFilter) categoryFilter.addEventListener('change', updateHeatMapPage);
+    if (showMarkers) showMarkers.addEventListener('change', updateHeatMapPage);
 
     if (heatmapSearchInput) {
       heatmapSearchInput.addEventListener('input', () => applyTableFilters(true));
@@ -1576,7 +1576,7 @@
       heatmapCategoryFilter.addEventListener('change', () => applyTableFilters(true));
     }
 
-    (async function () {
+    window.initHeatmap = async function () {
       try {
         await loadBoundary();
         await loadIncidents();
@@ -1584,7 +1584,9 @@
       } catch (err) {
         console.error('Could not load incident data:', err);
       }
-    })();
+    };
+    initHeatmap();
+
   </script>
 </body>
 </html>

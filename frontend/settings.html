@@ -202,9 +202,33 @@
       <div class="settings-section">
         <h3>Change Password</h3>
         <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2"><label class="form-label">Current Password</label><input type="password" id="acct_currentPw" class="form-input"/></div>
-          <div><label class="form-label">New Password</label><input type="password" id="acct_newPw" class="form-input"/></div>
-          <div><label class="form-label">Confirm New Password</label><input type="password" id="acct_confirmPw" class="form-input"/></div>
+          <div class="col-span-2">
+            <label class="form-label">Current Password</label>
+            <div class="relative">
+              <input type="password" id="acct_currentPw" class="form-input pr-10" placeholder="Enter current password" autocomplete="current-password"/>
+              <button type="button" id="toggleCurrentPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_currentPw', this)" title="Show password" aria-label="Show password">
+                <span data-icon="view" data-icon-size="18"></span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">New Password</label>
+            <div class="relative">
+              <input type="password" id="acct_newPw" class="form-input pr-10" placeholder="Enter new password" autocomplete="new-password"/>
+              <button type="button" id="toggleNewPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_newPw', this)" title="Show password" aria-label="Show password">
+                <span data-icon="view" data-icon-size="18"></span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Confirm New Password</label>
+            <div class="relative">
+              <input type="password" id="acct_confirmPw" class="form-input pr-10" placeholder="Confirm new password" autocomplete="new-password"/>
+              <button type="button" id="toggleConfirmPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_confirmPw', this)" title="Show password" aria-label="Show password">
+                <span data-icon="view" data-icon-size="18"></span>
+              </button>
+            </div>
+          </div>
         </div>
         <div id="acct_pw_error" class="text-xs text-red-600 font-semibold mt-3 p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
         <div class="flex justify-end mt-4">
@@ -631,41 +655,65 @@ async function saveMyPassword() {
   const errEl = document.getElementById('acct_pw_error');
 
   if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
-  nextEl.classList.remove('border-red-500');
+  if (currentEl) currentEl.classList.remove('border-red-500');
+  if (nextEl) nextEl.classList.remove('border-red-500');
+  if (confirmEl) confirmEl.classList.remove('border-red-500');
 
-  const current = currentEl.value;
-  const next = nextEl.value;
-  const confirm = confirmEl.value;
+  const current = currentEl ? currentEl.value : '';
+  const next = nextEl ? nextEl.value : '';
+  const confirm = confirmEl ? confirmEl.value : '';
 
-  if (!current || !next) {
-    const msg = 'Fill in both your current and new password.';
+  if (!current || !next || !confirm) {
+    const msg = 'Please fill in all password fields.';
     if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
     showToast(msg, 'error');
     return;
   }
   if (next !== confirm) {
-    const msg = 'New password and confirmation do not match.';
+    const msg = 'New passwords do not match.';
     if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    if (confirmEl) {
+      confirmEl.classList.add('border-red-500');
+      confirmEl.focus();
+    }
     showToast(msg, 'error');
     return;
   }
+  if (current === next) {
+    const msg = 'New password cannot be the same as your current password.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    if (nextEl) {
+      nextEl.classList.add('border-red-500');
+      nextEl.focus();
+    }
+    showToast(msg, 'error');
+    return;
+  }
+
   try {
-    await BCApi.changePassword(current, next);
+    await BCApi.changePassword(current, next, confirm);
     currentEl.value = '';
     nextEl.value = '';
     confirmEl.value = '';
     if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
     showToast('Password changed successfully.');
   } catch (err) {
-    const msg = err.message || 'Failed to change password.';
+    const msg = err.message || (err.error ? err.error : 'Failed to change password.');
     if (errEl) {
       errEl.textContent = msg;
       errEl.classList.remove('hidden');
     }
-    nextEl.classList.add('border-red-500');
-    nextEl.value = '';
-    confirmEl.value = '';
-    nextEl.focus();
+    if (msg.toLowerCase().includes('current')) {
+      if (currentEl) {
+        currentEl.classList.add('border-red-500');
+        currentEl.focus();
+      }
+    } else {
+      if (nextEl) {
+        nextEl.classList.add('border-red-500');
+        nextEl.focus();
+      }
+    }
     showToast(msg, 'error');
   }
 }
@@ -717,36 +765,36 @@ async function loadBackupSettings() {
   }
 }
 
-(async function () {
-  const user = await requireAuth();
-  syncTimeFormatControls();
-  // My Account + personal 2FA — available to every role, independent of
-  // the system-wide settings below (which only System Admin can load/save).
-  await Promise.all([loadMyAccount(), loadMySecurity()]);
-
-  if (!user || !roleCan(user.role, 'system_settings')) {
-    // General/Notifications/Backup are all admin-only — landing a
-    // non-admin there by default would show a tab full of controls that
-    // silently do nothing for them. Security is the tab that actually
-    // works for every role, so that's where they start instead.
-    const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');
-    if (securityTabBtn) switchTab('security', securityTabBtn);
-    return; // rest of this page is admin-only
-  }
-
+window.initSettings = async function () {
   try {
-    const [values, secValues] = await Promise.all([
-      BCApi.settingsList().catch(() => ({})),
-      BCApi.adminSecuritySettingsGet().catch(() => ({})),
-    ]);
-    const mergedValues = Object.assign({}, values, secValues);
-    applySettings(mergedValues);
-    await loadBackupSettings();
-    await loadBackupHistory();
-  } catch (err) {
-    showToast('Could not load settings: ' + err.message, 'error');
+    const user = await requireAuth();
+    if (typeof syncTimeFormatControls === 'function') syncTimeFormatControls();
+    await Promise.all([loadMyAccount(), loadMySecurity()]);
+
+    if (!user || !roleCan(user.role, 'system_settings')) {
+      const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');
+      if (securityTabBtn) switchTab('security', securityTabBtn);
+      return;
+    }
+
+    try {
+      const [values, secValues] = await Promise.all([
+        BCApi.settingsList().catch(() => ({})),
+        BCApi.adminSecuritySettingsGet().catch(() => ({})),
+      ]);
+      const mergedValues = Object.assign({}, values, secValues);
+      applySettings(mergedValues);
+      await loadBackupSettings();
+      await loadBackupHistory();
+    } catch (err) {
+      showToast('Could not load settings: ' + (err.message || err), 'error');
+    }
+  } catch (initErr) {
+    console.error('initSettings error:', initErr);
   }
-})();
+};
+initSettings();
+
 </script>
 </body>
 </html>

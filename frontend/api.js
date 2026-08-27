@@ -59,10 +59,12 @@ const BCApi = {
       body: JSON.stringify(payload),
     });
   },
-  changePassword(currentPassword, newPassword) {
+  changePassword(currentPassword, newPassword, confirmPassword) {
+    const payload = { currentPassword, newPassword };
+    if (confirmPassword !== undefined) payload.confirmPassword = confirmPassword;
     return this._fetch(`${BC_API}/api/auth.php?action=change_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword, newPassword }),
+      body: JSON.stringify(payload),
     });
   },
   mySecurity() { return this._fetch(`${BC_API}/api/auth.php?action=my_security`); },

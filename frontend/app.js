@@ -254,8 +254,7 @@ async function bcNavigate(targetUrl, pushState = true) {
   try {
     const res = await fetch(targetUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     if (!res.ok) {
-      window.location.href = targetUrl;
-      return;
+      throw new Error(`Failed to load view (HTTP ${res.status}: ${res.statusText || 'Error'})`);
     }
     const htmlText = await res.text();
     const parser = new DOMParser();
@@ -263,18 +262,19 @@ async function bcNavigate(targetUrl, pushState = true) {
 
     const newContainer = doc.getElementById('app-content') || doc.querySelector('.ml-64');
     if (!newContainer) {
-      window.location.href = targetUrl;
-      return;
+      throw new Error('Unable to find page content container in target response.');
     }
 
     if (doc.title) {
       document.title = doc.title;
     }
 
+    // Dismiss open modals before swapping
     document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
       m.classList.remove('show');
     });
 
+    // Remove obsolete page-level modals from previous view
     document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]').forEach(m => {
       m.remove();
     });
@@ -286,7 +286,7 @@ async function bcNavigate(targetUrl, pushState = true) {
       currentContainer.className = newContainer.className;
       currentContainer.classList.remove('bc-content-loading');
       currentContainer.classList.remove('bc-content-enter');
-      void currentContainer.offsetWidth;
+      void currentContainer.offsetWidth; // trigger reflow
       currentContainer.classList.add('bc-content-enter');
     }
 
@@ -302,41 +302,101 @@ async function bcNavigate(targetUrl, pushState = true) {
 
     window.scrollTo({ top: 0, behavior: 'instant' });
 
+    // Load any page external scripts first (e.g. Chart.js, Leaflet, public/js/certificates.js, etc.)
     const scriptTags = Array.from(doc.querySelectorAll('script'));
     for (const s of scriptTags) {
       const src = s.getAttribute('src');
       if (src && !src.includes('api.js') && !src.includes('permissions.js') && !src.includes('app.js') && !src.includes('icons.js') && !src.includes('custom-controls.js')) {
-        await _bcLoadScriptOnce(src);
+        try {
+          await _bcLoadScriptOnce(src);
+        } catch (scriptLoadErr) {
+          console.warn('Script preload warning:', src, scriptLoadErr);
+        }
       }
     }
 
+    // Execute inline scripts safely with redeclaration protection & error isolation
     for (const s of scriptTags) {
       if (!s.getAttribute('src') && s.textContent.trim()) {
-        const newScript = document.createElement('script');
-        newScript.textContent = s.textContent;
-        document.body.appendChild(newScript);
-        setTimeout(() => newScript.remove(), 0);
+        try {
+          const rawScript = s.textContent;
+          // Convert top-level const and let declarations to var so repeated navigation doesn't throw SyntaxError
+          const safeScript = rawScript
+            .replace(/\bconst\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*=)/g, 'var $1')
+            .replace(/\blet\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*=)/g, 'var $1')
+            .replace(/\blet\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*;)/g, 'var $1');
+
+          const newScript = document.createElement('script');
+          newScript.textContent = `try {\n${safeScript}\n} catch (err) {\n  console.error("Error executing page script:", err);\n}`;
+          document.body.appendChild(newScript);
+          setTimeout(() => newScript.remove(), 0);
+        } catch (scriptErr) {
+          console.error('Error preparing page script:', scriptErr);
+        }
       }
     }
 
-    if (typeof renderIcons === 'function') renderIcons();
-    if (typeof initCustomSelects === 'function') initCustomSelects();
+    // Re-render SVG icons and custom select controls
+    try {
+      if (typeof renderIcons === 'function') renderIcons();
+    } catch (e) {
+      console.warn('renderIcons notice:', e);
+    }
+    try {
+      if (typeof initCustomSelects === 'function') initCustomSelects();
+    } catch (e) {
+      console.warn('initCustomSelects notice:', e);
+    }
 
+    // Re-apply live role permissions to new DOM nodes
     const cachedUser = typeof bcGetCachedUser === 'function' ? bcGetCachedUser() : null;
     if (cachedUser && cachedUser.role) {
-      if (typeof applyNavPermissions === 'function') applyNavPermissions(cachedUser.role);
-      if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(cachedUser.role);
+      try {
+        if (typeof applyNavPermissions === 'function') applyNavPermissions(cachedUser.role);
+        if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(cachedUser.role);
+      } catch (e) {
+        console.warn('permissions notice:', e);
+      }
     }
 
     window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url: targetUrl } }));
   } catch (err) {
     console.error('SPA navigation error:', err);
-    window.location.href = targetUrl;
+    // Display inline error/retry card instead of blank screen
+    if (currentContainer) {
+      currentContainer.innerHTML = `
+        <div class="flex-1 flex items-center justify-center p-8 min-h-[60vh]">
+          <div class="card max-w-md w-full p-8 text-center space-y-4 shadow-lg border border-red-100 bg-white">
+            <div class="w-14 h-14 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto text-2xl">
+              <span data-icon="warning" data-icon-size="28"></span>
+            </div>
+            <div>
+              <h2 class="font-display text-xl text-forest-800">Unable to Load View</h2>
+              <p class="text-sm text-forest-500 mt-1">${err.message || 'An error occurred while loading this page.'}</p>
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2">
+              <button onclick="bcNavigate('${targetUrl}', false)" class="btn-secondary text-sm flex items-center gap-2">
+                <span data-icon="refresh" data-icon-size="14"></span> Retry
+              </button>
+              <button onclick="window.location.reload()" class="btn-primary text-sm flex items-center gap-2">
+                Reload Page
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      if (typeof renderIcons === 'function') renderIcons();
+    }
   } finally {
     _bcNavigating = false;
-    if (currentContainer) currentContainer.classList.remove('bc-content-loading');
+    if (currentContainer) {
+      currentContainer.classList.remove('bc-content-loading');
+      currentContainer.style.opacity = '1';
+      currentContainer.style.pointerEvents = 'auto';
+    }
   }
 }
+
 
 // Intercept in-app link clicks
 document.addEventListener('click', (e) => {
@@ -751,38 +811,27 @@ function bcFormatIncidentLocation(zone, location) {
   return zone ? (detail ? `${zone}, ${detail}` : zone) : detail;
 }
 
-// Every password field in the app gets a Show/Hide eye icon — call this
-// once per field, right after the input exists in the DOM. The toggle
-// only flips the input's type; it never touches or clears the value, and
-// stays put no matter what else on the page the user clicks.
-function bcAddPasswordToggle(inputId) {
-  const input = document.getElementById(inputId);
-  if (!input || input.dataset.pwToggleAdded) return;
-  input.dataset.pwToggleAdded = '1';
-  input.classList.add('pw-input');
+function toggleFieldPassword(inputId, btnEl) {
+  const input = typeof inputId === 'string' ? document.getElementById(inputId) : inputId;
+  const btn = typeof btnEl === 'string' ? document.getElementById(btnEl) : btnEl;
+  if (!input) return;
 
-  let wrap = input.parentElement;
-  if (!wrap.classList.contains('relative')) {
-    wrap = document.createElement('div');
-    wrap.className = 'relative';
-    input.parentNode.insertBefore(wrap, input);
-    wrap.appendChild(input);
-  }
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
 
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'pw-toggle';
-  btn.setAttribute('aria-label', 'Show password');
-  btn.tabIndex = -1;
-  btn.innerHTML = '<span data-icon="view" data-icon-size="16"></span>';
-  btn.onclick = () => {
-    const showing = input.type === 'text';
-    input.type = showing ? 'password' : 'text';
-    btn.innerHTML = `<span data-icon="${showing ? 'view' : 'viewOff'}" data-icon-size="16"></span>`;
+  if (btn) {
+    if (typeof iconSvg === 'function') {
+      btn.innerHTML = iconSvg(showing ? 'view' : 'viewOff', 18);
+    } else {
+      btn.innerHTML = `<span data-icon="${showing ? 'view' : 'viewOff'}" data-icon-size="18"></span>`;
+      if (typeof renderIcons === 'function') renderIcons();
+    }
     btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-  };
-  wrap.appendChild(btn);
+    btn.setAttribute('title', showing ? 'Show password' : 'Hide password');
+  }
 }
+window.toggleFieldPassword = toggleFieldPassword;
+
 
 // Philippine mobile numbers: 09XXXXXXXXX (11 digits starting with 09).
 // Paired with data-digits-only above, which strips letters/symbols as
@@ -2249,16 +2298,16 @@ function bcSetTableEmpty(tbodyId, message = 'No records found matching your filt
   const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
   if (!el) return;
   el.innerHTML = `
-    <tr>
-      <td colspan="${colSpan}" class="py-12 text-center text-forest-500">
+    <tr class="empty-state-row row-no-hover">
+      <td colspan="${colSpan}" class="py-12 text-center text-forest-500 border-none bg-transparent">
         <div class="bc-empty-state">
           <div class="bc-empty-state-icon">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
             </svg>
           </div>
-          <strong class="font-semibold text-forest-800 text-sm">${message}</strong>
-          <span class="text-xs text-forest-400">Try adjusting your filters or search keywords.</span>
+          <strong class="font-semibold text-forest-800 text-sm block">${message}</strong>
+          <span class="text-xs text-forest-400 mt-1 block">Try adjusting your filters or search keywords.</span>
         </div>
       </td>
     </tr>`;
@@ -2271,18 +2320,19 @@ function bcSetTableError(tbodyId, errorMessage = 'Failed to load records from se
   const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
   if (!el) return;
   el.innerHTML = `
-    <tr>
-      <td colspan="${colSpan}" class="py-12 text-center text-rose-600">
+    <tr class="error-state-row row-no-hover">
+      <td colspan="${colSpan}" class="py-12 text-center text-rose-600 border-none bg-transparent">
         <div class="bc-error-state">
           <div class="bc-error-state-icon">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
             </svg>
           </div>
-          <strong class="font-semibold text-rose-900 text-sm">${errorMessage}</strong>
-          ${retryFnStr ? `<button type="button" onclick="${retryFnStr}" class="mt-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">Retry Loading</button>` : ''}
+          <strong class="font-semibold text-rose-900 text-sm block">${errorMessage}</strong>
+          ${retryFnStr ? `<button type="button" onclick="${retryFnStr}" class="mt-3 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-sm transition pointer-events-auto">Retry Loading</button>` : ''}
         </div>
       </td>
     </tr>`;
 }
+
 

@@ -858,24 +858,30 @@
       }
     }
 
-    (async function () {
-      const user = await requireAuth();
-      if (!user) return;
-      CAN_RETRAIN = roleCan(user.role, 'retrain_ml');
-      if (!CAN_RETRAIN) {
-        const btn = document.getElementById('retrainBtn') || document.getElementById('btnRetrainModel');
-        if (btn) btn.style.display = 'none';
-      }
+    window.initPredictions = async function () {
+      try {
+        const user = await requireAuth();
+        if (!user) return;
+        CAN_RETRAIN = typeof roleCan === 'function' ? roleCan(user.role, 'retrain_ml') : false;
+        if (!CAN_RETRAIN) {
+          const btn = document.getElementById('retrainBtn') || document.getElementById('btnRetrainModel');
+          if (btn) btn.style.display = 'none';
+        }
 
-      const altBtn = document.getElementById('btnRetrainModel');
-      if (altBtn && altBtn !== document.getElementById('retrainBtn')) {
-        altBtn.addEventListener('click', retrain);
-      }
+        const altBtn = document.getElementById('btnRetrainModel');
+        if (altBtn && altBtn !== document.getElementById('retrainBtn')) {
+          altBtn.addEventListener('click', retrain);
+        }
 
-      await loadZoneLabels();
-      renderModelCards();
-      await loadCachedPredictions();
-    })();
+        await loadZoneLabels();
+        renderModelCards();
+        await loadCachedPredictions();
+      } catch (initErr) {
+        console.error('initPredictions error:', initErr);
+      }
+    };
+    initPredictions();
+
   </script>
 </body>
 

@@ -504,7 +504,25 @@ a.stat-card-grad:hover {
   transition: background 0.12s;
 }
 .data-table tbody tr:last-child { border-bottom: none; }
-.data-table tbody tr:hover { background: var(--forest-50); }
+.data-table tbody tr:not(.empty-state-row):not(.error-state-row):not(.row-no-hover):hover { background: var(--forest-50); }
+
+/* Disable hover transformations on empty state and error state rows */
+.data-table tbody tr.empty-state-row,
+.data-table tbody tr.error-state-row,
+.data-table tbody tr.row-no-hover,
+.data-table tbody tr.empty-state-row:hover,
+.data-table tbody tr.error-state-row:hover,
+.data-table tbody tr.row-no-hover:hover,
+.data-table tbody tr:has(.bc-empty-state),
+.data-table tbody tr:has(.bc-empty-state):hover,
+.data-table tbody tr:has(.bc-error-state),
+.data-table tbody tr:has(.bc-error-state):hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  cursor: default !important;
+}
+
 .data-table thead th.text-center,
 .data-table thead th[align="center"] {
   text-align: center !important;
@@ -514,6 +532,39 @@ a.stat-card-grad:hover {
 .data-table tbody td.text-center,
 .data-table tbody td[align="center"] { text-align: center !important; }
 .data-table tbody td.perm-cell { text-align: center !important; padding: 11px 14px; }
+
+/* Empty state & error state centering container */
+.bc-empty-state,
+.bc-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  width: 100%;
+  margin: 0 auto;
+  pointer-events: none;
+}
+.bc-empty-state-icon,
+.bc-error-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: var(--forest-50);
+  color: var(--forest-500);
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--forest-100);
+}
+.bc-error-state-icon {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fee2e2;
+}
+
 
 /* Row action icon buttons (view / edit / delete) */
 .row-actions { display: flex; gap: 4px; }

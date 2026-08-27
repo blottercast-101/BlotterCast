@@ -307,7 +307,8 @@ async function loadResidents() {
 
   try {
     const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
-    censusData = Array.isArray(raw) ? raw.map(mapResident) : [];
+    const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+    censusData = list.filter(Boolean).map(mapResident);
     calcStats();
     renderResidents();
     bcCheckUrlHighlight({
@@ -328,11 +329,16 @@ async function loadResidents() {
 async function toggleArchivedView() {
   viewingArchived = !viewingArchived;
   curPage = 1;
-  resBatchManager.clearSelection();
-  document.getElementById('resTitle').textContent = viewingArchived ? 'Archived Resident Records' : 'Resident Records';
-  document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
-    ? '<span data-icon="census" data-icon-size="14"></span> Back to Active'
-    : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+  if (resBatchManager?.clearSelection) resBatchManager.clearSelection();
+  const titleEl = document.getElementById('resTitle');
+  if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Resident Records' : 'Resident Records';
+  const toggleBtn = document.getElementById('archiveToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.innerHTML = viewingArchived
+      ? '<span data-icon="census" data-icon-size="14"></span> Back to Active'
+      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    if (typeof renderIcons === 'function') renderIcons();
+  }
   try {
     await loadResidents();
   } catch (err) {
@@ -363,7 +369,10 @@ const resBatchManager = new BcBatchManager({
 // resident's status.
 const RF_LOCKABLE_FIELDS = ['rf_last','rf_first','rf_mid','rf_dob','rf_sex','rf_civil','rf_nat','rf_zone','rf_addr','rf_hh','rf_contact','rf_voter','rf_occ'];
 function setResidentFormLock(locked){
-  RF_LOCKABLE_FIELDS.forEach(id => { document.getElementById(id).disabled = locked; });
+  RF_LOCKABLE_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = locked;
+  });
 }
 
 // When a resident is marked Deceased, they can no longer be an active
@@ -371,72 +380,91 @@ function setResidentFormLock(locked){
 // (re-enabled automatically if Status is changed away from Deceased,
 // unless a Desk Officer has the form locked to Status-only anyway).
 function onRfStatusChange(){
-  const status = document.getElementById('rf_status').value;
+  const statusEl = document.getElementById('rf_status');
   const voterField = document.getElementById('rf_voter');
   const hint = document.getElementById('rf_deceased_hint');
+  const status = statusEl?.value || '';
   if (status === 'Deceased') {
-    voterField.value = 'Deactivated';
-    voterField.disabled = true;
-    hint.classList.remove('hidden');
+    if (voterField) {
+      voterField.value = 'Deactivated';
+      voterField.disabled = true;
+    }
+    if (hint) hint.classList.remove('hidden');
   } else {
-    hint.classList.add('hidden');
-    if (currentRole !== 'Desk Officer') voterField.disabled = false;
+    if (hint) hint.classList.add('hidden');
+    if (voterField && currentRole !== 'Desk Officer') voterField.disabled = false;
   }
 }
 
 function calcStats(){
-  document.getElementById('cTotal').textContent=censusData.length;
-  const hhs=new Set(censusData.map(r=>r.household).filter(Boolean));
-  document.getElementById('cHousehold').textContent=hhs.size;
-  document.getElementById('cMale').textContent=censusData.filter(r=>r.sex==='Male').length;
-  document.getElementById('cFemale').textContent=censusData.filter(r=>r.sex==='Female').length;
-  document.getElementById('cSenior').textContent=censusData.filter(r=>typeof r.age==='number' && r.age>=60).length;
+  const list = Array.isArray(censusData) ? censusData : [];
+  const elTotal = document.getElementById('cTotal');
+  if (elTotal) elTotal.textContent = list.length;
+  const hhs = new Set(list.map(r => r?.household).filter(Boolean));
+  const elHh = document.getElementById('cHousehold');
+  if (elHh) elHh.textContent = hhs.size;
+  const elMale = document.getElementById('cMale');
+  if (elMale) elMale.textContent = list.filter(r => r?.sex === 'Male').length;
+  const elFemale = document.getElementById('cFemale');
+  if (elFemale) elFemale.textContent = list.filter(r => r?.sex === 'Female').length;
+  const elSenior = document.getElementById('cSenior');
+  if (elSenior) elSenior.textContent = list.filter(r => typeof r?.age === 'number' && r.age >= 60).length;
 }
 
 function getFiltered(){
-  const s=document.getElementById('resSearch').value.toLowerCase();
-  const z=document.getElementById('resZone').value;
-  const sx=document.getElementById('resSex').value;
-  const st=document.getElementById('resStatus').value;
-  return censusData.filter(r=>
-    (!s||(r.lastName+' '+r.firstName).toLowerCase().includes(s)||r.address.toLowerCase().includes(s))&&
-    (!z||r.zone===z)&&(!sx||r.sex===sx)&&(!st||r.status===st));
+  const list = Array.isArray(censusData) ? censusData : [];
+  const s = (document.getElementById('resSearch')?.value || '').toLowerCase().trim();
+  const z = document.getElementById('resZone')?.value || '';
+  const sx = document.getElementById('resSex')?.value || '';
+  const st = document.getElementById('resStatus')?.value || '';
+  return list.filter(r => {
+    if (!r) return false;
+    const name = `${r.lastName || ''} ${r.firstName || ''}`.toLowerCase();
+    const addr = (r.address || '').toLowerCase();
+    const matchesSearch = !s || name.includes(s) || addr.includes(s);
+    const matchesZone = !z || r.zone === z;
+    const matchesSex = !sx || r.sex === sx;
+    const matchesStatus = !st || r.status === st;
+    return matchesSearch && matchesZone && matchesSex && matchesStatus;
+  });
 }
 
 function renderResidents(){
-  const f=getFiltered(); const total=f.length;
-  const start=(curPage-1)*ROWS;
-  const page=f.slice(start,start+ROWS);
-  const tb=document.getElementById('residentBody');
+  const tb = document.getElementById('residentBody');
+  if (!tb) return;
+  const f = getFiltered();
+  const total = f.length;
+  const start = (curPage - 1) * ROWS;
+  const page = f.slice(start, start + ROWS);
   if (page.length === 0) {
     bcSetTableEmpty('residentBody', viewingArchived ? 'No archived residents found.' : 'No residents found matching your filters.', 'census', 12);
   } else {
-    tb.innerHTML = page.map(r=>`
-      <tr data-id="${r.id}" data-key="${r.resNo}" data-res-no="${r.resNo}" class="${resBatchManager.has(r.id) ? 'row-selected' : ''}">
+    tb.innerHTML = page.map(r => `
+      <tr data-id="${r.id}" data-key="${r.resNo || ''}" data-res-no="${r.resNo || ''}" class="${resBatchManager?.has(r.id) ? 'row-selected' : ''}">
         <td style="width: 40px; text-align: center;">
-          <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${resBatchManager.has(r.id) ? 'checked' : ''} onchange="resBatchManager.toggle(${r.id}, this.checked)" />
+          <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${resBatchManager?.has(r.id) ? 'checked' : ''} onchange="resBatchManager?.toggle(${r.id}, this.checked)" />
         </td>
-        <td class="font-semibold text-forest-700">${r.resNo}</td>
-        <td class="font-semibold text-forest-800">${r.lastName}, ${r.firstName}</td>
-        <td class="text-xs">${r.dob}</td>
+        <td class="font-semibold text-forest-700">${r.resNo || '—'}</td>
+        <td class="font-semibold text-forest-800">${r.lastName || ''}, ${r.firstName || ''}</td>
+        <td class="text-xs">${r.dob || '—'}</td>
         <td class="text-center px-4 whitespace-nowrap">
           <div class="inline-flex items-center gap-1.5 min-w-[80px] text-left">
-            <span class="font-semibold font-mono text-sm w-5 text-right tabular-nums inline-block">${r.age}</span>
-            <span class="inline-flex items-center w-14">${typeof r.age==='number' && r.age>=60 ? '<span class="badge badge-ongoing text-[10px] font-bold tracking-wider px-1.5 py-0.5">SENIOR</span>' : ''}</span>
+            <span class="font-semibold font-mono text-sm w-5 text-right tabular-nums inline-block">${r.age ?? '—'}</span>
+            <span class="inline-flex items-center w-14">${typeof r.age === 'number' && r.age >= 60 ? '<span class="badge badge-ongoing text-[10px] font-bold tracking-wider px-1.5 py-0.5">SENIOR</span>' : ''}</span>
           </div>
         </td>
-        <td class="text-center px-4 whitespace-nowrap" style="text-align:center;"><span class="badge ${r.sex==='Male'?'badge-ongoing':'badge-pending'}">${r.sex ? r.sex.toUpperCase() : ''}</span></td>
-        <td class="text-xs">${r.civil}</td>
-        <td class="text-xs font-medium">${r.zone}</td>
-        <td class="text-xs text-forest-400">${r.address}</td>
-        <td class="text-xs font-mono">${r.household}</td>
-        <td><span class="badge ${r.status==='Active'?'badge-resolved':r.status==='Deceased'?'badge-not-complied':'badge-pending'}">${r.status}</span></td>
+        <td class="text-center px-4 whitespace-nowrap" style="text-align:center;"><span class="badge ${r.sex === 'Male' ? 'badge-ongoing' : 'badge-pending'}">${r.sex ? r.sex.toUpperCase() : '—'}</span></td>
+        <td class="text-xs">${r.civil || '—'}</td>
+        <td class="text-xs font-medium">${r.zone || '—'}</td>
+        <td class="text-xs text-forest-400">${r.address || '—'}</td>
+        <td class="text-xs font-mono">${r.household || '—'}</td>
+        <td><span class="badge ${r.status === 'Active' ? 'badge-resolved' : r.status === 'Deceased' ? 'badge-not-complied' : 'badge-pending'}">${r.status || '—'}</span></td>
         <td>
           <div class="row-actions">
             <button onclick="viewResident(${r.id})" class="icon-btn" title="View Details"><span data-icon="view" data-icon-size="16"></span></button>
             ${viewingArchived ? `
             <button onclick="restoreResident(${r.id})" class="icon-btn edit" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
-            <button onclick="permanentDeleteResident(${r.id}, '${r.lastName}, ${r.firstName}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+            <button onclick="permanentDeleteResident(${r.id}, '${r.lastName || ''}, ${r.firstName || ''}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
             ` : `
             <button onclick="editResident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
             <button onclick="archiveResident(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
@@ -446,11 +474,14 @@ function renderResidents(){
       </tr>`).join('');
   }
 
-  document.getElementById('resPagInfo').textContent=`Showing ${Math.min(start+1,total)||0}–${Math.min(start+ROWS,total)} of ${total}`;
-  const tp=Math.ceil(total/ROWS)||1;
-  bcRenderPagination(document.getElementById('resPagCtrl'), curPage, tp, (p) => { curPage = p; renderResidents(); });
-  resBatchManager.updateUI();
+  const pagInfo = document.getElementById('resPagInfo');
+  if (pagInfo) pagInfo.textContent = `Showing ${Math.min(start + 1, total) || 0}–${Math.min(start + ROWS, total)} of ${total}`;
+  const tp = Math.ceil(total / ROWS) || 1;
+  const pagCtrl = document.getElementById('resPagCtrl');
+  if (pagCtrl) bcRenderPagination(pagCtrl, curPage, tp, (p) => { curPage = p; renderResidents(); });
+  if (window.resBatchManager && typeof resBatchManager.updateUI === 'function') resBatchManager.updateUI();
 }
+
 
 async function openAddResident(){
   editId=null; document.getElementById('resModalTitle').textContent='Add Resident';
@@ -859,15 +890,22 @@ async function handleCensusFile(e) {
   }
 }
 
-(async function () {
-  const user = await requireAuth();
-  if (user) currentRole = user.role;
-  if (user && !roleCan(user.role, 'import_data')) {
-    const btn = document.getElementById('importBtn');
-    if (btn) btn.style.display = 'none';
+window.initCensus = async function () {
+  try {
+    const user = await requireAuth();
+    if (user) currentRole = user.role;
+    if (user && typeof roleCan === 'function' && !roleCan(user.role, 'import_data')) {
+      const btn = document.getElementById('importBtn');
+      if (btn) btn.style.display = 'none';
+    }
+    await loadResidents();
+  } catch (err) {
+    console.error('initCensus error:', err);
+    showToast('Could not load residents: ' + (err.message || err), 'error');
   }
-  try { await loadResidents(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
-})();
+};
+initCensus();
+
 </script>
 </body>
 </html>

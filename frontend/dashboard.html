@@ -498,18 +498,24 @@
       }
     }
 
-    (async function () {
-      const user = await requireAuth();
-      if (user) {
-        const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
-        const greeting = document.getElementById('dashboardGreeting');
-        if (greeting) {
-          greeting.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+    window.initDashboard = async function () {
+      try {
+        const user = await requireAuth();
+        if (user) {
+          const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
+          const greeting = document.getElementById('dashboardGreeting');
+          if (greeting) {
+            greeting.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+          }
         }
+        if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
+        await loadDashboardData();
+      } catch (initErr) {
+        console.error('initDashboard error:', initErr);
       }
-      refreshNotifBadge();
-      await loadDashboardData();
-    })();
+    };
+    initDashboard();
+
   </script>
 </body>
 </html>

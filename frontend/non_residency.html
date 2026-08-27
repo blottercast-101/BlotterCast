@@ -129,9 +129,9 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-6">
+    <div class="grid grid-cols-2 gap-6 items-stretch">
       <!-- Issuance Log -->
-      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden flex flex-col h-full">
         <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
           <div class="stat-icon-badge" data-icon="clearance" data-icon-size="17"></div>
           <h2 class="font-display text-lg text-forest-800">Issuance Log</h2>
@@ -139,17 +139,20 @@
         <div class="filter-bar">
           <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="14"></span><input type="text" id="nrSearch" placeholder="Search…" class="filter-input text-sm pl-8 w-full" oninput="nrPage=1;renderNrLog()"/></span>
         </div>
-        <table class="data-table">
-          <thead><tr>
-            <th>Control No.</th><th>Name</th><th>Purpose</th><th>Date Issued</th><th>OR No.</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="nonResidencyLog"></tbody>
-        </table>
-        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50">
+        <div class="flex-1 overflow-x-auto min-h-[320px] flex flex-col">
+          <table class="data-table w-full">
+            <thead><tr>
+              <th>Control No.</th><th>Name</th><th>Purpose</th><th>Date Issued</th><th>OR No.</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="nonResidencyLog"></tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50 mt-auto bg-white">
           <span class="text-sm text-forest-500" id="nrPaginationInfo"></span>
           <div class="flex gap-2" id="nrPaginationControls"></div>
         </div>
       </div>
+
 
       <!-- Certificate Preview -->
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
@@ -366,7 +369,7 @@ function renderNrLog(){
   const pageRows=rows.slice(start,start+NR_ROWS);
   const tbody = document.getElementById('nonResidencyLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('nonResidencyLog', 'No certificates issued yet matching your search.', 'non_residency', 6);
+    bcSetTableEmpty('nonResidencyLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'non_residency', 6);
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>
@@ -480,26 +483,32 @@ async function issueNonResidency(){
   }
 }
 
-(async function () {
-  await requireAuth();
+window.initNonResidency = async function () {
   try {
-    const cap = await BCApi.captainSignature();
-    const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
-    const capEl = document.getElementById('nr_captain');
-    if (capEl) capEl.textContent = captainName.toUpperCase();
-    const sigWrap = document.getElementById('nr_sigimg_wrap');
-    if (cap && cap.signaturePath && sigWrap) {
-      sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+    await requireAuth();
+    try {
+      const cap = await BCApi.captainSignature();
+      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+      const capEl = document.getElementById('nr_captain');
+      if (capEl) capEl.textContent = captainName.toUpperCase();
+      const sigWrap = document.getElementById('nr_sigimg_wrap');
+      if (cap && cap.signaturePath && sigWrap) {
+        sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+      }
+    } catch (e) {
+      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+      const capEl = document.getElementById('nr_captain');
+      if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
     }
-  } catch (e) {
-    const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
-    const capEl = document.getElementById('nr_captain');
-    if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
-  }
 
-  try { await loadNrResidentOptionsForPicker(); } catch (err) { showToast('Could not load Census records: ' + err.message, 'error'); }
-  try { await loadNrLog(); } catch (err) { showToast('Could not load non-residency log: ' + err.message, 'error'); }
-})();
+    try { await loadNrResidentOptionsForPicker(); } catch (err) { showToast('Could not load Census records: ' + (err.message || err), 'error'); }
+    try { await loadNrLog(); } catch (err) { showToast('Could not load non-residency log: ' + (err.message || err), 'error'); }
+  } catch (initErr) {
+    console.error('initNonResidency error:', initErr);
+  }
+};
+initNonResidency();
+
 </script>
 <script src="public/js/certificates.js"></script>
 </body>

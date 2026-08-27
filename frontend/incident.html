@@ -2138,23 +2138,29 @@
     }
   }, true);
 
-  (async function () {
-    await requireAuth();
+  window.initIncidents = async function () {
     try {
-      await Promise.all([
-        loadIncidents(),
-        loadZoneOptions(),
-        loadCensusResidentsForIncidentPicker(),
-        ensurePickerBoundaryLoaded()
-      ]);
-    } catch (err) {
-      showToast('Could not load records: ' + err.message, 'error');
+      await requireAuth();
+      try {
+        await Promise.all([
+          loadIncidents(),
+          loadZoneOptions(),
+          loadCensusResidentsForIncidentPicker(),
+          ensurePickerBoundaryLoaded()
+        ]);
+      } catch (err) {
+        showToast('Could not load records: ' + (err.message || err), 'error');
+      }
+      if (new URLSearchParams(location.search).get('new') === '1') {
+        openAddIncident();
+        history.replaceState(null, '', location.pathname);
+      }
+    } catch (initErr) {
+      console.error('initIncidents error:', initErr);
     }
-    if (new URLSearchParams(location.search).get('new') === '1') {
-      openAddIncident();
-      history.replaceState(null, '', location.pathname);
-    }
-  })();
+  };
+  initIncidents();
+
 </script>
 </body>
 </html>

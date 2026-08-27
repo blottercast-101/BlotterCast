@@ -1210,18 +1210,28 @@
     }
   }
 
-  (async function () {
-    await requireAuth();
-    try { initBlotterDragAndDrop(); } catch (err) {}
-    try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + err.message, 'error'); }
-    try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + err.message, 'error'); }
-    await checkElevationPrefill();
-    if (new URLSearchParams(location.search).get('new') === '1') {
-      history.replaceState(null, '', location.pathname);
-      await bcAlert('All official Blotter cases originate from Incident Reports. Please create or select an Incident Report and click "Elevate to Blotter".', { title: 'Workflow Notice', okLabel: 'Go to Incident Reports' });
-      window.location.href = 'incident.html';
+  window.initBlotter = async function () {
+    try {
+      await requireAuth();
+      try { initBlotterDragAndDrop(); } catch (err) {}
+      try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
+      try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
+      await checkElevationPrefill();
+      if (new URLSearchParams(location.search).get('new') === '1') {
+        history.replaceState(null, '', location.pathname);
+        await bcAlert('All official Blotter cases originate from Incident Reports. Please create or select an Incident Report and click "Elevate to Blotter".', { title: 'Workflow Notice', okLabel: 'Go to Incident Reports' });
+        if (typeof bcNavigate === 'function') {
+          bcNavigate('incident.html');
+        } else {
+          window.location.href = 'incident.html';
+        }
+      }
+    } catch (initErr) {
+      console.error('initBlotter error:', initErr);
     }
-  })();
+  };
+  initBlotter();
+
 </script>
 </body>
 </html>
