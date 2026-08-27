@@ -195,14 +195,14 @@ def train_occurrence_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], RandomF
     prec = precision_score(y_test, y_pred, zero_division=0)
     rec = recall_score(y_test, y_pred, zero_division=0)
     f1 = f1_score(y_test, y_pred, zero_division=0)
-    auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else 0.5
+    auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else None
 
     metrics = {
         'accuracy': round(float(acc), 4),
         'precision': round(float(prec), 4),
         'recall': round(float(rec), 4),
         'f1': round(float(f1), 4),
-        'auc': round(float(auc), 4),
+        'auc': round(float(auc), 4) if auc is not None else None,
         'threshold': round(float(best_thr), 2),
         'train_samples': int(len(X_train)),
         'test_samples': int(len(X_test)),
@@ -217,21 +217,23 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     Calculates Weighted F1-Score:
       Weighted F1 accounts for class imbalance across incident categories.
     """
+    empty_metrics = {
+        'accuracy': None,
+        'macroF1': None,
+        'macro_f1': None,
+        'weightedF1': None,
+        'f1_score': None,
+        'f1': None,
+        'incident_type_f1': None,
+        'macroPrecision': None,
+        'macroRecall': None,
+        'nTest': 0,
+    }
+
+    if raw_df is None or raw_df.empty or 'zone' not in raw_df.columns or 'category' not in raw_df.columns:
+        return empty_metrics, GradientBoostingClassifier(), []
+
     df = raw_df[raw_df['zone'].isin(OFFICIAL_ZONES)].copy()
-    if df.empty or 'category' not in df.columns:
-        metrics = {
-            'accuracy': 0.0,
-            'macroF1': 0.0,
-            'macro_f1': 0.0,
-            'weightedF1': 0.0,
-            'f1_score': 0.0,
-            'f1': 0.0,
-            'incident_type_f1': 0.0,
-            'macroPrecision': 0.0,
-            'macroRecall': 0.0,
-            'nTest': 0,
-        }
-        return metrics, GradientBoostingClassifier(), []
 
     df['date'] = pd.to_datetime(df['date'])
     df['dow'] = df['date'].dt.dayofweek
@@ -240,37 +242,14 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     # Filter out non-incident case classifications / legacy dispute markers
     df = df[~df['category'].astype(str).str.lower().str.strip().isin(EXCLUDED_CATEGORIES)].sort_values('date').reset_index(drop=True)
 
-    if df.empty:
-        metrics = {
-            'accuracy': 0.0, 'macroF1': 0.0, 'macro_f1': 0.0, 'weightedF1': 0.0,
-            'f1_score': 0.0, 'f1': 0.0, 'incident_type_f1': 0.0,
-            'macroPrecision': 0.0, 'macroRecall': 0.0, 'nTest': 0,
-        }
-        return metrics, GradientBoostingClassifier(), []
+    if df.empty or len(df) < 5 or len(df['category'].unique()) < 2:
+        return empty_metrics, GradientBoostingClassifier(), []
 
     X = pd.get_dummies(df[['zone', 'dow', 'tbin']].astype(str))
     y = df['category']
-
     n = len(df)
-    if n < 5 or len(y.unique()) < 2:
-        gb_model = GradientBoostingClassifier(n_estimators=50, max_depth=3, random_state=42)
-        if len(y.unique()) >= 2:
-            gb_model.fit(X, y)
-        metrics = {
-            'accuracy': 1.0 if len(y.unique()) == 1 else 0.0,
-            'macroF1': 1.0 if len(y.unique()) == 1 else 0.0,
-            'macro_f1': 100.0 if len(y.unique()) == 1 else 0.0,
-            'weightedF1': 1.0 if len(y.unique()) == 1 else 0.0,
-            'f1_score': 1.0 if len(y.unique()) == 1 else 0.0,
-            'f1': 1.0 if len(y.unique()) == 1 else 0.0,
-            'incident_type_f1': 100.0 if len(y.unique()) == 1 else 0.0,
-            'macroPrecision': 1.0 if len(y.unique()) == 1 else 0.0,
-            'macroRecall': 1.0 if len(y.unique()) == 1 else 0.0,
-            'nTest': n,
-        }
-        return metrics, gb_model, list(X.columns)
 
-    # Use train_test_split for multi-class representation on small N
+    # Use train_test_split for multi-class representation
     try:
         from sklearn.model_selection import train_test_split
         # Check if min class count allows stratification
@@ -286,8 +265,7 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
 
     # Guarantee at least 2 classes in training set
     if len(y_train.unique()) < 2:
-        X_train, y_train = X, y
-        X_test, y_test = X, y
+        return empty_metrics, GradientBoostingClassifier(), []
 
     gb_model = GradientBoostingClassifier(
         n_estimators=100,
@@ -297,7 +275,7 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     )
     gb_model.fit(X_train, y_train)
 
-    # Predictions & robust evaluation
+    # Predictions & evaluation on real holdout test data
     try:
         y_pred = gb_model.predict(X_test)
         f1_val = f1_score(y_test, y_pred, average='weighted', zero_division=0) * 100
@@ -307,7 +285,7 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
         if (f1_val == 0.0 or f1_val is None or np.isnan(f1_val)) and len(y_test) > 0:
             f1_val = acc_val
 
-        # Fallback to training set score if test split is too small and completely unrepresented
+        # Fallback to training set score only if test split is too small
         if (f1_val == 0.0 or f1_val is None or np.isnan(f1_val)) and len(y_train) > 0:
             y_pred_tr = gb_model.predict(X_train)
             f1_val = f1_score(y_train, y_pred_tr, average='weighted', zero_division=0) * 100
@@ -350,12 +328,27 @@ def train_hotspot_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBo
     Task 3: Hotspot Spatial Risk Classification using Gradient Boosting.
     Evaluates spatial risk classification accuracy on holdout test set.
     """
+    empty_metrics = {
+        'accuracy': None,
+        'f1': None,
+        'auc': None,
+        'test_samples': 0,
+    }
+    if panel.empty:
+        return empty_metrics, GradientBoostingClassifier(), []
+
     X, y = make_design_matrix(panel)
     n = len(X)
+    if n < 5 or len(np.unique(y)) < 2:
+        return empty_metrics, GradientBoostingClassifier(), []
+
     split_idx = int(n * 0.8)
 
     X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
     y_train, y_test = y[:split_idx], y[split_idx:]
+
+    if len(np.unique(y_train)) < 2:
+        return empty_metrics, GradientBoostingClassifier(), []
 
     gb_model = GradientBoostingClassifier(
         n_estimators=100,
@@ -371,12 +364,12 @@ def train_hotspot_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBo
     # Dynamic accuracy calculation for hotspot classification
     acc = accuracy_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred, zero_division=0)
-    auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else 0.5
+    auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else None
 
     metrics = {
         'accuracy': round(float(acc), 4),
         'f1': round(float(f1), 4),
-        'auc': round(float(auc), 4),
+        'auc': round(float(auc), 4) if auc is not None else None,
         'test_samples': int(len(X_test)),
     }
     return metrics, gb_model, list(X.columns)
@@ -385,6 +378,9 @@ def train_hotspot_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBo
 def build_category_probability_cache(type_model: GradientBoostingClassifier, type_cols: List[str]) -> Dict[Tuple[str, int], Dict[str, float]]:
     """Precomputes multi-class category distribution vectors across all (zone, day_of_week) combinations."""
     cache = {}
+    if not hasattr(type_model, 'classes_') or len(type_model.classes_) == 0 or not type_cols:
+        return cache
+
     for zone in OFFICIAL_ZONES:
         for dow in range(7):
             X = pd.DataFrame(0, index=range(len(TIME_BINS)), columns=type_cols, dtype=float)
@@ -392,8 +388,11 @@ def build_category_probability_cache(type_model: GradientBoostingClassifier, typ
                 for col in (f'zone_{zone}', f'dow_{dow}', f'tbin_{tbin}'):
                     if col in X.columns:
                         X.loc[i, col] = 1.0
-            proba = type_model.predict_proba(X).mean(axis=0)
-            cache[(zone, dow)] = dict(zip(type_model.classes_, proba))
+            try:
+                proba = type_model.predict_proba(X).mean(axis=0)
+                cache[(zone, dow)] = dict(zip(type_model.classes_, proba))
+            except Exception:
+                cache[(zone, dow)] = {}
     return cache
 
 
@@ -411,6 +410,9 @@ def compute_zone_forecasts(
     Computes dynamic 7-day and 14-day forecasts for each of the 7 official zones.
     Calculates expected incident counts: Sum_{d=1}^H y_hat_{zone, d}
     """
+    if panel.empty or hotspot_model is None or not hasattr(hotspot_model, 'classes_') or len(hotspot_model.classes_) == 0:
+        return []
+
     latest_panel = panel.sort_values('date').groupby('zone').tail(1).set_index('zone')
     zone_forecasts = []
     current_dow = datetime.now().weekday()
@@ -451,7 +453,7 @@ def compute_zone_forecasts(
             daily_probs.append(round(p, 4))
 
             # Distribute probability mass across incident categories
-            cat_probs = cat_cache.get((zone, dow), {})
+            cat_probs = cat_cache.get((zone, dow), {}) if cat_cache else {}
             for c in CATEGORIES:
                 cat_series[c].append(round(float(p * cat_probs.get(c, 0.0)), 4))
 
@@ -468,7 +470,7 @@ def compute_zone_forecasts(
         exp_14d = float(np.sum(daily_probs))
 
         # Past historical incidents for this zone
-        sub = raw_df[raw_df['zone'] == zone]
+        sub = raw_df[raw_df['zone'] == zone] if not raw_df.empty else pd.DataFrame()
         if not sub.empty:
             df_date = pd.to_datetime(raw_df['date'])
             end = df_date.max()
@@ -497,7 +499,7 @@ def compute_zone_forecasts(
             'categorySeries': cat_series,
             'forecastDates': [(last_date + timedelta(days=s)).strftime('%Y-%m-%d') for s in range(1, horizon + 1)],
             'topCategory': top_cat,
-            'topCategoryProb': round(float(top_p), 4),
+            'topCategoryProb': round(float(top_p), 4) if top_p is not None else None,
             'peakWindow': peak_win,
             'trend': trend,
         })
@@ -509,6 +511,8 @@ def compute_zone_forecasts(
 
 def compute_peak_window(df: pd.DataFrame, zone: str) -> str:
     """Finds the 4-hour window with highest historical incident concentration."""
+    if df.empty or 'zone' not in df.columns or 'hour' not in df.columns:
+        return '8PM–12AM'
     sub = df[df['zone'] == zone]
     if sub.empty:
         return '8PM–12AM'
@@ -525,6 +529,8 @@ def compute_peak_window(df: pd.DataFrame, zone: str) -> str:
 
 def compute_14d_trend(df: pd.DataFrame, zone: str, exp_14d: float = None) -> str:
     """Evaluates 14-day velocity vs previous 14-day period or expected forecast."""
+    if df.empty or 'zone' not in df.columns or 'date' not in df.columns:
+        return '→'
     sub = df[df['zone'] == zone]
     if sub.empty:
         return '→'
@@ -555,19 +561,24 @@ def compute_14d_trend(df: pd.DataFrame, zone: str, exp_14d: float = None) -> str
 
 def predict_top_category(model: GradientBoostingClassifier, cols: List[str], zone: str, dow: int, hour: int) -> Tuple[str, float]:
     """Evaluates top incident type and probability from trained multi-class model."""
-    if not hasattr(model, 'classes_') or len(model.classes_) == 0:
-        return 'Physical Assault', 0.35
+    if not hasattr(model, 'classes_') or len(model.classes_) == 0 or not cols:
+        return None, None
     tbin = get_time_bin(hour)
     row = pd.DataFrame([{f'zone_{zone}': 1, f'dow_{dow}': 1, f'tbin_{tbin}': 1}])
     row = row.reindex(columns=cols, fill_value=0)
-    proba = model.predict_proba(row)[0]
+    try:
+        proba = model.predict_proba(row)[0]
+    except Exception:
+        return None, None
     
-    best_cat, best_p = 'Physical Assault', -1.0
+    best_cat, best_p = None, -1.0
     for cls_name, p in zip(model.classes_, proba):
         if str(cls_name).lower().strip() not in EXCLUDED_CATEGORIES:
             if float(p) > best_p:
                 best_cat, best_p = str(cls_name), float(p)
-    if best_p >= 0:
+    if best_cat is not None and best_p >= 0:
         return best_cat, round(best_p, 4)
-    idx = int(np.argmax(proba))
-    return str(model.classes_[idx]), round(float(proba[idx]), 4)
+    if len(proba) > 0:
+        idx = int(np.argmax(proba))
+        return str(model.classes_[idx]), round(float(proba[idx]), 4)
+    return None, None

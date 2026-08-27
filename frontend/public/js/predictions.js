@@ -72,9 +72,10 @@ function hideRetrainModal() {
  * @returns {string} Formatted label string (e.g. "Model trained: Aug 26, 2026, 11:49 PM · 79 records")
  */
 function formatModelTrainedDate(isoString, recordCount) {
-  if (!isoString) return 'Not trained yet';
+  const count = (recordCount !== undefined && recordCount !== null) ? recordCount : 0;
+  if (!isoString || count < 10) return count > 0 ? `Not trained yet · ${count} records` : 'Not trained yet · 0 records';
   const date = new Date(isoString);
-  if (isNaN(date.getTime())) return 'Not trained yet';
+  if (isNaN(date.getTime())) return `Not trained yet · ${count} records`;
 
   const formattedDate = date.toLocaleDateString('en-US', {
     month: 'short',
@@ -88,7 +89,6 @@ function formatModelTrainedDate(isoString, recordCount) {
     hour12: true
   });
 
-  const count = (recordCount !== undefined && recordCount !== null) ? recordCount : 0;
   return `Model trained: ${formattedDate}, ${formattedTime} · ${count} records`;
 }
 

@@ -120,15 +120,60 @@ def _save_models_to_disk():
         print(f"[ML Singleton] Failed to persist models to disk: {e}")
 
 
+def clear_models_and_cache():
+    """Atomically clears all in-memory ML models and cached responses."""
+    ml_models.update({
+        "occurrence": None,
+        "occurrence_cols": None,
+        "occurrence_threshold": 0.5,
+        "occurrence_metrics": None,
+        "hotspot": None,
+        "hotspot_cols": None,
+        "hotspot_metrics": None,
+        "type": None,
+        "type_cols": None,
+        "type_metrics": None,
+        "type_cat_cache": {},
+        "cached_latest": None,
+        "trained_at": None,
+        "record_count": 0,
+    })
+    joblib_path = os.path.join(MODELS_DIR, "incident_models.joblib")
+    if os.path.isfile(joblib_path):
+        try:
+            os.remove(joblib_path)
+        except Exception:
+            pass
+
+
+def get_active_incident_count() -> int:
+    """Returns the live count of active, non-archived incident records."""
+    try:
+        with db_engine.connect() as conn:
+            cnt_res = conn.execute(text("SELECT COUNT(*) FROM incidents WHERE archived = FALSE OR archived IS NULL"))
+            return int(cnt_res.scalar() or 0)
+    except Exception as e:
+        print(f"[ML Service] Error querying active incident count: {e}")
+        return 0
+
+
 def preload_models_and_cache():
-    """Preload trained models and cached forecast ONCE on startup."""
+    """Preload trained models and cached forecast ONCE on startup, verifying live database records."""
+    live_count = get_active_incident_count()
+    if live_count < 10:
+        clear_models_and_cache()
+        print(f"[ML Singleton] Live database incident count is {live_count} (< 10 threshold). Initialized empty state.")
+        return
+
     joblib_path = os.path.join(MODELS_DIR, "incident_models.joblib")
     if os.path.isfile(joblib_path):
         try:
             data = joblib.load(joblib_path)
-            ml_models.update(data)
-            print(f"[ML Singleton] Preloaded warm models from disk (trained at {ml_models.get('trained_at')})")
-            return
+            if data.get("record_count", 0) >= 10:
+                ml_models.update(data)
+                ml_models["record_count"] = live_count
+                print(f"[ML Singleton] Preloaded warm models from disk (trained at {ml_models.get('trained_at')})")
+                return
         except Exception as e:
             print(f"[ML Singleton] Could not load saved joblib models: {e}")
 
@@ -137,7 +182,7 @@ def preload_models_and_cache():
         with db_engine.connect() as conn:
             result = conn.execute(text("SELECT * FROM ml_runs ORDER BY id DESC LIMIT 1"))
             row = result.mappings().first()
-            if row:
+            if row and row['record_count'] >= 10:
                 trained_at = row['trained_at']
                 trained_at_str = (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at)
                 occ_m = _json.loads(row['occurrence_metrics_json'])
@@ -147,7 +192,8 @@ def preload_models_and_cache():
 
                 ml_models["cached_latest"] = {
                     'ok': True,
-                    'recordCount': row['record_count'],
+                    'recordCount': live_count,
+                    'record_count': live_count,
                     'occurrence': {'metrics': occ_m, 'active': row['active_occurrence_model']},
                     'type': {'metrics': type_m, 'active': row['active_type_model']},
                     'hotspot': {'metrics': hot_m, 'active': row['active_hotspot_model']},
@@ -155,7 +201,7 @@ def preload_models_and_cache():
                     'trainedAt': trained_at_str,
                 }
                 ml_models["trained_at"] = trained_at_str
-                ml_models["record_count"] = row['record_count']
+                ml_models["record_count"] = live_count
                 print("[ML Singleton] Preloaded latest run from database into in-memory cache.")
     except Exception as e:
         print(f"[ML Singleton] Startup DB preloading skipped: {e}")
@@ -195,22 +241,30 @@ def load_incidents() -> pd.DataFrame:
 
 @app.route('/', methods=['GET', 'HEAD'])
 def root_health():
+    is_warm = (
+        ml_models['occurrence'] is not None or
+        (ml_models['cached_latest'] is not None and ml_models.get('record_count', 0) >= 10)
+    )
     return jsonify({
         'ok': True,
         'status': 'ok',
         'service': 'blottercast-ml',
-        'isWarm': ml_models['occurrence'] is not None or ml_models['cached_latest'] is not None,
+        'isWarm': is_warm,
         'time': datetime.now().isoformat(),
     }), 200
 
 
 @app.route('/health', methods=['GET', 'HEAD'])
 def health():
+    is_warm = (
+        ml_models['occurrence'] is not None or
+        (ml_models['cached_latest'] is not None and ml_models.get('record_count', 0) >= 10)
+    )
     return jsonify({
         'ok': True,
         'status': 'healthy',
         'service': 'blottercast-ml',
-        'isWarm': ml_models['occurrence'] is not None or ml_models['cached_latest'] is not None,
+        'isWarm': is_warm,
         'time': datetime.now().isoformat(),
     }), 200
 
@@ -220,21 +274,26 @@ def health():
 def train():
     try:
         df = load_incidents()
-        if len(df) < 10:
+        rec_count = int(len(df))
+        if rec_count < 10:
+            clear_models_and_cache()
             return jsonify({
                 'ok': False,
-                'status': 'warning',
-                'message': 'Minimum 10 incident records required for training.',
-                'recordCount': int(len(df)),
+                'status': 'insufficient_data',
+                'record_count': rec_count,
+                'recordCount': rec_count,
+                'message': 'Not enough incident records to generate predictions.',
             }), 200
 
         panel = build_spatiotemporal_panel(df)
         if panel.empty or len(panel) < 10:
+            clear_models_and_cache()
             return jsonify({
                 'ok': False,
-                'status': 'warning',
-                'message': 'Insufficient temporal span across zones for panel generation.',
-                'recordCount': int(len(df)),
+                'status': 'insufficient_data',
+                'record_count': rec_count,
+                'recordCount': rec_count,
+                'message': 'Not enough incident records to generate predictions.',
             }), 200
 
         # 1. Task 1: Incident Occurrence (Random Forest) -> Evaluates Accuracy: (TP + TN) / (TP + TN + FP + FN)
@@ -268,19 +327,22 @@ def train():
         type_results = {'gradient_boosting': type_metrics}
         hot_results = {'gradient_boosting': hot_metrics}
 
-        type_f1_score = type_metrics.get('incident_type_f1') or type_metrics.get('macro_f1') or round(float(type_metrics.get('macroF1', 0.0) * 100), 1)
+        type_f1_score = type_metrics.get('incident_type_f1') or type_metrics.get('macro_f1')
+        if type_f1_score is None and type_metrics.get('macroF1') is not None:
+            type_f1_score = round(float(type_metrics.get('macroF1', 0.0) * 100), 1)
 
         response_payload = {
             'ok': True,
             'status': 'success',
-            'recordCount': int(len(df)),
-            'records_evaluated': int(len(df)),
+            'recordCount': rec_count,
+            'record_count': rec_count,
+            'records_evaluated': rec_count,
             'metrics': {
                 'incident_type_f1': type_f1_score,
                 'macro_f1': type_f1_score,
                 'f1_score': type_f1_score,
-                'occurrence_accuracy': occ_metrics.get('accuracy', 0.0),
-                'hotspot_accuracy': hot_metrics.get('accuracy', 0.0),
+                'occurrence_accuracy': occ_metrics.get('accuracy'),
+                'hotspot_accuracy': hot_metrics.get('accuracy'),
             },
             'incident_type_f1': type_f1_score,
             'macro_f1': type_f1_score,
@@ -288,31 +350,31 @@ def train():
                 'metrics': occ_results,
                 'active': 'random_forest',
                 'meta': {
-                    'accuracy': occ_metrics['accuracy'],
-                    'f1': occ_metrics['f1'],
-                    'auc': occ_metrics['auc'],
-                    'bestThreshold': occ_metrics['threshold'],
+                    'accuracy': occ_metrics.get('accuracy'),
+                    'f1': occ_metrics.get('f1'),
+                    'auc': occ_metrics.get('auc'),
+                    'bestThreshold': occ_metrics.get('threshold'),
                 }
             },
             'type': {
                 'metrics': type_results,
                 'active': 'gradient_boosting',
                 'meta': {
-                    'macroF1': type_metrics.get('macroF1', 0.0),
+                    'macroF1': type_metrics.get('macroF1'),
                     'macro_f1': type_f1_score,
-                    'weightedF1': type_metrics.get('weightedF1', 0.0),
-                    'f1': type_metrics.get('f1', 0.0),
-                    'f1_score': type_metrics.get('f1_score', 0.0),
+                    'weightedF1': type_metrics.get('weightedF1'),
+                    'f1': type_metrics.get('f1'),
+                    'f1_score': type_metrics.get('f1_score'),
                     'incident_type_f1': type_f1_score,
-                    'accuracy': type_metrics.get('accuracy', 0.0),
+                    'accuracy': type_metrics.get('accuracy'),
                 }
             },
             'hotspot': {
                 'metrics': hot_results,
                 'active': 'gradient_boosting',
                 'meta': {
-                    'accuracy': hot_metrics['accuracy'],
-                    'f1': hot_metrics['f1'],
+                    'accuracy': hot_metrics.get('accuracy'),
+                    'f1': hot_metrics.get('f1'),
                 }
             },
             'zoneRisk': zone_rows,
@@ -322,7 +384,7 @@ def train():
         # Update in-memory warm singleton atomically
         ml_models["occurrence"] = occ_model
         ml_models["occurrence_cols"] = occ_cols
-        ml_models["occurrence_threshold"] = occ_metrics['threshold']
+        ml_models["occurrence_threshold"] = occ_metrics.get('threshold', 0.5)
         ml_models["occurrence_metrics"] = occ_metrics
         ml_models["hotspot"] = hot_model
         ml_models["hotspot_cols"] = hot_cols
@@ -333,7 +395,7 @@ def train():
         ml_models["type_cat_cache"] = cat_cache
         ml_models["cached_latest"] = response_payload
         ml_models["trained_at"] = trained_at_iso
-        ml_models["record_count"] = int(len(df))
+        ml_models["record_count"] = rec_count
 
         # Persist serialized model artifacts to disk
         _save_models_to_disk()
@@ -347,11 +409,11 @@ def train():
                            (trained_at, record_count, active_occurrence_model, active_type_model, active_hotspot_model,
                             occurrence_metrics_json, type_metrics_json, hotspot_metrics_json, hotspots_json)
                            VALUES (:trained_at, :record_count, :active_occurrence, :active_type, :active_hotspot,
-                                   :occ_json, :type_json, :hot_json, :hotspots_json)"""
+                                    :occ_json, :type_json, :hot_json, :hotspots_json)"""
                     ),
                     {
                         "trained_at": trained_at,
-                        "record_count": len(df),
+                        "record_count": rec_count,
                         "active_occurrence": "random_forest",
                         "active_type": "gradient_boosting",
                         "active_hotspot": "gradient_boosting",
@@ -381,15 +443,29 @@ def train():
 @app.route('/api/heatmap/risk-zones', methods=['GET'])
 def latest():
     """Returns the evaluated model insights and forecasts directly from memory or database fallback."""
-    if ml_models["cached_latest"] is not None:
-        return jsonify(ml_models["cached_latest"]), 200
+    live_count = get_active_incident_count()
+    if live_count < 10:
+        clear_models_and_cache()
+        return jsonify({
+            'ok': False,
+            'status': 'insufficient_data',
+            'record_count': live_count,
+            'recordCount': live_count,
+            'message': 'Not enough incident records to generate predictions.',
+        }), 200
+
+    if ml_models["cached_latest"] is not None and ml_models.get("record_count", 0) >= 10:
+        payload = dict(ml_models["cached_latest"])
+        payload['record_count'] = live_count
+        payload['recordCount'] = live_count
+        return jsonify(payload), 200
 
     # Fallback to database lookup if memory is uninitialized
     try:
         with db_engine.connect() as conn:
             result = conn.execute(text("SELECT * FROM ml_runs ORDER BY id DESC LIMIT 1"))
             row = result.mappings().first()
-        if row:
+        if row and row['record_count'] >= 10:
             trained_at = row['trained_at']
             trained_at_str = (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at)
             type_m = _json.loads(row['type_metrics_json'])
@@ -398,14 +474,16 @@ def latest():
                 type_gb.get('incident_type_f1') or
                 type_gb.get('macro_f1') or
                 type_m.get('incident_type_f1') or
-                type_m.get('macro_f1') or
-                round(float((type_gb.get('macroF1') or type_m.get('macroF1') or 0.0) * 100), 1)
+                type_m.get('macro_f1')
             )
+            if type_f1_score is None and (type_gb.get('macroF1') is not None or type_m.get('macroF1') is not None):
+                type_f1_score = round(float((type_gb.get('macroF1') or type_m.get('macroF1') or 0.0) * 100), 1)
 
             cached = {
                 'ok': True,
                 'status': 'success',
-                'recordCount': row['record_count'],
+                'recordCount': live_count,
+                'record_count': live_count,
                 'metrics': {
                     'incident_type_f1': type_f1_score,
                     'macro_f1': type_f1_score,
@@ -420,8 +498,8 @@ def latest():
                     'meta': {
                         'incident_type_f1': type_f1_score,
                         'macro_f1': type_f1_score,
-                        'macroF1': type_gb.get('macroF1', 0.0),
-                        'accuracy': type_gb.get('accuracy', 0.0),
+                        'macroF1': type_gb.get('macroF1'),
+                        'accuracy': type_gb.get('accuracy'),
                     }
                 },
                 'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
@@ -430,16 +508,18 @@ def latest():
             }
             ml_models["cached_latest"] = cached
             ml_models["trained_at"] = trained_at_str
-            ml_models["record_count"] = row['record_count']
+            ml_models["record_count"] = live_count
             return jsonify(cached), 200
     except Exception as e:
         print(f"[ML Service] DB fallback read error: {e}")
 
     return jsonify({
         'ok': False,
-        'status': 'not_initialized',
-        'message': 'No trained models available yet. Retrain model to initialize.'
-    }), 404
+        'status': 'insufficient_data',
+        'record_count': live_count,
+        'recordCount': live_count,
+        'message': 'Not enough incident records to generate predictions.'
+    }), 200
 
 
 @app.route('/predict', methods=['POST'])
@@ -447,6 +527,16 @@ def latest():
 def predict_realtime():
     """Evaluates real-time incident category and zone occurrence probability against warm in-memory models."""
     try:
+        live_count = get_active_incident_count()
+        if live_count < 10 or ml_models["type"] is None or ml_models["hotspot"] is None:
+            return jsonify({
+                'ok': False,
+                'status': 'insufficient_data',
+                'record_count': live_count,
+                'recordCount': live_count,
+                'message': 'Not enough incident records to generate predictions.'
+            }), 200
+
         data = request.get_json(silent=True) or {}
         zone = data.get("zone", "Zone 1")
         if zone not in ZONES:
@@ -463,19 +553,21 @@ def predict_realtime():
         dow = pred_date.weekday()
 
         # Predict incident category using warm Gradient Boosting model
-        if ml_models["type"] is not None and ml_models["type_cols"] is not None:
-            try:
-                top_cat, top_p = predict_top_category(ml_models["type"], ml_models["type_cols"], zone, dow, hour)
-            except Exception:
-                top_cat, top_p = "Physical Assault", 0.35
-        else:
-            top_cat, top_p = "Physical Assault", 0.35
+        top_cat, top_p = predict_top_category(ml_models["type"], ml_models["type_cols"], zone, dow, hour)
+        if top_cat is None:
+            return jsonify({
+                'ok': False,
+                'status': 'insufficient_data',
+                'record_count': live_count,
+                'recordCount': live_count,
+                'message': 'Not enough incident records to generate predictions.'
+            }), 200
 
         # Retrieve precomputed hotspot / occurrence forecast from memory
         zone_risk_list = (ml_models.get("cached_latest") or {}).get("zoneRisk", [])
         zone_info = next((z for z in zone_risk_list if z.get("zone") == zone), None)
 
-        mean_prob = zone_info.get("meanDailyProb", 0.15) if zone_info else 0.15
+        mean_prob = zone_info.get("meanDailyProb", 0.0) if zone_info else 0.0
         risk_level = "High" if mean_prob >= 0.20 else "Moderate" if mean_prob >= 0.13 else "Low"
 
         return jsonify({
@@ -485,13 +577,13 @@ def predict_realtime():
             'date': pred_date.strftime("%Y-%m-%d"),
             'hour': hour,
             'predictedCategory': top_cat,
-            'categoryProbability': round(float(top_p), 4),
+            'categoryProbability': round(float(top_p), 4) if top_p is not None else None,
             'meanDailyOccurrenceProb': round(float(mean_prob), 4),
             'riskLevel': risk_level,
             'peakWindow': zone_info.get("peakWindow", "8PM–12AM") if zone_info else "8PM–12AM",
             'trend': zone_info.get("trend", "→") if zone_info else "→",
-            'expectedCount7d': zone_info.get("expectedCount7d", 1.0) if zone_info else 1.0,
-            'expectedCount14d': zone_info.get("expectedCount14d", 2.0) if zone_info else 2.0,
+            'expectedCount7d': zone_info.get("expectedCount7d", 0.0) if zone_info else 0.0,
+            'expectedCount14d': zone_info.get("expectedCount14d", 0.0) if zone_info else 0.0,
         }), 200
     except Exception as e:
         return jsonify({

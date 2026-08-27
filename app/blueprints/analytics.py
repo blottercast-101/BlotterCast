@@ -108,12 +108,12 @@ def _public_stats():
         ml_accuracy = None
         last_model_train = None
         risk_alert = None
-        if run:
+        if run and run.record_count and run.record_count >= 10 and incident_count >= 10:
             last_model_train = (run.trained_at.isoformat() + "Z") if run.trained_at else None
             try:
                 occ_metrics = json.loads(run.occurrence_metrics_json)
                 active = occ_metrics.get(run.active_occurrence_model) or {}
-                if "accuracy" in active:
+                if "accuracy" in active and active["accuracy"] is not None:
                     ml_accuracy = round(active["accuracy"] * 100)
             except (ValueError, TypeError, KeyError):
                 ml_accuracy = None
@@ -310,7 +310,7 @@ def _zone_density():
         # 3. Retrieve latest ML model run for predicted occurrence probabilities
         run = MlRun.query.order_by(MlRun.id.desc()).first()
         ml_zone_data = {}
-        if run:
+        if run and run.record_count and run.record_count >= 10 and total_incidents >= 10:
             try:
                 hotspots = json.loads(run.hotspots_json)
                 for item in hotspots:
@@ -330,7 +330,7 @@ def _zone_density():
             ml_item = ml_zone_data.get(zone_id, {})
             pred_p = ml_item.get("meanDailyProb")
             if pred_p is None:
-                pred_p = round((count / max(1, total_incidents)) * 0.45, 4) if total_incidents > 0 else 0.10
+                pred_p = round((count / max(1, total_incidents)) * 0.45, 4) if total_incidents > 0 else 0.0
 
             exp_7d = ml_item.get("expectedCount7d", round(pred_p * 7, 2))
             exp_14d = ml_item.get("expectedCount14d", round(pred_p * 14, 2))
@@ -361,8 +361,8 @@ def _zone_density():
                 "expectedCount14d": exp_14d,
                 "densityScore": density_score,
                 "tier": tier,
-                "topCategory": ml_item.get("topCategory", "Physical Assault"),
-                "peakWindow": ml_item.get("peakWindow", "8PM–12AM"),
+                "topCategory": ml_item.get("topCategory", "N/A" if total_incidents == 0 else "Physical Assault"),
+                "peakWindow": ml_item.get("peakWindow", "N/A" if total_incidents == 0 else "8PM–12AM"),
                 "trend": ml_item.get("trend", "→"),
             })
 
