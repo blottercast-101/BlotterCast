@@ -14,7 +14,7 @@ PERMISSIONS = {
     "view_records":     {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
     "add_blotter":       {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
     "edit_records":      {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
-    "delete_records":     {"System Admin": True, "Barangay Captain": True, "Desk Officer": False, "Data Encoder": False},
+    "delete_records":     {"System Admin": True, "Barangay Captain": False, "Desk Officer": False, "Data Encoder": False},
     "generate_reports": {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
     "view_analytics":    {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
     "manage_users":     {"System Admin": True, "Barangay Captain": True, "Desk Officer": False, "Data Encoder": False},
@@ -116,7 +116,12 @@ def permission_required(permission: str):
         def wrapped(*args, **kwargs):
             role = session.get("role", "")
             if not role_can(role, permission):
-                return json_error("You do not have permission to perform this action.", 403)
+                msg = (
+                    "Access Denied: Only System Administrators are authorized to permanently delete records."
+                    if permission == "delete_records"
+                    else "You do not have permission to perform this action."
+                )
+                return json_error(msg, 403)
             return view(*args, **kwargs)
         return wrapped
     return decorator

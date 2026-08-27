@@ -218,7 +218,12 @@ def _enforce(permission):
     from ..permissions import role_can
     role = session.get("role", "")
     if not role_can(role, permission):
-        return json_error("You do not have permission to perform this action.", 403)
+        msg = (
+            "Access Denied: Only System Administrators are authorized to permanently delete records."
+            if permission == "delete_records"
+            else "You do not have permission to perform this action."
+        )
+        return json_error(msg, 403)
     return None
 
 

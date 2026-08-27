@@ -372,6 +372,33 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertIsNone(BlotterRecord.query.get(b2.id))
         self.assertIsNone(Settlement.query.get(stl1_id))
 
+    def test_delete_permission_rbac_guards(self):
+        inc = Incident(report_no="INC-2026-PERM1", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", archived=True)
+        db.session.add(inc)
+        db.session.commit()
+        inc_id = inc.id
+
+        # Non-admin roles should be rejected with 403 Forbidden
+        for role in ["Barangay Captain", "Desk Officer", "Data Encoder"]:
+            self.login_as(role=role, username="user_" + role.lower().replace(" ", "_"))
+            
+            # Single permanent delete
+            res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}&permanent=1")
+            self.assertEqual(res.status_code, 403)
+            self.assertIn("Only System Administrators are authorized", res.get_json().get("message", ""))
+
+            # Batch permanent delete
+            res = self.client.post("/api/incidents/batch-permanent-delete", json={"ids": [inc_id]})
+            self.assertEqual(res.status_code, 403)
+            self.assertIn("Only System Administrators are authorized", res.get_json().get("message", ""))
+
+        # System Admin should succeed
+        self.login_as(role="System Admin", username="admin")
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("deleted"))
+        self.assertIsNone(Incident.query.get(inc_id))
+
 
 if __name__ == "__main__":
     unittest.main()

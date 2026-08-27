@@ -1155,6 +1155,8 @@ class BcBatchManager {
 
     const isArchived = this.opts.isArchivedView();
     const entityLabel = totalSelected === 1 ? this.opts.entityName : this.opts.entityPlural;
+    const activeRole = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE) || (window.CURRENT_USER && window.CURRENT_USER.role);
+    const canDelete = (typeof roleCan === 'function') ? roleCan(activeRole, 'delete_records') : (activeRole === 'System Admin');
 
     this._barEl.innerHTML = `
       <div class="bc-batch-count">
@@ -1166,9 +1168,15 @@ class BcBatchManager {
           <button id="bcBatchRestoreBtn" class="bc-batch-btn restore" title="Restore Selected">
             ${typeof iconSvg === 'function' ? iconSvg('refresh', 14) : ''} Restore Selected (${totalSelected})
           </button>
+          ${canDelete ? `
           <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger" title="Permanently Delete Selected">
             ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
           </button>
+          ` : `
+          <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger opacity-40 cursor-not-allowed" disabled title="Only System Admins can permanently delete records.">
+            ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
+          </button>
+          `}
         ` : `
           <button id="bcBatchArchiveBtn" class="bc-batch-btn archive" title="Archive Selected">
             ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
@@ -1184,7 +1192,9 @@ class BcBatchManager {
 
     if (isArchived) {
       document.getElementById('bcBatchRestoreBtn')?.addEventListener('click', () => this.executeBatchRestore());
-      document.getElementById('bcBatchPermDeleteBtn')?.addEventListener('click', () => this.executeBatchPermanentDelete());
+      if (canDelete) {
+        document.getElementById('bcBatchPermDeleteBtn')?.addEventListener('click', () => this.executeBatchPermanentDelete());
+      }
     } else {
       document.getElementById('bcBatchArchiveBtn')?.addEventListener('click', () => this.executeBatchArchive());
     }
@@ -1237,6 +1247,13 @@ class BcBatchManager {
   }
 
   async executeBatchPermanentDelete() {
+    const activeRole = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE) || (window.CURRENT_USER && window.CURRENT_USER.role);
+    const canDelete = (typeof roleCan === 'function') ? roleCan(activeRole, 'delete_records') : (activeRole === 'System Admin');
+    if (!canDelete) {
+      bcAlert('Access Denied: Only System Administrators are authorized to permanently delete records.', { title: 'Access Denied', danger: true });
+      return;
+    }
+
     const ids = Array.from(this.selectedIds);
     if (!ids.length) return;
     const count = ids.length;
