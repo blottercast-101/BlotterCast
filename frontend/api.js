@@ -119,6 +119,9 @@ const BCApi = {
   remove(type, id) {
     return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}`, { method: 'DELETE' });
   },
+  permanentDelete(type, id) {
+    return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}&permanent=1`, { method: 'DELETE' });
+  },
   // Restores an archived blotter record — a dedicated call so it only ever
   // touches the archived flag, never the record's other fields.
   restore(type, id) {

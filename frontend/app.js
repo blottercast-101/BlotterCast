@@ -845,6 +845,109 @@ function bcConfirm(message, opts = {}) {
   });
 }
 
+// ── Double-confirmation dialog for irreversible Permanent Deletion ──
+let _bcPermDeleteEl = null;
+let _bcPermDeleteResolve = null;
+
+function _bcEnsurePermDeleteDialog() {
+  if (_bcPermDeleteEl) return _bcPermDeleteEl;
+  const el = document.createElement('div');
+  el.id = 'bcPermDeleteOverlay';
+  el.className = 'modal-overlay';
+  el.setAttribute('data-no-dismiss', '');
+  el.innerHTML = `
+    <div class="bc-dialog-box" style="max-width: 460px;">
+      <div class="bc-dialog-header">
+        <span class="bc-dialog-icon danger" data-icon="warning" data-icon-size="18"></span>
+        <h3 id="bcPermDeleteTitle" class="bc-dialog-title" style="color: #b91c1c;">Permanent Delete</h3>
+      </div>
+      <p id="bcPermDeleteMessage" class="bc-dialog-message" style="margin-bottom: 1rem;"></p>
+      
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8125rem; color: #991b1b; line-height: 1.4;">
+        <strong>Warning:</strong> This action cannot be undone. All data and linked logs for this record will be permanently purged from the database.
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label for="bcPermDeleteInput" style="display: block; font-size: 0.8125rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">
+          Type <span style="font-family: monospace; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-weight: bold;">DELETE</span> to proceed:
+        </label>
+        <input id="bcPermDeleteInput" type="text" class="form-input" style="width: 100%; font-family: monospace; text-transform: uppercase; letter-spacing: 1px;" placeholder="Type DELETE to confirm" autocomplete="off" />
+      </div>
+
+      <div class="bc-dialog-actions">
+        <button id="bcPermDeleteCancelBtn" type="button" class="btn-secondary">Cancel</button>
+        <button id="bcPermDeleteOkBtn" type="button" class="btn-danger" style="opacity: 0.45; cursor: not-allowed;" disabled>Permanent Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  _bcPermDeleteEl = el;
+
+  const input = document.getElementById('bcPermDeleteInput');
+  const okBtn = document.getElementById('bcPermDeleteOkBtn');
+  const cancelBtn = document.getElementById('bcPermDeleteCancelBtn');
+
+  input.addEventListener('input', () => {
+    const isMatch = input.value.trim().toUpperCase() === 'DELETE';
+    okBtn.disabled = !isMatch;
+    okBtn.style.opacity = isMatch ? '1' : '0.45';
+    okBtn.style.cursor = isMatch ? 'pointer' : 'not-allowed';
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !okBtn.disabled) {
+      _bcPermDeleteFinish(true);
+    }
+  });
+
+  okBtn.addEventListener('click', () => {
+    if (!okBtn.disabled) _bcPermDeleteFinish(true);
+  });
+
+  cancelBtn.addEventListener('click', () => _bcPermDeleteFinish(false));
+
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') _bcPermDeleteFinish(false);
+  });
+
+  return el;
+}
+
+function _bcPermDeleteFinish(result) {
+  if (!_bcPermDeleteEl || !_bcPermDeleteEl.classList.contains('open')) return;
+  _bcPermDeleteEl.classList.remove('open');
+  document.body.style.overflow = '';
+  const resolve = _bcPermDeleteResolve;
+  _bcPermDeleteResolve = null;
+  if (resolve) resolve(result);
+}
+
+/**
+ * Enterprise double-confirmation modal requiring typing "DELETE" to permanently purge a record.
+ * @param {string} message - Descriptive warning text
+ * @param {Object} opts - { title, recordName }
+ * @returns {Promise<boolean>}
+ */
+function bcConfirmPermanentDelete(message, opts = {}) {
+  const el = _bcEnsurePermDeleteDialog();
+  document.getElementById('bcPermDeleteTitle').textContent = opts.title || 'Permanently Delete Record';
+  document.getElementById('bcPermDeleteMessage').textContent = message || 'Are you sure you want to permanently delete this record?';
+
+  const input = document.getElementById('bcPermDeleteInput');
+  const okBtn = document.getElementById('bcPermDeleteOkBtn');
+  input.value = '';
+  okBtn.disabled = true;
+  okBtn.style.opacity = '0.45';
+  okBtn.style.cursor = 'not-allowed';
+
+  if (typeof renderIcons === 'function') renderIcons(el);
+
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => input.focus(), 60);
+
+  return new Promise(resolve => { _bcPermDeleteResolve = resolve; });
+}
+
 // ── Sidebar shared HTML builder (call once per page) ───────
 function buildSidebar(activePage) {
   const pages = [

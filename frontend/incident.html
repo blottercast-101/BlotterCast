@@ -614,6 +614,10 @@
               <button onclick="restoreIncident(${r.id})" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Restore to Active">
                 ${iconSvg('refresh', 16)}
               </button>
+              <!-- Permanent Delete Action -->
+              <button onclick="permanentDeleteIncident(${r.id}, '${r.reportNo || ''}')" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Permanently Delete">
+                ${iconSvg('trash', 16)}
+              </button>
               ` : (r.is_blotter || r.status === 'Elevated to Blotter') ? `
               <!-- Locked Edit Action (Elevated) -->
               <button onclick="bcAlert('This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.', { title: 'Incident Locked', okLabel: 'Understood' })" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center justify-center opacity-40 cursor-not-allowed" title="Elevated to Blotter — edits must be made in Blotter Records">
@@ -1692,6 +1696,22 @@
     try {
       await BCApi.restore('incidents', id);
       showToast('Incident report restored.');
+      await loadIncidents();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function permanentDeleteIncident(id, reportNo) {
+    const label = reportNo ? `Incident Report #${reportNo}` : 'this incident report';
+    const confirmed = await bcConfirmPermanentDelete(
+      `Are you sure you want to permanently delete ${label}? This action is irreversible and will purge the record from the database.`,
+      { title: 'Permanently Delete Incident Report' }
+    );
+    if (!confirmed) return;
+    try {
+      await BCApi.permanentDelete('incidents', id);
+      showToast(`${label} permanently deleted.`);
       await loadIncidents();
     } catch (err) {
       showToast(err.message, 'error');

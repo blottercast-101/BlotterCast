@@ -14,7 +14,7 @@ from ..helpers import (
     resolve_coordinates_by_zone_and_text,
 )
 from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
-from ..permissions import json_error, login_required, permission_required
+from ..permissions import json_error, log_audit, login_required, permission_required
 
 bp = Blueprint("records", __name__)
 
@@ -253,6 +253,29 @@ def _incidents():
         incident = Incident.query.get(rid)
         if not incident:
             return json_error("Not found", 404)
+
+        is_permanent = request.args.get("permanent") == "1" or request.args.get("force") == "1"
+        if is_permanent:
+            if not incident.archived:
+                return json_error("Only archived records can be permanently deleted. Please archive the record first.", 400)
+
+            # Unlink any blotter records referencing this incident as source
+            BlotterRecord.query.filter_by(source_incident_id=incident.id).update({"source_incident_id": None})
+
+            # Clean up notifications referencing this incident
+            Notification.query.filter(
+                (Notification.ref_table == "incidents") & (Notification.ref_id == incident.id)
+            ).delete(synchronize_session=False)
+
+            report_no = incident.report_no
+            db.session.delete(incident)
+            db.session.commit()
+
+            username = session.get("username", "system")
+            log_audit(username, "PERMANENT_DELETE", "incidents", f"Permanently deleted incident report {report_no} (ID: {rid})")
+
+            return jsonify({"ok": True, "deleted": True, "id": rid})
+
         incident.archived = True
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
@@ -403,15 +426,45 @@ def _blotter():
         return jsonify({"ok": True})
 
     if method == "DELETE":
-        # Official records are never permanently deleted — this archives the
-        # record instead. It stays in the database for recordkeeping/audit
-        # but drops out of the active list by default (see the GET branch).
         rid = int(request.args.get("id", 0))
         if not rid:
             return json_error("id required")
         record = BlotterRecord.query.get(rid)
         if not record:
             return json_error("Not found", 404)
+
+        is_permanent = request.args.get("permanent") == "1" or request.args.get("force") == "1"
+        if is_permanent:
+            if not record.archived:
+                return json_error("Only archived records can be permanently deleted. Please archive the record first.", 400)
+
+            # Delete child settlements
+            Settlement.query.filter_by(blotter_id=record.id).delete(synchronize_session=False)
+
+            # Reset linked incident if any
+            if record.source_incident_id:
+                inc = Incident.query.get(record.source_incident_id)
+                if inc and (inc.blotter_docket_no == record.docket_no or inc.is_blotter):
+                    inc.is_blotter = False
+                    inc.blotter_docket_no = None
+                    if inc.status == "Elevated to Blotter":
+                        inc.status = "Under Investigation"
+                    inc.updated_at = datetime.utcnow()
+
+            # Clean up notifications referencing this blotter record
+            Notification.query.filter(
+                (Notification.ref_table.in_(["blotter", "blotter_records"])) & (Notification.ref_id == record.id)
+            ).delete(synchronize_session=False)
+
+            docket_no = record.docket_no
+            db.session.delete(record)
+            db.session.commit()
+
+            username = session.get("username", "system")
+            log_audit(username, "PERMANENT_DELETE", "blotter", f"Permanently deleted blotter record {docket_no} (ID: {rid})")
+
+            return jsonify({"ok": True, "deleted": True, "id": rid})
+
         record.archived = True
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
@@ -486,6 +539,26 @@ def _settlements():
         settlement = Settlement.query.get(rid)
         if not settlement:
             return json_error("Not found", 404)
+
+        is_permanent = request.args.get("permanent") == "1" or request.args.get("force") == "1"
+        if is_permanent:
+            if not settlement.archived:
+                return json_error("Only archived records can be permanently deleted. Please archive the record first.", 400)
+
+            # Clean up notifications referencing this settlement
+            Notification.query.filter(
+                (Notification.ref_table == "settlements") & (Notification.ref_id == settlement.id)
+            ).delete(synchronize_session=False)
+
+            case_no = settlement.case_no
+            db.session.delete(settlement)
+            db.session.commit()
+
+            username = session.get("username", "system")
+            log_audit(username, "PERMANENT_DELETE", "settlements", f"Permanently deleted settlement case {case_no} (ID: {rid})")
+
+            return jsonify({"ok": True, "deleted": True, "id": rid})
+
         settlement.archived = True
         db.session.commit()
         return jsonify({"ok": True, "archived": True})

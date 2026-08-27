@@ -465,6 +465,7 @@
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
               ${viewingArchived ? `
               <button onclick="restoreSettlement(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+              <button onclick="permanentDeleteSettlement(${r.id}, '${r.caseNo || ''}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
               ` : `
               <button onclick="editSettlement(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
               <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
@@ -601,6 +602,22 @@
     try {
       await BCApi.restore('settlements', id);
       showToast('Settlement record restored to active list.');
+      await loadSettlements();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function permanentDeleteSettlement(id, caseNo) {
+    const label = caseNo ? `Settlement Case #${caseNo}` : 'this settlement record';
+    const confirmed = await bcConfirmPermanentDelete(
+      `Are you sure you want to permanently delete ${label}? This action is irreversible and will purge the settlement record from the database.`,
+      { title: 'Permanently Delete Settlement Record' }
+    );
+    if (!confirmed) return;
+    try {
+      await BCApi.permanentDelete('settlements', id);
+      showToast(`${label} permanently deleted.`);
       await loadSettlements();
     } catch (err) {
       showToast(err.message, 'error');

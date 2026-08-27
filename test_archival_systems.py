@@ -202,6 +202,110 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertEqual(len(res.get_json()), 1)
         self.assertEqual(res.get_json()[0]["id"], res_id)
 
+    def test_permanent_delete_incident(self):
+        self.login_as()
+        # 1. Create incident
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "incidentDate": "2026-08-01",
+            "timeReported": "14:30",
+            "category": "Theft",
+            "zone": "Zone 1",
+            "location": "Market St",
+            "description": "Stolen bicycle",
+            "priority": "Medium",
+            "status": "Under Investigation",
+        })
+        self.assertEqual(res.status_code, 201)
+        inc_id = res.get_json()["id"]
+
+        # 2. Attempt permanent delete while active (MUST fail)
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}&permanent=1")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("Only archived records", res.get_json().get("error", ""))
+
+        # 3. Archive first
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
+        self.assertEqual(res.status_code, 200)
+
+        # 4. Now permanently delete
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("deleted"))
+
+        # 5. Verify record is completely purged from database
+        self.assertIsNone(Incident.query.get(inc_id))
+
+    def test_permanent_delete_blotter_and_cascade(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0101", last_name="Cruz", first_name="Ana", sex="Female")
+        res_r = CensusRecord(resident_no="RES-0102", last_name="Luna", first_name="Mark", sex="Male")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+
+        b = BlotterRecord(
+            docket_no="BLT-2026-0099", date_filed=date(2026, 8, 1),
+            complainant="Cruz, Ana", complainant_id=res_c.id,
+            respondent="Luna, Mark", respondent_id=res_r.id,
+            nature="Property Damage", case_type="CRIM", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(b)
+        db.session.commit()
+        blotter_id = b.id
+
+        # Add child settlement
+        stl = Settlement(blotter_id=blotter_id, case_no="STL-2026-0099", status="Pending", nature="Criminal")
+        db.session.add(stl)
+        db.session.commit()
+        stl_id = stl.id
+
+        # Archive blotter
+        res = self.client.delete(f"/api/records.php?type=blotter&id={blotter_id}")
+        self.assertEqual(res.status_code, 200)
+
+        # Permanently delete blotter
+        res = self.client.delete(f"/api/records.php?type=blotter&id={blotter_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("deleted"))
+
+        # Verify blotter and child settlement are both purged
+        self.assertIsNone(BlotterRecord.query.get(blotter_id))
+        self.assertIsNone(Settlement.query.get(stl_id))
+
+    def test_permanent_delete_settlement(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0201", last_name="Tan", first_name="Bob", sex="Male")
+        res_r = CensusRecord(resident_no="RES-0202", last_name="Lee", first_name="Ann", sex="Female")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+
+        b = BlotterRecord(
+            docket_no="BLT-2026-0100", date_filed=date(2026, 8, 1),
+            complainant="Tan, Bob", complainant_id=res_c.id,
+            respondent="Lee, Ann", respondent_id=res_r.id,
+            nature="Noise Complaint", case_type="CIVIL", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(b)
+        db.session.commit()
+        blotter_id = b.id
+
+        stl = Settlement(blotter_id=blotter_id, case_no="STL-2026-0100", status="Pending", nature="Civil")
+        db.session.add(stl)
+        db.session.commit()
+        stl_id = stl.id
+
+        # Archive settlement
+        res = self.client.delete(f"/api/records.php?type=settlements&id={stl_id}")
+        self.assertEqual(res.status_code, 200)
+
+        # Permanently delete settlement
+        res = self.client.delete(f"/api/records.php?type=settlements&id={stl_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("deleted"))
+
+        # Verify settlement is purged but parent blotter remains
+        self.assertIsNone(Settlement.query.get(stl_id))
+        self.assertIsNotNone(BlotterRecord.query.get(blotter_id))
+
 
 if __name__ == "__main__":
     unittest.main()
