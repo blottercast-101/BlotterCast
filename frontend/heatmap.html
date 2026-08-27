@@ -867,43 +867,54 @@
 
     async function loadIncidents() {
       await requireAuth();
-      const raw = await BCApi.heatmap();
-      const now = new Date(); now.setHours(0, 0, 0, 0);
-      const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
-      const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
-      incidents = (Array.isArray(raw) ? raw : []).map(r => {
-        let hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
-        let lat = hasCoords ? parseFloat(r.lat) : null;
-        let lng = hasCoords ? parseFloat(r.lng) : null;
+      bcSetStatsLoading(['totalVisible', 'topCategory', 'bottomPinCount', 'bottomTopZone'], true);
+      bcRenderTableSkeleton('incidentTableBody', { cols: 9, rows: 6 });
 
-        // Auto-resolve coordinates if missing but has recognized landmark
-        if (!hasCoords && r.zone_id && r.location) {
-          const resolved = resolveCoordinatesByZoneAndText(r.zone_id, r.location);
-          if (resolved) {
-            lat = resolved.latitude;
-            lng = resolved.longitude;
-            hasCoords = true;
+      try {
+        const raw = await BCApi.heatmap();
+        const now = new Date(); now.setHours(0, 0, 0, 0);
+        const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+        const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
+        incidents = (Array.isArray(raw) ? raw : []).map(r => {
+          let hasCoords = r.lat != null && r.lng != null && !isNaN(parseFloat(r.lat)) && !isNaN(parseFloat(r.lng)) && parseFloat(r.lat) !== 0 && parseFloat(r.lng) !== 0;
+          let lat = hasCoords ? parseFloat(r.lat) : null;
+          let lng = hasCoords ? parseFloat(r.lng) : null;
+
+          // Auto-resolve coordinates if missing but has recognized landmark
+          if (!hasCoords && r.zone_id && r.location) {
+            const resolved = resolveCoordinatesByZoneAndText(r.zone_id, r.location);
+            if (resolved) {
+              lat = resolved.latitude;
+              lng = resolved.longitude;
+              hasCoords = true;
+            }
           }
-        }
 
-        const d = new Date((r.incident_date || '') + 'T00:00:00');
-        return {
-          id: r.id,
-          date: r.incident_date || '—',
-          period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
-          category: r.category || 'Other',
-          zone: r.zone_id || 'Zone 1',
-          locationDetail: r.location || '',
-          location: bcFormatIncidentLocation(r.zone_id, r.location),
-          lat,
-          lng,
-          hasValidCoords: hasCoords,
-          weight: WEIGHTS[r.priority] || 0.6,
-          isInsideBoundary: false,
-          isUnmapped: true,
-        };
-      });
-      updateIncidentBoundaryStatuses();
+          const d = new Date((r.incident_date || '') + 'T00:00:00');
+          return {
+            id: r.id,
+            date: r.incident_date || '—',
+            period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
+            category: r.category || 'Other',
+            zone: r.zone_id || 'Zone 1',
+            locationDetail: r.location || '',
+            location: bcFormatIncidentLocation(r.zone_id, r.location),
+            lat,
+            lng,
+            hasValidCoords: hasCoords,
+            weight: WEIGHTS[r.priority] || 0.6,
+            isInsideBoundary: false,
+            isUnmapped: true,
+          };
+        });
+        updateIncidentBoundaryStatuses();
+      } catch (err) {
+        console.error('loadIncidents heatmap error:', err);
+        incidents = [];
+        bcSetStatsLoading(['totalVisible', 'topCategory', 'bottomPinCount', 'bottomTopZone'], false, '0');
+        bcSetTableError('incidentTableBody', 'Could not load heatmap incident records.', 'loadIncidents()', 9);
+        showToast('Could not load heatmap data: ' + err.message, 'error');
+      }
     }
 
     const map = L.map('map', {
@@ -1347,11 +1358,7 @@
       }
 
       if (!pageSlice.length) {
-        incidentTableBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="text-center py-8 text-forest-400 text-sm font-medium">No incident records match the active search and filters.</td>
-          </tr>
-        `;
+        bcSetTableEmpty('incidentTableBody', 'No incident records match the active search and filters.', 'heatmap', 9);
         return;
       }
 

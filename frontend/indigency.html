@@ -363,10 +363,21 @@ async function onIndResidentPicked(r) {
 }
 
 async function loadIndLog() {
-  const raw = await BCApi.docList('indigency');
-  indData = raw.map(mapIndigency);
-  renderIndSummary();
-  renderIndLog();
+  bcSetStatsLoading(['indMonthCount', 'indYearCount', 'indTopPurpose'], true);
+  bcRenderTableSkeleton('indLog', { template: 'indigency', rows: IND_ROWS });
+
+  try {
+    const raw = await BCApi.docList('indigency');
+    indData = Array.isArray(raw) ? raw.map(mapIndigency) : [];
+    renderIndSummary();
+    renderIndLog();
+  } catch (err) {
+    console.error('loadIndLog error:', err);
+    indData = [];
+    bcSetStatsLoading(['indMonthCount', 'indYearCount', 'indTopPurpose'], false, '0');
+    bcSetTableError('indLog', 'Could not load certificates from server.', 'loadIndLog()', 5);
+    showToast('Could not load certificates: ' + (err.message || err), 'error');
+  }
 }
 
 function renderIndSummary() {
@@ -393,9 +404,11 @@ function renderIndLog(){
   indPage=Math.min(Math.max(1,indPage),totalPages);
   const start=(indPage-1)*IND_ROWS;
   const pageRows=rows.slice(start,start+IND_ROWS);
-  document.getElementById('indLog').innerHTML=pageRows.length===0
-    ? '<tr><td colspan="5" class="text-center py-8 text-forest-400">No certificates issued yet.</td></tr>'
-    : pageRows.map(r=>`
+  const tbody = document.getElementById('indLog');
+  if (pageRows.length === 0) {
+    bcSetTableEmpty('indLog', 'No certificates issued yet matching your search.', 'indigency', 5);
+  } else {
+    tbody.innerHTML = pageRows.map(r=>`
     <tr>
       <td class="font-semibold text-forest-700">${r.ctrl}</td>
       <td class="font-semibold text-sm">${r.name}</td>

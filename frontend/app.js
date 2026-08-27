@@ -1793,6 +1793,36 @@ function bcGetTableSkeletonHtml(options = {}) {
       { type: 'pill', width: 'w-28' },   // Nature
       { type: 'badge', width: 'w-20' },  // Status
     ];
+  } else if (tpl === 'census') {
+    colDefs = [
+      { type: 'pill', width: 'w-36' },   // Full Name
+      { type: 'pill', width: 'w-16' },   // Age / Sex
+      { type: 'pill', width: 'w-20' },   // Civil Status
+      { type: 'pill', width: 'w-44' },   // Address
+      { type: 'pill', width: 'w-20' },   // Household No
+      { type: 'pill', width: 'w-28' },   // Contact
+      { type: 'badge', width: 'w-16' },  // Status
+      { type: 'actions', count: 2 }      // Actions
+    ];
+  } else if (tpl === 'clearance' || tpl === 'residency' || tpl === 'non_residency' || tpl === 'indigency') {
+    colDefs = [
+      { type: 'pill', width: 'w-28' },   // Control/Cert No
+      { type: 'pill', width: 'w-36' },   // Resident Name
+      { type: 'pill', width: 'w-28' },   // Purpose
+      { type: 'pill', width: 'w-24' },   // Date Issued
+      { type: 'pill', width: 'w-28' },   // Issued By
+      { type: 'badge', width: 'w-20' },  // Status
+      { type: 'actions', count: 2 }      // Actions
+    ];
+  } else if (tpl === 'users') {
+    colDefs = [
+      { type: 'pill', width: 'w-36' },   // User / Name
+      { type: 'pill', width: 'w-40' },   // Email
+      { type: 'badge', width: 'w-24' },  // Role
+      { type: 'badge', width: 'w-16' },  // Status
+      { type: 'pill', width: 'w-28' },   // Last Active
+      { type: 'actions', count: 2 }      // Actions
+    ];
   } else {
     const colCount = typeof options.cols === 'number' ? options.cols : 6;
     colDefs = Array.from({ length: colCount }, (_, i) => ({

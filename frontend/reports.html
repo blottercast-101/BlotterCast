@@ -266,11 +266,14 @@ function toggleSched(i) {
 }
 
 async function loadRecentReports() {
+  bcRenderTableSkeleton('recentReports', { cols: 6, rows: 4 });
   try {
     const rows = await BCApi._fetch('api/reports.php?action=list');
-    document.getElementById('recentReports').innerHTML = rows.length === 0
-      ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No reports generated yet. Use "Generate Report" above.</td></tr>'
-      : rows.map(r => `
+    const tbody = document.getElementById('recentReports');
+    if (!rows || rows.length === 0) {
+      bcSetTableEmpty('recentReports', 'No reports generated yet. Use "Generate Report" above.', 'reports', 6);
+    } else {
+      tbody.innerHTML = rows.map(r => `
         <tr>
           <td class="font-medium text-forest-800">${r.report_type}</td>
           <td class="text-sm text-forest-500">${r.generated_by}</td>
@@ -281,7 +284,9 @@ async function loadRecentReports() {
             <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>
           </td>
         </tr>`).join('');
+    }
   } catch (err) {
+    bcSetTableError('recentReports', 'Could not load report history from server.', 'loadRecentReports()', 6);
     showToast('Could not load report history: ' + err.message, 'error');
   }
 }

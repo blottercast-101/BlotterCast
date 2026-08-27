@@ -523,11 +523,14 @@ async function runBackupNow() {
 }
 
 async function loadBackupHistory() {
+  bcRenderTableSkeleton('backupHistoryBody', { cols: 6, rows: 4 });
   try {
     const rows = await BCApi.backupHistory();
-    document.getElementById('backupHistoryBody').innerHTML = rows.length === 0
-      ? '<tr><td colspan="6" class="text-center py-6 text-forest-400">No backups yet. Click "Run Backup Now" above.</td></tr>'
-      : rows.map(r => `
+    const tbody = document.getElementById('backupHistoryBody');
+    if (!rows || rows.length === 0) {
+      bcSetTableEmpty('backupHistoryBody', 'No backups yet. Click "Run Backup Now" above.', 'backup', 6);
+    } else {
+      tbody.innerHTML = rows.map(r => `
         <tr>
           <td class="font-mono text-xs text-forest-600">${r.file_name}</td>
           <td class="text-xs">${(r.size_bytes/1024).toFixed(0)} KB</td>
@@ -536,7 +539,9 @@ async function loadBackupHistory() {
           <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
           <td>${r.status==='Success' ? `<a href="api/settings.php?action=download_backup&file=${encodeURIComponent(r.file_name)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>` : ''}</td>
         </tr>`).join('');
+    }
   } catch (err) {
+    bcSetTableError('backupHistoryBody', 'Could not load backup history from server.', 'loadBackupHistory()', 6);
     showToast('Could not load backup history: ' + err.message, 'error');
   }
 }

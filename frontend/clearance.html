@@ -365,10 +365,21 @@ async function onResidentPicked(r) {
 }
 
 async function loadLog() {
-  const raw = await BCApi.docList('clearance');
-  logData = raw.map(mapClearance);
-  renderSummary();
-  renderLog();
+  bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], true);
+  bcRenderTableSkeleton('clearanceLog', { template: 'clearance', rows: CL_ROWS });
+
+  try {
+    const raw = await BCApi.docList('clearance');
+    logData = Array.isArray(raw) ? raw.map(mapClearance) : [];
+    renderSummary();
+    renderLog();
+  } catch (err) {
+    console.error('loadLog error:', err);
+    logData = [];
+    bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], false, '0');
+    bcSetTableError('clearanceLog', 'Could not load clearances from server.', 'loadLog()', 6);
+    showToast('Could not load clearances: ' + (err.message || err), 'error');
+  }
 }
 
 function renderSummary() {
@@ -391,9 +402,11 @@ function renderLog(){
   clPage=Math.min(Math.max(1,clPage),totalPages);
   const start=(clPage-1)*CL_ROWS;
   const pageRows=rows.slice(start,start+CL_ROWS);
-  document.getElementById('clearanceLog').innerHTML=pageRows.length===0
-    ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No clearances issued yet.</td></tr>'
-    : pageRows.map(r=>`
+  const tbody = document.getElementById('clearanceLog');
+  if (pageRows.length === 0) {
+    bcSetTableEmpty('clearanceLog', 'No clearances issued yet matching your search.', 'clearance', 6);
+  } else {
+    tbody.innerHTML = pageRows.map(r=>`
     <tr>
       <td class="font-semibold text-forest-700">${r.ctrl}</td>
       <td class="font-semibold text-sm">${r.name}</td>

@@ -323,10 +323,21 @@ async function onNrResidentPicked(r) {
 }
 
 async function loadNrLog() {
-  const raw = await BCApi.docList('non_residency');
-  nrLogData = raw.map(mapNonResidency);
-  renderNrSummary();
-  renderNrLog();
+  bcSetStatsLoading(['nrMonthCount', 'nrYearCount', 'nrRevenue'], true);
+  bcRenderTableSkeleton('nonResidencyLog', { template: 'non_residency', rows: NR_ROWS });
+
+  try {
+    const raw = await BCApi.docList('non_residency');
+    nrLogData = Array.isArray(raw) ? raw.map(mapNonResidency) : [];
+    renderNrSummary();
+    renderNrLog();
+  } catch (err) {
+    console.error('loadNrLog error:', err);
+    nrLogData = [];
+    bcSetStatsLoading(['nrMonthCount', 'nrYearCount', 'nrRevenue'], false, '0');
+    bcSetTableError('nonResidencyLog', 'Could not load certificates from server.', 'loadNrLog()', 6);
+    showToast('Could not load certificates: ' + (err.message || err), 'error');
+  }
 }
 
 function renderNrSummary() {
@@ -349,9 +360,11 @@ function renderNrLog(){
   nrPage=Math.min(Math.max(1,nrPage),totalPages);
   const start=(nrPage-1)*NR_ROWS;
   const pageRows=rows.slice(start,start+NR_ROWS);
-  document.getElementById('nonResidencyLog').innerHTML=pageRows.length===0
-    ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No certificates issued yet.</td></tr>'
-    : pageRows.map(r=>`
+  const tbody = document.getElementById('nonResidencyLog');
+  if (pageRows.length === 0) {
+    bcSetTableEmpty('nonResidencyLog', 'No certificates issued yet matching your search.', 'non_residency', 6);
+  } else {
+    tbody.innerHTML = pageRows.map(r=>`
     <tr>
       <td class="font-semibold text-forest-700">${r.ctrl}</td>
       <td class="font-semibold text-sm">${r.name}</td>

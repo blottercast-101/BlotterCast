@@ -263,18 +263,45 @@ let lineChart, doughnutChart, barDayChart, hBarChart;
 let cachedYears = [];
 
 async function initYears() {
-  const data = await BCApi.trends();
-  cachedYears = data?.years || [new Date().getFullYear()];
+  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], true);
+  bcRenderTableSkeleton('zonalMatrixBody', { cols: 6, rows: 7 });
+
+  let cachedYears = [new Date().getFullYear()];
+  try {
+    cachedYears = await BCApi.trendsYears();
+    if (!cachedYears.length) cachedYears = [new Date().getFullYear()];
+  } catch (e) {
+    cachedYears = [new Date().getFullYear()];
+  }
+
   const sel = document.getElementById('trendYear');
   sel.innerHTML = cachedYears.map(y => `<option value="${y}">${y}</option>`).join('');
-  sel.value = data?.year || cachedYears[0];
-  renderFromData(data || {});
+  
+  try {
+    const data = await BCApi.trends(cachedYears[0]);
+    sel.value = data?.year || cachedYears[0];
+    renderFromData(data || {});
+  } catch (err) {
+    console.error('initYears trends error:', err);
+    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], false, '0');
+    bcSetTableError('zonalMatrixBody', 'Could not load trends matrix from server.', 'initYears()', 6);
+    showToast('Could not load trends data: ' + err.message, 'error');
+  }
 }
 
 async function updateCharts() {
+  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], true);
+  bcRenderTableSkeleton('zonalMatrixBody', { cols: 6, rows: 7 });
   const year = document.getElementById('trendYear').value;
-  const data = await BCApi.trends(year);
-  renderFromData(data || {});
+  try {
+    const data = await BCApi.trends(year);
+    renderFromData(data || {});
+  } catch (err) {
+    console.error('updateCharts trends error:', err);
+    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], false, '0');
+    bcSetTableError('zonalMatrixBody', 'Could not load trends matrix for selected year.', 'updateCharts()', 6);
+    showToast('Could not load trends data: ' + err.message, 'error');
+  }
 }
 
 function renderFromData(data) {

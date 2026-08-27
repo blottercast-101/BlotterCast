@@ -283,9 +283,11 @@ let editUserId = null;function mapUser(u) {
 }
 
 async function loadUsers(silent = false) {
+  if (!silent) bcRenderTableSkeleton('usersTableBody', { template: 'users', rows: USERS_ROWS });
+
   try {
     const raw = await BCApi.users();
-    usersData = raw.map(mapUser);
+    usersData = Array.isArray(raw) ? raw.map(mapUser) : [];
     renderUsers();
     bcCheckUrlHighlight({
       items: usersData,
@@ -294,16 +296,24 @@ async function loadUsers(silent = false) {
       render: renderUsers
     });
   } catch (err) {
-    if (!silent) showToast('Could not load users: ' + err.message, 'error');
+    console.error('loadUsers error:', err);
+    usersData = [];
+    if (!silent) {
+      bcSetTableError('usersTableBody', 'Could not load users from server.', 'loadUsers()', 6);
+      showToast('Could not load users: ' + err.message, 'error');
+    }
   }
 }
 
 async function loadAuditLog() {
+  bcRenderTableSkeleton('auditLog', { cols: 5, rows: 5 });
   try {
     const rows = await BCApi.auditLog(10);
-    document.getElementById('auditLog').innerHTML = rows.length === 0
-      ? '<tr><td colspan="5" class="text-center py-6 text-forest-400">No activity recorded yet.</td></tr>'
-      : rows.map(r => `
+    const tbody = document.getElementById('auditLog');
+    if (!rows || rows.length === 0) {
+      bcSetTableEmpty('auditLog', 'No activity recorded yet.', 'audit', 5);
+    } else {
+      tbody.innerHTML = rows.map(r => `
         <tr>
           <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
           <td class="font-semibold text-forest-700 text-sm">${r.username}</td>
@@ -311,7 +321,9 @@ async function loadAuditLog() {
           <td class="text-sm text-forest-600">${r.module}</td>
           <td class="text-xs text-forest-400">${r.details || ''}</td>
         </tr>`).join('');
+    }
   } catch (err) {
+    bcSetTableError('auditLog', 'Could not load audit log from server.', 'loadAuditLog()', 5);
     showToast('Could not load audit log: ' + err.message, 'error');
   }
 }
@@ -330,9 +342,11 @@ function renderUsers() {
   const start = (usersPage - 1) * USERS_ROWS;
   const pageRows = filtered.slice(start, start + USERS_ROWS);
   const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  document.getElementById('usersTableBody').innerHTML = pageRows.length === 0
-    ? '<tr><td colspan="6" class="text-center py-8 text-forest-400">No users match your filters.</td></tr>'
-    : pageRows.map(u => {
+  const tbody = document.getElementById('usersTableBody');
+  if (pageRows.length === 0) {
+    bcSetTableEmpty('usersTableBody', 'No users match your filters.', 'users', 6);
+  } else {
+    tbody.innerHTML = pageRows.map(u => {
       const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
       const statusBadge = u.status === 'Active'
         ? `<span class="badge badge-resolved text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>ACTIVE</span>`
