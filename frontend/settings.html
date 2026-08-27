@@ -232,7 +232,7 @@
         </div>
         <div id="acct_pw_error" class="text-xs text-red-600 font-semibold mt-3 p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
         <div class="flex justify-end mt-4">
-          <button onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
+          <button id="btnChangePassword" type="button" onclick="saveMyPassword()" class="btn-primary text-sm"><span data-icon="lock" data-icon-size="14"></span> Change Password</button>
         </div>
       </div>
 
@@ -648,18 +648,20 @@ async function saveMyAccount() {
     showToast(err.message, 'error');
   }
 }
+
 async function saveMyPassword() {
   const currentEl = document.getElementById('acct_currentPw');
   const nextEl = document.getElementById('acct_newPw');
   const confirmEl = document.getElementById('acct_confirmPw');
   const errEl = document.getElementById('acct_pw_error');
+  const btn = document.getElementById('btnChangePassword') || document.querySelector('button[onclick*="saveMyPassword"]');
 
   if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
   if (currentEl) currentEl.classList.remove('border-red-500');
   if (nextEl) nextEl.classList.remove('border-red-500');
   if (confirmEl) confirmEl.classList.remove('border-red-500');
 
-  const current = currentEl ? currentEl.value : '';
+  const current = currentEl ? currentEl.value.trim() : '';
   const next = nextEl ? nextEl.value : '';
   const confirm = confirmEl ? confirmEl.value : '';
 
@@ -667,6 +669,9 @@ async function saveMyPassword() {
     const msg = 'Please fill in all password fields.';
     if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
     showToast(msg, 'error');
+    if (!current && currentEl) currentEl.focus();
+    else if (!next && nextEl) nextEl.focus();
+    else if (!confirm && confirmEl) confirmEl.focus();
     return;
   }
   if (next !== confirm) {
@@ -690,13 +695,15 @@ async function saveMyPassword() {
     return;
   }
 
+  if (btn) btn.disabled = true;
+
   try {
-    await BCApi.changePassword(current, next, confirm);
-    currentEl.value = '';
-    nextEl.value = '';
-    confirmEl.value = '';
+    const res = await BCApi.changePassword(current, next, confirm);
+    if (currentEl) currentEl.value = '';
+    if (nextEl) nextEl.value = '';
+    if (confirmEl) confirmEl.value = '';
     if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
-    showToast('Password changed successfully.');
+    showToast(res?.message || 'Password changed successfully.', 'success');
   } catch (err) {
     const msg = err.message || (err.error ? err.error : 'Failed to change password.');
     if (errEl) {
@@ -715,8 +722,13 @@ async function saveMyPassword() {
       }
     }
     showToast(msg, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
+window.saveMyPassword = saveMyPassword;
+window.saveMyAccount = saveMyAccount;
+window.saveSettings = saveSettings;
 
 async function loadMySecurity() {
   try {
@@ -770,6 +782,14 @@ window.initSettings = async function () {
     const user = await requireAuth();
     if (typeof syncTimeFormatControls === 'function') syncTimeFormatControls();
     await Promise.all([loadMyAccount(), loadMySecurity()]);
+
+    const pwBtn = document.getElementById('btnChangePassword');
+    if (pwBtn) {
+      pwBtn.onclick = (e) => {
+        e.preventDefault();
+        saveMyPassword();
+      };
+    }
 
     if (!user || !roleCan(user.role, 'system_settings')) {
       const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');

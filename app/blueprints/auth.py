@@ -791,6 +791,13 @@ def _change_password_impl():
 
 
 
+@bp.route("/api/auth/change-password", methods=["POST", "PUT"])
+@bp.route("/api/auth/change_password", methods=["POST", "PUT"])
+@login_required
+def api_change_password_endpoint():
+    return _change_password_impl()
+
+
 def _change_password():
     return _change_password_impl()
 

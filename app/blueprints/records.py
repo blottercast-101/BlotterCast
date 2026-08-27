@@ -621,12 +621,22 @@ def _incidents():
                 if g_age is not None and g_age < 18:
                     return json_error("Guardian must be an adult (18 years or older).", 422)
 
+        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter"}
+        status_input = (d.get("status") or "Pending").strip()
+        if status_input not in ALLOWED_INCIDENT_STATUSES:
+            if status_input in ("Under Investigation", "Open"):
+                status_input = "Pending"
+            elif status_input in ("Elevated", "Elevated to Blotter Records"):
+                status_input = "Elevated to Blotter"
+            elif status_input not in ALLOWED_INCIDENT_STATUSES:
+                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter.", 400)
+
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
             zone_id=zone_id, location=loc_text, lat=lat, lng=lng,
             category=d.get("category") or "Other", description=d.get("description", ""),
             reporter=d.get("reporter", ""), officer=d.get("officer", ""),
-            priority=d.get("priority") or "Medium", status=d.get("status") or "Under Investigation",
+            priority=d.get("priority") or "Medium", status=status_input,
             is_non_resident=is_non_resident,
             reporter_resident_id=reporter_resident_id if not is_non_resident else None,
             reporter_address=reporter_address,
@@ -763,8 +773,18 @@ def _incidents():
         incident.guardian_address = guardian_address
         incident.involved_parties = involved_parties
         incident.officer = d.get("officer", "")
+        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter"}
+        status_input = (d.get("status") or incident.status or "Pending").strip()
+        if status_input not in ALLOWED_INCIDENT_STATUSES:
+            if status_input in ("Under Investigation", "Open"):
+                status_input = "Pending"
+            elif status_input in ("Elevated", "Elevated to Blotter Records"):
+                status_input = "Elevated to Blotter"
+            elif status_input not in ALLOWED_INCIDENT_STATUSES:
+                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter.", 400)
+
         incident.priority = d.get("priority") or "Medium"
-        incident.status = d.get("status") or "Under Investigation"
+        incident.status = status_input
 
         actor = session.get("username") or "System"
         ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")

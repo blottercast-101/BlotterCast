@@ -60,8 +60,17 @@ const BCApi = {
     });
   },
   changePassword(currentPassword, newPassword, confirmPassword) {
-    const payload = { currentPassword, newPassword };
-    if (confirmPassword !== undefined) payload.confirmPassword = confirmPassword;
+    const payload = {
+      currentPassword,
+      newPassword,
+      current_password: currentPassword,
+      new_password: newPassword,
+    };
+    if (confirmPassword !== undefined) {
+      payload.confirmPassword = confirmPassword;
+      payload.confirm_password = confirmPassword;
+      payload.confirmNewPassword = confirmPassword;
+    }
     return this._fetch(`${BC_API}/api/auth.php?action=change_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

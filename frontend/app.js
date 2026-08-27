@@ -327,7 +327,7 @@ async function bcNavigate(targetUrl, pushState = true) {
             .replace(/\blet\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*;)/g, 'var $1');
 
           const newScript = document.createElement('script');
-          newScript.textContent = `try {\n${safeScript}\n} catch (err) {\n  console.error("Error executing page script:", err);\n}`;
+          newScript.textContent = safeScript;
           document.body.appendChild(newScript);
           setTimeout(() => newScript.remove(), 0);
         } catch (scriptErr) {
@@ -934,6 +934,87 @@ function bcShowForcedPasswordChange() {
     }
   };
 }
+
+// ── Global Account Settings Handlers ───────────────────────
+window.saveMyPassword = async function saveMyPassword() {
+  const currentEl = document.getElementById('acct_currentPw');
+  const nextEl = document.getElementById('acct_newPw');
+  const confirmEl = document.getElementById('acct_confirmPw');
+  const errEl = document.getElementById('acct_pw_error');
+  const btn = document.getElementById('btnChangePassword') || document.querySelector('button[onclick*="saveMyPassword"]');
+
+  if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+  if (currentEl) currentEl.classList.remove('border-red-500');
+  if (nextEl) nextEl.classList.remove('border-red-500');
+  if (confirmEl) confirmEl.classList.remove('border-red-500');
+
+  const current = currentEl ? currentEl.value.trim() : '';
+  const next = nextEl ? nextEl.value : '';
+  const confirm = confirmEl ? confirmEl.value : '';
+
+  if (!current || !next || !confirm) {
+    const msg = 'Please fill in all password fields.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    showToast(msg, 'error');
+    if (!current && currentEl) currentEl.focus();
+    else if (!next && nextEl) nextEl.focus();
+    else if (!confirm && confirmEl) confirmEl.focus();
+    return;
+  }
+
+  if (next !== confirm) {
+    const msg = 'New passwords do not match.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    if (confirmEl) {
+      confirmEl.classList.add('border-red-500');
+      confirmEl.focus();
+    }
+    showToast(msg, 'error');
+    return;
+  }
+
+  if (current === next) {
+    const msg = 'New password cannot be the same as your current password.';
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+    if (nextEl) {
+      nextEl.classList.add('border-red-500');
+      nextEl.focus();
+    }
+    showToast(msg, 'error');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await BCApi.changePassword(current, next, confirm);
+    if (currentEl) currentEl.value = '';
+    if (nextEl) nextEl.value = '';
+    if (confirmEl) confirmEl.value = '';
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+    showToast(res?.message || 'Password changed successfully.', 'success');
+  } catch (err) {
+    const msg = err.message || (err.error ? err.error : 'Failed to change password.');
+    if (errEl) {
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+    }
+    if (msg.toLowerCase().includes('current')) {
+      if (currentEl) {
+        currentEl.classList.add('border-red-500');
+        currentEl.focus();
+      }
+    } else {
+      if (nextEl) {
+        nextEl.classList.add('border-red-500');
+        nextEl.focus();
+      }
+    }
+    showToast(msg, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
 
 // ── Smart pagination ────────────────────────────────────────
 // Renders Prev / page numbers / Next into `container`. With only a
