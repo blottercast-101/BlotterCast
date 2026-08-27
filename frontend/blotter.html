@@ -401,13 +401,24 @@
   let blotterData = [];
 
   function mapRow(r) {
-    // normalize PHP snake_case -> camelCase used by the existing UI code
+    if (!r) return {};
     const [y, m, d] = (r.date_filed || '').split('-');
     return {
-      id: Number(r.id), docketNo: r.docket_no, dateFiled: (m && d) ? `${m}/${d}/${y}` : r.date_filed,
-      date: r.date_filed, complainant: r.complainant, complainantId: r.complainant_id ? Number(r.complainant_id) : null, complainantAddr: r.complainant_addr,
-      respondent: r.respondent, respondentId: r.respondent_id ? Number(r.respondent_id) : null, respondentAddr: r.respondent_addr, nature: r.nature,
-      type: r.case_type, status: r.status, zone: r.zone_id, archived: !!r.archived,
+      id: Number(r.id),
+      docketNo: r.docket_no || '',
+      dateFiled: (m && d) ? `${m}/${d}/${y}` : (r.date_filed || '—'),
+      date: r.date_filed || '',
+      complainant: r.complainant || '—',
+      complainantId: r.complainant_id ? Number(r.complainant_id) : null,
+      complainantAddr: r.complainant_addr || '',
+      respondent: r.respondent || '—',
+      respondentId: r.respondent_id ? Number(r.respondent_id) : null,
+      respondentAddr: r.respondent_addr || '',
+      nature: r.nature || '—',
+      type: r.case_type || 'CRIM',
+      status: r.status || 'Pending',
+      zone: r.zone_id || '',
+      archived: !!r.archived,
     };
   }
 
@@ -454,10 +465,20 @@
   }
 
   function renderSummaryCards() {
-    document.getElementById('blTotalCount').textContent = blotterData.length;
-    document.getElementById('blOngoingCount').textContent = blotterData.filter(r => r.status === 'Ongoing').length;
-    document.getElementById('blPendingCount').textContent = blotterData.filter(r => r.status === 'Pending').length;
-    document.getElementById('blResolvedCount').textContent = blotterData.filter(r => r.status === 'Resolved').length;
+    const totalEl = document.getElementById('blTotalCount');
+    const ongoingEl = document.getElementById('blOngoingCount');
+    const pendingEl = document.getElementById('blPendingCount');
+    const resolvedEl = document.getElementById('blResolvedCount');
+    
+    const total = blotterData.length;
+    const ongoing = blotterData.filter(r => r && (r.status === 'Ongoing' || r.status === 'Under Mediation' || r.status === 'Hearing Scheduled')).length;
+    const pending = blotterData.filter(r => r && (r.status === 'Pending' || !r.status)).length;
+    const resolved = blotterData.filter(r => r && ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied'].includes(r.status)).length;
+
+    if (totalEl) totalEl.textContent = total;
+    if (ongoingEl) ongoingEl.textContent = ongoing;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (resolvedEl) resolvedEl.textContent = resolved;
   }
 
   let censusResidentsForBlotter = []; // shared options list for both complainant and respondent pickers
@@ -553,14 +574,26 @@
   }
 
   function getFiltered() {
-    const s = document.getElementById('searchInput').value.trim().toLowerCase();
-    const t = document.getElementById('typeFilter').value;
-    const st = document.getElementById('statusFilter').value;
-    return blotterData.filter(r =>
-      (!s || r.docketNo.toLowerCase().includes(s) || r.complainant.toLowerCase().includes(s) || r.respondent.toLowerCase().includes(s)) &&
-      (!t || t === 'ALL' || t === 'All Types' || r.type === t) &&
-      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
-    );
+    const searchInput = document.getElementById('searchInput');
+    const typeFilter = document.getElementById('typeFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    const s = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    const t = typeFilter ? typeFilter.value : 'ALL';
+    const st = statusFilter ? statusFilter.value : 'ALL';
+
+    return blotterData.filter(r => {
+      if (!r) return false;
+      const docket = (r.docketNo || '').toLowerCase();
+      const comp = (r.complainant || '').toLowerCase();
+      const resp = (r.respondent || '').toLowerCase();
+      const nat = (r.nature || '').toLowerCase();
+
+      const matchSearch = !s || docket.includes(s) || comp.includes(s) || resp.includes(s) || nat.includes(s);
+      const matchType = !t || t === 'ALL' || t === 'All Types' || r.type === t;
+      const matchStatus = !st || st === 'ALL' || st === 'All Statuses' || r.status === st;
+      return matchSearch && matchType && matchStatus;
+    });
   }
 
   const bltBatchManager = new BcBatchManager({
@@ -588,7 +621,12 @@
     if (page.length === 0) {
       bcSetTableEmpty('blotterTableBody', viewingArchived ? 'No archived blotter records found.' : 'No blotter records found matching your filters.', 'blotter', 11);
     } else {
-      tbody.innerHTML = page.map(r => `
+      tbody.innerHTML = page.map(r => {
+        const badgeClass = ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied'].includes(r.status)
+          ? 'badge-resolved'
+          : (r.status === 'Ongoing' || r.status === 'Under Mediation' || r.status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
+
+        return `
         <tr data-id="${r.id}" data-key="${r.docketNo}" data-docket-no="${r.docketNo}" class="${bltBatchManager.has(r.id) ? 'row-selected' : ''}">
           <td style="width: 40px; text-align: center;">
             <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${bltBatchManager.has(r.id) ? 'checked' : ''} onchange="bltBatchManager.toggle(${r.id}, this.checked)" />
@@ -601,7 +639,7 @@
           <td class="text-xs text-forest-400">${r.respondentAddr}</td>
           <td>${r.nature}</td>
           <td><span class="badge ${r.type==='CRIM'||r.type==='Criminal'?'badge-criminal':'badge-civil'}">${r.type}</span></td>
-          <td><span class="badge ${r.status==='Resolved'?'badge-resolved':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}">${r.status}</span></td>
+          <td><span class="badge ${badgeClass}">${r.status}</span></td>
           <td>
             <div class="row-actions">
               <button onclick="viewRecord(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
@@ -614,13 +652,14 @@
               `}
             </div>
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     document.getElementById('recordCount').textContent = `${total} record${total!==1?'s':''}`;
     document.getElementById('paginationInfo').textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
 
-    const totalPages = Math.ceil(total / ROWS_PER_PAGE);
+    const totalPages = Math.ceil(total / ROWS_PER_PAGE) || 1;
     bcRenderPagination(document.getElementById('paginationControls'), currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
     bltBatchManager.updateUI();
   }
