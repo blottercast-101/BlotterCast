@@ -411,19 +411,28 @@
     };
   }
 
-  let viewingArchived = false;
-
   async function loadBlotter() {
-    const raw = await BCApi.list('blotter', viewingArchived ? { archived: '1' } : {});
-    blotterData = raw.map(mapRow);
-    renderSummaryCards();
-    renderTable();
-    bcCheckUrlHighlight({
-      items: blotterData,
-      pageSize: ROWS_PER_PAGE,
-      setPage: (p) => { currentPage = p; },
-      render: renderTable
-    });
+    bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], true);
+    bcRenderTableSkeleton('blotterTableBody', { template: 'blotter', rows: ROWS_PER_PAGE });
+
+    try {
+      const raw = await BCApi.list('blotter', viewingArchived ? { archived: '1' } : {});
+      blotterData = Array.isArray(raw) ? raw.map(mapRow) : [];
+      renderSummaryCards();
+      renderTable();
+      bcCheckUrlHighlight({
+        items: blotterData,
+        pageSize: ROWS_PER_PAGE,
+        setPage: (p) => { currentPage = p; },
+        render: renderTable
+      });
+    } catch (err) {
+      console.error('loadBlotter error:', err);
+      blotterData = [];
+      bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], false, '0');
+      bcSetTableError('blotterTableBody', 'Could not load blotter records from server.', 'loadBlotter()', 11);
+      showToast('Could not load records: ' + (err.message || err), 'error');
+    }
   }
 
   // Records are archived, never permanently deleted — this just switches
@@ -576,9 +585,10 @@
     const page = filtered.slice(start, start + ROWS_PER_PAGE);
 
     const tbody = document.getElementById('blotterTableBody');
-    tbody.innerHTML = page.length === 0
-      ? `<tr><td colspan="11" class="text-center py-10 text-forest-400">No records found.</td></tr>`
-      : page.map(r => `
+    if (page.length === 0) {
+      bcSetTableEmpty('blotterTableBody', viewingArchived ? 'No archived blotter records found.' : 'No blotter records found matching your filters.', 'blotter', 11);
+    } else {
+      tbody.innerHTML = page.map(r => `
         <tr data-id="${r.id}" data-key="${r.docketNo}" data-docket-no="${r.docketNo}" class="${bltBatchManager.has(r.id) ? 'row-selected' : ''}">
           <td style="width: 40px; text-align: center;">
             <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${bltBatchManager.has(r.id) ? 'checked' : ''} onchange="bltBatchManager.toggle(${r.id}, this.checked)" />

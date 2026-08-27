@@ -458,6 +458,46 @@
       }
     });
 
+    async function loadDashboardData() {
+      bcSetStatsLoading(['statBlotters', 'statIncidents', 'statPending', 'statResolved', 'statResolutionPct', 'statWeekCount', 'statPendingMini'], true);
+      bcRenderTableSkeleton('dashboardBlotterTable', { template: 'dashboard', rows: 5 });
+
+      try {
+        const stats = await BCApi.dashboard();
+
+        document.getElementById('statBlotters').textContent = stats.blotterCount ?? 0;
+        document.getElementById('statBlottersSub').textContent = 'blotter entries on file';
+
+        document.getElementById('statIncidents').textContent = stats.incidentCount ?? 0;
+        document.getElementById('statIncidentsSub').textContent = '↑ ' + (stats.weekCount ?? 0) + ' this week';
+
+        document.getElementById('statPending').textContent = stats.pendingSettlements ?? 0;
+
+        document.getElementById('statResolved').textContent = stats.resolvedCount ?? 0;
+        document.getElementById('statResolvedSub').textContent = (stats.resolutionRate ?? 0) + '% resolution rate';
+
+        const circumference = 326.7;
+        const pct = Math.max(0, Math.min(100, stats.resolutionRate ?? 0));
+        const donut = document.getElementById('resolutionDonut');
+        if (donut) {
+          donut.style.strokeDasharray = circumference;
+          donut.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+        }
+        document.getElementById('statResolutionPct').textContent = pct + '%';
+
+        document.getElementById('statWeekCount').textContent = stats.weekCount ?? 0;
+        document.getElementById('statPendingMini').textContent = stats.pendingSettlements ?? 0;
+
+        dashRecentBlotter = stats.recentBlotter || [];
+        renderDashboardBlotterTable(dashRecentBlotter);
+      } catch (err) {
+        console.error('loadDashboardData error:', err);
+        bcSetStatsLoading(['statBlotters', 'statIncidents', 'statPending', 'statResolved', 'statResolutionPct', 'statWeekCount', 'statPendingMini'], false, '0');
+        bcSetTableError('dashboardBlotterTable', 'Could not load recent blotters from server.', 'loadDashboardData()', 4);
+        showToast('Could not load dashboard: ' + err.message, 'error');
+      }
+    }
+
     (async function () {
       const user = await requireAuth();
       if (user) {
@@ -468,35 +508,7 @@
         }
       }
       refreshNotifBadge();
-      try {
-        const stats = await BCApi.dashboard();
-
-        document.getElementById('statBlotters').textContent = stats.blotterCount;
-        document.getElementById('statBlottersSub').textContent = 'blotter entries on file';
-
-        document.getElementById('statIncidents').textContent = stats.incidentCount;
-        document.getElementById('statIncidentsSub').textContent = '↑ ' + stats.weekCount + ' this week';
-
-        document.getElementById('statPending').textContent = stats.pendingSettlements;
-
-        document.getElementById('statResolved').textContent = stats.resolvedCount;
-        document.getElementById('statResolvedSub').textContent = stats.resolutionRate + '% resolution rate';
-
-        const circumference = 326.7;
-        const pct = Math.max(0, Math.min(100, stats.resolutionRate));
-        const donut = document.getElementById('resolutionDonut');
-        donut.style.strokeDasharray = circumference;
-        donut.style.strokeDashoffset = circumference - (pct / 100) * circumference;
-        document.getElementById('statResolutionPct').textContent = pct + '%';
-
-        document.getElementById('statWeekCount').textContent = stats.weekCount;
-        document.getElementById('statPendingMini').textContent = stats.pendingSettlements;
-
-        dashRecentBlotter = stats.recentBlotter || [];
-        renderDashboardBlotterTable(dashRecentBlotter);
-      } catch (err) {
-        showToast('Could not load dashboard: ' + err.message, 'error');
-      }
+      await loadDashboardData();
     })();
   </script>
 </body>

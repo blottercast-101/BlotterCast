@@ -321,22 +321,27 @@
   let viewingArchived = false;
 
   async function loadSettlements() {
+    bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
+    bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
+
     try {
       const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
       settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
+      updateStlSummary();
+      renderSettlements();
+      bcCheckUrlHighlight({
+        items: settlementData,
+        pageSize: STL_ROWS,
+        setPage: (p) => { stlPage = p; },
+        render: renderSettlements
+      });
     } catch (err) {
       console.error('loadSettlements error:', err);
       settlementData = [];
+      bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
+      bcSetTableError('settlementTableBody', 'Could not load settlement records from server.', 'loadSettlements()', 9);
       showToast('Could not load settlements: ' + (err.message || err), 'error');
     }
-    updateStlSummary();
-    renderSettlements();
-    bcCheckUrlHighlight({
-      items: settlementData,
-      pageSize: STL_ROWS,
-      setPage: (p) => { stlPage = p; },
-      render: renderSettlements
-    });
   }
 
   async function toggleArchivedView() {
@@ -482,9 +487,10 @@
     const page = filtered.slice(start, start+STL_ROWS);
 
     const tbody = document.getElementById('settlementTableBody');
-    tbody.innerHTML = page.length === 0
-      ? `<tr><td colspan="9" class="text-center py-10 text-forest-400">No settlement records found.</td></tr>`
-      : page.map(r => `
+    if (page.length === 0) {
+      bcSetTableEmpty('settlementTableBody', viewingArchived ? 'No archived settlement records found.' : 'No settlement records found matching your filters.', 'settlement', 9);
+    } else {
+      tbody.innerHTML = page.map(r => `
         <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}" class="${stlBatchManager.has(r.id) ? 'row-selected' : ''}">
           <td style="width: 40px; text-align: center;">
             <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${stlBatchManager.has(r.id) ? 'checked' : ''} onchange="stlBatchManager.toggle(${r.id}, this.checked)" />

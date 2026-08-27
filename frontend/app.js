@@ -1731,3 +1731,219 @@ function bcResidentPickerClear(inputId) {
   if (list) list.classList.add('hidden');
   picker.onPick(null);
 }
+
+// ============================================================
+// SKELETON LOADING & STATE MANAGEMENT SUITE (Zero-CLS)
+// ============================================================
+
+/**
+ * Generates an accessible, zero-CLS table skeleton matching active table columns.
+ * @param {Object} options Configuration options
+ * @param {number} options.rows Number of skeleton rows to render (default 5)
+ * @param {string|number|Array} options.template 'incident', 'blotter', 'settlement', 'dashboard', or column count
+ */
+function bcGetTableSkeletonHtml(options = {}) {
+  const rows = options.rows || 5;
+  const tpl = options.template || 'incident';
+
+  let colDefs = [];
+  if (Array.isArray(options.cols)) {
+    colDefs = options.cols;
+  } else if (tpl === 'incident') {
+    colDefs = [
+      { type: 'checkbox', width: '40px' },
+      { type: 'pill', width: 'w-24' },   // Report No
+      { type: 'pill', width: 'w-20' },   // Date
+      { type: 'pill', width: 'w-16' },   // Time
+      { type: 'pill', width: 'w-36' },   // Zone & Location
+      { type: 'pill', width: 'w-28' },   // Category
+      { type: 'pill', width: 'w-44' },   // Description
+      { type: 'pill', width: 'w-28' },   // Reporter
+      { type: 'pill', width: 'w-24' },   // Officer
+      { type: 'badge', width: 'w-16' },  // Priority
+      { type: 'badge', width: 'w-24' },  // Status
+      { type: 'actions', count: 3 }      // Actions
+    ];
+  } else if (tpl === 'blotter') {
+    colDefs = [
+      { type: 'checkbox', width: '40px' },
+      { type: 'pill', width: 'w-28' },   // Docket No
+      { type: 'pill', width: 'w-24' },   // Date Filed
+      { type: 'pill', width: 'w-32' },   // Complainant
+      { type: 'pill', width: 'w-32' },   // Respondent
+      { type: 'pill', width: 'w-28' },   // Nature / Type
+      { type: 'badge', width: 'w-24' },  // Status
+      { type: 'actions', count: 3 }      // Actions
+    ];
+  } else if (tpl === 'settlement') {
+    colDefs = [
+      { type: 'checkbox', width: '40px' },
+      { type: 'pill', width: 'w-24' },   // Case No
+      { type: 'pill', width: 'w-36' },   // Title / Parties
+      { type: 'pill', width: 'w-28' },   // Nature
+      { type: 'pill', width: 'w-20' },   // Confrontation Date
+      { type: 'pill', width: 'w-20' },   // Settlement Date
+      { type: 'badge', width: 'w-24' },  // Status
+      { type: 'actions', count: 2 }      // Actions
+    ];
+  } else if (tpl === 'dashboard') {
+    colDefs = [
+      { type: 'pill', width: 'w-28' },   // Docket No
+      { type: 'pill', width: 'w-36' },   // Complainant
+      { type: 'pill', width: 'w-28' },   // Nature
+      { type: 'badge', width: 'w-20' },  // Status
+    ];
+  } else {
+    const colCount = typeof options.cols === 'number' ? options.cols : 6;
+    colDefs = Array.from({ length: colCount }, (_, i) => ({
+      type: i === 0 ? 'pill' : (i === colCount - 1 ? 'actions' : 'pill'),
+      width: 'w-28'
+    }));
+  }
+
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    // Stagger widths slightly for organic look
+    const stagger = (r % 3 === 0) ? 'max-w-[85%]' : (r % 3 === 1 ? 'max-w-[70%]' : 'max-w-[95%]');
+    html += '<tr class="bc-skeleton-row animate-pulse">';
+    colDefs.forEach((col, idx) => {
+      if (col.type === 'checkbox') {
+        html += `<td style="width: 40px; text-align: center;"><div class="w-4 h-4 rounded bg-slate-200 mx-auto"></div></td>`;
+      } else if (col.type === 'badge') {
+        html += `<td><div class="h-6 ${col.width || 'w-20'} rounded-full bg-slate-200"></div></td>`;
+      } else if (col.type === 'actions') {
+        const count = col.count || 2;
+        html += `<td><div class="flex items-center gap-1.5 justify-end">`;
+        for (let a = 0; a < count; a++) {
+          html += `<div class="w-7 h-7 rounded-lg bg-slate-200"></div>`;
+        }
+        html += `</div></td>`;
+      } else {
+        html += `<td><div class="h-3.5 ${col.width || 'w-28'} ${stagger} rounded bg-slate-200"></div></td>`;
+      }
+    });
+    html += '</tr>';
+  }
+  return html;
+}
+
+/**
+ * Renders table skeleton directly into a tbody element.
+ */
+function bcRenderTableSkeleton(tbodyId, options = {}) {
+  const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
+  if (!el) return;
+  el.innerHTML = bcGetTableSkeletonHtml(options);
+}
+
+/**
+ * Manages loading pulse indicators on KPI metric stat cards.
+ * @param {Array<string>|string} targetIds Element IDs of stat number displays
+ * @param {boolean} isLoading True to show skeleton pulse, false to restore
+ * @param {string} placeholder Optional placeholder value if restoring without data
+ */
+function bcSetStatsLoading(targetIds, isLoading = true, placeholder = '—') {
+  const ids = Array.isArray(targetIds) ? targetIds : [targetIds];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isLoading) {
+      el.innerHTML = '<span class="inline-block h-8 w-20 bg-white/25 rounded-md animate-pulse align-middle"></span>';
+    } else if (el.innerHTML.includes('animate-pulse')) {
+      el.textContent = placeholder;
+    }
+  });
+}
+
+/**
+ * Generates an accessible 4-card metric skeleton grid.
+ */
+function bcGetMetricsSkeletonHtml(count = 4) {
+  let html = `<div class="grid grid-cols-${count} gap-5">`;
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="bc-skeleton-card">
+        <div class="flex items-center justify-between mb-3">
+          <div class="h-4 w-28 bg-slate-200 rounded"></div>
+          <div class="w-9 h-9 rounded-xl bg-slate-200"></div>
+        </div>
+        <div class="h-8 w-20 bg-slate-200 rounded mb-2"></div>
+        <div class="h-3 w-32 bg-slate-100 rounded"></div>
+      </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+/**
+ * Renders chart & analytics bounding box skeleton.
+ */
+function bcGetChartSkeletonHtml(type = 'donut') {
+  if (type === 'donut') {
+    return `
+      <div class="flex flex-col items-center justify-center p-6 space-y-4 animate-pulse">
+        <div class="w-32 h-32 rounded-full border-8 border-slate-200 bg-slate-50 flex items-center justify-center">
+          <div class="h-6 w-12 bg-slate-200 rounded"></div>
+        </div>
+        <div class="w-full space-y-2 pt-2">
+          <div class="h-4 bg-slate-200 rounded w-3/4 mx-auto"></div>
+          <div class="h-3 bg-slate-100 rounded w-1/2 mx-auto"></div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="h-64 rounded-2xl bg-slate-100 border border-slate-200 p-6 flex flex-col justify-between animate-pulse">
+      <div class="flex items-center justify-between">
+        <div class="h-5 w-40 bg-slate-200 rounded"></div>
+        <div class="h-4 w-24 bg-slate-200 rounded"></div>
+      </div>
+      <div class="h-36 bg-slate-200/60 rounded-xl flex items-center justify-center">
+        <span class="text-xs text-slate-400 font-medium">Loading visualization…</span>
+      </div>
+    </div>`;
+}
+
+/**
+ * Renders an empty state placeholder row in a table.
+ */
+function bcSetTableEmpty(tbodyId, message = 'No records found matching your filters.', icon = 'inbox', colSpan = 12) {
+  const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
+  if (!el) return;
+  el.innerHTML = `
+    <tr>
+      <td colspan="${colSpan}" class="py-12 text-center text-forest-500">
+        <div class="bc-empty-state">
+          <div class="bc-empty-state-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+          </div>
+          <strong class="font-semibold text-forest-800 text-sm">${message}</strong>
+          <span class="text-xs text-forest-400">Try adjusting your filters or search keywords.</span>
+        </div>
+      </td>
+    </tr>`;
+}
+
+/**
+ * Renders an error state placeholder row with a retry button in a table.
+ */
+function bcSetTableError(tbodyId, errorMessage = 'Failed to load records from server.', retryFnStr = '', colSpan = 12) {
+  const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
+  if (!el) return;
+  el.innerHTML = `
+    <tr>
+      <td colspan="${colSpan}" class="py-12 text-center text-rose-600">
+        <div class="bc-error-state">
+          <div class="bc-error-state-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <strong class="font-semibold text-rose-900 text-sm">${errorMessage}</strong>
+          ${retryFnStr ? `<button type="button" onclick="${retryFnStr}" class="mt-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">Retry Loading</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+}
+

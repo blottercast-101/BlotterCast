@@ -584,22 +584,27 @@
   let viewingArchived = false;
 
   async function loadIncidents() {
+    bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], true);
+    bcRenderTableSkeleton('incidentTableBody', { template: 'incident', rows: INC_ROWS });
+
     try {
       const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
       incidentData = Array.isArray(raw) ? raw.map(mapIncident) : [];
+      updateSummary();
+      renderIncidents();
+      bcCheckUrlHighlight({
+        items: incidentData,
+        pageSize: INC_ROWS,
+        setPage: (p) => { incPage = p; },
+        render: renderIncidents
+      });
     } catch (err) {
       console.error('loadIncidents error:', err);
       incidentData = [];
+      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], false, '0');
+      bcSetTableError('incidentTableBody', 'Could not load incident reports from server.', 'loadIncidents()', 12);
       showToast('Could not load incidents: ' + (err.message || err), 'error');
     }
-    updateSummary();
-    renderIncidents();
-    bcCheckUrlHighlight({
-      items: incidentData,
-      pageSize: INC_ROWS,
-      setPage: (p) => { incPage = p; },
-      render: renderIncidents
-    });
   }
 
   async function toggleArchivedView() {
@@ -668,9 +673,10 @@
     const page = filtered.slice(start, start + INC_ROWS);
 
     const tbody = document.getElementById('incidentTableBody');
-    tbody.innerHTML = page.length === 0
-      ? `<tr><td colspan="12" class="text-center py-10 text-forest-400">No incident reports found.</td></tr>`
-      : page.map(r => `
+    if (page.length === 0) {
+      bcSetTableEmpty('incidentTableBody', viewingArchived ? 'No archived incident reports found.' : 'No incident reports found matching your filters.', 'incident', 12);
+    } else {
+      tbody.innerHTML = page.map(r => `
         <tr data-id="${r.id}" data-key="${r.reportNo}" data-report-no="${r.reportNo}" class="${incBatchManager.has(r.id) ? 'row-selected' : ''}">
           <td style="width: 40px; text-align: center;">
             <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${incBatchManager.has(r.id) ? 'checked' : ''} onchange="incBatchManager.toggle(${r.id}, this.checked)" />
