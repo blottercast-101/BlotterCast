@@ -1,15 +1,20 @@
 # ==========================================
-# Database files & SQLite
+# Database files, instance directory & logs
 # ==========================================
 *.sqlite
 *.sqlite3
 *.db
 *.sql
 *.dump
+instance/
+instance/*
 instance/*.db
 instance/*.sqlite
 instance/*.sqlite3
-instance/otp_outbox.log
+instance/*.log
+ml/*.log
+*.log
+
 
 # ==========================================
 # Environment variables & secrets
@@ -60,6 +65,9 @@ venv.bak/
 logs/
 uploads/
 generated_reports/
+ml/models/
+*.joblib
+
 
 # ==========================================
 # Node / Frontend build artifacts

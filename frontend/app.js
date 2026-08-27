@@ -186,20 +186,181 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
 }
 
-// ── Smooth In-App Navigation Transition ─────────────────────
-document.addEventListener('click', (e) => {
-  const link = e.target.closest('aside nav a.nav-link, a.sidebar-nav-link, a.tile-action');
-  if (!link) return;
-  const href = link.getAttribute('href');
-  if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('http') || link.target === '_blank') return;
+// ── In-App Client-Side Routing & Persistent Layout Shell ────
+let _bcNavigating = false;
+const _bcLoadedScriptSrcs = new Set(
+  Array.from(document.querySelectorAll('script[src]')).map(s => s.getAttribute('src')).filter(Boolean)
+);
 
-  if (document.startViewTransition) {
-    e.preventDefault();
-    document.startViewTransition(() => {
-      window.location.href = href;
+function _bcGetPageNameFromUrl(url) {
+  try {
+    const clean = url.split('?')[0].split('#')[0];
+    const filename = clean.split('/').pop() || 'dashboard.html';
+    return filename.replace('.html', '');
+  } catch (e) {
+    return 'dashboard';
+  }
+}
+
+function _bcUpdateSidebarActiveLink(targetUrl) {
+  const pageName = _bcGetPageNameFromUrl(targetUrl);
+  const links = document.querySelectorAll('aside nav .nav-link');
+  links.forEach(l => {
+    const linkPage = l.getAttribute('data-page') || _bcGetPageNameFromUrl(l.getAttribute('href') || '');
+    if (linkPage === pageName) {
+      l.classList.add('active');
+    } else {
+      l.classList.remove('active');
+    }
+  });
+}
+
+async function _bcLoadScriptOnce(src) {
+  if (!src || _bcLoadedScriptSrcs.has(src)) return;
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => {
+      _bcLoadedScriptSrcs.add(src);
+      resolve();
+    };
+    s.onerror = () => {
+      console.warn('Failed to load script:', src);
+      resolve(); // Do not hard break router
+    };
+    document.head.appendChild(s);
+  });
+}
+
+async function bcNavigate(targetUrl, pushState = true) {
+  if (!targetUrl || _bcNavigating) return;
+
+  const cleanUrl = targetUrl.split('?')[0].split('#')[0];
+  if (cleanUrl.endsWith('login.html') || cleanUrl.endsWith('index.html') || cleanUrl === '/' || cleanUrl === '') {
+    window.location.href = targetUrl;
+    return;
+  }
+
+  const currentFull = window.location.pathname.split('/').pop() + window.location.search;
+  const targetRel = targetUrl.split('/').pop();
+  if (currentFull === targetRel && !pushState) return;
+
+  _bcNavigating = true;
+  const currentContainer = document.getElementById('app-content') || document.querySelector('.ml-64');
+  if (currentContainer) {
+    currentContainer.classList.add('bc-content-loading');
+  }
+
+  try {
+    const res = await fetch(targetUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!res.ok) {
+      window.location.href = targetUrl;
+      return;
+    }
+    const htmlText = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+
+    const newContainer = doc.getElementById('app-content') || doc.querySelector('.ml-64');
+    if (!newContainer) {
+      window.location.href = targetUrl;
+      return;
+    }
+
+    if (doc.title) {
+      document.title = doc.title;
+    }
+
+    document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
+      m.classList.remove('show');
     });
+
+    document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]').forEach(m => {
+      m.remove();
+    });
+
+    const newModals = doc.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]');
+
+    if (currentContainer) {
+      currentContainer.innerHTML = newContainer.innerHTML;
+      currentContainer.className = newContainer.className;
+      currentContainer.classList.remove('bc-content-loading');
+      currentContainer.classList.remove('bc-content-enter');
+      void currentContainer.offsetWidth;
+      currentContainer.classList.add('bc-content-enter');
+    }
+
+    newModals.forEach(m => {
+      document.body.appendChild(m);
+    });
+
+    _bcUpdateSidebarActiveLink(targetUrl);
+
+    if (pushState) {
+      history.pushState({ url: targetUrl }, '', targetUrl);
+    }
+
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    const scriptTags = Array.from(doc.querySelectorAll('script'));
+    for (const s of scriptTags) {
+      const src = s.getAttribute('src');
+      if (src && !src.includes('api.js') && !src.includes('permissions.js') && !src.includes('app.js') && !src.includes('icons.js') && !src.includes('custom-controls.js')) {
+        await _bcLoadScriptOnce(src);
+      }
+    }
+
+    for (const s of scriptTags) {
+      if (!s.getAttribute('src') && s.textContent.trim()) {
+        const newScript = document.createElement('script');
+        newScript.textContent = s.textContent;
+        document.body.appendChild(newScript);
+        setTimeout(() => newScript.remove(), 0);
+      }
+    }
+
+    if (typeof renderIcons === 'function') renderIcons();
+    if (typeof initCustomSelects === 'function') initCustomSelects();
+
+    const cachedUser = typeof bcGetCachedUser === 'function' ? bcGetCachedUser() : null;
+    if (cachedUser && cachedUser.role) {
+      if (typeof applyNavPermissions === 'function') applyNavPermissions(cachedUser.role);
+      if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(cachedUser.role);
+    }
+
+    window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url: targetUrl } }));
+  } catch (err) {
+    console.error('SPA navigation error:', err);
+    window.location.href = targetUrl;
+  } finally {
+    _bcNavigating = false;
+    if (currentContainer) currentContainer.classList.remove('bc-content-loading');
+  }
+}
+
+// Intercept in-app link clicks
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a');
+  if (!link) return;
+
+  const href = link.getAttribute('href');
+  if (!href) return;
+  if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || link.target === '_blank') return;
+  if (href.startsWith('http://') || href.startsWith('https://')) return;
+  if (href === 'login.html' || href.endsWith('/login.html') || href === 'index.html' || href.endsWith('/index.html') || href === '/') return;
+
+  if (href.endsWith('.html') || href.includes('.html?') || href.includes('.html#')) {
+    e.preventDefault();
+    bcNavigate(href, true);
   }
 });
+
+// Support browser Back/Forward navigation
+window.addEventListener('popstate', () => {
+  const currentUrl = window.location.pathname.split('/').pop() + window.location.search;
+  bcNavigate(currentUrl, false);
+});
+
 
 async function requireAuth() {
   if (_bcAuthGuardRunning) return null;

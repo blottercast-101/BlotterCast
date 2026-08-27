@@ -1,11 +1,30 @@
 import os
+import re
 from datetime import datetime, timezone
 
 import requests
 from flask import current_app
 
-OTP_OUTBOX_LOG = os.path.join("/tmp", "otp_outbox.log") if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "instance", "otp_outbox.log")
 BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
+
+# In-memory development outbox store (no .log files created on disk)
+DEV_OUTBOX = []
+
+
+def get_latest_otp(email: str) -> str:
+    """Retrieve the most recent OTP code sent to an email address in-memory."""
+    for item in reversed(DEV_OUTBOX):
+        if item.get("to_email") == email:
+            m = re.search(r"verification code is:\s*(\d{4,8})", item.get("body", ""))
+            if m:
+                return m.group(1)
+    return None
+
+
+def clear_dev_outbox():
+    """Clear in-memory development outbox entries."""
+    DEV_OUTBOX.clear()
+
 
 
 def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5, purpose: str = "login") -> str:
@@ -281,13 +300,20 @@ def send_otp_email(to_email: str, code: str, full_name: str = "", purpose: str =
 
 def _write_to_outbox(to_email: str, subject: str, body: str, error: str = None, html_body: str = None):
     try:
-        os.makedirs(os.path.dirname(OTP_OUTBOX_LOG), exist_ok=True)
-        with open(OTP_OUTBOX_LOG, "a", encoding="utf-8") as f:
-            f.write(f"\n----- {datetime.now(timezone.utc).isoformat()} -----\n")
-            if error:
-                f.write(f"[Brevo send failed ({error}) -- logged instead of sent]\n")
-            else:
-                f.write("[BREVO_API_KEY not configured -- logged instead of sent]\n")
-            f.write(f"To: {to_email}\nSubject: {subject}\n\n{body}\n")
+        entry = {
+            "to_email": to_email,
+            "subject": subject,
+            "body": body,
+            "error": error,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        DEV_OUTBOX.append(entry)
+        if len(DEV_OUTBOX) > 200:
+            del DEV_OUTBOX[:-100]
+
+        reason = f"Brevo send failed ({error})" if error else "BREVO_API_KEY not configured"
+        current_app.logger.info(
+            f"[OTP OUTBOX] {reason} | To: {to_email} | Subject: {subject}"
+        )
     except Exception:
         pass

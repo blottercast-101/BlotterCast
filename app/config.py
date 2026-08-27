@@ -49,8 +49,8 @@ class Config:
     # works on hosts that block outbound SMTP ports (e.g. Render's free
     # tier blocks 25/465/587 entirely -- see
     # https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports).
-    # If BREVO_API_KEY is unset, outgoing OTP emails are written to
-    # instance/otp_outbox.log instead of actually being sent -- lets the app
+    # If BREVO_API_KEY is unset, outgoing OTP emails are kept in-memory
+    # and logged to standard output instead of actually being sent -- lets the app
     # run end-to-end in local dev/testing without real credentials.
     BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
     BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL")

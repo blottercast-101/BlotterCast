@@ -13,7 +13,6 @@ bp = Blueprint("ml_proxy", __name__)
 ML_BASE = os.environ.get("ML_SERVICE_URL", "http://127.0.0.1:5001").replace("localhost", "127.0.0.1")
 ML_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "ml")
 ML_SCRIPT = os.path.join(ML_DIR, "service.py")
-ML_LOG = os.path.join(ML_DIR, "service.log")
 
 _ml_process = None  # tracks a process we started, so we don't spawn duplicates
 
@@ -47,11 +46,14 @@ def _ml_ensure_running() -> bool:
         # Give the ML service the same DATABASE_URL as the main app, and a
         # distinct port so it doesn't collide with the Flask app itself.
         env.setdefault("PORT", ML_BASE.rsplit(":", 1)[-1])
-        with open(ML_LOG, "a") as log:
-            _ml_process = subprocess.Popen(
-                [sys.executable, ML_SCRIPT], cwd=ML_DIR, stdout=log, stderr=log,
-                stdin=subprocess.DEVNULL, env=env,
-            )
+        _ml_process = subprocess.Popen(
+            [sys.executable, ML_SCRIPT],
+            cwd=ML_DIR,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            env=env,
+        )
 
     for _ in range(40):  # up to ~20s
         time.sleep(0.5)
@@ -82,8 +84,7 @@ def _forward(path: str, method: str = "GET", body=None):
                 return json_error(f"ML service unreachable: {e}", 502)
         return json_error(
             "The prediction service could not be started automatically. Make sure Python "
-            "is installed and its packages are set up (see ml/requirements.txt), then "
-            "check ml/service.log for details.", 503,
+            "is installed and its packages are set up (see ml/requirements.txt).", 503,
         )
 
 

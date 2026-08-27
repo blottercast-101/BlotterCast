@@ -1926,3 +1926,30 @@ path.zone-pulse-active {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ---------------- SPA Dynamic Content Swapping & Transition ---------------- */
+#app-content {
+  min-height: 100vh;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#app-content.bc-content-loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+#app-content.bc-content-enter {
+  animation: bcContentFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bcContentFadeIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
