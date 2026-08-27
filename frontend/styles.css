@@ -966,6 +966,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #111;
   line-height: 1.25; white-space: nowrap;
 }
+.cert-sig-line {
+  border-bottom: 1.5px solid #000000 !important;
+  width: 100%;
+  margin: 2px 0 3px 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 .cert-ov-chairman-title {
   font-size: 11px; color: #374151; margin-top: 1px; letter-spacing: -0.02em;
   line-height: 1.3;
