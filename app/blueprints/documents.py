@@ -12,6 +12,7 @@ from ..models import (
     BlotterRecord,
     CensusRecord,
     IndigencyCertificate,
+    Settlement,
 )
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
 
@@ -24,13 +25,20 @@ MIN_RESIDENT_REGISTRATION_AGE = 3
 @bp.route("/api/certificates/generate", methods=["POST"])
 @bp.route("/api/certificates/non-residency", methods=["GET", "POST"])
 @bp.route("/api/documents/non_residency", methods=["GET", "POST", "DELETE"])
+@bp.route("/api/documents/check-clearance", methods=["GET"])
+@bp.route("/api/documents/issue", methods=["POST"])
 @login_required
 def documents_router():
     method = request.method
     dtype = request.args.get("type", "")
     if not dtype:
-        if "non-residency" in request.path or "non_residency" in request.path or "certificates" in request.path:
+        if "check-clearance" in request.path:
+            dtype = "blotter_clearance_check"
+        elif "non-residency" in request.path or "non_residency" in request.path or "certificates" in request.path:
             dtype = "non_residency"
+        elif "issue" in request.path:
+            d = request.get_json(silent=True) or {}
+            dtype = d.get("type", "clearance")
 
     if method == "PUT" and not role_can(session.get("role", ""), "edit_records"):
         return json_error("You do not have permission to perform this action.", 403)
@@ -41,6 +49,11 @@ def documents_router():
         return jsonify({"orNo": next_or_no()})
     if dtype == "blotter_check" and method == "GET":
         return _blotter_check()
+    if dtype == "blotter_clearance_check" and method == "GET":
+        rid = request.args.get("residentId") or request.args.get("resident_id")
+        if not rid:
+            return json_error("residentId parameter is required", 400)
+        return jsonify(check_resident_blotter_clearance(int(rid)))
     if dtype == "census":
         return _census()
     if dtype == "clearance":
@@ -276,31 +289,90 @@ def _resident_status_block(resident, cert_label, blocked_statuses):
     return None
 
 
-def _has_unresolved_blotter_as_respondent(resident):
-    """Returns list of active/unsettled blotter records where `resident` is named as a Respondent.
-    Any blotter whose status is NOT in ('Resolved', 'Settled', 'Dismissed', 'Complied') is considered unresolved."""
-    resolved_statuses = ["Resolved", "Settled", "Dismissed", "Complied", "RESOLVED", "SETTLED", "DISMISSED", "COMPLIED"]
+def check_resident_blotter_clearance(resident_id_or_resident):
+    """
+    Validates whether a resident is cleared to receive barangay certificates/clearances.
+    If the resident is named as a Respondent in any open/unresolved blotter record
+    (status NOT IN ('Resolved', 'Settled', 'Dismissed', 'Complied', 'Closed')),
+    clearance is blocked (placed on hold).
+    """
+    if isinstance(resident_id_or_resident, int):
+        resident = CensusRecord.query.get(resident_id_or_resident)
+    else:
+        resident = resident_id_or_resident
+
+    if not resident:
+        return {
+            "is_cleared": False,
+            "has_derogatory": False,
+            "blocking_count": 0,
+            "blocking_cases": [],
+            "error": "Resident not found.",
+        }
+
+    resolved_statuses = {
+        "Resolved", "Settled", "Dismissed", "Complied", "Closed", "CFA Issued",
+        "RESOLVED", "SETTLED", "DISMISSED", "COMPLIED", "CLOSED"
+    }
+
+    # 1. Direct FK matches where resident is respondent
     unresolved = BlotterRecord.query.filter(
         BlotterRecord.respondent_id == resident.id,
         ~BlotterRecord.status.in_(resolved_statuses),
         (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
-    ).all()
-    if unresolved:
-        return unresolved
+    ).order_by(BlotterRecord.date_filed.desc()).all()
 
-    last, first = (resident.last_name or "").strip(), (resident.first_name or "").strip()
-    if last and first:
-        unresolved_name = BlotterRecord.query.filter(
-            BlotterRecord.respondent_id.is_(None),
-            BlotterRecord.respondent.ilike(f"%{last}%"),
-            BlotterRecord.respondent.ilike(f"%{first}%"),
-            ~BlotterRecord.status.in_(resolved_statuses),
-            (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
-        ).all()
-        if unresolved_name:
-            return unresolved_name
+    # 2. Name-based match fallback
+    if not unresolved:
+        last, first = (resident.last_name or "").strip(), (resident.first_name or "").strip()
+        if last and first:
+            unresolved = BlotterRecord.query.filter(
+                BlotterRecord.respondent_id.is_(None),
+                BlotterRecord.respondent.ilike(f"%{last}%"),
+                BlotterRecord.respondent.ilike(f"%{first}%"),
+                ~BlotterRecord.status.in_(resolved_statuses),
+                (BlotterRecord.archived == False) | (BlotterRecord.archived.is_(None)),
+            ).order_by(BlotterRecord.date_filed.desc()).all()
 
-    return []
+    blocking_cases = []
+    for b in unresolved:
+        # Check linked settlement status
+        stl = Settlement.query.filter_by(blotter_id=b.id, archived=False).first()
+        stl_status = stl.status if stl else None
+        if stl_status in ("Settled", "Complied", "Resolved"):
+            continue
+
+        blocking_cases.append({
+            "blotter_id": b.id,
+            "docket_no": b.docket_no,
+            "date_filed": b.date_filed.isoformat() if b.date_filed else None,
+            "complainant": b.complainant,
+            "respondent": b.respondent,
+            "nature": b.nature,
+            "case_type": b.case_type,
+            "status": b.status,
+            "settlement_status": stl_status,
+            "hold_reason": f"Active Blotter Case ({b.docket_no}) - {b.nature}",
+        })
+
+    is_cleared = len(blocking_cases) == 0
+    first_docket = blocking_cases[0]["docket_no"] if blocking_cases else ""
+    return {
+        "is_cleared": is_cleared,
+        "has_derogatory": not is_cleared,
+        "blocking_count": len(blocking_cases),
+        "blocking_cases": blocking_cases,
+        "message": (
+            "No derogatory record found. Clearance allowed."
+            if is_cleared
+            else f"Cannot issue Barangay Clearance: Resident has {len(blocking_cases)} active Blotter case(s) under mediation (Blotter #{first_docket})."
+        ),
+    }
+
+
+def _has_unresolved_blotter_as_respondent(resident):
+    res = check_resident_blotter_clearance(resident)
+    return res["blocking_cases"] if not res["is_cleared"] else []
 
 
 # ---------------- BARANGAY CLEARANCE ----------------
@@ -321,11 +393,16 @@ def _clearance():
         err = _resident_status_block(resident, "Certificate of Clearance", {"Deceased", "Transferred"})
         if err:
             return err
-        if _has_unresolved_blotter_as_respondent(resident):
-            return json_error(
-                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
-                403,
-            )
+
+        clearance_check = check_resident_blotter_clearance(resident)
+        if not clearance_check["is_cleared"]:
+            return jsonify({
+                "error": clearance_check["message"],
+                "message": clearance_check["message"],
+                "on_hold": True,
+                "blocking_cases": clearance_check["blocking_cases"],
+                "ok": False,
+            }), 403
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(BarangayClearance, "BC")
         or_no = d.get("orNo") or next_or_no()
@@ -487,11 +564,15 @@ def _indigency():
         err = _resident_status_block(resident, "Certificate of Indigency", {"Transferred"})
         if err:
             return err
-        if _has_unresolved_blotter_as_respondent(resident):
-            return json_error(
-                "Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.",
-                403,
-            )
+        clearance_check = check_resident_blotter_clearance(resident)
+        if not clearance_check["is_cleared"]:
+            return jsonify({
+                "error": clearance_check["message"],
+                "message": clearance_check["message"],
+                "on_hold": True,
+                "blocking_cases": clearance_check["blocking_cases"],
+                "ok": False,
+            }), 403
 
         ctrl_no = d.get("ctrlNo") or next_ctrl_no(IndigencyCertificate, "CI")
         record = IndigencyCertificate(

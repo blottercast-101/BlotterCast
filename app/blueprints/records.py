@@ -626,6 +626,40 @@ def _blotter():
         return jsonify({"ok": True, "archived": True})
 
 
+def _sync_settlement_to_blotter_and_incident(settlement):
+    if not settlement or not settlement.blotter_id:
+        return
+    b = BlotterRecord.query.get(settlement.blotter_id)
+    if not b:
+        return
+
+    st = settlement.status or "Pending"
+    act_lower = (settlement.action_taken or "").lower()
+
+    if st in ("Settled", "Complied", "Resolved") or "settled" in act_lower or "amicable" in act_lower:
+        b.status = "Resolved"
+        b.resolved_at = datetime.utcnow()
+        if b.source_incident_id:
+            inc = Incident.query.get(b.source_incident_id)
+            if inc:
+                inc.status = "Resolved"
+                inc.resolved_at = datetime.utcnow()
+    elif st in ("Dismissed", "CFA Issued", "Repudiated") or "dismissed" in act_lower:
+        b.status = st
+        b.resolved_at = datetime.utcnow()
+        if b.source_incident_id:
+            inc = Incident.query.get(b.source_incident_id)
+            if inc:
+                inc.status = "Resolved"
+    elif st in ("Ongoing", "Pending", "Hearing Scheduled"):
+        b.status = "Ongoing"
+        b.resolved_at = None
+        if b.source_incident_id:
+            inc = Incident.query.get(b.source_incident_id)
+            if inc and inc.status == "Resolved":
+                inc.status = "Elevated to Blotter"
+
+
 # ---------------- SETTLEMENTS ----------------
 def _settlements():
     method = request.method
@@ -661,6 +695,7 @@ def _settlements():
             archived=False,
         )
         db.session.add(settlement)
+        _sync_settlement_to_blotter_and_incident(settlement)
         db.session.commit()
         return jsonify({"ok": True, "id": settlement.id}), 201
 
@@ -685,6 +720,7 @@ def _settlements():
         settlement.main_point = d.get("mainPoint", "")
         settlement.status = d.get("status") or "Pending"
         settlement.remarks = d.get("remarks", "")
+        _sync_settlement_to_blotter_and_incident(settlement)
         db.session.commit()
         return jsonify({"ok": True})
 

@@ -246,6 +246,9 @@ const BCApi = {
   checkBlotterRecords(lastName, firstName, residentId) {
     return this._fetch(`${BC_API}/api/documents.php?type=blotter_check&lastName=${encodeURIComponent(lastName)}&firstName=${encodeURIComponent(firstName)}&residentId=${encodeURIComponent(residentId || '')}`);
   },
+  checkBlotterClearance(residentId) {
+    return this._fetch(`${BC_API}/api/documents.php?type=blotter_clearance_check&residentId=${encodeURIComponent(residentId)}`);
+  },
   // Preview-only look-ahead at the next O.R. No. for Clearance / Residency /
   // Non-Residency forms — same look-ahead pattern as peekSeq() above.
   peekOr() { return this._fetch(`${BC_API}/api/documents.php?type=or_peek`); },

@@ -417,6 +417,115 @@ class TestArchivalSystems(unittest.TestCase):
             self.assertEqual(res.status_code, 200, f"Role {role} failed to restore")
             self.assertFalse(Incident.query.get(inc_id).archived)
 
+    def test_clearance_gatekeeper_blocks_unresolved_respondent_and_lifts_on_settlement(self):
+        self.login_as(role="System Admin")
+        res_comp = CensusRecord(resident_no="RES-0901", last_name="Santos", first_name="Maria", sex="Female")
+        res_resp = CensusRecord(resident_no="RES-0902", last_name="Dela Cruz", first_name="Juan", sex="Male")
+        db.session.add_all([res_comp, res_resp])
+        db.session.flush()
+
+        # 1. Initially, respondent Juan has no blotter cases -> clearance is allowed
+        res = self.client.get(f"/api/documents/check-clearance?residentId={res_resp.id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("is_cleared"))
+        self.assertEqual(res.get_json().get("blocking_count"), 0)
+
+        # 2. File an active Blotter record where Juan is the Respondent
+        blt = BlotterRecord(
+            docket_no="BLT-2026-GATE1", date_filed=date(2026, 8, 1),
+            complainant="Maria Santos", complainant_id=res_comp.id,
+            respondent="Juan Dela Cruz", respondent_id=res_resp.id,
+            nature="Property Boundary Dispute", case_type="CIVIL", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(blt)
+        db.session.commit()
+
+        # 3. Check clearance again -> MUST BE BLOCKED
+        res = self.client.get(f"/api/documents/check-clearance?residentId={res_resp.id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.get_json().get("is_cleared"))
+        self.assertEqual(res.get_json().get("blocking_count"), 1)
+        self.assertEqual(res.get_json()["blocking_cases"][0]["docket_no"], "BLT-2026-GATE1")
+
+        # 4. Attempt to issue clearance via POST /api/documents.php?type=clearance -> MUST RETURN 403
+        res = self.client.post("/api/documents.php?type=clearance", json={
+            "residentId": res_resp.id,
+            "purpose": "Employment",
+            "fee": 20.0,
+            "dateIssued": "2026-08-27"
+        })
+        self.assertEqual(res.status_code, 403)
+        self.assertTrue(res.get_json().get("on_hold"))
+        self.assertIn("active Blotter case", res.get_json().get("message", ""))
+
+        # 5. Complainant Maria should NOT be blocked
+        res = self.client.get(f"/api/documents/check-clearance?residentId={res_comp.id}")
+        self.assertTrue(res.get_json().get("is_cleared"))
+
+        # 6. Elevate blotter to Settlement and mark it Settled
+        stl = Settlement(
+            blotter_id=blt.id, case_no="STL-2026-GATE1", status="Settled", action_taken="Amicably Settled", nature="Civil"
+        )
+        db.session.add(stl)
+        from app.blueprints.records import _sync_settlement_to_blotter_and_incident
+        _sync_settlement_to_blotter_and_incident(stl)
+        db.session.commit()
+
+        # 7. Check clearance again -> Hold is automatically lifted!
+        res = self.client.get(f"/api/documents/check-clearance?residentId={res_resp.id}")
+        self.assertTrue(res.get_json().get("is_cleared"))
+        self.assertEqual(res.get_json().get("blocking_count"), 0)
+
+        # 8. Issuing clearance now succeeds!
+        res = self.client.post("/api/documents.php?type=clearance", json={
+            "residentId": res_resp.id,
+            "purpose": "Employment",
+            "fee": 20.0,
+            "dateIssued": "2026-08-27"
+        })
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(res.get_json().get("ok"))
+
+    def test_settlement_outcomes_sync_to_blotter_and_incident(self):
+        self.login_as(role="System Admin")
+        # 1. Create Incident
+        inc = Incident(report_no="INC-2026-SYNC1", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", status="Elevated to Blotter")
+        db.session.add(inc)
+        db.session.flush()
+
+        # 2. Create Blotter referencing Incident
+        blt = BlotterRecord(
+            docket_no="BLT-2026-SYNC1", date_filed=date(2026, 8, 1), source_incident_id=inc.id,
+            complainant="Alice", respondent="Bob", nature="Noise", case_type="CIVIL", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(blt)
+        db.session.commit()
+
+        # 3. Create Settlement via API
+        res = self.client.post("/api/records.php?type=settlements", json={
+            "blotterId": blt.id,
+            "caseNo": "STL-2026-SYNC1",
+            "status": "Ongoing",
+            "actionTaken": "Hearing scheduled"
+        })
+        self.assertEqual(res.status_code, 201)
+        stl_id = res.get_json()["id"]
+
+        # Blotter status should be Ongoing
+        self.assertEqual(BlotterRecord.query.get(blt.id).status, "Ongoing")
+
+        # 4. Update Settlement to Settled
+        res = self.client.put(f"/api/records.php?type=settlements&id={stl_id}", json={
+            "status": "Settled",
+            "actionTaken": "Amicable settlement reached"
+        })
+        self.assertEqual(res.status_code, 200)
+
+        # 5. Verify Blotter and Incident are synced to Resolved
+        self.assertEqual(BlotterRecord.query.get(blt.id).status, "Resolved")
+        self.assertIsNotNone(BlotterRecord.query.get(blt.id).resolved_at)
+        self.assertEqual(Incident.query.get(inc.id).status, "Resolved")
+
 
 if __name__ == "__main__":
     unittest.main()
