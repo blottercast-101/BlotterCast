@@ -505,10 +505,15 @@ a.stat-card-grad:hover {
 }
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table tbody tr:hover { background: var(--forest-50); }
+.data-table thead th.text-center,
+.data-table thead th[align="center"] {
+  text-align: center !important;
+}
 .data-table tbody td { padding: 11px 14px; color: #374151; vertical-align: middle; }
 .data-table tbody td[colspan] { color: var(--slate-500); text-align: center; padding: 32px 14px; font-size: 0.85rem; }
-.data-table tbody td.text-center { text-align: center; }
-.data-table tbody td.perm-cell { text-align: center; padding: 11px 14px; }
+.data-table tbody td.text-center,
+.data-table tbody td[align="center"] { text-align: center !important; }
+.data-table tbody td.perm-cell { text-align: center !important; padding: 11px 14px; }
 
 /* Row action icon buttons (view / edit / delete) */
 .row-actions { display: flex; gap: 4px; }
