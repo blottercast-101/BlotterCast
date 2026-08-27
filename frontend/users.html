@@ -380,6 +380,7 @@ function renderUsers() {
       </td>
     </tr>`;
     }).join('');
+  }
   document.getElementById('usersPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }

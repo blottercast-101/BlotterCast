@@ -729,6 +729,7 @@
             </div>
           </td>
         </tr>`).join('');
+    }
 
     document.getElementById('incPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+INC_ROWS,total)} of ${total}`;
     const totalPages = Math.ceil(total / INC_ROWS) || 1;

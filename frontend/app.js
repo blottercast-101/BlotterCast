@@ -383,7 +383,7 @@ setInterval(() => {
 
 // Letters (including accented ones like Ñ/ñ), spaces, commas (e.g. "LastName, FirstName"),
 // hyphens (Dela Cruz-Santos), apostrophes (O'Brien, D'Souza), and periods (Jr., Ma.).
-const BC_NAME_RE = /^[a-zA-ZÀ-ÿñÑ\s,.'\-]+$/;
+const BC_NAME_RE = new RegExp("^[a-zA-ZÀ-ÿñÑ\\s,.\\'\\-]+$");
 function bcIsValidName(str) {
   return BC_NAME_RE.test((str || '').trim());
 }

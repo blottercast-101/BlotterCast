@@ -426,6 +426,7 @@ function renderResLog(){
         </div>
       </td>
     </tr>`).join('');
+  }
   document.getElementById('rsPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+RS_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('rsPaginationControls'), rsPage, totalPages, (p) => { rsPage=p; renderResLog(); });
 }

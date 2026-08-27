@@ -515,6 +515,7 @@
             </div>
           </td>
         </tr>`).join('');
+    }
 
     document.getElementById('stlPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
     const totalPages = Math.ceil(total/STL_ROWS)||1;

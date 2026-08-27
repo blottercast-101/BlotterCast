@@ -378,6 +378,7 @@ function renderNrLog(){
         </div>
       </td>
     </tr>`).join('');
+  }
   document.getElementById('nrPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+NR_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('nrPaginationControls'), nrPage, totalPages, (p) => { nrPage=p; renderNrLog(); });
 }

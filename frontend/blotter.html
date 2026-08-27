@@ -615,6 +615,7 @@
             </div>
           </td>
         </tr>`).join('');
+    }
 
     document.getElementById('recordCount').textContent = `${total} record${total!==1?'s':''}`;
     document.getElementById('paginationInfo').textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
