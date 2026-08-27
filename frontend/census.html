@@ -631,16 +631,164 @@ function viewResident(id){
   openModal('censusViewModal');
 }
 
-function parseCsv(text) {
-  const lines = text.split(/\\r?\\n/).filter(l => l.trim() !== '');
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const cells = line.split(',').map(c => c.trim());
-    const row = {};
-    headers.forEach((h, i) => { row[h] = cells[i] ?? ''; });
-    return row;
+function detectCsvDelimiter(line) {
+  let commaCount = 0, semiCount = 0, tabCount = 0;
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') inQuotes = !inQuotes;
+    else if (!inQuotes) {
+      if (c === ',') commaCount++;
+      else if (c === ';') semiCount++;
+      else if (c === '\t') tabCount++;
+    }
+  }
+  if (semiCount > commaCount && semiCount > tabCount) return ';';
+  if (tabCount > commaCount && tabCount > semiCount) return '\t';
+  return ',';
+}
+
+function parseCsvLine(line, delimiter) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    const next = line[i + 1];
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+const CENSUS_HEADER_SYNONYMS = {
+  // Last Name
+  'lastname': 'lastName', 'last': 'lastName', 'surname': 'lastName', 'familyname': 'lastName', 'apelyido': 'lastName',
+  // First Name
+  'firstname': 'firstName', 'first': 'firstName', 'givenname': 'firstName', 'pangalan': 'firstName',
+  // Middle Name
+  'middlename': 'middleName', 'middle': 'middleName', 'mi': 'middleName', 'gitnangpangalan': 'middleName',
+  // DOB
+  'dateofbirth': 'dob', 'dob': 'dob', 'birthdate': 'dob', 'birthday': 'dob', 'bday': 'dob', 'kaarawan': 'dob',
+  // Sex / Gender
+  'sex': 'sex', 'gender': 'sex', 'kasarian': 'sex',
+  // Civil Status
+  'civilstatus': 'civilStatus', 'maritalstatus': 'civilStatus', 'civil': 'civilStatus', 'statussibil': 'civilStatus',
+  // Nationality
+  'nationality': 'nationality', 'citizenship': 'nationality', 'nasyonalidad': 'nationality',
+  // Zone / Purok
+  'zone': 'zone', 'zoneid': 'zone', 'purok': 'zone', 'purokzone': 'zone', 'zonepurok': 'zone', 'barangayzone': 'zone',
+  // Address
+  'address': 'address', 'streetaddress': 'address', 'residence': 'address', 'houseaddress': 'address', 'tirahan': 'address', 'street': 'address',
+  // Household No
+  'householdno': 'householdNo', 'householdnumber': 'householdNo', 'household': 'householdNo', 'hhno': 'householdNo', 'hh': 'householdNo', 'sambahayan': 'householdNo',
+  // Contact No
+  'contactno': 'contactNo', 'contactnumber': 'contactNo', 'phone': 'contactNo', 'phonenumber': 'contactNo', 'mobile': 'contactNo', 'mobileno': 'contactNo', 'contact': 'contactNo', 'telepono': 'contactNo',
+  // Voter Status
+  'voterstatus': 'voterStatus', 'voter': 'voterStatus', 'registeredvoter': 'voterStatus', 'botante': 'voterStatus',
+  // Occupation
+  'occupation': 'occupation', 'job': 'occupation', 'profession': 'occupation', 'work': 'occupation', 'trabaho': 'occupation', 'hanapbuhay': 'occupation',
+  // Status
+  'status': 'status', 'residentstatus': 'status', 'katayuan': 'status',
+  // Resident No
+  'residentno': 'residentNo', 'residentnumber': 'residentNo', 'resno': 'residentNo', 'idno': 'residentNo',
+};
+
+function parseCensusCsv(text) {
+  if (!text) return { error: 'File is empty.', rows: [] };
+
+  // Strip UTF-8 BOM
+  let cleanText = text.replace(/^\uFEFF/, '').trim();
+  if (!cleanText) return { error: 'File is empty.', rows: [] };
+
+  // Split by CRLF, LF, or CR
+  const rawLines = cleanText.split(/\r\n|\r|\n/);
+  // Filter out empty lines or lines with only commas/whitespace
+  const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0 && !/^[,;\t\s]+$/.test(l));
+
+  if (lines.length === 0) {
+    return { error: 'No content found in file.', rows: [] };
+  }
+  if (lines.length < 2) {
+    return { error: 'CSV file contains only a header line with no data rows.', rows: [] };
+  }
+
+  const delimiter = detectCsvDelimiter(lines[0]);
+  const rawHeaders = parseCsvLine(lines[0], delimiter);
+  
+  // Normalize headers
+  const mappedHeaders = rawHeaders.map(h => {
+    const norm = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return CENSUS_HEADER_SYNONYMS[norm] || h.trim();
   });
+
+  const hasLastName = mappedHeaders.includes('lastName');
+  const hasFirstName = mappedHeaders.includes('firstName');
+  if (!hasLastName || !hasFirstName) {
+    const missing = [];
+    if (!hasFirstName) missing.push('First Name');
+    if (!hasLastName) missing.push('Last Name');
+    return {
+      error: `Missing required column(s): ${missing.join(', ')}. (Detected headers: ${rawHeaders.join(', ')})`,
+      rows: [],
+      rawHeaders
+    };
+  }
+
+  const parsedRows = [];
+  const skipReasons = [];
+
+  for (let idx = 1; idx < lines.length; idx++) {
+    const line = lines[idx];
+    const cells = parseCsvLine(line, delimiter);
+    if (cells.every(c => c === '')) continue; // Skip blank row
+
+    const rowObj = {};
+    mappedHeaders.forEach((key, colIdx) => {
+      rowObj[key] = (cells[colIdx] ?? '').trim();
+    });
+
+    // Normalize sex
+    if (rowObj.sex) {
+      const s = rowObj.sex.toLowerCase();
+      if (s === 'm' || s === 'male' || s === 'lalaki') rowObj.sex = 'Male';
+      else if (s === 'f' || s === 'female' || s === 'babae') rowObj.sex = 'Female';
+    }
+
+    // Normalize zone
+    if (rowObj.zone) {
+      const z = rowObj.zone.trim();
+      if (/^[1-7]$/.test(z)) rowObj.zone = `Zone ${z}`;
+      else if (/^purok\s*[1-7]$/i.test(z)) rowObj.zone = `Zone ${z.replace(/purok\s*/i, '')}`;
+    }
+
+    // Fallback defaults
+    if (!rowObj.status) rowObj.status = 'Active';
+    if (!rowObj.civilStatus) rowObj.civilStatus = 'Single';
+    if (!rowObj.nationality) rowObj.nationality = 'Filipino';
+    if (!rowObj.voterStatus) rowObj.voterStatus = 'Not Registered';
+
+    if (!rowObj.firstName || !rowObj.lastName) {
+      skipReasons.push(`Row ${idx + 1}: Missing First Name or Last Name`);
+      continue;
+    }
+
+    parsedRows.push(rowObj);
+  }
+
+  return { error: null, rows: parsedRows, skipReasons, totalLines: lines.length - 1 };
 }
 
 async function handleCensusFile(e) {
@@ -653,26 +801,62 @@ async function handleCensusFile(e) {
     return;
   }
   const status = document.getElementById('importStatus');
-  status.textContent = 'Reading file…';
-  const text = await file.text();
-  const rows = parseCsv(text);
-  if (rows.length === 0) { status.textContent = 'No data rows found in that CSV.'; return; }
+  status.textContent = 'Reading and analyzing CSV file…';
 
-  let ok = 0, failed = 0;
-  for (const row of rows) {
-    if (!row.lastName || !row.firstName) { failed++; continue; }
-    try {
-      await BCApi.docCreate('census', row, true);
-      ok++;
-    } catch (err) {
-      failed++;
+  try {
+    const text = await file.text();
+    const result = parseCensusCsv(text);
+
+    if (result.error) {
+      status.innerHTML = `<span class="text-rose-600 font-medium">${result.error}</span>`;
+      e.target.value = '';
+      return;
     }
-    status.textContent = `Importing… ${ok + failed}/${rows.length} processed`;
+
+    const { rows, skipReasons, totalLines } = result;
+    if (rows.length === 0) {
+      status.innerHTML = `<span class="text-rose-600 font-medium">No valid data rows found in CSV.${skipReasons?.length ? ' ' + skipReasons.slice(0, 3).join('; ') : ''}</span>`;
+      e.target.value = '';
+      return;
+    }
+
+    status.textContent = `Found ${rows.length} valid resident row(s). Importing…`;
+
+    let ok = 0, failed = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        await BCApi.docCreate('census', row, true);
+        ok++;
+      } catch (err) {
+        failed++;
+        errors.push(`${row.firstName} ${row.lastName}: ${err.message || err}`);
+      }
+      status.textContent = `Importing… ${ok + failed}/${rows.length} processed (${ok} added)`;
+    }
+
+    const skippedTotal = (totalLines - rows.length) + failed;
+    let summaryText = `Import complete: ${ok} resident${ok !== 1 ? 's' : ''} added.`;
+    if (skippedTotal > 0) {
+      summaryText += ` ${skippedTotal} skipped.`;
+    }
+
+    if (failed > 0 && errors.length > 0) {
+      status.innerHTML = `<span class="text-forest-700 font-medium">${summaryText}</span><br/><span class="text-xs text-amber-700 mt-1 block">Issues: ${errors.slice(0, 3).join(' | ')}${errors.length > 3 ? '...' : ''}</span>`;
+    } else {
+      status.innerHTML = `<span class="text-emerald-700 font-semibold">${summaryText}</span>`;
+    }
+
+    showToast(summaryText, ok > 0 ? 'success' : 'warning');
+    await loadResidents();
+  } catch (err) {
+    status.innerHTML = `<span class="text-rose-600 font-medium">Import failed: ${err.message || err}</span>`;
+    showToast('Import failed: ' + (err.message || err), 'error');
+  } finally {
+    e.target.value = '';
   }
-  status.textContent = `Done: ${ok} imported, ${failed} skipped.`;
-  showToast(`Imported ${ok} resident${ok !== 1 ? 's' : ''}${failed ? `, ${failed} skipped` : ''}.`);
-  await loadResidents();
-  e.target.value = '';
 }
 
 (async function () {

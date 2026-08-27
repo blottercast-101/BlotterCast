@@ -161,14 +161,34 @@ def _census():
             return json_error("You do not have permission to perform this action.", 403)
 
         d = request.get_json(silent=True) or {}
-        dob = d.get("dob") or None
-        last_name, first_name, middle_name = d.get("lastName", ""), d.get("firstName", ""), d.get("middleName", "")
-        sex, civil_status = d.get("sex") or "Male", d.get("civilStatus") or "Single"
-        nationality = d.get("nationality") or "Filipino"
-        zone = d.get("zone")
-        address, household, contact = d.get("address", ""), d.get("householdNo", ""), d.get("contactNo", "")
-        voter = d.get("voterStatus") or "Not Registered"
-        occupation, status = d.get("occupation", ""), d.get("status") or "Active"
+        dob = d.get("dob") or d.get("date_of_birth") or d.get("birth_date") or None
+        last_name = (d.get("lastName") or d.get("last_name") or d.get("surname") or "").strip()
+        first_name = (d.get("firstName") or d.get("first_name") or d.get("given_name") or "").strip()
+        middle_name = (d.get("middleName") or d.get("middle_name") or d.get("mi") or "").strip()
+        sex = d.get("sex") or d.get("gender") or "Male"
+        civil_status = d.get("civilStatus") or d.get("civil_status") or d.get("marital_status") or "Single"
+        nationality = d.get("nationality") or d.get("citizenship") or "Filipino"
+        zone = d.get("zone") or d.get("zone_id") or d.get("purok")
+        address = (d.get("address") or d.get("street_address") or "").strip()
+        household = (d.get("householdNo") or d.get("household_no") or d.get("household") or "").strip()
+        contact = (d.get("contactNo") or d.get("contact_no") or d.get("phone") or d.get("mobile") or "").strip()
+        voter = d.get("voterStatus") or d.get("voter_status") or "Not Registered"
+        occupation = (d.get("occupation") or d.get("job") or "").strip()
+        status = d.get("status") or "Active"
+
+        if sex:
+            s_low = str(sex).strip().lower()
+            if s_low in ("m", "male", "lalaki"):
+                sex = "Male"
+            elif s_low in ("f", "female", "babae"):
+                sex = "Female"
+
+        if zone:
+            z_str = str(zone).strip()
+            if z_str.isdigit():
+                zone = f"Zone {z_str}"
+            elif z_str.lower().startswith("purok"):
+                zone = z_str.replace("purok", "Zone").replace("Purok", "Zone").strip()
         if status == "Deceased":
             voter = "Deactivated"
 
