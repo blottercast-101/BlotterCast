@@ -499,13 +499,13 @@
           <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0">
             <select id="heatmapZoneFilter" class="px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer">
               <option value="ALL">All Zones</option>
-              <option value="Zone 1">Zone 1 - Residence 3 (Barangay Hall)</option>
-              <option value="Zone 2">Zone 2 - Residence 1</option>
-              <option value="Zone 3">Zone 3 - Pandi Village 2 (Atlantica)</option>
-              <option value="Zone 4">Zone 4 - Mitay 1</option>
-              <option value="Zone 5">Zone 5 - Sitio Gubat</option>
-              <option value="Zone 6">Zone 6 - Bangko St.</option>
-              <option value="Zone 7">Zone 7 - Barangka St.</option>
+              <option value="Zone 1">Zone 1 - East / Northeast (Aquariadise / Siling Bata)</option>
+              <option value="Zone 2">Zone 2 - West / Central-West (Residence 1)</option>
+              <option value="Zone 3">Zone 3 - Central East (Pandi Village 2)</option>
+              <option value="Zone 4">Zone 4 - North / Northwest (Mitay 1 / Jollibee)</option>
+              <option value="Zone 5">Zone 5 - Central (Sitio Gubat / Center)</option>
+              <option value="Zone 6">Zone 6 - Southeast (Balai Loreta / Bangko St.)</option>
+              <option value="Zone 7">Zone 7 - South / Southwest (Barangka St.)</option>
             </select>
 
             <select id="heatmapCategoryFilter" class="px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer">
@@ -713,65 +713,71 @@
       `;
     }
 
-    // Authentic geographical landmark coordinates and aliases for Barangay Mapulang Lupa
+    // Authentic geographical landmark coordinates and aliases for Barangay Mapulang Lupa (7 Zones)
     const ZONE_LANDMARK_COORDINATES = {
       'Zone 1': {
-        name: 'Residence 3',
-        aliases: ['residence 3', 'residences 3', 'pandi residences 3', 'pandi residence 3', 'res 3', 'res3'],
-        latitude: 14.883760,
-        longitude: 120.968420,
+        name: 'Aquariadise / Siling Bata',
+        aliases: ['aquariadise', 'aquariadise petshop', 'siling bata', 'massway', 'massway supermarket', 'residence 3', 'residences 3', 'pandi residences 3', 'res 3'],
+        latitude: 14.884500,
+        longitude: 120.973500,
       },
       'Zone 2': {
         name: 'Residence 1',
-        aliases: ['residence 1', 'residences 1', 'pandi residences 1', 'pandi residence 1', 'res 1', 'res1', 'pasong kalabaw', 'kalabaw st'],
-        latitude: 14.882000,
-        longitude: 120.958000,
+        aliases: ['residence 1', 'residences 1', 'pandi residences 1', 'pandi residence 1', 'res 1', 'res1', 'private resort', 'residence private resort', 'pasong kalabaw', 'kalabaw st'],
+        latitude: 14.881500,
+        longitude: 120.959500,
       },
       'Zone 3': {
         name: 'Pandi Village 2 (Atlantica)',
-        aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'],
-        latitude: 14.879000,
-        longitude: 120.972000,
+        aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2', 'magasawang sapa rd', 'magasawang sapa'],
+        latitude: 14.879500,
+        longitude: 120.971500,
       },
       'Zone 4': {
-        name: 'Mitay 1',
-        aliases: ['mitay 1', 'mitay', 'sitio mitay', 'pandi village 1'],
-        latitude: 14.887500,
-        longitude: 120.962000,
+        name: 'Mitay 1 / Jollibee Pandi',
+        aliases: ['mitay 1', 'mitay', 'sitio mitay', 'jollibee', 'jollibee pandi', 'jollibee - pandi', 'adam', 'adams hotel', "adam's hotel", 'pandi village 1'],
+        latitude: 14.887000,
+        longitude: 120.963500,
       },
       'Zone 5': {
         name: 'Sitio Gubat',
-        aliases: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center'],
-        latitude: 14.882500,
-        longitude: 120.964500,
+        aliases: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center', 'center'],
+        latitude: 14.881200,
+        longitude: 120.965000,
       },
       'Zone 6': {
-        name: 'Bangko St.',
-        aliases: ['bangko st', 'bangko street', 'bangko'],
-        latitude: 14.877500,
-        longitude: 120.966500,
+        name: 'Balai Loreta / Bangko St.',
+        aliases: ['balai loreta', 'balai loreta resort', 'balai loreta private resort', 'bangko st', 'bangko street', 'bangko', 'pandi-angat rd'],
+        latitude: 14.876500,
+        longitude: 120.970500,
       },
       'Zone 7': {
-        name: 'Barangka St.',
-        aliases: ['barangka st', 'barangka street', 'barangka', 'pandi-angat road', 'pandi angat'],
-        latitude: 14.878500,
-        longitude: 120.959500,
+        name: 'Barangka St. / Pandi-Angat Rd',
+        aliases: ['barangka st', 'barangka street', 'barangka', 'pandi-angat road', 'pandi angat', 'pandi angat rd', 'pasong kalabaw'],
+        latitude: 14.877200,
+        longitude: 120.960500,
       },
     };
 
     const MAPULANG_LUPA_GAZETTEER = [
+      { name: 'Aquariadise Petshop', aliases: ['aquariadise', 'aquariadise petshop', 'petshop'], lat: 14.885000, lng: 120.974000 },
+      { name: 'Massway Supermarket - Pandi', aliases: ['massway', 'massway supermarket', 'supermarket'], lat: 14.886800, lng: 120.976000 },
+      { name: "ADAM'S Hotel Apartment", aliases: ['adams', "adam's", "adam's hotel", 'adams hotel apartment'], lat: 14.882800, lng: 120.956000 },
+      { name: 'Residence Private Resort', aliases: ['residence private resort', 'private resort', 'residence resort'], lat: 14.882000, lng: 120.954800 },
+      { name: 'Jollibee - Pandi', aliases: ['jollibee', 'jollibee - pandi', 'jollibee pandi'], lat: 14.887200, lng: 120.968000 },
+      { name: 'Balai Loreta Private Resort', aliases: ['balai loreta', 'balai loreta private resort', 'balai loreta resort'], lat: 14.875200, lng: 120.966000 },
       { name: 'Pandi Residences 1', aliases: ['pandi residences 1', 'pandi residence 1', 'residence 1', 'residences 1', 'res 1', 'res1'], lat: 14.881800, lng: 120.960200 },
-      { name: 'Pandi Residences 3', aliases: ['pandi residences 3', 'pandi residence 3', 'residence 3', 'residences 3', 'res 3', 'res3'], lat: 14.881000, lng: 120.969500 },
-      { name: 'Pandi Village 2 (Atlantica)', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.966800 },
+      { name: 'Pandi Residences 3', aliases: ['pandi residences 3', 'pandi residence 3', 'residence 3', 'residences 3', 'res 3', 'res3'], lat: 14.884500, lng: 120.973500 },
+      { name: 'Pandi Village 2 (Atlantica)', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.971500 },
       { name: 'Pandi Encampment One', aliases: ['pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi encampment', 'encampment'], lat: 14.883059, lng: 120.963831 },
-      { name: 'Mitay 1', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'], lat: 14.883500, lng: 120.964800 },
-      { name: 'Sitio Gubat', aliases: ['sitio gubat', 'gubat', 'purok gubat'], lat: 14.885800, lng: 120.966500 },
-      { name: 'Bangko St.', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'bangko lane'], lat: 14.884200, lng: 120.962500 },
-      { name: 'Barangka St.', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka'], lat: 14.885200, lng: 120.964000 },
+      { name: 'Mitay 1', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno'], lat: 14.887000, lng: 120.963500 },
+      { name: 'Sitio Gubat', aliases: ['sitio gubat', 'gubat', 'purok gubat'], lat: 14.881200, lng: 120.965000 },
+      { name: 'Bangko St.', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'bangko lane'], lat: 14.876500, lng: 120.970500 },
+      { name: 'Barangka St.', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka'], lat: 14.877200, lng: 120.960500 },
       { name: 'Mapulang Lupa Barangay Hall', aliases: ['barangay hall', 'brgy hall', 'hall', 'mapulang lupa hall'], lat: 14.883600, lng: 120.965500 },
       { name: 'Mapulang Lupa Elementary School', aliases: ['elementary school', 'mapulang lupa elementary', 'elem school', 'es school'], lat: 14.880000, lng: 120.963400 },
-      { name: 'Sitio Bata', aliases: ['sitio bata', 'bata'], lat: 14.886300, lng: 120.967900 },
-      { name: 'Silangan Corridor', aliases: ['silangan', 'silangan corridor', 'pandi-angat road', 'pandi angat rd'], lat: 14.888400, lng: 120.964000 },
+      { name: 'Sitio Bata', aliases: ['sitio bata', 'bata', 'siling bata'], lat: 14.886300, lng: 120.977500 },
+      { name: 'Silangan Corridor', aliases: ['silangan', 'silangan corridor', 'pandi-angat road', 'pandi angat rd'], lat: 14.876000, lng: 120.965500 },
     ];
 
     // Substring & forward gazetteer coordinate resolver (resolves streets, subdivisions, encampments)
