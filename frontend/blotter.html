@@ -397,6 +397,7 @@
 <script>
   const ROWS_PER_PAGE = 6;
   let currentPage = 1;
+  let viewingArchived = false;
   let editingId = null;
   let blotterData = [];
 
@@ -445,6 +446,8 @@
       showToast('Could not load records: ' + (err.message || err), 'error');
     }
   }
+
+  const loadBlotters = loadBlotter;
 
   // Records are archived, never permanently deleted — this just switches
   // the table between the active view and the read-only archive so the
