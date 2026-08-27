@@ -13,7 +13,17 @@ from ..helpers import (
     parse_time,
     resolve_coordinates_by_zone_and_text,
 )
-from ..models import BlotterRecord, CensusRecord, Incident, Notification, Settlement
+from ..models import (
+    BarangayClearance,
+    BarangayNonResidency,
+    BarangayResidency,
+    BlotterRecord,
+    CensusRecord,
+    Incident,
+    IndigencyCertificate,
+    Notification,
+    Settlement,
+)
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
 
 bp = Blueprint("records", __name__)
@@ -340,6 +350,9 @@ def _handle_batch(rtype, action):
     elif rtype in ("settlements", "settlement"):
         model = Settlement
         module_name = "settlements"
+    elif rtype in ("census", "residents", "resident"):
+        model = CensusRecord
+        module_name = "census"
     else:
         return json_error("Unknown module for batch operation", 404)
 
@@ -409,6 +422,31 @@ def _handle_batch(rtype, action):
             elif model == Settlement:
                 Notification.query.filter(
                     Notification.ref_table == "settlements",
+                    Notification.ref_id.in_(clean_ids)
+                ).delete(synchronize_session=False)
+
+            elif model == CensusRecord:
+                Incident.query.filter(Incident.reporter_resident_id.in_(clean_ids)).update(
+                    {"reporter_resident_id": None}, synchronize_session=False
+                )
+                Incident.query.filter(Incident.complainant_resident_id.in_(clean_ids)).update(
+                    {"complainant_resident_id": None}, synchronize_session=False
+                )
+                Incident.query.filter(Incident.guardian_resident_id.in_(clean_ids)).update(
+                    {"guardian_resident_id": None}, synchronize_session=False
+                )
+                BlotterRecord.query.filter(BlotterRecord.complainant_id.in_(clean_ids)).update(
+                    {"complainant_id": None}, synchronize_session=False
+                )
+                BlotterRecord.query.filter(BlotterRecord.respondent_id.in_(clean_ids)).update(
+                    {"respondent_id": None}, synchronize_session=False
+                )
+                BarangayClearance.query.filter(BarangayClearance.resident_id.in_(clean_ids)).delete(synchronize_session=False)
+                BarangayResidency.query.filter(BarangayResidency.resident_id.in_(clean_ids)).delete(synchronize_session=False)
+                BarangayNonResidency.query.filter(BarangayNonResidency.resident_id.in_(clean_ids)).delete(synchronize_session=False)
+                IndigencyCertificate.query.filter(IndigencyCertificate.resident_id.in_(clean_ids)).delete(synchronize_session=False)
+                Notification.query.filter(
+                    Notification.ref_table.in_(["census", "census_records"]),
                     Notification.ref_id.in_(clean_ids)
                 ).delete(synchronize_session=False)
 

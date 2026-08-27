@@ -11,7 +11,9 @@ from ..models import (
     BarangayResidency,
     BlotterRecord,
     CensusRecord,
+    Incident,
     IndigencyCertificate,
+    Notification,
     Settlement,
 )
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
@@ -257,18 +259,68 @@ def _census():
         return jsonify({"ok": True})
 
     if method == "DELETE":
-        if not role_can(session.get("role", ""), "archive_records"):
-            return json_error("You do not have permission to archive records.", 403)
+        is_permanent = request.args.get("permanent") == "1"
         rid = int(request.args.get("id", 0))
         if not rid:
-            return json_error("id required")
+            return json_error("id required", 400)
         record = CensusRecord.query.get(rid)
         if not record:
             return json_error("Resident not found.", 404)
-        record.archived = True
-        db.session.commit()
-        log_audit(session.get("username"), "Archived", "Census", f"Resident record #{rid} archived")
-        return jsonify({"ok": True, "archived": True})
+
+        if is_permanent:
+            if not role_can(session.get("role", ""), "delete_records"):
+                return json_error(
+                    "Access Denied: Only System Administrators are authorized to permanently delete records.",
+                    403
+                )
+            if not record.archived:
+                return json_error("Only archived records can be permanently deleted.", 400)
+
+            # 1. Unlink FKs in incidents
+            Incident.query.filter(Incident.reporter_resident_id == rid).update(
+                {"reporter_resident_id": None}, synchronize_session=False
+            )
+            Incident.query.filter(Incident.complainant_resident_id == rid).update(
+                {"complainant_resident_id": None}, synchronize_session=False
+            )
+            Incident.query.filter(Incident.guardian_resident_id == rid).update(
+                {"guardian_resident_id": None}, synchronize_session=False
+            )
+            # 2. Unlink FKs in blotter_records
+            BlotterRecord.query.filter(BlotterRecord.complainant_id == rid).update(
+                {"complainant_id": None}, synchronize_session=False
+            )
+            BlotterRecord.query.filter(BlotterRecord.respondent_id == rid).update(
+                {"respondent_id": None}, synchronize_session=False
+            )
+            # 3. Cascade delete dependent certificates
+            BarangayClearance.query.filter(BarangayClearance.resident_id == rid).delete(synchronize_session=False)
+            BarangayResidency.query.filter(BarangayResidency.resident_id == rid).delete(synchronize_session=False)
+            BarangayNonResidency.query.filter(BarangayNonResidency.resident_id == rid).delete(synchronize_session=False)
+            IndigencyCertificate.query.filter(IndigencyCertificate.resident_id == rid).delete(synchronize_session=False)
+            # 4. Delete notifications
+            Notification.query.filter(
+                Notification.ref_table.in_(["census", "census_records"]),
+                Notification.ref_id == rid
+            ).delete(synchronize_session=False)
+
+            db.session.delete(record)
+            db.session.commit()
+            log_audit(
+                session.get("username"),
+                "PERMANENT_DELETE",
+                "Census",
+                f"Resident record #{rid} ({record.first_name} {record.last_name}) permanently deleted"
+            )
+            return jsonify({"ok": True, "deleted": True})
+
+        else:
+            if not role_can(session.get("role", ""), "archive_records"):
+                return json_error("You do not have permission to archive records.", 403)
+            record.archived = True
+            db.session.commit()
+            log_audit(session.get("username"), "Archived", "Census", f"Resident record #{rid} archived")
+            return jsonify({"ok": True, "archived": True})
 
 
 def _get_resident_or_404(resident_id, not_found_msg):

@@ -120,6 +120,9 @@ const BCApi = {
     return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}`, { method: 'DELETE' });
   },
   permanentDelete(type, id) {
+    if (type === 'census') {
+      return this._fetch(`${BC_API}/api/documents.php?type=census&id=${id}&permanent=1`, { method: 'DELETE' });
+    }
     return this._fetch(`${BC_API}/api/records.php?type=${type}&id=${id}&permanent=1`, { method: 'DELETE' });
   },
   batchArchive(type, ids) {

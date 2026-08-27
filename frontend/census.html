@@ -175,6 +175,9 @@
       <div class="overflow-x-auto">
         <table class="data-table">
           <thead><tr>
+            <th style="width: 40px; text-align: center;">
+              <input type="checkbox" id="selectAllCensus" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="resBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+            </th>
             <th>Resident No.</th><th>Full Name</th><th>Date of Birth</th><th class="text-center px-4" style="text-align:center;">Age</th>
             <th class="text-center px-4" style="text-align:center;">Sex</th><th>Civil Status</th><th>Zone / Purok</th>
             <th>Address</th><th>Household No.</th><th>Status</th><th>Actions</th>
@@ -325,6 +328,7 @@ async function loadResidents() {
 async function toggleArchivedView() {
   viewingArchived = !viewingArchived;
   curPage = 1;
+  resBatchManager.clearSelection();
   document.getElementById('resTitle').textContent = viewingArchived ? 'Archived Resident Records' : 'Resident Records';
   document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
     ? '<span data-icon="census" data-icon-size="14"></span> Back to Active'
@@ -337,6 +341,21 @@ async function toggleArchivedView() {
 }
 
 const ROWS=8; let curPage=1; let editId=null; let currentRole=null;
+
+const resBatchManager = new BcBatchManager({
+  entityName: 'resident',
+  entityPlural: 'residents',
+  apiType: 'census',
+  selectAllId: 'selectAllCensus',
+  getPageItems: () => {
+    const filtered = getFiltered();
+    const start = (curPage - 1) * ROWS;
+    return filtered.slice(start, start + ROWS);
+  },
+  getAllItems: () => getFiltered(),
+  isArchivedView: () => viewingArchived,
+  onRefresh: async () => { await loadResidents(); },
+});
 
 // Fields a Desk Officer is allowed to edit are just Status (and, as its
 // automatic consequence, Voter Status). Every other field in the form is
@@ -390,41 +409,47 @@ function renderResidents(){
   const page=f.slice(start,start+ROWS);
   const tb=document.getElementById('residentBody');
   if (page.length === 0) {
-    bcSetTableEmpty('residentBody', viewingArchived ? 'No archived residents found.' : 'No residents found matching your filters.', 'census', 11);
+    bcSetTableEmpty('residentBody', viewingArchived ? 'No archived residents found.' : 'No residents found matching your filters.', 'census', 12);
   } else {
-    tb.innerHTML = page.map(r=>`<tr data-id="${r.id}" data-key="${r.resNo}" data-res-no="${r.resNo}">
-      <td class="font-semibold text-forest-700">${r.resNo}</td>
-      <td class="font-semibold text-forest-800">${r.lastName}, ${r.firstName}</td>
-      <td class="text-xs">${r.dob}</td>
-      <td class="text-center px-4 whitespace-nowrap">
-        <div class="inline-flex items-center gap-1.5 min-w-[80px] text-left">
-          <span class="font-semibold font-mono text-sm w-5 text-right tabular-nums inline-block">${r.age}</span>
-          <span class="inline-flex items-center w-14">${typeof r.age==='number' && r.age>=60 ? '<span class="badge badge-ongoing text-[10px] font-bold tracking-wider px-1.5 py-0.5">SENIOR</span>' : ''}</span>
-        </div>
-      </td>
-      <td class="text-center px-4 whitespace-nowrap" style="text-align:center;"><span class="badge ${r.sex==='Male'?'badge-ongoing':'badge-pending'}">${r.sex ? r.sex.toUpperCase() : ''}</span></td>
-      <td class="text-xs">${r.civil}</td>
-      <td class="text-xs font-medium">${r.zone}</td>
-      <td class="text-xs text-forest-400">${r.address}</td>
-      <td class="text-xs font-mono">${r.household}</td>
-      <td><span class="badge ${r.status==='Active'?'badge-resolved':r.status==='Deceased'?'badge-not-complied':'badge-pending'}">${r.status}</span></td>
-      <td>
-        <div class="row-actions">
-          <button onclick="viewResident(${r.id})" class="icon-btn" title="View Details"><span data-icon="view" data-icon-size="16"></span></button>
-          ${viewingArchived ? `
-          <button onclick="restoreResident(${r.id})" class="icon-btn edit" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
-          ` : `
-          <button onclick="editResident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-          <button onclick="archiveResident(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
-          `}
-        </div>
-      </td>
-    </tr>`).join('');
+    tb.innerHTML = page.map(r=>`
+      <tr data-id="${r.id}" data-key="${r.resNo}" data-res-no="${r.resNo}" class="${resBatchManager.has(r.id) ? 'row-selected' : ''}">
+        <td style="width: 40px; text-align: center;">
+          <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${resBatchManager.has(r.id) ? 'checked' : ''} onchange="resBatchManager.toggle(${r.id}, this.checked)" />
+        </td>
+        <td class="font-semibold text-forest-700">${r.resNo}</td>
+        <td class="font-semibold text-forest-800">${r.lastName}, ${r.firstName}</td>
+        <td class="text-xs">${r.dob}</td>
+        <td class="text-center px-4 whitespace-nowrap">
+          <div class="inline-flex items-center gap-1.5 min-w-[80px] text-left">
+            <span class="font-semibold font-mono text-sm w-5 text-right tabular-nums inline-block">${r.age}</span>
+            <span class="inline-flex items-center w-14">${typeof r.age==='number' && r.age>=60 ? '<span class="badge badge-ongoing text-[10px] font-bold tracking-wider px-1.5 py-0.5">SENIOR</span>' : ''}</span>
+          </div>
+        </td>
+        <td class="text-center px-4 whitespace-nowrap" style="text-align:center;"><span class="badge ${r.sex==='Male'?'badge-ongoing':'badge-pending'}">${r.sex ? r.sex.toUpperCase() : ''}</span></td>
+        <td class="text-xs">${r.civil}</td>
+        <td class="text-xs font-medium">${r.zone}</td>
+        <td class="text-xs text-forest-400">${r.address}</td>
+        <td class="text-xs font-mono">${r.household}</td>
+        <td><span class="badge ${r.status==='Active'?'badge-resolved':r.status==='Deceased'?'badge-not-complied':'badge-pending'}">${r.status}</span></td>
+        <td>
+          <div class="row-actions">
+            <button onclick="viewResident(${r.id})" class="icon-btn" title="View Details"><span data-icon="view" data-icon-size="16"></span></button>
+            ${viewingArchived ? `
+            <button onclick="restoreResident(${r.id})" class="icon-btn edit" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+            <button onclick="permanentDeleteResident(${r.id}, '${r.lastName}, ${r.firstName}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
+            ` : `
+            <button onclick="editResident(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
+            <button onclick="archiveResident(${r.id})" class="icon-btn danger" data-perm="archive_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+            `}
+          </div>
+        </td>
+      </tr>`).join('');
   }
 
   document.getElementById('resPagInfo').textContent=`Showing ${Math.min(start+1,total)||0}–${Math.min(start+ROWS,total)} of ${total}`;
   const tp=Math.ceil(total/ROWS)||1;
   bcRenderPagination(document.getElementById('resPagCtrl'), curPage, tp, (p) => { curPage = p; renderResidents(); });
+  resBatchManager.updateUI();
 }
 
 async function openAddResident(){
@@ -553,6 +578,26 @@ async function restoreResident(id){
   try {
     await BCApi.docRestore('census', id);
     showToast('Resident record restored to active list.');
+    await loadResidents();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function permanentDeleteResident(id, name) {
+  const activeRole = currentRole || (window.CURRENT_USER && window.CURRENT_USER.role);
+  if (typeof roleCan === 'function' && !roleCan(activeRole, 'delete_records')) {
+    await bcAlert('Access Denied: Only System Administrators are authorized to permanently delete records.', { title: 'Access Denied', danger: true });
+    return;
+  }
+  const confirmed = await bcConfirmPermanentDelete(
+    `Are you sure you want to permanently delete resident record "${name || '#' + id}"? This action is IRREVERSIBLE and will hard-delete matching data from the database.`,
+    { title: 'Permanently Delete Resident' }
+  );
+  if (!confirmed) return;
+  try {
+    await BCApi.permanentDelete('census', id);
+    showToast('Resident record permanently deleted.');
     await loadResidents();
   } catch (err) {
     showToast(err.message, 'error');
