@@ -399,6 +399,24 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertTrue(res.get_json().get("deleted"))
         self.assertIsNone(Incident.query.get(inc_id))
 
+    def test_archive_and_restore_accessible_to_all_roles(self):
+        for role in ["System Admin", "Barangay Captain", "Desk Officer", "Data Encoder"]:
+            self.login_as(role=role, username="user_" + role.lower().replace(" ", "_"))
+            inc = Incident(report_no=f"INC-ROLE-{role[:3]}", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", archived=False)
+            db.session.add(inc)
+            db.session.commit()
+            inc_id = inc.id
+
+            # Archive (soft-delete)
+            res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
+            self.assertEqual(res.status_code, 200, f"Role {role} failed to archive")
+            self.assertTrue(Incident.query.get(inc_id).archived)
+
+            # Restore
+            res = self.client.post("/api/records.php?type=incidents&action=batch_restore", json={"ids": [inc_id]})
+            self.assertEqual(res.status_code, 200, f"Role {role} failed to restore")
+            self.assertFalse(Incident.query.get(inc_id).archived)
+
 
 if __name__ == "__main__":
     unittest.main()

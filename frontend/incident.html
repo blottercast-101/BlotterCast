@@ -633,10 +633,10 @@
 
               ${viewingArchived ? `
               <!-- Restore Action -->
-              <button onclick="restoreIncident(${r.id})" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Restore to Active">
+              <button onclick="restoreIncident(${r.id})" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Restore to Active">
                 ${iconSvg('refresh', 16)}
               </button>
-              <!-- Permanent Delete Action -->
+              <!-- Permanent Delete Action (Admin Only) -->
               <button onclick="permanentDeleteIncident(${r.id}, '${r.reportNo || ''}')" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Permanently Delete">
                 ${iconSvg('trash', 16)}
               </button>
@@ -646,7 +646,7 @@
                 ${iconSvg('lock', 16)}
               </button>
               <!-- 3. Archive Action -->
-              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Archive Incident">
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Archive Incident">
                 ${iconSvg('archive', 16)}
               </button>
               ` : `
@@ -655,7 +655,7 @@
                 ${iconSvg('edit', 16)}
               </button>
               <!-- 3. Archive Action -->
-              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Archive Incident">
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" title="Archive Incident">
                 ${iconSvg('archive', 16)}
               </button>
               `}

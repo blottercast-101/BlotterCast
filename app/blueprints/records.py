@@ -79,9 +79,15 @@ def records_router():
         if resp:
             return resp
     elif request.method == "DELETE":
-        resp = _enforce("delete_records")
-        if resp:
-            return resp
+        is_permanent = request.args.get("permanent") == "1"
+        if is_permanent:
+            resp = _enforce("delete_records")
+            if resp:
+                return resp
+        else:
+            resp = _enforce("view_records")
+            if resp:
+                return resp
     elif request.method == "POST":
         perm = "add_blotter" if request.args.get("type") == "blotter" else "edit_records"
         resp = _enforce(perm)
@@ -98,7 +104,11 @@ def records_router():
 
 
 def _handle_batch(rtype, action):
-    resp = _enforce("delete_records")
+    is_perm_delete = action in ("batch_permanent_delete", "permanent_delete", "delete")
+    if is_perm_delete:
+        resp = _enforce("delete_records")
+    else:
+        resp = _enforce("view_records")
     if resp:
         return resp
 

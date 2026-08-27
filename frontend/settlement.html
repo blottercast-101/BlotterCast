@@ -486,11 +486,11 @@
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
               ${viewingArchived ? `
-              <button onclick="restoreSettlement(${r.id})" class="icon-btn edit" data-perm="delete_records" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
+              <button onclick="restoreSettlement(${r.id})" class="icon-btn edit" title="Restore to Active"><span data-icon="refresh" data-icon-size="16"></span></button>
               <button onclick="permanentDeleteSettlement(${r.id}, '${r.caseNo || ''}')" class="icon-btn danger" data-perm="delete_records" title="Permanently Delete"><span data-icon="trash" data-icon-size="16"></span></button>
               ` : `
               <button onclick="editSettlement(${r.id})" class="icon-btn edit" data-perm="edit_records" title="Edit"><span data-icon="edit" data-icon-size="16"></span></button>
-              <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" data-perm="delete_records" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
+              <button onclick="archiveSettlement(${r.id})" class="icon-btn danger" title="Archive"><span data-icon="archive" data-icon-size="16"></span></button>
               `}
             </div>
           </td>
