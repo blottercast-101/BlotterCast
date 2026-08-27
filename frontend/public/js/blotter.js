@@ -55,27 +55,37 @@ function initBlotterImportHandler(options = {}) {
 
   ['dragenter', 'dragover'].forEach(eventName => {
     dropzone.addEventListener(eventName, () => {
-      dropzone.classList.add('border-emerald-500', 'bg-emerald-50');
+      dropzone.classList.add('border-emerald-500', 'bg-emerald-50/50', 'scale-[1.01]');
     }, false);
   });
 
   ['dragleave', 'drop'].forEach(eventName => {
     dropzone.addEventListener(eventName, () => {
-      dropzone.classList.remove('border-emerald-500', 'bg-emerald-50');
+      dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'scale-[1.01]');
     }, false);
   });
 
   dropzone.addEventListener('drop', (e) => {
     const dt = e.dataTransfer;
-    const files = dt.files;
+    const files = dt && dt.files;
     if (files && files.length > 0) {
-      uploadBlotterFile(files[0]);
+      const file = files[0];
+      if (typeof stageBlotterImportFile === 'function') {
+        stageBlotterImportFile(file);
+      } else {
+        uploadBlotterFile(file);
+      }
     }
   }, false);
 
   fileInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      uploadBlotterFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (typeof stageBlotterImportFile === 'function') {
+        stageBlotterImportFile(file);
+      } else {
+        uploadBlotterFile(file);
+      }
     }
   });
 
@@ -85,7 +95,7 @@ function initBlotterImportHandler(options = {}) {
   async function uploadBlotterFile(file) {
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
-    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+    if (!['csv', 'xlsx'].includes(ext)) {
       if (typeof showToast === 'function') {
         showToast('Invalid file format. Please upload a .csv or .xlsx file.', 'error');
       } else {
@@ -101,7 +111,7 @@ function initBlotterImportHandler(options = {}) {
     if (statusEl) {
       statusEl.innerHTML = `
         <div class="flex items-center gap-2 text-forest-700 py-2">
-          <svg class="animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg class="animate-spin h-5 w-5 text-emerald-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
