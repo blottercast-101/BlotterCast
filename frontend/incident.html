@@ -253,13 +253,13 @@
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required onchange="onZoneDropdownChange()">
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Zone 1">Zone 1 (Residence 3)</option>
+            <option value="Zone 1">Zone 1 (Aquariadise / Siling Bata)</option>
             <option value="Zone 2">Zone 2 (Residence 1)</option>
             <option value="Zone 3">Zone 3 (Pandi Village 2)</option>
-            <option value="Zone 4">Zone 4 (Mitay 1)</option>
-            <option value="Zone 5">Zone 5 (Sitio Gubat)</option>
-            <option value="Zone 6">Zone 6 (Bangko St.)</option>
-            <option value="Zone 7">Zone 7 (Barangka St.)</option>
+            <option value="Zone 4">Zone 4 (Mitay 1 / Jollibee)</option>
+            <option value="Zone 5">Zone 5 (Sitio Gubat / Center)</option>
+            <option value="Zone 6">Zone 6 (Balai Loreta / Bangko St.)</option>
+            <option value="Zone 7">Zone 7 (Barangka St. / Pandi-Angat)</option>
           </select>
         </div>
         <div class="col-span-2">
@@ -789,6 +789,7 @@
   let pickerBoundaryGeojson = null;
   let pickerZonesLayer = null;
   let pickerZonesGeojson = null;
+  let activeZoneLayerGroup = null;
   let boundaryLoadingPromise = null;
   let isLocationVerifiedInBoundary = false;
   let isGeocoded = false;
@@ -819,58 +820,101 @@
   function setBoundaryStyle(isError) {
     if (pickerBoundaryLayer) {
       pickerBoundaryLayer.setStyle({
-        color: isError ? '#e11d48' : '#064e3b',
-        weight: 3.5,
+        color: isError ? '#e11d48' : '#dc2626',
+        weight: isError ? 3.5 : 2.5,
+        dashArray: '6, 6',
         fillColor: 'transparent',
         fillOpacity: 0
       });
     }
   }
 
-  function getPickerZoneStyle(feature, isSelected = false) {
-    if (isSelected) {
-      return {
-        color: '#059669',
-        weight: 3,
-        fillColor: '#10B981',
-        fillOpacity: 0.35,
-        dashArray: ''
-      };
-    }
-    return {
-      color: '#94A3B8',
-      weight: 1.5,
-      fillColor: '#E2E8F0',
-      fillOpacity: 0.20,
-      dashArray: '4'
-    };
-  }
+  function highlightSelectedZoneOnMiniMap(zoneId, shouldPan = true) {
+    if (!pickerMap) return;
 
-  function highlightSelectedZoneOnMiniMap(zoneId) {
-    if (!pickerZonesLayer) return;
-    pickerZonesLayer.eachLayer((layer) => {
-      const isSel = layer.feature && layer.feature.properties && layer.feature.properties.zone === zoneId;
-      layer.setStyle(getPickerZoneStyle(layer.feature, isSel));
-      if (isSel && pickerMap && layer.getBounds) {
-        pickerMap.fitBounds(layer.getBounds(), { padding: [30, 30], maxZoom: 17 });
+    if (!activeZoneLayerGroup) {
+      activeZoneLayerGroup = L.layerGroup().addTo(pickerMap);
+    }
+    activeZoneLayerGroup.clearLayers();
+
+    if (!pickerZonesGeojson || !pickerZonesGeojson.features) return;
+
+    // Reset base polygons to subtle neutral styling
+    if (pickerZonesLayer) {
+      pickerZonesLayer.eachLayer((layer) => {
+        layer.setStyle({
+          color: '#94A3B8',
+          weight: 1.5,
+          fillColor: '#F1F5F9',
+          fillOpacity: 0.18,
+          dashArray: '4'
+        });
+      });
+    }
+
+    if (!zoneId) return;
+
+    // Find the feature matching zoneId
+    const matchingFeature = pickerZonesGeojson.features.find(f =>
+      f.properties && (f.properties.zone === zoneId || f.properties.zone_id === zoneId)
+    );
+
+    if (matchingFeature) {
+      const activeHighlight = L.geoJSON(matchingFeature, {
+        style: {
+          color: '#059669',
+          weight: 3.5,
+          fillColor: '#10B981',
+          fillOpacity: 0.38,
+          dashArray: ''
+        },
+        interactive: false
+      });
+      activeZoneLayerGroup.addLayer(activeHighlight);
+
+      if (shouldPan && activeHighlight.getBounds) {
+        const bounds = activeHighlight.getBounds();
+        if (bounds && bounds.isValid && bounds.isValid()) {
+          pickerMap.fitBounds(bounds, { padding: [35, 35], maxZoom: 17 });
+        }
       }
-    });
+    }
   }
 
   function detectZoneFromCoordinates(lat, lng) {
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return null;
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+
     if (!pickerZonesGeojson || !pickerZonesGeojson.features) return null;
     try {
-      const pt = turf.point([Number(lng), Number(lat)]);
-      for (const feat of pickerZonesGeojson.features) {
-        if (turf.booleanPointInPolygon(pt, feat)) {
+      if (typeof turf !== 'undefined') {
+        const pt = turf.point([numLng, numLat]);
+        for (const feat of pickerZonesGeojson.features) {
+          if (turf.booleanPointInPolygon(pt, feat)) {
+            return {
+              zone: feat.properties.zone || feat.properties.zone_id,
+              name: feat.properties.name,
+              landmark: feat.properties.landmark || feat.properties.name
+            };
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: ray-casting against zone polygon coordinates
+    for (const feat of pickerZonesGeojson.features) {
+      if (feat.geometry && feat.geometry.type === 'Polygon' && Array.isArray(feat.geometry.coordinates[0])) {
+        const ring = feat.geometry.coordinates[0].map(coord => [coord[1], coord[0]]); // [lat, lng]
+        if (isPointInPolygon([numLat, numLng], ring)) {
           return {
-            zone: feat.properties.zone,
+            zone: feat.properties.zone || feat.properties.zone_id,
             name: feat.properties.name,
             landmark: feat.properties.landmark || feat.properties.name
           };
         }
       }
-    } catch (e) {}
+    }
     return null;
   }
 
@@ -895,9 +939,14 @@
     await ensurePickerBoundaryLoaded();
 
     if (pickerZonesGeojson) {
-      const selectedZone = document.getElementById('if_zone').value;
       pickerZonesLayer = L.geoJSON(pickerZonesGeojson, {
-        style: (feature) => getPickerZoneStyle(feature, feature.properties.zone === selectedZone),
+        style: () => ({
+          color: '#94A3B8',
+          weight: 1.5,
+          fillColor: '#F1F5F9',
+          fillOpacity: 0.18,
+          dashArray: '4'
+        }),
         onEachFeature: (feature, layer) => {
           const z = feature.properties;
           layer.bindTooltip(`<strong>${z.zone}</strong> (${z.name})`, { sticky: true, className: 'text-xs' });
@@ -909,16 +958,26 @@
       }).addTo(pickerMap);
     }
 
+    // Dedicated layer group for active zone highlighting
+    activeZoneLayerGroup = L.layerGroup().addTo(pickerMap);
+
     if (pickerBoundaryGeojson) {
       pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
+        interactive: false,
         style: {
-          color: '#1a5730',
-          weight: 3,
+          color: '#dc2626',
+          weight: 2.5,
+          dashArray: '6, 6',
           fillColor: 'transparent',
           fillOpacity: 0
         }
       }).addTo(pickerMap);
       pickerMap.fitBounds(pickerBoundaryLayer.getBounds(), { padding: [10, 10] });
+    }
+
+    const currentZoneVal = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
+    if (currentZoneVal) {
+      highlightSelectedZoneOnMiniMap(currentZoneVal, false);
     }
 
     pickerMap.on('click', (e) => {
@@ -937,6 +996,7 @@
         pickerMap.removeLayer(pickerMarker);
         pickerMarker = null;
       }
+      if (activeZoneLayerGroup) activeZoneLayerGroup.clearLayers();
       setBoundaryStyle(false);
       updateSubmitButtonState();
       return;
@@ -961,6 +1021,18 @@
 
     if (pan && pickerMap) {
       pickerMap.setView([numLat, numLng], Math.max(pickerMap.getZoom(), 16));
+    }
+
+    // Geocoding / Pin Drag Reverse Mapping:
+    // Determine which zone boundary the pin falls inside and automatically update dropdown and highlight
+    const detectedZoneObj = detectZoneFromCoordinates(numLat, numLng);
+    if (detectedZoneObj && detectedZoneObj.zone) {
+      const zoneSelect = document.getElementById('if_zone');
+      if (zoneSelect && zoneSelect.value !== detectedZoneObj.zone) {
+        zoneSelect.value = detectedZoneObj.zone;
+        if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(zoneSelect);
+      }
+      highlightSelectedZoneOnMiniMap(detectedZoneObj.zone, false);
     }
 
     updatePickerStatusBadge(numLat, numLng);
@@ -1320,13 +1392,13 @@
   const ZONE_MATCH_RULES = [
     {
       zone: 'Zone 1',
-      landmark: 'Residence 3',
-      keywords: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3'],
+      landmark: 'Aquariadise / Siling Bata',
+      keywords: ['aquariadise', 'siling bata', 'massway', 'petshop', 'residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3'],
     },
     {
       zone: 'Zone 2',
       landmark: 'Residence 1',
-      keywords: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1', 'pasong kalabaw', 'kalabaw st'],
+      keywords: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1', 'pasong kalabaw', 'kalabaw st', 'residence private resort'],
     },
     {
       zone: 'Zone 3',
@@ -1335,23 +1407,23 @@
     },
     {
       zone: 'Zone 4',
-      landmark: 'Mitay 1',
-      keywords: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno', 'pandi village 1'],
+      landmark: 'Mitay 1 / Jollibee Pandi',
+      keywords: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno', 'pandi village 1', 'jollibee', 'jollibee - pandi', 'jollibee pandi', "adam's hotel", "adam's hotel apartment", 'adams hotel'],
     },
     {
       zone: 'Zone 5',
-      landmark: 'Sitio Gubat',
-      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center'],
+      landmark: 'Sitio Gubat / Center',
+      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center', 'barangay hall'],
     },
     {
       zone: 'Zone 6',
-      landmark: 'Bangko St.',
-      keywords: ['bangko st', 'bangko street', 'bangko', 'kalye bangko'],
+      landmark: 'Balai Loreta / Bangko St.',
+      keywords: ['balai loreta', 'balai loreta private resort', 'bangko st', 'bangko street', 'bangko', 'kalye bangko'],
     },
     {
       zone: 'Zone 7',
-      landmark: 'Barangka St.',
-      keywords: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi-angat road', 'pandi angat'],
+      landmark: 'Barangka St. / Pandi-Angat Rd',
+      keywords: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi-angat road', 'pandi angat', 'pandi-angat rd'],
     },
   ];
 
@@ -1413,18 +1485,22 @@
       zoneSelect.value = targetZone;
       if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(zoneSelect);
       showToast(`Switched zone to ${targetZone}`, 'success');
+      highlightSelectedZoneOnMiniMap(targetZone, true);
     }
     checkZoneLocationConflict();
   }
 
-  function onZoneDropdownChange() {
-    // 1. Decoupled from geocoding coordinates:
-    // Changing Zone NEVER injects coordinates or marks outside-boundary locations as inside!
-    checkZoneLocationConflict();
+  async function onZoneDropdownChange() {
     const zoneVal = document.getElementById('if_zone') ? document.getElementById('if_zone').value : '';
-    highlightSelectedZoneOnMiniMap(zoneVal);
+    await ensurePickerBoundaryLoaded();
 
-    // 2. If coordinates are already set, re-verify status with the new zone conflict rule
+    if (pickerMap) {
+      highlightSelectedZoneOnMiniMap(zoneVal, true);
+    }
+
+    checkZoneLocationConflict();
+
+    // Re-verify status with the new zone
     const lat = document.getElementById('if_lat').value;
     const lng = document.getElementById('if_lng').value;
     if (lat && lng) {
