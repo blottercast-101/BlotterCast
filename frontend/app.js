@@ -731,23 +731,92 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Toast ──────────────────────────────────────────────────
-function showToast(msg, type = 'success') {
+// ── Toast System with Linear Countdown Progress Bar ────────
+let _toastTimer = null;
+let _toastRemainingTime = 0;
+let _toastStartTime = 0;
+let _toastDuration = 3500;
+
+function showToast(msg, type = 'success', duration = 3500) {
   let t = document.getElementById('globalToast');
   if (!t) {
     t = document.createElement('div');
     t.id = 'globalToast';
-    t.className = 'toast';
     document.body.appendChild(t);
   }
-  // Icon per type: success → check, warning → alert-triangle, error → x
-  const iconName = type === 'error' ? 'x' : type === 'warning' ? 'alert-triangle' : 'check';
-  // Apply the matching CSS modifier class
-  t.className = 'toast' + (type === 'error' ? ' error' : type === 'warning' ? ' warning' : '');
-  t.innerHTML = `<span data-icon="${iconName}" data-icon-size="16"></span><span>${msg}</span>`;
+
+  // Clear existing timer if toast is already active
+  if (_toastTimer) {
+    clearTimeout(_toastTimer);
+    _toastTimer = null;
+  }
+
+  _toastDuration = duration || 3500;
+  _toastRemainingTime = _toastDuration;
+
+  // Icon per type: success → check, warning → alert-triangle, error → x, info → info
+  const iconName = type === 'error' ? 'x' : type === 'warning' ? 'alert-triangle' : type === 'info' ? 'info' : 'check';
+  const typeClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'info' ? 'info' : 'success';
+
+  t.className = `toast ${typeClass}`;
+  t.innerHTML = `
+    <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
+      <span data-icon="${iconName}" data-icon-size="16"></span>
+      <span class="leading-snug">${msg}</span>
+    </div>
+    <div class="toast-progress-track">
+      <div class="toast-progress-bar" style="animation: toastProgress ${_toastDuration}ms linear forwards;"></div>
+    </div>
+  `;
+
   if (window.lucide) lucide.createIcons({ nodes: [t] });
+
+  // Force DOM reflow to restart CSS animation cleanly
+  const progressBar = t.querySelector('.toast-progress-bar');
+  if (progressBar) {
+    progressBar.style.animation = 'none';
+    void progressBar.offsetWidth; // trigger reflow
+    progressBar.style.animation = `toastProgress ${_toastDuration}ms linear forwards`;
+  }
+
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  _toastStartTime = Date.now();
+
+  const dismissToast = () => {
+    t.classList.remove('show');
+    if (_toastTimer) {
+      clearTimeout(_toastTimer);
+      _toastTimer = null;
+    }
+  };
+
+  _toastTimer = setTimeout(dismissToast, _toastDuration);
+
+  // Hover Interactions: pause countdown on mouseenter, resume on mouseleave
+  t.onmouseenter = () => {
+    if (_toastTimer) {
+      clearTimeout(_toastTimer);
+      _toastTimer = null;
+      _toastRemainingTime -= (Date.now() - _toastStartTime);
+      if (_toastRemainingTime < 200) _toastRemainingTime = 200;
+    }
+  };
+
+  t.onmouseleave = () => {
+    if (t.classList.contains('show') && !_toastTimer) {
+      _toastStartTime = Date.now();
+      _toastTimer = setTimeout(dismissToast, _toastRemainingTime);
+    }
+  };
+
+  // Synced cleanup on animationend
+  if (progressBar) {
+    progressBar.onanimationend = () => {
+      if (!t.matches(':hover')) {
+        dismissToast();
+      }
+    };
+  }
 }
 
 // ── Custom alert/confirm dialogs — drop-in async replacements for the
