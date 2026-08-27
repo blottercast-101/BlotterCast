@@ -60,27 +60,37 @@ class TestMLPipeline(unittest.TestCase):
         self.assertIn('has_incident', panel.columns)
         self.assertIn('days_since_last', panel.columns)
 
-        # 2. Incident Occurrence (Random Forest) -> Test Accuracy
+        # 2. Incident Occurrence (Random Forest) -> Test Accuracy & Losses
         occ_metrics, occ_model, occ_cols = train_occurrence_model(panel)
         self.assertIn('accuracy', occ_metrics)
         self.assertIn('f1', occ_metrics)
+        self.assertIn('train_loss', occ_metrics)
+        self.assertIn('test_loss', occ_metrics)
+        self.assertIn('balanced_accuracy', occ_metrics)
+        self.assertGreater(occ_metrics['train_samples'], 0)
+        self.assertGreater(occ_metrics['test_samples'], 0)
         self.assertGreaterEqual(occ_metrics['accuracy'], 0.0)
         self.assertLessEqual(occ_metrics['accuracy'], 1.0)
-        print(f"[TEST] Random Forest Occurrence Accuracy: {occ_metrics['accuracy'] * 100:.1f}%")
+        print(f"[TEST] Random Forest Occurrence Accuracy: {occ_metrics['accuracy'] * 100:.1f}%, Train Loss: {occ_metrics['train_loss']}, Test Loss: {occ_metrics['test_loss']}")
 
-        # 3. Incident Type (Gradient Boosting) -> Test Macro F1
+        # 3. Incident Type (Gradient Boosting) -> Test Macro F1 & Losses
         type_metrics, type_model, type_cols = train_type_model(df)
         self.assertIn('macroF1', type_metrics)
+        self.assertIn('weightedF1', type_metrics)
+        self.assertIn('train_loss', type_metrics)
+        self.assertIn('test_loss', type_metrics)
         self.assertGreaterEqual(type_metrics['macroF1'], 0.0)
         self.assertLessEqual(type_metrics['macroF1'], 1.0)
-        print(f"[TEST] Gradient Boosting Type Macro F1: {type_metrics['macroF1'] * 100:.1f}%")
+        print(f"[TEST] Gradient Boosting Type Macro F1: {type_metrics['macroF1'] * 100:.1f}%, Weighted F1: {type_metrics['weightedF1'] * 100:.1f}%")
 
-        # 4. Hotspot Risk (Gradient Boosting) -> Spatial Accuracy
+        # 4. Hotspot Risk (Gradient Boosting) -> Spatial Accuracy & Losses
         hot_metrics, hot_model, hot_cols = train_hotspot_model(panel)
         self.assertIn('accuracy', hot_metrics)
+        self.assertIn('train_loss', hot_metrics)
+        self.assertIn('test_loss', hot_metrics)
         self.assertGreaterEqual(hot_metrics['accuracy'], 0.0)
         self.assertLessEqual(hot_metrics['accuracy'], 1.0)
-        print(f"[TEST] Gradient Boosting Hotspot Accuracy: {hot_metrics['accuracy'] * 100:.1f}%")
+        print(f"[TEST] Gradient Boosting Hotspot Accuracy: {hot_metrics['accuracy'] * 100:.1f}%, Train Loss: {hot_metrics['train_loss']}, Test Loss: {hot_metrics['test_loss']}")
 
         # 5. Zone forecasts across 7 and 14 days
         cat_cache = build_category_probability_cache(type_model, type_cols)

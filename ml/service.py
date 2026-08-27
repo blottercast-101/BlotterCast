@@ -147,11 +147,12 @@ def clear_models_and_cache():
 
 
 def get_active_incident_count() -> int:
-    """Returns the live count of active, non-archived incident records."""
+    """Returns the live count of active, non-archived incident and direct blotter records."""
     try:
         with db_engine.connect() as conn:
-            cnt_res = conn.execute(text("SELECT COUNT(*) FROM incidents WHERE archived = FALSE OR archived IS NULL"))
-            return int(cnt_res.scalar() or 0)
+            cnt_inc = conn.execute(text("SELECT COUNT(*) FROM incidents WHERE archived = FALSE OR archived IS NULL")).scalar() or 0
+            cnt_blt = conn.execute(text("SELECT COUNT(*) FROM blotter_records WHERE (archived = FALSE OR archived IS NULL) AND source_incident_id IS NULL")).scalar() or 0
+            return int(cnt_inc + cnt_blt)
     except Exception as e:
         print(f"[ML Service] Error querying active incident count: {e}")
         return 0
@@ -212,16 +213,37 @@ preload_models_and_cache()
 
 
 def load_incidents() -> pd.DataFrame:
-    """Loads active, verified incident reports from the database with PostgreSQL boolean compatibility."""
+    """Loads active, verified incident reports and direct blotter records dynamically from the database."""
     try:
         with db_engine.connect() as conn:
-            df = pd.read_sql(
+            df_inc = pd.read_sql(
                 text(
                     "SELECT id, incident_date AS date, time_reported, zone_id AS zone, hour, category, priority, status "
                     "FROM incidents WHERE archived = FALSE OR archived IS NULL ORDER BY incident_date"
                 ),
                 conn,
             )
+            df_blt = pd.read_sql(
+                text(
+                    "SELECT id, date_filed AS date, incident_time AS time_reported, zone_id AS zone, "
+                    "nature AS category, 'Medium' AS priority, status "
+                    "FROM blotter_records WHERE (archived = FALSE OR archived IS NULL) AND source_incident_id IS NULL "
+                    "ORDER BY date_filed"
+                ),
+                conn,
+            )
+
+        dfs = []
+        if not df_inc.empty:
+            dfs.append(df_inc)
+        if not df_blt.empty:
+            df_blt['hour'] = pd.to_datetime(df_blt['time_reported'].astype(str), errors='coerce').dt.hour.fillna(14).astype(int)
+            dfs.append(df_blt)
+
+        if not dfs:
+            return pd.DataFrame()
+
+        df = pd.concat(dfs, ignore_index=True)
         if not df.empty:
             df = df.dropna(subset=['date', 'zone']).copy()
             df['date'] = pd.to_datetime(df['date'], errors='coerce')
@@ -233,7 +255,7 @@ def load_incidents() -> pd.DataFrame:
             excluded = {'civil', 'crim', 'criminal', 'neighborhood dispute', 'other', 'others', 'neighborhood dispute (others)', 'unknown', 'none'}
             df = df[~df['category'].str.lower().isin(excluded)].copy()
             df['hour'] = pd.to_numeric(df['hour'], errors='coerce').fillna(12).astype(int)
-        return df
+        return df.sort_values('date').reset_index(drop=True)
     except Exception as e:
         print(f"[ML Service] Database load_incidents error: {e}")
         return pd.DataFrame()
@@ -342,40 +364,41 @@ def train():
                 'macro_f1': type_f1_score,
                 'f1_score': type_f1_score,
                 'occurrence_accuracy': occ_metrics.get('accuracy'),
+                'occurrence_balanced_accuracy': occ_metrics.get('balanced_accuracy'),
+                'occurrence_precision': occ_metrics.get('precision'),
+                'occurrence_recall': occ_metrics.get('recall'),
+                'occurrence_f1': occ_metrics.get('f1'),
+                'occurrence_train_loss': occ_metrics.get('train_loss'),
+                'occurrence_test_loss': occ_metrics.get('test_loss'),
                 'hotspot_accuracy': hot_metrics.get('accuracy'),
+                'hotspot_balanced_accuracy': hot_metrics.get('balanced_accuracy'),
+                'hotspot_precision': hot_metrics.get('precision'),
+                'hotspot_recall': hot_metrics.get('recall'),
+                'hotspot_f1': hot_metrics.get('f1'),
+                'hotspot_train_loss': hot_metrics.get('train_loss'),
+                'hotspot_test_loss': hot_metrics.get('test_loss'),
+                'type_accuracy': type_metrics.get('accuracy'),
+                'type_weighted_f1': type_metrics.get('weightedF1'),
+                'type_macro_f1': type_metrics.get('macroF1'),
+                'type_train_loss': type_metrics.get('train_loss'),
+                'type_test_loss': type_metrics.get('test_loss'),
             },
             'incident_type_f1': type_f1_score,
             'macro_f1': type_f1_score,
             'occurrence': {
                 'metrics': occ_results,
                 'active': 'random_forest',
-                'meta': {
-                    'accuracy': occ_metrics.get('accuracy'),
-                    'f1': occ_metrics.get('f1'),
-                    'auc': occ_metrics.get('auc'),
-                    'bestThreshold': occ_metrics.get('threshold'),
-                }
+                'meta': occ_metrics,
             },
             'type': {
                 'metrics': type_results,
                 'active': 'gradient_boosting',
-                'meta': {
-                    'macroF1': type_metrics.get('macroF1'),
-                    'macro_f1': type_f1_score,
-                    'weightedF1': type_metrics.get('weightedF1'),
-                    'f1': type_metrics.get('f1'),
-                    'f1_score': type_metrics.get('f1_score'),
-                    'incident_type_f1': type_f1_score,
-                    'accuracy': type_metrics.get('accuracy'),
-                }
+                'meta': type_metrics,
             },
             'hotspot': {
                 'metrics': hot_results,
                 'active': 'gradient_boosting',
-                'meta': {
-                    'accuracy': hot_metrics.get('accuracy'),
-                    'f1': hot_metrics.get('f1'),
-                }
+                'meta': hot_metrics,
             },
             'zoneRisk': zone_rows,
             'trainedAt': trained_at_iso,
@@ -468,8 +491,13 @@ def latest():
         if row and row['record_count'] >= 10:
             trained_at = row['trained_at']
             trained_at_str = (trained_at.isoformat() + 'Z') if hasattr(trained_at, 'isoformat') else str(trained_at)
+            occ_m = _json.loads(row['occurrence_metrics_json'])
             type_m = _json.loads(row['type_metrics_json'])
-            type_gb = type_m.get('gradient_boosting', {}) if isinstance(type_m, dict) else {}
+            hot_m = _json.loads(row['hotspot_metrics_json'])
+            occ_rf = occ_m.get('random_forest', {}) if isinstance(occ_m, dict) else occ_m
+            type_gb = type_m.get('gradient_boosting', {}) if isinstance(type_m, dict) else type_m
+            hot_gb = hot_m.get('gradient_boosting', {}) if isinstance(hot_m, dict) else hot_m
+
             type_f1_score = (
                 type_gb.get('incident_type_f1') or
                 type_gb.get('macro_f1') or
@@ -488,21 +516,18 @@ def latest():
                     'incident_type_f1': type_f1_score,
                     'macro_f1': type_f1_score,
                     'f1_score': type_f1_score,
+                    'occurrence_accuracy': occ_rf.get('accuracy') or occ_m.get('accuracy'),
+                    'hotspot_accuracy': hot_gb.get('accuracy') or hot_m.get('accuracy'),
                 },
                 'incident_type_f1': type_f1_score,
                 'macro_f1': type_f1_score,
-                'occurrence': {'metrics': _json.loads(row['occurrence_metrics_json']), 'active': row['active_occurrence_model']},
+                'occurrence': {'metrics': occ_m, 'active': row['active_occurrence_model'], 'meta': occ_rf},
                 'type': {
                     'metrics': type_m,
                     'active': row['active_type_model'],
-                    'meta': {
-                        'incident_type_f1': type_f1_score,
-                        'macro_f1': type_f1_score,
-                        'macroF1': type_gb.get('macroF1'),
-                        'accuracy': type_gb.get('accuracy'),
-                    }
+                    'meta': type_gb,
                 },
-                'hotspot': {'metrics': _json.loads(row['hotspot_metrics_json']), 'active': row['active_hotspot_model']},
+                'hotspot': {'metrics': hot_m, 'active': row['active_hotspot_model'], 'meta': hot_gb},
                 'zoneRisk': _json.loads(row['hotspots_json']),
                 'trainedAt': trained_at_str,
             }

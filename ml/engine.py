@@ -22,8 +22,17 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    confusion_matrix,
+    f1_score,
+    log_loss,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 # Official administrative zones for Barangay Mapulang Lupa, Pandi, Bulacan (Strictly Zones 1 to 7)
@@ -155,22 +164,57 @@ def make_design_matrix(panel: pd.DataFrame) -> Tuple[pd.DataFrame, np.ndarray]:
 def train_occurrence_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], RandomForestClassifier, List[str]]:
     """
     Task 1: Incident Occurrence Classification using Random Forest.
-    Calculates dynamic classification metrics on a 20% holdout test split:
-      - Accuracy = (TP + TN) / (TP + TN + FP + FN)
+    Calculates genuine holdout classification metrics:
+      - Train Loss / Test Loss (Log Loss)
+      - Test Accuracy = (TP + TN) / (TP + TN + FP + FN)
+      - Balanced Accuracy = (Sensitivity + Specificity) / 2
       - Precision = TP / (TP + FP)
       - Recall = TP / (TP + FN)
       - F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
+      - ROC AUC
+      - Confusion Matrix
     """
+    empty_metrics = {
+        'accuracy': None,
+        'balanced_accuracy': None,
+        'precision': None,
+        'recall': None,
+        'f1': None,
+        'auc': None,
+        'train_loss': None,
+        'test_loss': None,
+        'confusion_matrix': None,
+        'threshold': 0.5,
+        'train_samples': 0,
+        'test_samples': 0,
+    }
+    if panel.empty:
+        return empty_metrics, RandomForestClassifier(), []
+
     X, y = make_design_matrix(panel)
     n = len(X)
-    split_idx = int(n * 0.8)
+    if n < 10 or len(np.unique(y)) < 2:
+        return empty_metrics, RandomForestClassifier(), []
 
-    X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
+    # Stratified holdout split ensures occurrences across all zones are representative in train and test
+    min_class_count = int(np.min(np.bincount(y)))
+    stratify = y if min_class_count >= 2 else None
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=stratify
+        )
+    except Exception:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+    if len(np.unique(y_train)) < 2:
+        return empty_metrics, RandomForestClassifier(), []
 
     rf_model = RandomForestClassifier(
-        n_estimators=120,
-        max_depth=8,
+        n_estimators=100,
+        max_depth=5,
+        min_samples_split=6,
         min_samples_leaf=4,
         class_weight='balanced',
         random_state=42,
@@ -178,8 +222,10 @@ def train_occurrence_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], RandomF
     )
     rf_model.fit(X_train, y_train)
 
-    # Threshold optimization on training set
     train_proba = rf_model.predict_proba(X_train)[:, 1]
+    test_proba = rf_model.predict_proba(X_test)[:, 1]
+
+    # Threshold optimization strictly on TRAINING set to avoid data leakage
     best_thr, best_f1 = 0.5, -1.0
     for thr in np.arange(0.15, 0.85, 0.05):
         pred_train = (train_proba >= thr).astype(int)
@@ -187,22 +233,34 @@ def train_occurrence_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], RandomF
         if f1 > best_f1:
             best_f1, best_thr = f1, float(thr)
 
-    test_proba = rf_model.predict_proba(X_test)[:, 1]
+    # Genuine evaluation on holdout test set
     y_pred = (test_proba >= best_thr).astype(int)
 
-    # Dynamic accuracy calculation: Accuracy = (TP + TN) / (TP + TN + FP + FN)
     acc = accuracy_score(y_test, y_pred)
+    bal_acc = balanced_accuracy_score(y_test, y_pred) if len(np.unique(y_test)) > 1 else acc
     prec = precision_score(y_test, y_pred, zero_division=0)
     rec = recall_score(y_test, y_pred, zero_division=0)
     f1 = f1_score(y_test, y_pred, zero_division=0)
     auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else None
 
+    # Compute Train Loss & Test Loss
+    eps = 1e-15
+    tr_p_clipped = np.clip(train_proba, eps, 1 - eps)
+    te_p_clipped = np.clip(test_proba, eps, 1 - eps)
+    train_loss = log_loss(y_train, tr_p_clipped)
+    test_loss = log_loss(y_test, te_p_clipped)
+    cm = confusion_matrix(y_test, y_pred).tolist()
+
     metrics = {
         'accuracy': round(float(acc), 4),
+        'balanced_accuracy': round(float(bal_acc), 4),
         'precision': round(float(prec), 4),
         'recall': round(float(rec), 4),
         'f1': round(float(f1), 4),
         'auc': round(float(auc), 4) if auc is not None else None,
+        'train_loss': round(float(train_loss), 4),
+        'test_loss': round(float(test_loss), 4),
+        'confusion_matrix': cm,
         'threshold': round(float(best_thr), 2),
         'train_samples': int(len(X_train)),
         'test_samples': int(len(X_test)),
@@ -214,8 +272,12 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     """
     Task 2: Multi-Class Incident Type Classification using Gradient Boosting.
     Features: Zone + Day of Week + Time of Day (Hour Binned).
-    Calculates Weighted F1-Score:
-      Weighted F1 accounts for class imbalance across incident categories.
+    Calculates genuine holdout multi-class metrics:
+      - Train Loss / Test Loss (Multi-class Log Loss)
+      - Test Accuracy
+      - Macro F1 & Weighted F1
+      - Macro Precision & Macro Recall
+      - Confusion Matrix
     """
     empty_metrics = {
         'accuracy': None,
@@ -227,6 +289,10 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
         'incident_type_f1': None,
         'macroPrecision': None,
         'macroRecall': None,
+        'train_loss': None,
+        'test_loss': None,
+        'confusion_matrix': None,
+        'nTrain': 0,
         'nTest': 0,
     }
 
@@ -234,7 +300,6 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
         return empty_metrics, GradientBoostingClassifier(), []
 
     df = raw_df[raw_df['zone'].isin(OFFICIAL_ZONES)].copy()
-
     df['date'] = pd.to_datetime(df['date'])
     df['dow'] = df['date'].dt.dayofweek
     df['tbin'] = df['hour'].apply(get_time_bin)
@@ -242,82 +307,75 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
     # Filter out non-incident case classifications / legacy dispute markers
     df = df[~df['category'].astype(str).str.lower().str.strip().isin(EXCLUDED_CATEGORIES)].sort_values('date').reset_index(drop=True)
 
-    if df.empty or len(df) < 5 or len(df['category'].unique()) < 2:
+    if df.empty or len(df) < 10 or len(df['category'].unique()) < 2:
         return empty_metrics, GradientBoostingClassifier(), []
 
     X = pd.get_dummies(df[['zone', 'dow', 'tbin']].astype(str))
     y = df['category']
-    n = len(df)
+    classes = np.unique(y)
 
-    # Use train_test_split for multi-class representation
+    counts = y.value_counts()
+    strat = y if (counts.min() >= 2 and len(counts) > 1) else None
     try:
-        from sklearn.model_selection import train_test_split
-        # Check if min class count allows stratification
-        counts = y.value_counts()
-        strat = y if (counts.min() >= 2 and len(counts) > 1) else None
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=strat
         )
     except Exception:
-        split_idx = max(1, int(n * 0.8))
+        split_idx = max(1, int(len(df) * 0.8))
         X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
         y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
 
-    # Guarantee at least 2 classes in training set
-    if len(y_train.unique()) < 2:
+    if len(y_train.unique()) < 2 or len(X_test) == 0:
         return empty_metrics, GradientBoostingClassifier(), []
 
     gb_model = GradientBoostingClassifier(
-        n_estimators=100,
+        n_estimators=60,
         max_depth=3,
-        learning_rate=0.1,
+        learning_rate=0.08,
+        min_samples_leaf=2,
         random_state=42
     )
     gb_model.fit(X_train, y_train)
 
-    # Predictions & evaluation on real holdout test data
-    try:
-        y_pred = gb_model.predict(X_test)
-        f1_val = f1_score(y_test, y_pred, average='weighted', zero_division=0) * 100
-        acc_val = accuracy_score(y_test, y_pred) * 100
+    # Out-of-sample holdout test predictions
+    y_pred = gb_model.predict(X_test)
+    tr_proba = gb_model.predict_proba(X_train)
+    te_proba = gb_model.predict_proba(X_test)
 
-        # Fallback to multiclass accuracy if test set sparsity collapses the F1 score
-        if (f1_val == 0.0 or f1_val is None or np.isnan(f1_val)) and len(y_test) > 0:
-            f1_val = acc_val
-
-        # Fallback to training set score only if test split is too small
-        if (f1_val == 0.0 or f1_val is None or np.isnan(f1_val)) and len(y_train) > 0:
-            y_pred_tr = gb_model.predict(X_train)
-            f1_val = f1_score(y_train, y_pred_tr, average='weighted', zero_division=0) * 100
-            if f1_val == 0.0:
-                f1_val = accuracy_score(y_train, y_pred_tr) * 100
-
-        incident_type_score = round(float(f1_val), 1)
-        acc_score = round(float(acc_val / 100.0), 4)
-    except Exception:
-        y_pred = gb_model.predict(X_train)
-        incident_type_score = round(float(accuracy_score(y_train, y_pred) * 100), 1)
-        acc_score = round(float(incident_type_score / 100.0), 4)
-
-    effective_f1 = round(float(incident_type_score / 100.0), 4)
+    acc_val = float(accuracy_score(y_test, y_pred))
+    weighted_f1 = float(f1_score(y_test, y_pred, average='weighted', zero_division=0))
+    macro_f1 = float(f1_score(y_test, y_pred, average='macro', zero_division=0))
+    macro_prec = float(precision_score(y_test, y_pred, average='macro', zero_division=0))
+    macro_rec = float(recall_score(y_test, y_pred, average='macro', zero_division=0))
 
     try:
-        prec_val = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-        rec_val = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+        train_loss = float(log_loss(y_train, tr_proba, labels=classes))
+        test_loss = float(log_loss(y_test, te_proba, labels=classes))
     except Exception:
-        prec_val = effective_f1
-        rec_val = effective_f1
+        train_loss, test_loss = None, None
+
+    try:
+        cm = confusion_matrix(y_test, y_pred, labels=classes).tolist()
+    except Exception:
+        cm = None
+
+    incident_type_pct = round(weighted_f1 * 100, 1)
 
     metrics = {
-        'accuracy': acc_score,
-        'macroF1': effective_f1,
-        'macro_f1': incident_type_score,
-        'weightedF1': effective_f1,
-        'f1_score': effective_f1,
-        'f1': effective_f1,
-        'incident_type_f1': incident_type_score,
-        'macroPrecision': round(float(prec_val), 4),
-        'macroRecall': round(float(rec_val), 4),
+        'accuracy': round(acc_val, 4),
+        'macroF1': round(macro_f1, 4),
+        'macro_f1': incident_type_pct,
+        'weightedF1': round(weighted_f1, 4),
+        'f1_score': round(weighted_f1, 4),
+        'f1': round(weighted_f1, 4),
+        'incident_type_f1': incident_type_pct,
+        'macroPrecision': round(macro_prec, 4),
+        'macroRecall': round(macro_rec, 4),
+        'train_loss': round(train_loss, 4) if train_loss is not None else None,
+        'test_loss': round(test_loss, 4) if test_loss is not None else None,
+        'confusion_matrix': cm,
+        'classes': list(classes),
+        'nTrain': int(len(X_train)),
         'nTest': int(len(X_test)),
     }
     return metrics, gb_model, list(X.columns)
@@ -326,12 +384,25 @@ def train_type_model(raw_df: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoos
 def train_hotspot_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBoostingClassifier, List[str]]:
     """
     Task 3: Hotspot Spatial Risk Classification using Gradient Boosting.
-    Evaluates spatial risk classification accuracy on holdout test set.
+    Evaluates spatial risk classification metrics on holdout test set:
+      - Train Loss / Test Loss (Log Loss)
+      - Test Accuracy
+      - Balanced Accuracy
+      - Precision, Recall, F1-Score
+      - ROC AUC
+      - Confusion Matrix
     """
     empty_metrics = {
         'accuracy': None,
+        'balanced_accuracy': None,
+        'precision': None,
+        'recall': None,
         'f1': None,
         'auc': None,
+        'train_loss': None,
+        'test_loss': None,
+        'confusion_matrix': None,
+        'train_samples': 0,
         'test_samples': 0,
     }
     if panel.empty:
@@ -339,37 +410,65 @@ def train_hotspot_model(panel: pd.DataFrame) -> Tuple[Dict[str, Any], GradientBo
 
     X, y = make_design_matrix(panel)
     n = len(X)
-    if n < 5 or len(np.unique(y)) < 2:
+    if n < 10 or len(np.unique(y)) < 2:
         return empty_metrics, GradientBoostingClassifier(), []
 
-    split_idx = int(n * 0.8)
-
-    X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
+    min_class_count = int(np.min(np.bincount(y)))
+    stratify = y if min_class_count >= 2 else None
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=stratify
+        )
+    except Exception:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
 
     if len(np.unique(y_train)) < 2:
         return empty_metrics, GradientBoostingClassifier(), []
 
     gb_model = GradientBoostingClassifier(
-        n_estimators=100,
+        n_estimators=80,
         max_depth=3,
-        learning_rate=0.1,
+        learning_rate=0.08,
+        min_samples_split=6,
+        min_samples_leaf=4,
         random_state=42
     )
     gb_model.fit(X_train, y_train)
 
+    train_proba = gb_model.predict_proba(X_train)[:, 1]
     test_proba = gb_model.predict_proba(X_test)[:, 1]
+
+    # Evaluate on test set with 0.5 baseline probability threshold
     y_pred = (test_proba >= 0.5).astype(int)
 
-    # Dynamic accuracy calculation for hotspot classification
     acc = accuracy_score(y_test, y_pred)
+    bal_acc = balanced_accuracy_score(y_test, y_pred) if len(np.unique(y_test)) > 1 else acc
+    prec = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred, zero_division=0)
     f1 = f1_score(y_test, y_pred, zero_division=0)
     auc = roc_auc_score(y_test, test_proba) if len(np.unique(y_test)) > 1 else None
 
+    eps = 1e-15
+    tr_p_clipped = np.clip(train_proba, eps, 1 - eps)
+    te_p_clipped = np.clip(test_proba, eps, 1 - eps)
+    train_loss = log_loss(y_train, tr_p_clipped)
+    test_loss = log_loss(y_test, te_p_clipped)
+
+    cm = confusion_matrix(y_test, y_pred).tolist()
+
     metrics = {
         'accuracy': round(float(acc), 4),
+        'balanced_accuracy': round(float(bal_acc), 4),
+        'precision': round(float(prec), 4),
+        'recall': round(float(rec), 4),
         'f1': round(float(f1), 4),
         'auc': round(float(auc), 4) if auc is not None else None,
+        'train_loss': round(float(train_loss), 4),
+        'test_loss': round(float(test_loss), 4),
+        'confusion_matrix': cm,
+        'train_samples': int(len(X_train)),
         'test_samples': int(len(X_test)),
     }
     return metrics, gb_model, list(X.columns)
