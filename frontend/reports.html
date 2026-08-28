@@ -257,28 +257,35 @@ const REPORT_FORMAT_SUPPORT = {
 
 // Scheduled-report toggles remain a static demo (no cron system in this
 // prototype), but "Generate Report" below produces real files from MySQL.
-const scheduled = [
+var scheduled = [
   { report:'Incident Summary Report', freq:'Weekly',  next:'Next Monday', recipients:'kapitan, admin', format:'PDF',   on:true  },
   { report:'Trend Analysis Report',   freq:'Monthly', next:'1st of month', recipients:'admin',          format:'Excel', on:true  },
   { report:'Settlement Compliance',   freq:'Monthly', next:'1st of month', recipients:'kapitan',        format:'PDF',   on:false },
 ];
 
-document.getElementById('schedTableBody').innerHTML = scheduled.map((s,i)=>`
-  <tr>
-    <td class="font-medium text-forest-800">${s.report}</td>
-    <td><span class="badge badge-resolved text-xs">${s.freq}</span></td>
-    <td class="text-sm text-forest-600">${s.next}</td>
-    <td class="text-xs text-forest-400">${s.recipients}</td>
-    <td><span class="badge ${s.format === 'PDF' ? 'badge-pdf' : 'badge-excel'} text-xs">${s.format}</span></td>
-    <td><button class="sched-toggle ${s.on?'on':'off'}" id="tog${i}" onclick="toggleSched(${i})"></button></td>
-  </tr>`).join('');
+var schedStates = scheduled.map(s => s.on);
 
-let schedStates = scheduled.map(s=>s.on);
+function renderScheduledReports() {
+  const tbody = document.getElementById('schedTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = scheduled.map((s, i) => `
+    <tr>
+      <td class="font-medium text-forest-800">${s.report}</td>
+      <td><span class="badge badge-resolved text-xs">${s.freq}</span></td>
+      <td class="text-sm text-forest-600">${s.next}</td>
+      <td class="text-xs text-forest-400">${s.recipients}</td>
+      <td><span class="badge ${s.format === 'PDF' ? 'badge-pdf' : 'badge-excel'} text-xs">${s.format}</span></td>
+      <td><button class="sched-toggle ${schedStates[i] ? 'on' : 'off'}" id="tog${i}" onclick="toggleSched(${i})"></button></td>
+    </tr>`).join('');
+}
+
 function toggleSched(i) {
-  schedStates[i]=!schedStates[i];
-  const btn=document.getElementById('tog'+i);
-  btn.className='sched-toggle '+(schedStates[i]?'on':'off');
-  showToast(schedStates[i]?'Schedule enabled.':'Schedule disabled.');
+  schedStates[i] = !schedStates[i];
+  const btn = document.getElementById('tog' + i);
+  if (btn) {
+    btn.className = 'sched-toggle ' + (schedStates[i] ? 'on' : 'off');
+  }
+  showToast(schedStates[i] ? 'Schedule enabled.' : 'Schedule disabled.');
 }
 
 async function loadRecentReports() {
@@ -286,6 +293,7 @@ async function loadRecentReports() {
   try {
     const rows = await BCApi._fetch('api/reports.php?action=list');
     const tbody = document.getElementById('recentReports');
+    if (!tbody) return;
     if (!rows || rows.length === 0) {
       bcSetTableEmpty('recentReports', 'No reports generated yet. Use "Generate Report" above.', 'reports', 6);
     } else {
@@ -300,6 +308,7 @@ async function loadRecentReports() {
             <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>
           </td>
         </tr>`).join('');
+      if (typeof renderIcons === 'function') renderIcons(tbody);
     }
   } catch (err) {
     bcSetTableError('recentReports', 'Could not load report history from server.', 'loadRecentReports()', 6);
@@ -307,7 +316,7 @@ async function loadRecentReports() {
   }
 }
 
-let currentReportType = 'Incident Summary Report';
+var currentReportType = 'Incident Summary Report';
 
 function openGenerateModal(title) {
   currentReportType = title;
@@ -364,13 +373,15 @@ async function simulateGenerate() {
     showToast(err.message, 'error');
   } finally {
     btn.disabled = false; btn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> Generate';
+    if (typeof renderIcons === 'function') renderIcons(btn);
   }
 }
-
 
 window.initReports = async function () {
   try {
     await requireAuth();
+    renderScheduledReports();
+    if (typeof renderIcons === 'function') renderIcons();
     await loadRecentReports();
   } catch (initErr) {
     console.error('initReports error:', initErr);

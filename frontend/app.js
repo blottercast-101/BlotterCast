@@ -500,6 +500,19 @@ async function navigateTo(url, pushState = true) {
       }
     }
 
+    // Transfer page-specific inline <style> blocks to head if not already present
+    const pageStyleTags = Array.from(doc.querySelectorAll('style'));
+    for (const st of pageStyleTags) {
+      const cssText = (st.textContent || '').trim();
+      if (cssText && !document.head.innerHTML.includes(cssText.slice(0, 45))) {
+        try {
+          const newStyle = document.createElement('style');
+          newStyle.textContent = cssText;
+          document.head.appendChild(newStyle);
+        } catch (_) {}
+      }
+    }
+
     // Load external scripts (e.g. Chart.js, Leaflet, public/js/certificates.js, etc.)
     const scriptTags = Array.from(doc.querySelectorAll('script'));
     for (const s of scriptTags) {

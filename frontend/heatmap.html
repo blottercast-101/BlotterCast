@@ -880,6 +880,13 @@
 
         if (!coords || !Array.isArray(coords) || coords.length < 3) return true;
 
+        let inside = false;
+        for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+          const xi = coords[i][0], yi = coords[i][1];
+          const xj = coords[j][0], yj = coords[j][1];
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
         if (inside) return true;
         // Bounding box allowance for Mapulang Lupa / Pandi area
         if (lat >= 14.80 && lat <= 14.98 && lng >= 120.90 && lng <= 121.06) {
@@ -1247,8 +1254,10 @@
     }
 
     function getFilteredIncidents(onlyMapped = false) {
-      const period = periodFilter ? periodFilter.value : 'all';
-      const category = categoryFilter ? categoryFilter.value : 'all';
+      const pEl = typeof getPeriodFilter === 'function' ? getPeriodFilter() : document.getElementById('periodFilter');
+      const cEl = typeof getCategoryFilter === 'function' ? getCategoryFilter() : document.getElementById('categoryFilter');
+      const period = pEl ? pEl.value : 'all';
+      const category = cEl ? cEl.value : 'all';
 
       return (incidents || []).filter(item => {
         if (!item) return false;
@@ -1334,19 +1343,21 @@
         markerLayer.clearLayers();
       }
       markerMap.clear();
-      if (!showMarkers || !showMarkers.checked) return;
+      const sM = typeof getShowMarkers === 'function' ? getShowMarkers() : document.getElementById('showMarkers');
+      if (!sM || !sM.checked) return;
 
       // Only render markers for authentic verified coordinates within the barangay boundary
       (data || []).filter(item => item && !item.isUnmapped && item.lat != null && item.lng != null).forEach(item => {
-        const zoneCount = (zoneCounts && item.zone) ? (zoneCounts[item.zone] || 1) : 1;
-        const tier = tierEngine ? tierEngine.getTier(zoneCount) : null;
-
         try {
+          const tier = tierEngine ? tierEngine.getTier(zoneCounts[item.zone] || 0) : { color: '#10B981', border: '#059669' };
+          const zoneCount = (zoneCounts && item.zone) ? (zoneCounts[item.zone] || 0) : 0;
+          const markerColor = typeof getDensityColor === 'function' ? getDensityColor(item.zone, zoneCounts) : tier.color;
+
           const marker = L.circleMarker([item.lat, item.lng], {
-            radius: 7,
+            radius: 5.5,
             color: '#ffffff',
-            weight: 2,
-            fillColor: tier ? tier.color : '#10B981',
+            weight: 1.5,
+            fillColor: markerColor === 'transparent' ? '#10B981' : markerColor,
             fillOpacity: 0.95
           }).bindPopup(createIncidentPopupContent(item, zoneCount, tier));
 
@@ -1402,15 +1413,15 @@
     var tableCurrentPage = 1;
     var currentTableFilteredData = [];
 
-    var heatmapSearchInput = document.getElementById('heatmapSearchInput');
-    var heatmapZoneFilter = document.getElementById('heatmapZoneFilter');
-    var heatmapCategoryFilter = document.getElementById('heatmapCategoryFilter');
-
     function applyTableFilters(resetPage = true) {
       if (resetPage) tableCurrentPage = 1;
-      const q = (heatmapSearchInput ? heatmapSearchInput.value : '').toLowerCase().trim();
-      const zFilter = heatmapZoneFilter ? heatmapZoneFilter.value : 'ALL';
-      const cFilter = heatmapCategoryFilter ? heatmapCategoryFilter.value : 'ALL';
+      const sI = typeof getHeatmapSearchInput === 'function' ? getHeatmapSearchInput() : document.getElementById('heatmapSearchInput');
+      const zF = typeof getHeatmapZoneFilter === 'function' ? getHeatmapZoneFilter() : document.getElementById('heatmapZoneFilter');
+      const cF = typeof getHeatmapCategoryFilter === 'function' ? getHeatmapCategoryFilter() : document.getElementById('heatmapCategoryFilter');
+
+      const q = (sI ? sI.value : '').toLowerCase().trim();
+      const zFilter = zF ? zF.value : 'ALL';
+      const cFilter = cF ? cF.value : 'ALL';
 
       const baseData = getFilteredIncidents(false);
 
@@ -1445,7 +1456,9 @@
     }
 
     function renderTablePage() {
-      incidentTableBody.innerHTML = '';
+      const tbodyEl = typeof getIncidentTableBody === 'function' ? getIncidentTableBody() : document.getElementById('incidentTableBody');
+      if (!tbodyEl) return;
+      tbodyEl.innerHTML = '';
       const total = currentTableFilteredData.length;
       const totalPages = Math.ceil(total / TABLE_PAGE_SIZE) || 1;
       tableCurrentPage = Math.max(1, Math.min(tableCurrentPage, totalPages));
@@ -1616,12 +1629,69 @@
       }
     }
 
+    function getPeriodFilter() { return document.getElementById('periodFilter'); }
+    function getCategoryFilter() { return document.getElementById('categoryFilter'); }
+    function getShowMarkers() { return document.getElementById('showMarkers'); }
+    function getTotalVisible() { return document.getElementById('totalVisible'); }
+    function getTopCategory() { return document.getElementById('topCategory'); }
+    function getCategoryList() { return document.getElementById('categoryList'); }
+    function getIncidentTableBody() { return document.getElementById('incidentTableBody'); }
+    function getHeatmapSearchInput() { return document.getElementById('heatmapSearchInput'); }
+    function getHeatmapZoneFilter() { return document.getElementById('heatmapZoneFilter'); }
+    function getHeatmapCategoryFilter() { return document.getElementById('heatmapCategoryFilter'); }
+
+    function bindHeatmapEventListeners() {
+      const pF = getPeriodFilter();
+      const cF = getCategoryFilter();
+      const sM = getShowMarkers();
+      const sI = getHeatmapSearchInput();
+      const zF = getHeatmapZoneFilter();
+      const catF = getHeatmapCategoryFilter();
+
+      if (pF && !pF._bcBound) {
+        pF._bcBound = true;
+        pF.addEventListener('change', updateHeatMapPage);
+      }
+      if (cF && !cF._bcBound) {
+        cF._bcBound = true;
+        cF.addEventListener('change', updateHeatMapPage);
+      }
+      if (sM && !sM._bcBound) {
+        sM._bcBound = true;
+        sM.addEventListener('change', updateHeatMapPage);
+      }
+      if (sI && !sI._bcBound) {
+        sI._bcBound = true;
+        sI.addEventListener('input', () => applyTableFilters(true));
+      }
+      if (zF && !zF._bcBound) {
+        zF._bcBound = true;
+        zF.addEventListener('change', () => {
+          applyTableFilters(true);
+          const selected = zF.value;
+          if (selected && selected !== 'ALL') {
+            highlightZonePolygon(selected);
+          } else if (selected === 'ALL' && boundaryLayer) {
+            try {
+              map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
+            } catch (_) {}
+          }
+        });
+      }
+      if (catF && !catF._bcBound) {
+        catF._bcBound = true;
+        catF.addEventListener('change', () => applyTableFilters(true));
+      }
+    }
+
     function renderSummary(mappedData, zoneCounts) {
-      totalVisible.textContent = mappedData.length;
+      const totalVisEl = getTotalVisible();
+      if (totalVisEl) totalVisEl.textContent = mappedData.length;
 
       const counts = getCategoryCounts(mappedData);
       const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-      topCategory.textContent = entries.length ? `${entries[0][0]} (${entries[0][1]})` : 'No data';
+      const topCatEl = getTopCategory();
+      if (topCatEl) topCatEl.textContent = entries.length ? `${entries[0][0]} (${entries[0][1]})` : 'No data';
 
       // ── Bottom metric cards ──────────────────────────────────────────────
       const pinCountEl = document.getElementById('bottomPinCount');
@@ -1643,29 +1713,32 @@
       }
       // ────────────────────────────────────────────────────────────────────
 
-      categoryList.innerHTML = '';
+      const catListEl = getCategoryList();
+      if (catListEl) {
+        catListEl.innerHTML = '';
 
-      if (!entries.length) {
-        categoryList.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters within the boundary.</p>';
-        return;
+        if (!entries.length) {
+          catListEl.innerHTML = '<p class="text-sm text-forest-400">No incidents match the selected filters within the boundary.</p>';
+          return;
+        }
+
+        const maxCount = entries[0][1];
+
+        entries.forEach(([category, count]) => {
+          const percent = (count / maxCount) * 100;
+          const row = document.createElement('div');
+          row.innerHTML = `
+            <div class="flex items-center justify-between text-sm mb-1">
+              <span class="font-medium text-forest-700">${category}</span>
+              <span class="text-forest-400">${count}</span>
+            </div>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar" style="width:${percent}%"></div>
+            </div>
+          `;
+          catListEl.appendChild(row);
+        });
       }
-
-      const maxCount = entries[0][1];
-
-      entries.forEach(([category, count]) => {
-        const percent = (count / maxCount) * 100;
-        const row = document.createElement('div');
-        row.innerHTML = `
-          <div class="flex items-center justify-between text-sm mb-1">
-            <span class="font-medium text-forest-700">${category}</span>
-            <span class="text-forest-400">${count}</span>
-          </div>
-          <div class="mini-bar-wrap">
-            <div class="mini-bar" style="width:${percent}%"></div>
-          </div>
-        `;
-        categoryList.appendChild(row);
-      });
     }
 
     function renderTable(allFilteredData) {
@@ -1726,33 +1799,10 @@
       } catch (_) {}
     }
 
-    if (periodFilter) periodFilter.addEventListener('change', updateHeatMapPage);
-    if (categoryFilter) categoryFilter.addEventListener('change', updateHeatMapPage);
-    if (showMarkers) showMarkers.addEventListener('change', updateHeatMapPage);
-
-    if (heatmapSearchInput) {
-      heatmapSearchInput.addEventListener('input', () => applyTableFilters(true));
-    }
-    if (heatmapZoneFilter) {
-      heatmapZoneFilter.addEventListener('change', () => {
-        applyTableFilters(true);
-        const selected = heatmapZoneFilter.value;
-        if (selected && selected !== 'ALL') {
-          highlightZonePolygon(selected);
-        } else if (selected === 'ALL' && boundaryLayer) {
-          try {
-            map.fitBounds(boundaryLayer.getBounds(), { padding: [20, 20] });
-          } catch (_) {}
-        }
-      });
-    }
-    if (heatmapCategoryFilter) {
-      heatmapCategoryFilter.addEventListener('change', () => applyTableFilters(true));
-    }
-
     window.initHeatmap = async function () {
       try {
         ensureHeatmapInitialized();
+        bindHeatmapEventListeners();
         await loadBoundary();
         await loadIncidents();
         await updateHeatMapPage();
