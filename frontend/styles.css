@@ -2041,4 +2041,35 @@ path.zone-pulse-active {
   }
 }
 
+/* ---------------- Map Containers & Leaflet Dimensions ---------------- */
+#map,
+#pickerMapContainer,
+#censusMap {
+  min-height: 520px !important;
+  height: 520px;
+  width: 100%;
+  position: relative;
+  background-color: #f8fafc;
+}
+
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 500px !important;
+  background: #f8fafc !important;
+  z-index: 10;
+}
+
+.zone-map-permanent-label {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  color: #064e3b;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
 
