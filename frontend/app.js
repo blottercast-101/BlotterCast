@@ -1895,20 +1895,12 @@ class BcBatchManager {
           <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger" title="Permanently Delete Selected">
             ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
           </button>
-          ` : `
-          <button id="bcBatchPermDeleteBtn" class="bc-batch-btn danger opacity-40 cursor-not-allowed" disabled title="Only System Admins can permanently delete records.">
-            ${typeof iconSvg === 'function' ? iconSvg('trash', 14) : ''} Permanently Delete Selected (${totalSelected})
-          </button>
-          `}
+          ` : ''}
         ` : canArchive ? `
           <button id="bcBatchArchiveBtn" class="bc-batch-btn archive" title="Archive Selected">
             ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
           </button>
-        ` : `
-          <button id="bcBatchArchiveBtn" class="bc-batch-btn archive opacity-40 cursor-not-allowed" disabled title="You are not authorized to archive records.">
-            ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
-          </button>
-        `}
+        ` : ''}
         <button id="bcBatchDeselectBtn" class="bc-batch-btn ghost" title="Clear selection">
           Deselect All
         </button>

@@ -89,7 +89,7 @@ function applyElementPermissions(role, root = document) {
   root.querySelectorAll('[data-perm]').forEach(el => {
     const permission = el.getAttribute('data-perm');
     if (permission && !roleCan(role, permission)) {
-      el.style.display = 'none';
+      el.remove();
     }
   });
 }
