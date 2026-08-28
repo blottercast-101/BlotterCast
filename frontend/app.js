@@ -186,7 +186,17 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
 }
 
-// ── Guaranteed Smooth Navigation & Active Link Highlight ────
+// ── In-App Client-Side Routing & Persistent Layout Shell ────
+let _bcNavigating = false;
+const _bcLoadedScriptSrcs = new Set(
+  Array.from(document.querySelectorAll('script[src]')).map(s => s.getAttribute('src')).filter(Boolean)
+);
+
+// Global timer and resource trackers for view lifecycles
+window._bcActiveTimeouts = window._bcActiveTimeouts || [];
+window._bcActiveIntervals = window._bcActiveIntervals || [];
+window._bcActiveCharts = window._bcActiveCharts || [];
+
 function _bcGetPageNameFromUrl(url) {
   try {
     const clean = url.split('?')[0].split('#')[0];
@@ -197,8 +207,8 @@ function _bcGetPageNameFromUrl(url) {
   }
 }
 
-function _bcUpdateSidebarActiveLink(targetUrl) {
-  const pageName = _bcGetPageNameFromUrl(targetUrl || window.location.pathname);
+function updateActiveSidebar(targetUrl) {
+  const pageName = _bcGetPageNameFromUrl(targetUrl);
   const links = document.querySelectorAll('aside nav .nav-link');
   links.forEach(l => {
     const linkPage = l.getAttribute('data-page') || _bcGetPageNameFromUrl(l.getAttribute('href') || '');
@@ -209,15 +219,341 @@ function _bcUpdateSidebarActiveLink(targetUrl) {
     }
   });
 }
+const _bcUpdateSidebarActiveLink = updateActiveSidebar;
 
-function bcNavigate(targetUrl) {
-  if (!targetUrl) return;
-  window.location.href = targetUrl;
+async function _bcLoadScriptOnce(src) {
+  if (!src || _bcLoadedScriptSrcs.has(src)) return;
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => {
+      _bcLoadedScriptSrcs.add(src);
+      resolve();
+    };
+    s.onerror = () => {
+      console.warn('Failed to load script:', src);
+      resolve(); // Do not hard break router
+    };
+    document.head.appendChild(s);
+  });
 }
 
-// Highlight the current page on load
-document.addEventListener('DOMContentLoaded', () => {
-  _bcUpdateSidebarActiveLink(window.location.pathname);
+function _bcCleanupPreviousView() {
+  // 1. Destroy all active Leaflet map instances
+  const maps = [
+    window.currentMap,
+    window.heatmapInstance,
+    window.pickerMap,
+    window.map,
+    window._censusMap
+  ];
+  maps.forEach(m => {
+    if (m && typeof m.remove === 'function') {
+      try {
+        m.remove();
+      } catch (e) {
+        console.warn('Map cleanup notice:', e);
+      }
+    }
+  });
+  window.currentMap = null;
+  window.heatmapInstance = null;
+  window.pickerMap = null;
+  window.map = null;
+  window._censusMap = null;
+
+  // Clear map container identifiers
+  document.querySelectorAll('#map, #pickerMapContainer, #censusMap').forEach(el => {
+    if (el) el._leaflet_id = null;
+  });
+
+  // 2. Disconnect observers
+  if (window._heatmapResizeObserver) {
+    try { window._heatmapResizeObserver.disconnect(); } catch (_) {}
+    window._heatmapResizeObserver = null;
+  }
+
+  // 3. Destroy Chart.js instances
+  if (window._bcActiveCharts && Array.isArray(window._bcActiveCharts)) {
+    window._bcActiveCharts.forEach(c => {
+      try { c.destroy(); } catch (_) {}
+    });
+    window._bcActiveCharts = [];
+  }
+  document.querySelectorAll('canvas').forEach(canvas => {
+    try {
+      if (window.Chart && typeof Chart.getChart === 'function') {
+        const chartInstance = Chart.getChart(canvas);
+        if (chartInstance) chartInstance.destroy();
+      }
+    } catch (_) {}
+  });
+
+  // 4. Clear running intervals and timeouts from previous view
+  if (window._bcActiveIntervals && Array.isArray(window._bcActiveIntervals)) {
+    window._bcActiveIntervals.forEach(id => clearInterval(id));
+    window._bcActiveIntervals = [];
+  }
+  if (window._bcActiveTimeouts && Array.isArray(window._bcActiveTimeouts)) {
+    window._bcActiveTimeouts.forEach(id => clearTimeout(id));
+    window._bcActiveTimeouts = [];
+  }
+}
+
+// ── Route-to-Init Dispatcher ──────────────────────────────
+function executeModuleInit(url) {
+  const clean = (url || window.location.pathname).split('?')[0].split('#')[0];
+  const path = clean.split('/').pop().toLowerCase() || 'dashboard.html';
+  const fullPath = '/' + path;
+
+  const initMap = {
+    'dashboard.html': () => window.initDashboard?.(),
+    '/dashboard.html': () => window.initDashboard?.(),
+    'blotter.html': () => window.initBlotter?.(),
+    '/blotter.html': () => window.initBlotter?.(),
+    'incident.html': () => window.initIncidents?.() || window.initIncident?.(),
+    '/incident.html': () => window.initIncidents?.() || window.initIncident?.(),
+    'incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
+    '/incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
+    'settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
+    '/settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
+    'census.html': () => window.initCensus?.(),
+    '/census.html': () => window.initCensus?.(),
+    'clearance.html': () => window.initClearance?.(),
+    '/clearance.html': () => window.initClearance?.(),
+    'residency.html': () => window.initResidency?.(),
+    '/residency.html': () => window.initResidency?.(),
+    'non_residency.html': () => window.initNonResidency?.(),
+    '/non_residency.html': () => window.initNonResidency?.(),
+    'non-residency.html': () => window.initNonResidency?.(),
+    '/non-residency.html': () => window.initNonResidency?.(),
+    'indigency.html': () => window.initIndigency?.(),
+    '/indigency.html': () => window.initIndigency?.(),
+    'heatmap.html': () => window.initHeatmap?.(),
+    '/heatmap.html': () => window.initHeatmap?.(),
+    'trends.html': () => window.initTrends?.(),
+    '/trends.html': () => window.initTrends?.(),
+    'predictions.html': () => window.initPredictions?.(),
+    '/predictions.html': () => window.initPredictions?.(),
+    'users.html': () => window.initUsers?.(),
+    '/users.html': () => window.initUsers?.(),
+    'reports.html': () => window.initReports?.(),
+    '/reports.html': () => window.initReports?.(),
+    'settings.html': () => window.initSettings?.(),
+    '/settings.html': () => window.initSettings?.()
+  };
+
+  try {
+    const fn = initMap[path] || initMap[fullPath];
+    if (typeof fn === 'function') {
+      const res = fn();
+      if (res && typeof res.then === 'function') {
+        return res;
+      }
+    }
+  } catch (e) {
+    console.error(`Error initializing module for ${path}:`, e);
+  }
+}
+const _bcExecuteRouteLifecycle = executeModuleInit;
+
+// ── Bulletproof SPA Navigation & Content Swap ──────────────
+async function navigateTo(url, pushState = true) {
+  if (!url || _bcNavigating) return;
+
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  if (cleanUrl.endsWith('login.html') || cleanUrl.endsWith('index.html') || cleanUrl === '/' || cleanUrl === '') {
+    window.location.href = url;
+    return;
+  }
+
+  const currentFull = window.location.pathname.split('/').pop() + window.location.search;
+  const targetRel = url.split('/').pop();
+  if (currentFull === targetRel && !pushState) return;
+
+  _bcNavigating = true;
+  const contentContainer = document.querySelector('#app-content') || document.querySelector('.ml-64');
+  if (!contentContainer) {
+    window.location.href = url;
+    return;
+  }
+
+  // Show instant lightweight loader inside main container without freezing UI
+  contentContainer.classList.add('bc-content-loading');
+
+  try {
+    const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const html = await response.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const newMain = doc.querySelector('#app-content, main, .page-content, .ml-64');
+
+    if (doc.title) {
+      document.title = doc.title;
+    }
+
+    // Teardown previous view resources, maps, charts, timers
+    _bcCleanupPreviousView();
+
+    // Dismiss open modals before swapping
+    document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
+      m.classList.remove('show');
+    });
+
+    // Remove obsolete page-level modals from previous view
+    document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]').forEach(m => {
+      m.remove();
+    });
+
+    const newModals = doc.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]');
+    newModals.forEach(m => {
+      document.body.appendChild(m);
+    });
+
+    if (newMain) {
+      contentContainer.innerHTML = newMain.innerHTML;
+    } else {
+      contentContainer.innerHTML = html;
+    }
+
+    contentContainer.classList.remove('bc-content-loading');
+    contentContainer.classList.remove('bc-content-enter');
+    void contentContainer.offsetWidth; // trigger reflow
+    contentContainer.classList.add('bc-content-enter');
+
+    // Update URL history
+    if (pushState) {
+      window.history.pushState({ url }, '', url);
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Update active sidebar link styling
+    updateActiveSidebar(url);
+
+    // Load any page stylesheets (e.g. Leaflet CSS) if not already in document.head
+    const linkTags = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+    for (const l of linkTags) {
+      const href = l.getAttribute('href');
+      if (href && !document.querySelector(`link[href="${href}"]`)) {
+        try {
+          const newLink = document.createElement('link');
+          newLink.rel = 'stylesheet';
+          newLink.href = href;
+          if (l.integrity) newLink.integrity = l.integrity;
+          if (l.crossOrigin) newLink.crossOrigin = l.crossOrigin;
+          document.head.appendChild(newLink);
+        } catch (_) {}
+      }
+    }
+
+    // Load external scripts (e.g. Chart.js, Leaflet, public/js/certificates.js, etc.)
+    const scriptTags = Array.from(doc.querySelectorAll('script'));
+    for (const s of scriptTags) {
+      const src = s.getAttribute('src');
+      if (src && !src.includes('api.js') && !src.includes('permissions.js') && !src.includes('app.js') && !src.includes('icons.js') && !src.includes('custom-controls.js')) {
+        try {
+          await _bcLoadScriptOnce(src);
+        } catch (scriptLoadErr) {
+          console.warn('Script preload warning:', src, scriptLoadErr);
+        }
+      }
+    }
+
+    // Execute inline scripts safely with redeclaration protection
+    for (const s of scriptTags) {
+      if (!s.getAttribute('src') && s.textContent.trim()) {
+        try {
+          const rawScript = s.textContent;
+          const safeScript = rawScript
+            .replace(/\bconst\b(\s*[\{\[\w\$])/g, 'var$1')
+            .replace(/\blet\b(\s*[\{\[\w\$])/g, 'var$1')
+            .replace(/\bconst\s+/g, 'var ')
+            .replace(/\blet\s+/g, 'var ');
+
+          const newScript = document.createElement('script');
+          newScript.textContent = safeScript;
+          document.body.appendChild(newScript);
+          setTimeout(() => newScript.remove(), 0);
+        } catch (scriptErr) {
+          console.error('Error preparing page script:', scriptErr);
+        }
+      }
+    }
+
+    // Re-hydrate session & live permissions
+    bcHydrateCachedSession();
+
+    // Re-render icons
+    if (typeof renderIcons === 'function') renderIcons();
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+    if (typeof initCustomSelects === 'function') initCustomSelects();
+
+    // Trigger module lifecycle safely
+    await executeModuleInit(url);
+
+    window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url } }));
+  } catch (err) {
+    console.error('Navigation error:', err);
+    contentContainer.innerHTML = `
+      <div class="flex flex-col items-center justify-center min-h-[60vh] text-slate-500 p-8">
+        <div class="card max-w-md w-full p-8 text-center space-y-4 shadow-lg border border-red-100 bg-white">
+          <div class="w-14 h-14 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto text-2xl">
+            <span data-icon="warning" data-icon-size="28"></span>
+          </div>
+          <div>
+            <h2 class="font-display text-xl text-forest-800">Failed to Load View</h2>
+            <p class="text-sm text-forest-500 mt-1">${err.message || 'An error occurred while loading this page.'}</p>
+          </div>
+          <div class="flex items-center justify-center gap-3 pt-2">
+            <button onclick="navigateTo('${url}', false)" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition flex items-center gap-2">
+              <span data-icon="refresh" data-icon-size="14"></span> Retry
+            </button>
+            <button onclick="window.location.reload()" class="btn-secondary text-sm">
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    if (typeof renderIcons === 'function') renderIcons();
+  } finally {
+    _bcNavigating = false;
+    contentContainer.classList.remove('bc-content-loading');
+    contentContainer.style.opacity = '1';
+    contentContainer.style.pointerEvents = 'auto';
+  }
+}
+const bcNavigate = navigateTo;
+window.navigateTo = navigateTo;
+window.bcNavigate = navigateTo;
+window.updateActiveSidebar = updateActiveSidebar;
+window.executeModuleInit = executeModuleInit;
+
+// Intercept in-app link clicks
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a');
+  if (!link) return;
+
+  const href = link.getAttribute('href');
+  if (!href) return;
+  if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || link.target === '_blank') return;
+  if (href.startsWith('http://') || href.startsWith('https://')) return;
+  if (href === 'login.html' || href.endsWith('/login.html') || href === 'index.html' || href.endsWith('/index.html') || href === '/') return;
+
+  if (href.endsWith('.html') || href.includes('.html?') || href.includes('.html#')) {
+    e.preventDefault();
+    navigateTo(href, true);
+  }
+});
+
+// Support browser Back/Forward navigation
+window.addEventListener('popstate', () => {
+  const currentUrl = window.location.pathname.split('/').pop() + window.location.search;
+  navigateTo(currentUrl, false);
 });
 
 
