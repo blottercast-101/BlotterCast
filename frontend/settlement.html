@@ -317,9 +317,11 @@
 
   let viewingArchived = false;
 
-  async function loadSettlements() {
-    bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
-    bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
+  async function loadSettlements(silent = false) {
+    if (!silent) {
+      bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
+      bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
+    }
 
     try {
       const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
@@ -487,7 +489,19 @@
 
     const tbody = document.getElementById('settlementTableBody');
     if (page.length === 0) {
-      bcSetTableEmpty('settlementTableBody', viewingArchived ? 'No archived settlement records found.' : 'No settlement records found matching your filters.', 'settlement', 9);
+      if (viewingArchived) {
+        bcSetTableEmpty('settlementTableBody', "There's no archived settlement records.", 'settlement', 9);
+      } else if (settlementData.length === 0) {
+        bcSetTableEmpty(
+          'settlementTableBody',
+          "There's no settlement records. Please import a settlement record / case record or Add a New Settlement Record.",
+          'settlement',
+          9,
+          "Track mediation hearings, conciliation agreements, and compliance records."
+        );
+      } else {
+        bcSetTableEmpty('settlementTableBody', 'No settlement records found matching your filters.', 'settlement', 9, 'Try adjusting your filters or search keywords.');
+      }
     } else {
       tbody.innerHTML = page.map(r => `
         <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}" class="${stlBatchManager.has(r.id) ? 'row-selected' : ''}">
@@ -517,7 +531,6 @@
     }
 
     document.getElementById('stlPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
-    const totalPages = Math.ceil(total/STL_ROWS)||1;
     bcRenderPagination(document.getElementById('stlPaginationControls'), stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
     stlBatchManager.updateUI();
   }

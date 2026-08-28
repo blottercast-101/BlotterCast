@@ -306,8 +306,8 @@ async function loadUsers(silent = false) {
   }
 }
 
-async function loadAuditLog() {
-  bcRenderTableSkeleton('auditLog', { cols: 5, rows: 5 });
+async function loadAuditLog(silent = false) {
+  if (!silent) bcRenderTableSkeleton('auditLog', { cols: 5, rows: 5 });
   try {
     const rows = await BCApi.auditLog(10);
     const tbody = document.getElementById('auditLog');
@@ -345,7 +345,11 @@ function renderUsers() {
   const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const tbody = document.getElementById('usersTableBody');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('usersTableBody', 'No users match your filters.', 'users', 6);
+    if (usersData.length === 0) {
+      bcSetTableEmpty('usersTableBody', "There's no user records. Please Add a New User.", 'users', 6, "Create and manage authorized staff accounts.");
+    } else {
+      bcSetTableEmpty('usersTableBody', 'No users match your filters.', 'users', 6, 'Try adjusting your search or role filter.');
+    }
   } else {
     tbody.innerHTML = pageRows.map(u => {
       const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
@@ -616,16 +620,6 @@ async function removeUser(id) {
     showToast(err.message, 'error');
   }
 }
-
-// ── Live Real-Time Presence Sync ────────────────────────────
-// Polls the active user list and presence statuses every 5 seconds
-// so that Active (Online) / Inactive (Offline) / Suspended updates live
-// without requiring manual page reload.
-setInterval(() => {
-  if (!document.hidden) {
-    loadUsers(true);
-  }
-}, 5000);
 
 window.addEventListener('bc-time-format-changed', () => {
   renderUsers();

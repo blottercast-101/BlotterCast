@@ -552,7 +552,7 @@ async function loadBackupHistory() {
     const rows = await BCApi.backupHistory();
     const tbody = document.getElementById('backupHistoryBody');
     if (!rows || rows.length === 0) {
-      bcSetTableEmpty('backupHistoryBody', 'No backups yet. Click "Run Backup Now" above.', 'backup', 6);
+      bcSetTableEmpty('backupHistoryBody', "There's no backup records. Click 'Run Backup Now' above to generate a new backup.", 'backup', 6, "Safeguard system data and preserve database snapshots.");
     } else {
       tbody.innerHTML = rows.map(r => `
         <tr>

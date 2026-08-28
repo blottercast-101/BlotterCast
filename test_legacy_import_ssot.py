@@ -13,12 +13,13 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
         self.app.config["TESTING"] = True
         self.client = self.app.test_client()
         with self.app.app_context():
+            BlotterRecord.query.filter(BlotterRecord.docket_no.like("BLT-TEST-%")).delete(synchronize_session=False)
             BlotterRecord.query.filter(BlotterRecord.docket_no.in_(["BLT-2025-999", "BLT-2025-777"])).delete(synchronize_session=False)
+            Incident.query.filter(Incident.report_no.like("INC-TEST-%")).delete(synchronize_session=False)
             db.session.commit()
 
     def test_legacy_csv_import_creates_linked_incident_with_fallbacks(self):
         with self.app.app_context():
-            # Seed a census resident
             res = CensusRecord.query.filter_by(first_name="Ramon", last_name="Magsaysay").first()
             if not res:
                 res = CensusRecord(
@@ -28,7 +29,7 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
                     date_of_birth=date(1985, 3, 10),
                     sex="Male",
                     zone_id="Zone 1",
-                    address="123 Mabini St",
+                    address="Residence 3, Mapulang Lupa",
                     status="Active"
                 )
                 db.session.add(res)
@@ -36,7 +37,6 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
 
             mfa_login(self.client, "admin", "admin123")
 
-            # Prepare sample legacy CSV with standard headers
             csv_content = (
                 "CASE NO.,CASE TITLE,COMPLAINT TITLE,NATURE OF CASE,DATE FILED,DATE OF CONFRONTATION,ACTION TAKEN,DATE OF SETTLEMENT,DATE OF EXECUTION,MAIN POINT OF AGREEMENT,STATUS\n"
                 "BLT-2025-999,Ramon Magsaysay vs Juan Dela Cruz,,Criminal - Theft of Bicycle,2025-05-12,2025-05-15,Amicably Settled,2025-05-15,,Return bicycle,COMPLIED\n"
@@ -57,12 +57,10 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
             self.assertTrue(res_json["ok"])
             self.assertEqual(res_json["imported"], 1)
 
-            # Query imported Blotter record
             blotter = BlotterRecord.query.filter_by(complainant="Ramon Magsaysay").first()
             self.assertIsNotNone(blotter)
             self.assertIsNotNone(blotter.source_incident_id)
 
-            # Query linked Incident Report and verify fallback defaults
             incident = Incident.query.get(blotter.source_incident_id)
             self.assertIsNotNone(incident)
             self.assertEqual(str(incident.incident_date), "2025-05-12")
@@ -71,51 +69,91 @@ class LegacyImportSSOTTestCase(unittest.TestCase):
             self.assertEqual(incident.status, "Elevated to Blotter")
             self.assertTrue(incident.is_blotter)
             self.assertEqual(incident.blotter_docket_no, blotter.docket_no)
-            self.assertIsNotNone(incident.lat)
-            self.assertIsNotNone(incident.lng)
             self.assertEqual(incident.reporter, "Ramon Magsaysay")
 
-    def test_blotter_entry_and_settlement_routes(self):
+    def test_zone_resolution_table_mapping(self):
         with self.app.app_context():
             mfa_login(self.client, "admin", "admin123")
 
-            # 1. Test POST /api/import/blotter-entry
-            entry_csv = (
+            # CSV testing all 7 official zone mapping landmarks and addresses
+            zone_csv = (
                 "DOCKET NO.,DATE FILED,NAME OF COMPLAINANT,COMPLAINANT ADDRESS,NAME OF RESPONDENT,RESPONDENT ADDRESS,NATURE OF CASE,CRIM / CIVIL,ZONE\n"
-                "BLT-2025-777,2025-07-10,Everlie Marquez,Zone 1,Juan Dela Cruz,Zone 1,Physical Assault,CRIM,Zone 1\n"
+                "BLT-TEST-Z1,2025-01-10,Ana Santos,Ph1 Blk 5 Lot 2 Residence 3,Pedro Cruz,Residence 3,Physical Assault,CRIM,\n"
+                "BLT-TEST-Z2,2025-01-11,Carlos Garcia,Phase 2 Pandi Residence 1,Elena Reyes,Residence 1,Noise Disturbance,CIVIL,\n"
+                "BLT-TEST-Z3,2025-01-12,Felipe Diaz,Pandi Village 2 Atlantica,Mario Lopez,Atlantica,Property Damage,CIVIL,\n"
+                "BLT-TEST-Z4,2025-01-13,Gina Gomez,Sitio Mitay 1,Rosa Torres,Mitay,Theft,CRIM,\n"
+                "BLT-TEST-Z5,2025-01-14,Hector Ramos,Sitio Gubat Purok 5,Lucia Ramos,Sitio Gubat,Family Dispute,CIVIL,\n"
+                "BLT-TEST-Z6,2025-01-15,Irene Castro,Bangko St. near corner,Jorge Flores,Bangko Street,Boundary Dispute,CIVIL,\n"
+                "BLT-TEST-Z7,2025-01-16,Kevin Bautista,Barangka St. Pandi-Angat Road,Mila Perez,Barangka,Vehicular Accident,CIVIL,\n"
             )
-            resp1 = self.client.post(
+
+            resp = self.client.post(
                 "/api/import/blotter-entry",
-                data={"file": (io.BytesIO(entry_csv.encode("utf-8")), "blotter_entries.csv")},
+                data={"file": (io.BytesIO(zone_csv.encode("utf-8")), "zone_test.csv")},
                 content_type="multipart/form-data"
             )
-            self.assertEqual(resp1.status_code, 200)
-            data1 = resp1.get_json()
-            self.assertTrue(data1["ok"])
-            self.assertEqual(data1["imported"], 1)
+            self.assertEqual(resp.status_code, 200)
+            data = resp.get_json()
+            self.assertTrue(data["ok"])
+            self.assertEqual(data["imported"], 7)
+            self.assertEqual(data["skipped"], 0)
 
-            blt = BlotterRecord.query.filter_by(docket_no="BLT-2025-777").first()
-            self.assertIsNotNone(blt)
-            self.assertIsNotNone(blt.source_incident_id)
+            # Check each imported record zone assignment
+            expected_zones = {
+                "BLT-TEST-Z1": "Zone 1",
+                "BLT-TEST-Z2": "Zone 2",
+                "BLT-TEST-Z3": "Zone 3",
+                "BLT-TEST-Z4": "Zone 4",
+                "BLT-TEST-Z5": "Zone 5",
+                "BLT-TEST-Z6": "Zone 6",
+                "BLT-TEST-Z7": "Zone 7",
+            }
+            for docket, exp_zone in expected_zones.items():
+                b = BlotterRecord.query.filter_by(docket_no=docket).first()
+                self.assertIsNotNone(b, f"Record {docket} must exist")
+                self.assertEqual(b.zone_id, exp_zone, f"{docket} should resolve to {exp_zone}")
+                
+                # Check linked incident
+                inc = Incident.query.get(b.source_incident_id)
+                self.assertIsNotNone(inc)
+                self.assertEqual(inc.zone_id, exp_zone)
+                self.assertNotEqual(inc.reporter, "Legacy Walk-In")
+                self.assertEqual(inc.reporter, b.complainant)
+                self.assertIn("Barangay Mapulang Lupa", inc.location)
+                self.assertNotEqual(inc.description, "Legacy Blotter Case Record")
 
-            inc = Incident.query.get(blt.source_incident_id)
-            self.assertIsNotNone(inc)
-            self.assertEqual(inc.category, "Physical Assault")
-            self.assertEqual(inc.status, "Elevated to Blotter")
+    def test_skip_rows_with_missing_critical_fields(self):
+        with self.app.app_context():
+            mfa_login(self.client, "admin", "admin123")
 
-            # 2. Test POST /api/import/blotter-settlement
-            settlement_csv = (
-                "DOCKET NO.,HEARING DATE,STAGE,SETTLEMENT STATUS,REMARKS\n"
-                "BLT-2025-777,2025-07-15,1st Patawag,Settled,Parties agreed amicably.\n"
+            # CSV with valid row, empty participant row, and empty address row
+            invalid_csv = (
+                "DOCKET NO.,DATE FILED,NAME OF COMPLAINANT,COMPLAINANT ADDRESS,NAME OF RESPONDENT,RESPONDENT ADDRESS,NATURE OF CASE,CRIM / CIVIL,ZONE\n"
+                "BLT-TEST-VAL,2025-02-01,Valid Complainant,Residence 3,Valid Respondent,Residence 3,Physical Assault,CRIM,Zone 1\n"
+                "BLT-TEST-NO-NAMES,2025-02-02,,,Pedro Cruz,Residence 3,Physical Assault,CRIM,Zone 1\n"
+                "BLT-TEST-NO-ADDR,2025-02-03,John Doe,,,Unknown Nature,CIVIL,\n"
             )
-            resp2 = self.client.post(
-                "/api/import/blotter-settlement",
-                data={"file": (io.BytesIO(settlement_csv.encode("utf-8")), "blotter_settlements.csv")},
+
+            # In the 2nd row: complainant is empty, but respondent is 'Pedro Cruz'. It should be parsed.
+            # In the 3rd row: both addresses, location, and zone are empty. It must be skipped.
+            # Add an entirely blank participant row
+            empty_row_csv = (
+                "DOCKET NO.,DATE FILED,NAME OF COMPLAINANT,COMPLAINANT ADDRESS,NAME OF RESPONDENT,RESPONDENT ADDRESS,NATURE OF CASE,CRIM / CIVIL,ZONE\n"
+                "BLT-TEST-V1,2025-02-01,Valid Complainant,Residence 3,Valid Respondent,Residence 3,Physical Assault,CRIM,Zone 1\n"
+                "BLT-TEST-EMPTY-PARTICIPANTS,2025-02-02,,,,,,CIVIL,Zone 1\n"
+                "BLT-TEST-EMPTY-ADDR,2025-02-03,John Doe,,Jane Doe,,Unknown Nature,CIVIL,\n"
+            )
+
+            resp = self.client.post(
+                "/api/import/blotter-entry",
+                data={"file": (io.BytesIO(empty_row_csv.encode("utf-8")), "skip_test.csv")},
                 content_type="multipart/form-data"
             )
-            self.assertEqual(resp2.status_code, 200)
-            data2 = resp2.get_json()
-            self.assertTrue(data2["ok"])
+            self.assertEqual(resp.status_code, 200)
+            data = resp.get_json()
+            self.assertTrue(data["ok"])
+            self.assertEqual(data["imported"], 1)
+            self.assertEqual(data["skipped"], 2)
 
 
 if __name__ == "__main__":

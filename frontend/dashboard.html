@@ -472,9 +472,11 @@
       }
     });
 
-    async function loadDashboardData() {
-      bcSetStatsLoading(['statBlotters', 'statIncidents', 'statPending', 'statResolved', 'statResolutionPct', 'statWeekCount', 'statPendingMini'], true);
-      bcRenderTableSkeleton('dashboardBlotterTable', { template: 'dashboard', rows: 5 });
+    async function loadDashboardData(silent = false) {
+      if (!silent) {
+        bcSetStatsLoading(['statBlotters', 'statIncidents', 'statPending', 'statResolved', 'statResolutionPct', 'statWeekCount', 'statPendingMini'], true);
+        bcRenderTableSkeleton('dashboardBlotterTable', { template: 'dashboard', rows: 5 });
+      }
 
       try {
         const stats = await BCApi.dashboard();

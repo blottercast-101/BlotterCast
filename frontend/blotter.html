@@ -444,9 +444,11 @@
     };
   }
 
-  async function loadBlotter() {
-    bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], true);
-    bcRenderTableSkeleton('blotterTableBody', { template: 'blotter', rows: ROWS_PER_PAGE });
+  async function loadBlotter(silent = false) {
+    if (!silent) {
+      bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], true);
+      bcRenderTableSkeleton('blotterTableBody', { template: 'blotter', rows: ROWS_PER_PAGE });
+    }
 
     try {
       const raw = await BCApi.list('blotter', viewingArchived ? { archived: '1' } : {});
@@ -645,7 +647,19 @@
 
     const tbody = document.getElementById('blotterTableBody');
     if (page.length === 0) {
-      bcSetTableEmpty('blotterTableBody', viewingArchived ? 'No archived blotter records found.' : 'No blotter records found matching your filters.', 'blotter', 11);
+      if (viewingArchived) {
+        bcSetTableEmpty('blotterTableBody', "There's no archived blotter records.", 'blotter', 11);
+      } else if (blotterData.length === 0) {
+        bcSetTableEmpty(
+          'blotterTableBody',
+          "There's no blotter records. Please import a blotter record or Add a New Blotter Entry.",
+          'blotter',
+          11,
+          "Get started by importing legacy records or creating a new blotter entry."
+        );
+      } else {
+        bcSetTableEmpty('blotterTableBody', 'No blotter records found matching your filters.', 'blotter', 11, 'Try adjusting your filters or search keywords.');
+      }
     } else {
       tbody.innerHTML = page.map(r => {
         const badgeClass = ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied'].includes(r.status)
@@ -685,7 +699,6 @@
     document.getElementById('recordCount').textContent = `${total} record${total!==1?'s':''}`;
     document.getElementById('paginationInfo').textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
 
-    const totalPages = Math.ceil(total / ROWS_PER_PAGE) || 1;
     bcRenderPagination(document.getElementById('paginationControls'), currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
     bltBatchManager.updateUI();
   }

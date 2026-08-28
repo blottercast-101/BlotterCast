@@ -367,9 +367,11 @@ async function onResidentPicked(r) {
   }
 }
 
-async function loadLog() {
-  bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], true);
-  bcRenderTableSkeleton('clearanceLog', { template: 'clearance', rows: CL_ROWS });
+async function loadLog(silent = false) {
+  if (!silent) {
+    bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], true);
+    bcRenderTableSkeleton('clearanceLog', { template: 'clearance', rows: CL_ROWS });
+  }
 
   try {
     const raw = await BCApi.docList('clearance');
@@ -407,7 +409,11 @@ function renderLog(){
   const pageRows=rows.slice(start,start+CL_ROWS);
   const tbody = document.getElementById('clearanceLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('clearanceLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'clearance', 6);
+    if (logData.length === 0) {
+      bcSetTableEmpty('clearanceLog', "There's no clearance records. Please issue or Add a New Barangay Clearance.", 'clearance', 6, "Issue an official barangay clearance certificate for registered residents.");
+    } else {
+      bcSetTableEmpty('clearanceLog', 'No clearance certificates found matching your search.', 'clearance', 6, 'Try adjusting your search keywords.');
+    }
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>

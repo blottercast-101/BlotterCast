@@ -329,9 +329,11 @@ async function onNrResidentPicked(r) {
   }
 }
 
-async function loadNrLog() {
-  bcSetStatsLoading(['nrMonthCount', 'nrYearCount', 'nrRevenue'], true);
-  bcRenderTableSkeleton('nonResidencyLog', { template: 'non_residency', rows: NR_ROWS });
+async function loadNrLog(silent = false) {
+  if (!silent) {
+    bcSetStatsLoading(['nrMonthCount', 'nrYearCount', 'nrRevenue'], true);
+    bcRenderTableSkeleton('nonResidencyLog', { template: 'non_residency', rows: NR_ROWS });
+  }
 
   try {
     const raw = await BCApi.docList('non_residency');
@@ -369,7 +371,11 @@ function renderNrLog(){
   const pageRows=rows.slice(start,start+NR_ROWS);
   const tbody = document.getElementById('nonResidencyLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('nonResidencyLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'non_residency', 6);
+    if (nrLogData.length === 0) {
+      bcSetTableEmpty('nonResidencyLog', "There's no non-residency certificate records. Please issue or Add a New Certificate of Non-Residency.", 'non_residency', 6, "Issue an official certificate of non-residency for former residents.");
+    } else {
+      bcSetTableEmpty('nonResidencyLog', 'No non-residency certificates found matching your search.', 'non_residency', 6, 'Try adjusting your search keywords.');
+    }
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>

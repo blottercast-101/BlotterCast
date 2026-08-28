@@ -35,12 +35,15 @@ const BCApi = {
     }
     const data = res.status === 204 ? null : await res.json();
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-      try {
-        window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { url, method, data } }));
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('bc_data_updated', Date.now().toString());
-        }
-      } catch (_) {}
+      const isSystemPing = url.includes('action=heartbeat') || url.includes('action=check_session') || url.includes('action=unread_count');
+      if (!isSystemPing && !opts.skipBroadcast) {
+        try {
+          window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { url, method, data } }));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('bc_data_updated', Date.now().toString());
+          }
+        } catch (_) {}
+      }
     }
     return data;
   },

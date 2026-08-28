@@ -368,9 +368,11 @@ async function onResResidentPicked(r) {
   } catch (e) { /* if the check fails, don't block issuance on it */ }
 }
 
-async function loadResLog() {
-  bcSetStatsLoading(['rsMonthCount', 'rsYearCount', 'rsRevenue'], true);
-  bcRenderTableSkeleton('residencyLog', { template: 'residency', rows: RS_ROWS });
+async function loadResLog(silent = false) {
+  if (!silent) {
+    bcSetStatsLoading(['rsMonthCount', 'rsYearCount', 'rsRevenue'], true);
+    bcRenderTableSkeleton('residencyLog', { template: 'residency', rows: RS_ROWS });
+  }
 
   try {
     const raw = await BCApi.docList('residency');
@@ -413,7 +415,11 @@ function renderResLog(){
   const pageRows=rows.slice(start,start+RS_ROWS);
   const tbody = document.getElementById('residencyLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('residencyLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'residency', 6);
+    if (resLogData.length === 0) {
+      bcSetTableEmpty('residencyLog', "There's no residency certificate records. Please issue or Add a New Certificate of Residency.", 'residency', 6, "Issue an official certificate of residency for barangay residents.");
+    } else {
+      bcSetTableEmpty('residencyLog', 'No residency certificates found matching your search.', 'residency', 6, 'Try adjusting your search keywords.');
+    }
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>

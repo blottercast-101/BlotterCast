@@ -578,9 +578,11 @@
 
   let viewingArchived = false;
 
-  async function loadIncidents() {
-    bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], true);
-    bcRenderTableSkeleton('incidentTableBody', { template: 'incident', rows: INC_ROWS });
+  async function loadIncidents(silent = false) {
+    if (!silent) {
+      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], true);
+      bcRenderTableSkeleton('incidentTableBody', { template: 'incident', rows: INC_ROWS });
+    }
 
     try {
       const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
@@ -673,7 +675,19 @@
 
     const tbody = document.getElementById('incidentTableBody');
     if (page.length === 0) {
-      bcSetTableEmpty('incidentTableBody', viewingArchived ? 'No archived incident reports found.' : 'No incident reports found matching your filters.', 'incident', 12);
+      if (viewingArchived) {
+        bcSetTableEmpty('incidentTableBody', "There's no archived incident records.", 'incident', 12);
+      } else if (incidentData.length === 0) {
+        bcSetTableEmpty(
+          'incidentTableBody',
+          "There's no incident records. Please import an incident record or Add a New Incident Report.",
+          'incident',
+          12,
+          "Get started by logging incident complaints or importing incident history."
+        );
+      } else {
+        bcSetTableEmpty('incidentTableBody', 'No incident reports found matching your filters.', 'incident', 12, 'Try adjusting your filters or search keywords.');
+      }
     } else {
       tbody.innerHTML = page.map(r => `
         <tr data-id="${r.id}" data-key="${r.reportNo}" data-report-no="${r.reportNo}" class="${incBatchManager.has(r.id) ? 'row-selected' : ''}">
@@ -731,7 +745,6 @@
     }
 
     document.getElementById('incPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+INC_ROWS,total)} of ${total}`;
-    const totalPages = Math.ceil(total / INC_ROWS) || 1;
     bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
     incBatchManager.updateUI();
   }

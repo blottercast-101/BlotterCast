@@ -365,9 +365,11 @@ async function onIndResidentPicked(r) {
   }
 }
 
-async function loadIndLog() {
-  bcSetStatsLoading(['indMonthCount', 'indYearCount', 'indTopPurpose'], true);
-  bcRenderTableSkeleton('indLog', { template: 'indigency', rows: IND_ROWS });
+async function loadIndLog(silent = false) {
+  if (!silent) {
+    bcSetStatsLoading(['indMonthCount', 'indYearCount', 'indTopPurpose'], true);
+    bcRenderTableSkeleton('indLog', { template: 'indigency', rows: IND_ROWS });
+  }
 
   try {
     const raw = await BCApi.docList('indigency');
@@ -409,7 +411,11 @@ function renderIndLog(){
   const pageRows=rows.slice(start,start+IND_ROWS);
   const tbody = document.getElementById('indLog');
   if (pageRows.length === 0) {
-    bcSetTableEmpty('indLog', s ? 'No certificates issued yet matching your search.' : 'No certificates issued yet.', 'indigency', 5);
+    if (indData.length === 0) {
+      bcSetTableEmpty('indLog', "There's no indigency certificate records. Please issue or Add a New Certificate of Indigency.", 'indigency', 5, "Issue an official certificate of indigency for assistance programs.");
+    } else {
+      bcSetTableEmpty('indLog', 'No indigency certificates found matching your search.', 'indigency', 5, 'Try adjusting your search keywords.');
+    }
   } else {
     tbody.innerHTML = pageRows.map(r=>`
     <tr>

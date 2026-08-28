@@ -186,43 +186,54 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
 }
 
-// ── Real-Time Reactive Sync Dispatcher ─────────────────────
+// ── Real-Time Reactive Sync Dispatcher (Debounced) ─────────
+let _bcRefreshDebounceTimer = null;
 function bcTriggerLiveRefresh(detail = {}) {
+  if (_bcRefreshDebounceTimer) {
+    clearTimeout(_bcRefreshDebounceTimer);
+  }
+  _bcRefreshDebounceTimer = setTimeout(() => {
+    _bcRefreshDebounceTimer = null;
+    _bcExecuteLiveRefresh(detail);
+  }, 250);
+}
+
+function _bcExecuteLiveRefresh(detail = {}) {
   try {
     if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
   } catch (_) {}
 
-  // Identify active page context and re-fetch latest data immediately
+  // Identify active page context and re-fetch latest data smoothly (in-place without skeleton flashing)
   const path = (window.location.pathname || '').toLowerCase();
 
   try {
     if (path.endsWith('dashboard.html') || path.endsWith('dashboard') || document.getElementById('statBlotters')) {
-      if (typeof loadDashboardData === 'function') loadDashboardData();
+      if (typeof loadDashboardData === 'function') loadDashboardData(true);
     } else if (path.endsWith('incident.html') || document.getElementById('incidentTableBody')) {
-      if (typeof loadIncidents === 'function') loadIncidents();
+      if (typeof loadIncidents === 'function') loadIncidents(true);
     } else if (path.endsWith('blotter.html') || document.getElementById('blotterTableBody')) {
-      if (typeof loadBlotter === 'function') loadBlotter();
+      if (typeof loadBlotter === 'function') loadBlotter(true);
     } else if (path.endsWith('settlement.html') || document.getElementById('settlementTableBody')) {
-      if (typeof loadSettlements === 'function') loadSettlements();
+      if (typeof loadSettlements === 'function') loadSettlements(true);
     } else if (path.endsWith('census.html') || document.getElementById('residentBody')) {
-      if (typeof loadResidents === 'function') loadResidents();
+      if (typeof loadResidents === 'function') loadResidents(true);
     } else if (path.endsWith('clearance.html') || document.getElementById('clLogBody')) {
-      if (typeof loadLog === 'function') loadLog();
+      if (typeof loadLog === 'function') loadLog(true);
     } else if (path.endsWith('residency.html') || document.getElementById('residencyLog')) {
-      if (typeof loadResLog === 'function') loadResLog();
+      if (typeof loadResLog === 'function') loadResLog(true);
     } else if (path.endsWith('non_residency.html') || document.getElementById('nonResidencyLog')) {
-      if (typeof loadNrLog === 'function') loadNrLog();
+      if (typeof loadNrLog === 'function') loadNrLog(true);
     } else if (path.endsWith('indigency.html') || document.getElementById('indLog')) {
-      if (typeof loadIndLog === 'function') loadIndLog();
+      if (typeof loadIndLog === 'function') loadIndLog(true);
     } else if (path.endsWith('users.html') || document.getElementById('usersTableBody')) {
-      if (typeof loadUsers === 'function') loadUsers();
-      if (typeof loadAuditLog === 'function') loadAuditLog();
+      if (typeof loadUsers === 'function') loadUsers(true);
+      if (typeof loadAuditLog === 'function') loadAuditLog(true);
     } else if (path.endsWith('reports.html') || document.getElementById('recentReports')) {
-      if (typeof loadRecentReports === 'function') loadRecentReports();
+      if (typeof loadRecentReports === 'function') loadRecentReports(true);
     } else if (path.endsWith('heatmap.html') || document.getElementById('kpiTotalIncidents')) {
-      if (typeof loadIncidents === 'function') loadIncidents();
+      if (typeof loadIncidents === 'function') loadIncidents(true);
     } else if (path.endsWith('trends.html') || document.getElementById('zonalMatrixBody')) {
-      if (typeof updateCharts === 'function') updateCharts();
+      if (typeof updateCharts === 'function') updateCharts(true);
     }
   } catch (err) {
     console.warn('Reactive live refresh notice:', err);
@@ -236,12 +247,6 @@ window.addEventListener('bc-data-changed', (e) => {
 
 window.addEventListener('storage', (e) => {
   if (e.key === 'bc_data_updated') {
-    bcTriggerLiveRefresh();
-  }
-});
-
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
     bcTriggerLiveRefresh();
   }
 });
@@ -2696,25 +2701,29 @@ function bcGetChartSkeletonHtml(type = 'donut') {
 }
 
 /**
- * Renders an empty state placeholder row in a table.
+ * Renders an empty state placeholder row in a table with contextual title, subtitle, and optional action.
  */
-function bcSetTableEmpty(tbodyId, message = 'No records found matching your filters.', icon = 'inbox', colSpan = 12) {
+function bcSetTableEmpty(tbodyId, message = "There's no records found.", icon = 'inbox', colSpan = 12, subtitle = '', actionBtnHtml = '') {
   const el = typeof tbodyId === 'string' ? document.getElementById(tbodyId) : tbodyId;
   if (!el) return;
   el.innerHTML = `
     <tr class="empty-state-row row-no-hover">
       <td colspan="${colSpan}" class="py-12 text-center text-forest-500 border-none bg-transparent">
-        <div class="bc-empty-state">
-          <div class="bc-empty-state-icon">
+        <div class="bc-empty-state max-w-lg mx-auto flex flex-col items-center justify-center">
+          <div class="bc-empty-state-icon mb-3 w-12 h-12 rounded-full bg-forest-50 border border-forest-100 flex items-center justify-center text-forest-600 shadow-sm">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
             </svg>
           </div>
-          <strong class="font-semibold text-forest-800 text-sm block">${message}</strong>
-          <span class="text-xs text-forest-400 mt-1 block">Try adjusting your filters or search keywords.</span>
+          <strong class="font-semibold text-forest-800 text-sm block leading-relaxed">${message}</strong>
+          ${subtitle ? `<span class="text-xs text-forest-400 mt-1 block">${subtitle}</span>` : ''}
+          ${actionBtnHtml ? `<div class="mt-3.5 flex items-center justify-center gap-2">${actionBtnHtml}</div>` : ''}
         </div>
       </td>
     </tr>`;
+  if (typeof renderIcons === 'function') {
+    try { renderIcons(el); } catch (_) {}
+  }
 }
 
 /**

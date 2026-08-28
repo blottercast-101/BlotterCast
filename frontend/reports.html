@@ -288,14 +288,16 @@ function toggleSched(i) {
   showToast(schedStates[i] ? 'Schedule enabled.' : 'Schedule disabled.');
 }
 
-async function loadRecentReports() {
-  bcRenderTableSkeleton('recentReports', { cols: 6, rows: 4 });
+async function loadRecentReports(silent = false) {
+  if (!silent) {
+    bcRenderTableSkeleton('recentReports', { cols: 6, rows: 4 });
+  }
   try {
     const rows = await BCApi._fetch('api/reports.php?action=list');
     const tbody = document.getElementById('recentReports');
     if (!tbody) return;
     if (!rows || rows.length === 0) {
-      bcSetTableEmpty('recentReports', 'No reports generated yet. Use "Generate Report" above.', 'reports', 6);
+      bcSetTableEmpty('recentReports', "There's no generated report records. Please Generate a New Report.", 'reports', 6, "Select a report card above and click 'Generate Report' to create an official document.");
     } else {
       tbody.innerHTML = rows.map(r => `
         <tr>

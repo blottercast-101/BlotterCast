@@ -300,9 +300,11 @@ function mapResident(r) {
 
 let viewingArchived = false;
 
-async function loadResidents() {
-  bcSetStatsLoading(['cTotal', 'cHousehold', 'cMale', 'cFemale', 'cSenior'], true);
-  bcRenderTableSkeleton('residentBody', { template: 'census', rows: ROWS });
+async function loadResidents(silent = false) {
+  if (!silent) {
+    bcSetStatsLoading(['cTotal', 'cHousehold', 'cMale', 'cFemale', 'cSenior'], true);
+    bcRenderTableSkeleton('residentBody', { template: 'census', rows: ROWS });
+  }
 
   try {
     const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
@@ -438,7 +440,19 @@ function renderResidents(){
   const start = (curPage - 1) * ROWS;
   const page = f.slice(start, start + ROWS);
   if (page.length === 0) {
-    bcSetTableEmpty('residentBody', viewingArchived ? 'No archived residents found.' : 'No residents found matching your filters.', 'census', 12);
+    if (viewingArchived) {
+      bcSetTableEmpty('residentBody', "There's no archived resident records.", 'census', 12);
+    } else if (censusData.length === 0) {
+      bcSetTableEmpty(
+        'residentBody',
+        "There's no resident records. Please import a census record / resident record or Add a New Resident.",
+        'census',
+        12,
+        "Get started by importing household registry data or adding resident demographic records."
+      );
+    } else {
+      bcSetTableEmpty('residentBody', 'No resident records found matching your filters.', 'census', 12, 'Try adjusting your filters or search keywords.');
+    }
   } else {
     tb.innerHTML = page.map(r => `
       <tr data-id="${r.id}" data-key="${r.resNo || ''}" data-res-no="${r.resNo || ''}" class="${resBatchManager?.has(r.id) ? 'row-selected' : ''}">
@@ -477,7 +491,6 @@ function renderResidents(){
 
   const pagInfo = document.getElementById('resPagInfo');
   if (pagInfo) pagInfo.textContent = `Showing ${Math.min(start + 1, total) || 0}–${Math.min(start + ROWS, total)} of ${total}`;
-  const tp = Math.ceil(total / ROWS) || 1;
   const pagCtrl = document.getElementById('resPagCtrl');
   if (pagCtrl) bcRenderPagination(pagCtrl, curPage, tp, (p) => { curPage = p; renderResidents(); });
   if (window.resBatchManager && typeof resBatchManager.updateUI === 'function') resBatchManager.updateUI();
