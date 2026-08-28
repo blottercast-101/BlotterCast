@@ -175,7 +175,7 @@
     <main class="flex-1 p-8 space-y-8">
 
       <!-- Stat Cards -->
-      <div class="grid grid-cols-4 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="stat-card-grad plum cursor-default">
           <div class="flex items-center justify-between mb-3">
             <span class="text-white/80 text-sm font-medium">Total Blotters</span>
@@ -528,7 +528,7 @@
         console.error('initDashboard error:', initErr);
       }
     };
-    initDashboard();
+    if (!window._bcSpaNavActive) { initDashboard(); }
 
   </script>
 </body>

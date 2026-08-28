@@ -594,7 +594,7 @@ window.initTrends = async function () {
     console.error('initTrends error:', initErr);
   }
 };
-initTrends();
+if (!window._bcSpaNavActive) { initTrends(); }
 
 </script>
 </body>

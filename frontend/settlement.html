@@ -119,39 +119,38 @@
     </div>
   </header>
 
-  <!-- Summary Cards -->
-  <div class="px-6 pt-6 grid grid-cols-4 gap-4">
-    <div class="stat-card-grad plum">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Total Cases</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="settlement" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="stlTotal">0</div>
-    </div>
-    <div class="stat-card-grad dark">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/70 text-sm font-medium">Complied</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl text-white" id="stlComplied">0</div>
-    </div>
-    <div class="stat-card-grad moss">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Not Complied</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="x" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="stlNotComplied">0</div>
-    </div>
-    <div class="stat-card-grad sunset">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Pending</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="stlPending">0</div>
-    </div>
-  </div>
-
   <main class="flex-1 p-6">
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card-grad plum">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Total Cases</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="settlement" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="stlTotal">0</div>
+      </div>
+      <div class="stat-card-grad dark">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/70 text-sm font-medium">Complied</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl text-white" id="stlComplied">0</div>
+      </div>
+      <div class="stat-card-grad moss">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Not Complied</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="x" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="stlNotComplied">0</div>
+      </div>
+      <div class="stat-card-grad sunset">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Pending</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="stlPending">0</div>
+      </div>
+    </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
 
       <!-- Table Title -->
@@ -710,7 +709,7 @@
     }
   };
   window.initSettlements = window.initSettlement;
-  initSettlement();
+  if (!window._bcSpaNavActive) { initSettlement(); }
 
 </script>
 </body>

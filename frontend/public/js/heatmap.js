@@ -11,7 +11,7 @@
 /**
  * Official 7-Zone mapping reference for Barangay Mapulang Lupa, Pandi, Bulacan
  */
-const HEATMAP_OFFICIAL_ZONES = [
+var HEATMAP_OFFICIAL_ZONES = (typeof window !== 'undefined' && window.HEATMAP_OFFICIAL_ZONES) || [
   { id: 'Zone 1', name: 'Residence 3 (Barangay Hall)', label: 'Zone 1 - Residence 3 (Barangay Hall)' },
   { id: 'Zone 2', name: 'Residence 1', label: 'Zone 2 - Residence 1' },
   { id: 'Zone 3', name: 'Pandi Village 2 (Atlantica)', label: 'Zone 3 - Pandi Village 2 (Atlantica)' },
@@ -24,7 +24,7 @@ const HEATMAP_OFFICIAL_ZONES = [
 /**
  * Official permanent zone label dictionary
  */
-const OFFICIAL_ZONE_LABELS = {
+var OFFICIAL_ZONE_LABELS = (typeof window !== 'undefined' && window.OFFICIAL_ZONE_LABELS) || {
   'Zone 1': 'Zone 1 - Residence 3 (Barangay Hall)',
   'Zone 2': 'Zone 2 - Residence 1',
   'Zone 3': 'Zone 3 - Pandi Village 2 (Atlantica)',

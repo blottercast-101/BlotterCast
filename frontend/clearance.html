@@ -551,7 +551,7 @@ window.initClearance = async function () {
     console.error('initClearance error:', initErr);
   }
 };
-initClearance();
+if (!window._bcSpaNavActive) { initClearance(); }
 
 </script>
 <script src="public/js/certificates.js"></script>

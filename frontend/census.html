@@ -105,46 +105,45 @@
     </div>
   </header>
 
-  <!-- Summary Cards -->
-  <div class="px-6 pt-5 grid grid-cols-5 gap-4">
-    <div class="stat-card-grad plum">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Total Residents</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="users" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="cTotal">0</div>
-    </div>
-    <div class="stat-card-grad dark">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/70 text-sm font-medium">Households</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="building" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl text-white" id="cHousehold">0</div>
-    </div>
-    <div class="stat-card-grad moss">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Male</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="user" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="cMale">0</div>
-    </div>
-    <div class="stat-card-grad moss">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Female</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="user" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="cFemale">0</div>
-    </div>
-    <div class="stat-card-grad moss">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-white/80 text-sm font-medium">Senior Citizens</span>
-        <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="shield" data-icon-size="18"></div>
-      </div>
-      <div class="font-display text-3xl" id="cSenior">0</div>
-    </div>
-  </div>
-
   <main class="flex-1 p-6">
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      <div class="stat-card-grad plum">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Total Residents</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="users" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="cTotal">0</div>
+      </div>
+      <div class="stat-card-grad dark">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/70 text-sm font-medium">Households</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="building" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl text-white" id="cHousehold">0</div>
+      </div>
+      <div class="stat-card-grad moss">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Male</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="user" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="cMale">0</div>
+      </div>
+      <div class="stat-card-grad moss">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Female</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="user" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="cFemale">0</div>
+      </div>
+      <div class="stat-card-grad moss">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-white/80 text-sm font-medium">Senior Citizens</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="shield" data-icon-size="18"></div>
+        </div>
+        <div class="font-display text-3xl" id="cSenior">0</div>
+      </div>
+    </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
@@ -904,7 +903,7 @@ window.initCensus = async function () {
     showToast('Could not load residents: ' + (err.message || err), 'error');
   }
 };
-initCensus();
+if (!window._bcSpaNavActive) { initCensus(); }
 
 </script>
 </body>

@@ -880,7 +880,7 @@
         console.error('initPredictions error:', initErr);
       }
     };
-    initPredictions();
+    if (!window._bcSpaNavActive) { initPredictions(); }
 
   </script>
 </body>

@@ -644,7 +644,7 @@ window.initUsers = async function () {
     console.error('initUsers error:', initErr);
   }
 };
-initUsers();
+if (!window._bcSpaNavActive) { initUsers(); }
 
 </script>
 </body>

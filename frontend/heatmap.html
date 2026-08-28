@@ -557,26 +557,28 @@
   <script src="custom-controls.js"></script>
   <script src="public/js/heatmap.js"></script>
   <script>
-    // Official 7-Zone mapping dictionary
-    const OFFICIAL_ZONE_LABELS = {
-      'Zone 1': 'Zone 1 - Residence 3 (Barangay Hall)',
-      'Zone 2': 'Zone 2 - Residence 1',
-      'Zone 3': 'Zone 3 - Pandi Village 2 (Atlantica)',
-      'Zone 4': 'Zone 4 - Mitay 1',
-      'Zone 5': 'Zone 5 - Sitio Gubat',
-      'Zone 6': 'Zone 6 - Bangko St.',
-      'Zone 7': 'Zone 7 - Barangka St.'
-    };
+    // Official 7-Zone mapping dictionary (reused from public/js/heatmap.js or fallback)
+    if (typeof window.OFFICIAL_ZONE_LABELS === 'undefined') {
+      window.OFFICIAL_ZONE_LABELS = {
+        'Zone 1': 'Zone 1 - Residence 3 (Barangay Hall)',
+        'Zone 2': 'Zone 2 - Residence 1',
+        'Zone 3': 'Zone 3 - Pandi Village 2 (Atlantica)',
+        'Zone 4': 'Zone 4 - Mitay 1',
+        'Zone 5': 'Zone 5 - Sitio Gubat',
+        'Zone 6': 'Zone 6 - Bangko St.',
+        'Zone 7': 'Zone 7 - Barangka St.'
+      };
+    }
 
     // Approximate center of Mapulang Lupa, Pandi, Bulacan
-    const MAP_CENTER = [14.8831, 120.9651];
+    var MAP_CENTER = [14.8831, 120.9651];
 
     // Live records fetched from the PHP/MySQL API. Every incident
     // added on the Incident Reports page appears here.
-    const WEIGHTS = { High: 1.0, Medium: 0.7, Low: 0.45 };
-    let incidents = [];
+    var WEIGHTS = { High: 1.0, Medium: 0.7, Low: 0.45 };
+    var incidents = [];
 
-    const CATEGORY_STYLES = {
+    var CATEGORY_STYLES = {
       'Physical Assault':      { bg: '#fee2e2', color: '#991b1b', border: '#fecaca' },
       'Theft':                 { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
       'Domestic Dispute':      { bg: '#e0f2fe', color: '#075985', border: '#bae6fd' },
@@ -592,7 +594,7 @@
       return `<span class="cat-badge" style="background:${style.bg}; color:${style.color}; border:1px solid ${style.border};">${category}</span>`;
     }
 
-    const computeDynamicDensityTiers = (zoneCounts) => {
+    var computeDynamicDensityTiers = (zoneCounts) => {
       const breaks = typeof computeDensityBreaks === 'function'
         ? computeDensityBreaks(zoneCounts)
         : { lowMax: 0, medMax: 0, elevMax: 0, maxCount: 0, minCount: 0 };
@@ -725,7 +727,7 @@
     }
 
     // Authentic geographical landmark coordinates and aliases for Barangay Mapulang Lupa (7 Zones)
-    const ZONE_LANDMARK_COORDINATES = {
+    var ZONE_LANDMARK_COORDINATES = {
       'Zone 1': {
         name: 'Residence 3 (Barangay Hall)',
         aliases: ['residence 3', 'residences 3', 'pandi residences 3', 'pandi residence 3', 'res 3', 'res3', 'barangay hall', 'brgy hall', 'aquariadise', 'siling bata', 'massway'],
@@ -770,7 +772,7 @@
       },
     };
 
-    const MAPULANG_LUPA_GAZETTEER = [
+    var MAPULANG_LUPA_GAZETTEER = [
       { name: 'Aquariadise Petshop', aliases: ['aquariadise', 'aquariadise petshop', 'petshop'], lat: 14.885000, lng: 120.974000 },
       { name: 'Massway Supermarket - Pandi', aliases: ['massway', 'massway supermarket', 'supermarket'], lat: 14.886800, lng: 120.976000 },
       { name: "ADAM'S Hotel Apartment", aliases: ['adams', "adam's", "adam's hotel", 'adams hotel apartment'], lat: 14.882800, lng: 120.956000 },
@@ -952,19 +954,19 @@
       }
     }
 
-    let map = null;
-    let boundaryLayer = null;
-    let boundaryGeojson = null;
-    let zonesLayer = null;
-    let zonesGeojson = null;
-    let zonePolygonLayers = {};
-    let hasHandledInitialUrlParams = false;
-    let heatLayer = null;
-    let markerLayer = null;
-    let highlightLayer = null;
-    let markerMap = new Map();
-    let pulseTimer = null;
-    let activeRowId = null;
+    var map = null;
+    var boundaryLayer = null;
+    var boundaryGeojson = null;
+    var zonesLayer = null;
+    var zonesGeojson = null;
+    var zonePolygonLayers = {};
+    var hasHandledInitialUrlParams = false;
+    var heatLayer = null;
+    var markerLayer = null;
+    var highlightLayer = null;
+    var markerMap = new Map();
+    var pulseTimer = null;
+    var activeRowId = null;
 
     function safeInvalidateMapSize() {
       if (window.heatmapInstance && window.heatmapInstance._container && window.heatmapInstance._container.offsetWidth > 0) {
@@ -1025,13 +1027,13 @@
     window.addEventListener('load', safeInvalidateMapSize);
     window.addEventListener('resize', safeInvalidateMapSize);
 
-    const periodFilter = document.getElementById('periodFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const showMarkers = document.getElementById('showMarkers');
-    const totalVisible = document.getElementById('totalVisible');
-    const topCategory = document.getElementById('topCategory');
-    const categoryList = document.getElementById('categoryList');
-    const incidentTableBody = document.getElementById('incidentTableBody');
+    var periodFilter = document.getElementById('periodFilter');
+    var categoryFilter = document.getElementById('categoryFilter');
+    var showMarkers = document.getElementById('showMarkers');
+    var totalVisible = document.getElementById('totalVisible');
+    var topCategory = document.getElementById('topCategory');
+    var categoryList = document.getElementById('categoryList');
+    var incidentTableBody = document.getElementById('incidentTableBody');
 
     async function loadBoundary() {
       try {
@@ -1258,7 +1260,7 @@
       });
     }
 
-    const EXCLUDED_HEATMAP_CATEGORIES = new Set([
+    var EXCLUDED_HEATMAP_CATEGORIES = new Set([
       'civil',
       'crim',
       'criminal',
@@ -1396,13 +1398,13 @@
       }
     }
 
-    const TABLE_PAGE_SIZE = 8;
-    let tableCurrentPage = 1;
-    let currentTableFilteredData = [];
+    var TABLE_PAGE_SIZE = 8;
+    var tableCurrentPage = 1;
+    var currentTableFilteredData = [];
 
-    const heatmapSearchInput = document.getElementById('heatmapSearchInput');
-    const heatmapZoneFilter = document.getElementById('heatmapZoneFilter');
-    const heatmapCategoryFilter = document.getElementById('heatmapCategoryFilter');
+    var heatmapSearchInput = document.getElementById('heatmapSearchInput');
+    var heatmapZoneFilter = document.getElementById('heatmapZoneFilter');
+    var heatmapCategoryFilter = document.getElementById('heatmapCategoryFilter');
 
     function applyTableFilters(resetPage = true) {
       if (resetPage) tableCurrentPage = 1;
@@ -1596,8 +1598,8 @@
       }
     }
 
-    let zoneDensityMap = {};
-    let topRiskZoneId = 'Zone 1';
+    var zoneDensityMap = {};
+    var topRiskZoneId = 'Zone 1';
 
     async function loadZoneDensity() {
       try {
@@ -1763,7 +1765,7 @@
         console.error('Could not load incident data:', err);
       }
     };
-    initHeatmap();
+    if (!window._bcSpaNavActive) { initHeatmap(); }
 
   </script>
 </body>

@@ -813,7 +813,7 @@ window.initSettings = async function () {
     console.error('initSettings error:', initErr);
   }
 };
-initSettings();
+if (!window._bcSpaNavActive) { initSettings(); }
 
 </script>
 </body>

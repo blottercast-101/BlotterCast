@@ -509,7 +509,7 @@ window.initIndigency = async function () {
     console.error('initIndigency error:', initErr);
   }
 };
-initIndigency();
+if (!window._bcSpaNavActive) { initIndigency(); }
 
 </script>
 <script src="public/js/certificates.js"></script>

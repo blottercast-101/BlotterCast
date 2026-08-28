@@ -2083,4 +2083,217 @@ path.zone-pulse-active {
   white-space: nowrap;
 }
 
+/* Heatmap container & pane layering */
+#map .leaflet-tile-pane       { z-index: 1; }
+#map .leaflet-overlay-pane    { z-index: 2; }
+#map .leaflet-shadow-pane     { z-index: 3; }
+#map .leaflet-marker-pane     { z-index: 4; }
+#map .leaflet-tooltip-pane    { z-index: 5; }
+#map .leaflet-popup-pane      { z-index: 6; }
+#map .leaflet-map-pane canvas { z-index: 1; }
+#map .leaflet-map-pane svg    { z-index: 2; }
+#map .leaflet-control-container .leaflet-top,
+#map .leaflet-control-container .leaflet-bottom { z-index: 7; }
+
+.legend-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.6) inset;
+}
+
+.zone-pulse-active {
+  stroke-width: 5 !important;
+  stroke: #EF4444 !important;
+  animation: zoneBorderPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes zoneBorderPulse {
+  0%, 100% { stroke-opacity: 1; }
+  50% { stroke-opacity: 0.3; }
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 4px 20px rgba(10, 36, 20, 0.15);
+  border: 1px solid var(--forest-100, #dcf0e0);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+}
+.incident-popup-box {
+  min-width: 220px;
+  font-family: 'DM Sans', sans-serif;
+}
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.popup-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #123d22;
+}
+.popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+.popup-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.popup-label {
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.popup-val {
+  font-weight: 600;
+  color: #1f2937;
+  text-align: right;
+  word-break: break-word;
+}
+.popup-weight-row {
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 6px;
+  margin-top: 2px;
+  align-items: center;
+}
+.popup-weight-val {
+  font-weight: 700;
+  color: #166534;
+  background: #dcf0e0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+/* ==========================================================================
+   Core Layout Wrapper CSS Fallback Rules
+   Prevents layout collapse on dynamic SPA content injection before / while
+   Tailwind Play CDN scans the newly inserted DOM.
+   ========================================================================== */
+
+/* Grid Displays */
+.grid {
+  display: grid;
+}
+.inline-grid {
+  display: inline-grid;
+}
+
+/* Grid Column Tracks */
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+
+/* Responsive Grid Breakpoints */
+@media (min-width: 640px) {
+  .sm\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .md\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Grid Gaps */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-5 { gap: 1.25rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+.gap-x-2 { column-gap: 0.5rem; }
+.gap-x-3 { column-gap: 0.75rem; }
+.gap-x-4 { column-gap: 1rem; }
+.gap-x-6 { column-gap: 1.5rem; }
+
+.gap-y-2 { row-gap: 0.5rem; }
+.gap-y-3 { row-gap: 0.75rem; }
+.gap-y-4 { row-gap: 1rem; }
+.gap-y-6 { row-gap: 1.5rem; }
+
+/* Margins */
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+
+/* Flexbox Fallbacks */
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.flex-row { flex-direction: row; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-nowrap { flex-wrap: nowrap; }
+.flex-1 { flex: 1 1 0%; }
+.flex-shrink-0 { flex-shrink: 0; }
+.flex-grow { flex-grow: 1; }
+
+/* Alignment */
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.items-stretch { align-items: stretch; }
+
+.justify-start { justify-content: flex-start; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+
+/* Sizing & Dimensions */
+.h-screen { height: 100vh; }
+.min-h-screen { min-height: 100vh; }
+.h-full { height: 100%; }
+.w-full { width: 100%; }
+
+/* Stat card dimensions fallback */
+.stat-card-grad {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 105px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 

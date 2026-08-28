@@ -222,7 +222,11 @@ function updateActiveSidebar(targetUrl) {
 const _bcUpdateSidebarActiveLink = updateActiveSidebar;
 
 async function _bcLoadScriptOnce(src) {
-  if (!src || _bcLoadedScriptSrcs.has(src)) return;
+  if (!src) return;
+  if (_bcLoadedScriptSrcs.has(src) || document.querySelector(`script[src="${src}"]`)) {
+    _bcLoadedScriptSrcs.add(src);
+    return;
+  }
   return new Promise((resolve) => {
     const s = document.createElement('script');
     s.src = src;
@@ -355,7 +359,19 @@ function executeModuleInit(url) {
     console.error(`Error initializing module for ${path}:`, e);
   }
 }
-const _bcExecuteRouteLifecycle = executeModuleInit;
+// Provide safe refresh hook if Tailwind Play CDN is loaded
+if (typeof window !== 'undefined') {
+  if (!window.tailwind) {
+    try { window.tailwind = {}; } catch (_) {}
+  }
+  if (window.tailwind && typeof window.tailwind.refresh !== 'function') {
+    window.tailwind.refresh = function () {
+      if (document.documentElement) {
+        document.documentElement.classList.toggle('tw-rescan');
+      }
+    };
+  }
+}
 
 // ── Bulletproof SPA Navigation & Content Swap ──────────────
 async function navigateTo(url, pushState = true) {
@@ -371,9 +387,22 @@ async function navigateTo(url, pushState = true) {
   const targetRel = url.split('/').pop();
   if (currentFull === targetRel && !pushState) return;
 
+  // ── SPA navigation pre-flight ─────────────────────────────
+  // Reset the auth guard so requireAuth() isn't blocked on the
+  // new page because the previous page's guard was still active.
+  _bcAuthGuardRunning = false;
+
+  // Signal to inline page scripts that they are running inside
+  // the SPA router — suppresses the direct initXxx() call that
+  // every page includes at its bottom (to support direct-open
+  // load). The router calls executeModuleInit() instead, which
+  // runs after DOM and scripts are fully ready.
+  window._bcSpaNavActive = true;
+
   _bcNavigating = true;
   const contentContainer = document.querySelector('#app-content') || document.querySelector('.ml-64');
   if (!contentContainer) {
+    window._bcSpaNavActive = false;
     window.location.href = url;
     return;
   }
@@ -388,7 +417,7 @@ async function navigateTo(url, pushState = true) {
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    const newMain = doc.querySelector('#app-content, main, .page-content, .ml-64');
+    const newMain = doc.querySelector('#app-content') || doc.querySelector('main') || doc.querySelector('.page-content') || doc.querySelector('.ml-64');
 
     if (doc.title) {
       document.title = doc.title;
@@ -413,9 +442,25 @@ async function navigateTo(url, pushState = true) {
     });
 
     if (newMain) {
+      // Sync classes and attributes from the incoming view container
+      if (newMain.className) {
+        const preservedClasses = ['bc-content-loading', 'bc-content-enter'];
+        const currentFlags = preservedClasses.filter(c => contentContainer.classList.contains(c));
+        contentContainer.className = newMain.className;
+        currentFlags.forEach(c => contentContainer.classList.add(c));
+      }
       contentContainer.innerHTML = newMain.innerHTML;
     } else {
       contentContainer.innerHTML = html;
+    }
+
+    // Explicitly trigger Tailwind's class scanner immediately after swapping HTML
+    if (window.tailwind && typeof window.tailwind.refresh === 'function') {
+      try {
+        window.tailwind.refresh();
+      } catch (twErr) {
+        console.warn('Tailwind refresh error:', twErr);
+      }
     }
 
     contentContainer.classList.remove('bc-content-loading');
@@ -461,7 +506,11 @@ async function navigateTo(url, pushState = true) {
       }
     }
 
-    // Execute inline scripts safely with redeclaration protection
+    // Execute inline scripts safely with redeclaration protection.
+    // window._bcSpaNavActive=true suppresses the direct initXxx()
+    // call at the bottom of every page script (those calls are for
+    // direct browser-open only; during SPA nav the router calls
+    // executeModuleInit() below once everything is ready).
     for (const s of scriptTags) {
       if (!s.getAttribute('src') && s.textContent.trim()) {
         try {
@@ -475,12 +524,17 @@ async function navigateTo(url, pushState = true) {
           const newScript = document.createElement('script');
           newScript.textContent = safeScript;
           document.body.appendChild(newScript);
+          // Remove after a tick — script has already run synchronously
           setTimeout(() => newScript.remove(), 0);
         } catch (scriptErr) {
           console.error('Error preparing page script:', scriptErr);
         }
       }
     }
+
+    // Clear the SPA nav flag now that all page scripts have run.
+    // window.initXxx is now defined and ready to be called.
+    window._bcSpaNavActive = false;
 
     // Re-hydrate session & live permissions
     bcHydrateCachedSession();
@@ -492,8 +546,18 @@ async function navigateTo(url, pushState = true) {
     }
     if (typeof initCustomSelects === 'function') initCustomSelects();
 
-    // Trigger module lifecycle safely
+    // Trigger module lifecycle safely.
+    // By this point all inline scripts have run synchronously
+    // (appendChild of a script tag runs it immediately), so
+    // window.initXxx is guaranteed to be defined.
     await executeModuleInit(url);
+
+    // Re-scan Tailwind after dynamic component rendering
+    if (window.tailwind && typeof window.tailwind.refresh === 'function') {
+      try {
+        window.tailwind.refresh();
+      } catch (_) {}
+    }
 
     window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url } }));
   } catch (err) {
@@ -522,6 +586,8 @@ async function navigateTo(url, pushState = true) {
     if (typeof renderIcons === 'function') renderIcons();
   } finally {
     _bcNavigating = false;
+    _bcAuthGuardRunning = false;   // ensure auth guard never gets stuck
+    window._bcSpaNavActive = false; // ensure flag is cleared even on error
     contentContainer.classList.remove('bc-content-loading');
     contentContainer.style.opacity = '1';
     contentContainer.style.pointerEvents = 'auto';
@@ -2463,7 +2529,7 @@ function bcSetStatsLoading(targetIds, isLoading = true, placeholder = '—') {
  * Generates an accessible 4-card metric skeleton grid.
  */
 function bcGetMetricsSkeletonHtml(count = 4) {
-  let html = `<div class="grid grid-cols-${count} gap-5">`;
+  let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${count} gap-4 mb-6">`;
   for (let i = 0; i < count; i++) {
     html += `
       <div class="bc-skeleton-card">

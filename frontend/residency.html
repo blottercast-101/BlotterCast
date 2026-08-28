@@ -575,7 +575,7 @@ window.initResidency = async function () {
     console.error('initResidency error:', initErr);
   }
 };
-initResidency();
+if (!window._bcSpaNavActive) { initResidency(); }
 
 </script>
 <script src="public/js/certificates.js"></script>
