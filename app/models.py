@@ -181,7 +181,7 @@ class AuditLog(db.Model):
     username = db.Column(db.String(50), nullable=False)
     action = db.Column(db.String(50), nullable=False)
     module = db.Column(db.String(50), nullable=False)
-    details = db.Column(db.String(255))
+    details = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=now, index=True)
 
     def __init__(self, username=None, action=None, module=None, details=None, created_at=None, **kwargs):

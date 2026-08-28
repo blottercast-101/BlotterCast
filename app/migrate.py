@@ -70,6 +70,15 @@ def ensure_columns(db):
                     VALUES (1, FALSE, FALSE, 120)
                     ON CONFLICT (id) DO NOTHING
                 """))
+                try:
+                    conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN details TYPE TEXT;"))
+                except Exception:
+                    pass
+            elif "mysql" in backend:
+                try:
+                    conn.execute(text("ALTER TABLE audit_logs MODIFY COLUMN details TEXT;"))
+                except Exception:
+                    pass
     except Exception as e:
         print(f"  [migration] system_security_settings notice: {e}")
 

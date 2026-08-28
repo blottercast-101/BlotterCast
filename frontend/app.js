@@ -1946,14 +1946,15 @@ class BcBatchManager {
     try {
       await BCApi.batchArchive(this.opts.apiType, ids);
       showToast(`${count} ${label} archived successfully.`);
+    } catch (err) {
+      showToast(err.message || 'Failed to archive records', 'error');
+    } finally {
       this.clearSelection();
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
         console.warn('Post-archive refresh error:', rErr);
       }
-    } catch (err) {
-      showToast(err.message || 'Failed to archive records', 'error');
     }
   }
 
@@ -1972,14 +1973,15 @@ class BcBatchManager {
     try {
       await BCApi.batchRestore(this.opts.apiType, ids);
       showToast(`${count} ${label} restored to active list.`);
+    } catch (err) {
+      showToast(err.message || 'Failed to restore records', 'error');
+    } finally {
       this.clearSelection();
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
         console.warn('Post-restore refresh error:', rErr);
       }
-    } catch (err) {
-      showToast(err.message || 'Failed to restore records', 'error');
     }
   }
 
@@ -2005,14 +2007,15 @@ class BcBatchManager {
     try {
       await BCApi.batchPermanentDelete(this.opts.apiType, ids);
       showToast(`${count} ${label} permanently deleted.`);
+    } catch (err) {
+      showToast(err.message || 'Failed to delete records', 'error');
+    } finally {
       this.clearSelection();
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
         console.warn('Post-delete refresh error:', rErr);
       }
-    } catch (err) {
-      showToast(err.message || 'Failed to delete records', 'error');
     }
   }
 }

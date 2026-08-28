@@ -397,7 +397,10 @@ def _handle_batch(rtype, action):
                 r.archived = True
 
             db.session.commit()
-            log_audit(username, "BATCH_ARCHIVE", module_name, f"Batch archived {len(rows)} records (IDs: {clean_ids})")
+            sample_ids = clean_ids[:10]
+            more_cnt = len(clean_ids) - 10
+            id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
+            log_audit(username, "BATCH_ARCHIVE", module_name, f"Batch archived {len(rows)} records ({id_desc})")
             return jsonify({"ok": True, "count": len(rows), "archived": True})
 
         elif action in ("batch_restore", "restore"):
@@ -409,7 +412,10 @@ def _handle_batch(rtype, action):
                 r.archived = False
 
             db.session.commit()
-            log_audit(username, "BATCH_RESTORE", module_name, f"Batch restored {len(rows)} records (IDs: {clean_ids})")
+            sample_ids = clean_ids[:10]
+            more_cnt = len(clean_ids) - 10
+            id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
+            log_audit(username, "BATCH_RESTORE", module_name, f"Batch restored {len(rows)} records ({id_desc})")
             return jsonify({"ok": True, "count": len(rows), "restored": True})
 
         elif action in ("batch_permanent_delete", "permanent_delete", "delete"):
@@ -438,7 +444,7 @@ def _handle_batch(rtype, action):
                 dockets = [r.docket_no for r in rows if r.docket_no]
                 if dockets:
                     Incident.query.filter(Incident.blotter_docket_no.in_(dockets)).update(
-                        {"is_blotter": False, "blotter_docket_no": None, "status": "Under Investigation"},
+                        {"is_blotter": False, "blotter_docket_no": None, "status": "Pending"},
                         synchronize_session=False
                     )
                 Notification.query.filter(
@@ -481,11 +487,14 @@ def _handle_batch(rtype, action):
                 db.session.delete(r)
 
             db.session.commit()
+            sample_ids = clean_ids[:10]
+            more_cnt = len(clean_ids) - 10
+            id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
             log_audit(
                 username,
                 "BATCH_PERMANENT_DELETE",
                 module_name,
-                f"Batch permanently deleted {len(rows)} records (IDs: {clean_ids})"
+                f"Batch permanently deleted {len(rows)} records ({id_desc})"
             )
             return jsonify({"ok": True, "count": len(rows), "deleted": True})
 

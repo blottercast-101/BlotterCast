@@ -129,7 +129,32 @@ def permission_required(permission: str):
 
 
 def log_audit(username: str, action: str, module: str, details: str):
-    from .models import AuditLog
-    entry = AuditLog(username=username or "system", action=action, module=module, details=details)
-    db.session.add(entry)
-    db.session.commit()
+    try:
+        from .models import AuditLog
+        entry = AuditLog(
+            username=str(username or "system")[:50],
+            action=str(action or "ACTION")[:50],
+            module=str(module or "system")[:50],
+            details=str(details or "")
+        )
+        db.session.add(entry)
+        db.session.commit()
+    except Exception as e:
+        try:
+            db.session.rollback()
+            from .models import AuditLog
+            safe_details = str(details or "")[:240]
+            entry = AuditLog(
+                username=str(username or "system")[:50],
+                action=str(action or "ACTION")[:50],
+                module=str(module or "system")[:50],
+                details=safe_details
+            )
+            db.session.add(entry)
+            db.session.commit()
+        except Exception as fallback_e:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+            print(f"[Audit Log Warning] Could not record audit log: {fallback_e}")
