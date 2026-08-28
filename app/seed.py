@@ -21,8 +21,8 @@ from app.models import Incident, Notification, SystemSecuritySetting, SystemSett
 # All coordinates are verified to fall strictly inside the official GeoJSON polygon boundary.
 ZONE_LANDMARK_COORDINATES = {
     "Zone 1": {
-        "landmark": "Aquariadise / Siling Bata",
-        "label": "Zone 1 – Aquariadise / Siling Bata",
+        "landmark": "Residence 3 (Barangay Hall)",
+        "label": "Zone 1 – Residence 3 (Barangay Hall)",
         "latitude": 14.884500,
         "longitude": 120.973500,
         "weight": 0.18,
@@ -42,8 +42,8 @@ ZONE_LANDMARK_COORDINATES = {
         "weight": 0.16,
     },
     "Zone 4": {
-        "landmark": "Mitay 1 / Jollibee Pandi",
-        "label": "Zone 4 – Mitay 1 / Jollibee",
+        "landmark": "Mitay 1",
+        "label": "Zone 4 – Mitay 1",
         "latitude": 14.887000,
         "longitude": 120.963500,
         "weight": 0.14,
@@ -56,14 +56,14 @@ ZONE_LANDMARK_COORDINATES = {
         "weight": 0.15,
     },
     "Zone 6": {
-        "landmark": "Balai Loreta / Bangko St.",
-        "label": "Zone 6 – Balai Loreta",
+        "landmark": "Bangko St.",
+        "label": "Zone 6 – Bangko St.",
         "latitude": 14.876500,
         "longitude": 120.970500,
         "weight": 0.11,
     },
     "Zone 7": {
-        "landmark": "Barangka St. / Pandi Angat Rd",
+        "landmark": "Barangka St.",
         "label": "Zone 7 – Barangka St.",
         "latitude": 14.877200,
         "longitude": 120.960500,

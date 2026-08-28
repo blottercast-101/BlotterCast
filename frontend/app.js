@@ -192,6 +192,11 @@ const _bcLoadedScriptSrcs = new Set(
   Array.from(document.querySelectorAll('script[src]')).map(s => s.getAttribute('src')).filter(Boolean)
 );
 
+// Global timer and resource trackers for view lifecycles
+window._bcActiveTimeouts = window._bcActiveTimeouts || [];
+window._bcActiveIntervals = window._bcActiveIntervals || [];
+window._bcActiveCharts = window._bcActiveCharts || [];
+
 function _bcGetPageNameFromUrl(url) {
   try {
     const clean = url.split('?')[0].split('#')[0];
@@ -232,6 +237,124 @@ async function _bcLoadScriptOnce(src) {
   });
 }
 
+function _bcCleanupPreviousView() {
+  // 1. Destroy all active Leaflet map instances
+  const maps = [
+    window.currentMap,
+    window.heatmapInstance,
+    window.pickerMap,
+    window.map,
+    window._censusMap
+  ];
+  maps.forEach(m => {
+    if (m && typeof m.remove === 'function') {
+      try {
+        m.remove();
+      } catch (e) {
+        console.warn('Map cleanup notice:', e);
+      }
+    }
+  });
+  window.currentMap = null;
+  window.heatmapInstance = null;
+  window.pickerMap = null;
+  window.map = null;
+  window._censusMap = null;
+
+  // Clear map container identifiers
+  document.querySelectorAll('#map, #pickerMapContainer, #censusMap').forEach(el => {
+    if (el) el._leaflet_id = null;
+  });
+
+  // 2. Disconnect observers
+  if (window._heatmapResizeObserver) {
+    try { window._heatmapResizeObserver.disconnect(); } catch (_) {}
+    window._heatmapResizeObserver = null;
+  }
+
+  // 3. Destroy Chart.js instances
+  if (window._bcActiveCharts && Array.isArray(window._bcActiveCharts)) {
+    window._bcActiveCharts.forEach(c => {
+      try { c.destroy(); } catch (_) {}
+    });
+    window._bcActiveCharts = [];
+  }
+  document.querySelectorAll('canvas').forEach(canvas => {
+    try {
+      if (window.Chart && typeof Chart.getChart === 'function') {
+        const chartInstance = Chart.getChart(canvas);
+        if (chartInstance) chartInstance.destroy();
+      }
+    } catch (_) {}
+  });
+
+  // 4. Clear running intervals and timeouts from previous view
+  if (window._bcActiveIntervals && Array.isArray(window._bcActiveIntervals)) {
+    window._bcActiveIntervals.forEach(id => clearInterval(id));
+    window._bcActiveIntervals = [];
+  }
+  if (window._bcActiveTimeouts && Array.isArray(window._bcActiveTimeouts)) {
+    window._bcActiveTimeouts.forEach(id => clearTimeout(id));
+    window._bcActiveTimeouts = [];
+  }
+}
+
+async function _bcExecuteRouteLifecycle(targetUrl) {
+  try {
+    if (typeof renderIcons === 'function') renderIcons();
+    if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+    if (typeof initCustomSelects === 'function') initCustomSelects();
+
+    const clean = (targetUrl || window.location.pathname).split('?')[0].split('#')[0];
+    const pageName = clean.split('/').pop().toLowerCase() || 'dashboard.html';
+
+    const routeHandlers = {
+      'blotter.html': () => window.initBlotter?.(),
+      '/blotter.html': () => window.initBlotter?.(),
+      'incident.html': () => window.initIncidents?.() || window.initIncident?.(),
+      '/incident.html': () => window.initIncidents?.() || window.initIncident?.(),
+      'incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
+      '/incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
+      'settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
+      '/settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
+      'census.html': () => window.initCensus?.(),
+      '/census.html': () => window.initCensus?.(),
+      'clearance.html': () => window.initClearance?.(),
+      '/clearance.html': () => window.initClearance?.(),
+      'residency.html': () => window.initResidency?.(),
+      '/residency.html': () => window.initResidency?.(),
+      'non_residency.html': () => window.initNonResidency?.(),
+      '/non_residency.html': () => window.initNonResidency?.(),
+      'indigency.html': () => window.initIndigency?.(),
+      '/indigency.html': () => window.initIndigency?.(),
+      'heatmap.html': () => window.initHeatmap?.(),
+      '/heatmap.html': () => window.initHeatmap?.(),
+      'trends.html': () => window.initTrends?.(),
+      '/trends.html': () => window.initTrends?.(),
+      'predictions.html': () => window.initPredictions?.(),
+      '/predictions.html': () => window.initPredictions?.(),
+      'users.html': () => window.initUsers?.(),
+      '/users.html': () => window.initUsers?.(),
+      'reports.html': () => window.initReports?.(),
+      '/reports.html': () => window.initReports?.(),
+      'settings.html': () => window.initSettings?.(),
+      '/settings.html': () => window.initSettings?.(),
+      'dashboard.html': () => window.initDashboard?.(),
+      '/dashboard.html': () => window.initDashboard?.()
+    };
+
+    const handler = routeHandlers[pageName] || routeHandlers['/' + pageName];
+    if (typeof handler === 'function') {
+      const res = handler();
+      if (res && typeof res.then === 'function') {
+        await res;
+      }
+    }
+  } catch (err) {
+    console.error('View initialization failed:', err);
+  }
+}
+
 async function bcNavigate(targetUrl, pushState = true) {
   if (!targetUrl || _bcNavigating) return;
 
@@ -260,7 +383,7 @@ async function bcNavigate(targetUrl, pushState = true) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, 'text/html');
 
-    const newContainer = doc.getElementById('app-content') || doc.querySelector('.ml-64');
+    const newContainer = doc.getElementById('app-content') || doc.querySelector('.ml-64') || doc.querySelector('main');
     if (!newContainer) {
       throw new Error('Unable to find page content container in target response.');
     }
@@ -269,21 +392,8 @@ async function bcNavigate(targetUrl, pushState = true) {
       document.title = doc.title;
     }
 
-    // Clean up previous map instances & observers if navigating away
-    if (window.heatmapInstance) {
-      try {
-        window.heatmapInstance.remove();
-      } catch (e) {
-        console.warn('Map cleanup notice:', e);
-      }
-      window.heatmapInstance = null;
-    }
-    if (window._heatmapResizeObserver) {
-      try {
-        window._heatmapResizeObserver.disconnect();
-      } catch (_) {}
-      window._heatmapResizeObserver = null;
-    }
+    // Teardown previous view resources, maps, charts, timers
+    _bcCleanupPreviousView();
 
     // Dismiss open modals before swapping
     document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
@@ -297,6 +407,7 @@ async function bcNavigate(targetUrl, pushState = true) {
 
     const newModals = doc.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]');
 
+    // Swap inner markup into static shell container
     if (currentContainer) {
       currentContainer.innerHTML = newContainer.innerHTML;
       currentContainer.className = newContainer.className;
@@ -368,18 +479,6 @@ async function bcNavigate(targetUrl, pushState = true) {
       }
     }
 
-    // Re-render SVG icons and custom select controls
-    try {
-      if (typeof renderIcons === 'function') renderIcons();
-    } catch (e) {
-      console.warn('renderIcons notice:', e);
-    }
-    try {
-      if (typeof initCustomSelects === 'function') initCustomSelects();
-    } catch (e) {
-      console.warn('initCustomSelects notice:', e);
-    }
-
     // Re-apply live role permissions to new DOM nodes
     const cachedUser = typeof bcGetCachedUser === 'function' ? bcGetCachedUser() : null;
     if (cachedUser && cachedUser.role) {
@@ -390,6 +489,9 @@ async function bcNavigate(targetUrl, pushState = true) {
         console.warn('permissions notice:', e);
       }
     }
+
+    // Execute robust route initialization lifecycle
+    await _bcExecuteRouteLifecycle(targetUrl);
 
     window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url: targetUrl } }));
   } catch (err) {
@@ -428,7 +530,6 @@ async function bcNavigate(targetUrl, pushState = true) {
     }
   }
 }
-
 
 // Intercept in-app link clicks
 document.addEventListener('click', (e) => {

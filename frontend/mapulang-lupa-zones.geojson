@@ -9,8 +9,8 @@
         "zone_id": "Zone 1",
         "zone": "Zone 1",
         "zone_number": 1,
-        "name": "Aquariadise / Siling Bata",
-        "landmark": "Aquariadise Petshop / Siling Bata",
+        "name": "Residence 3 (Barangay Hall)",
+        "landmark": "Residence 3 (Barangay Hall)",
         "sector": "East / Northeast (Below Highway, North of Creek)",
         "center": [14.883500, 120.975000]
       },
@@ -44,7 +44,7 @@
         "zone": "Zone 2",
         "zone_number": 2,
         "name": "Residence 1",
-        "landmark": "Residence 1 / Private Resort",
+        "landmark": "Residence 1",
         "sector": "West / Central-West (Below Dark Blue Arterial Road, West of Red Line)",
         "center": [14.881200, 120.958000]
       },
@@ -113,8 +113,8 @@
         "zone_id": "Zone 4",
         "zone": "Zone 4",
         "zone_number": 4,
-        "name": "Mitay 1 / Jollibee Pandi",
-        "landmark": "Mitay 1 / Jollibee Pandi",
+        "name": "Mitay 1",
+        "landmark": "Mitay 1",
         "sector": "North / Northwest (Above Dark Blue Main Arterial Road)",
         "center": [14.888500, 120.963000]
       },
@@ -149,8 +149,8 @@
         "zone_id": "Zone 5",
         "zone": "Zone 5",
         "zone_number": 5,
-        "name": "Sitio Gubat / Barangay Center",
-        "landmark": "Sitio Gubat / Center",
+        "name": "Sitio Gubat",
+        "landmark": "Sitio Gubat",
         "sector": "Central (Between Red Line and Yellow Road Line)",
         "center": [14.881200, 120.965000]
       },
@@ -179,8 +179,8 @@
         "zone_id": "Zone 6",
         "zone": "Zone 6",
         "zone_number": 6,
-        "name": "Balai Loreta / Bangko St.",
-        "landmark": "Balai Loreta Private Resort / Bangko St.",
+        "name": "Bangko St.",
+        "landmark": "Bangko St.",
         "sector": "Southeast (South of Pink Road Line, East of Green Road Line)",
         "center": [14.875200, 120.971000]
       },
@@ -212,8 +212,8 @@
         "zone_id": "Zone 7",
         "zone": "Zone 7",
         "zone_number": 7,
-        "name": "Barangka St. / Pandi Angat Rd",
-        "landmark": "Barangka St. / Pandi-Angat Rd",
+        "name": "Barangka St.",
+        "landmark": "Barangka St.",
         "sector": "South / Southwest (West of Green Road Line, South of Red Line)",
         "center": [14.876800, 120.959500]
       },

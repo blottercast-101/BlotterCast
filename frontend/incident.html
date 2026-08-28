@@ -252,13 +252,13 @@
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required onchange="onZoneDropdownChange()">
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Zone 1">Zone 1 (Aquariadise / Siling Bata)</option>
-            <option value="Zone 2">Zone 2 (Residence 1)</option>
-            <option value="Zone 3">Zone 3 (Pandi Village 2)</option>
-            <option value="Zone 4">Zone 4 (Mitay 1 / Jollibee)</option>
-            <option value="Zone 5">Zone 5 (Sitio Gubat / Center)</option>
-            <option value="Zone 6">Zone 6 (Balai Loreta / Bangko St.)</option>
-            <option value="Zone 7">Zone 7 (Barangka St. / Pandi-Angat)</option>
+            <option value="Zone 1">Zone 1 - Residence 3 (Barangay Hall)</option>
+            <option value="Zone 2">Zone 2 - Residence 1</option>
+            <option value="Zone 3">Zone 3 - Pandi Village 2 (Atlantica)</option>
+            <option value="Zone 4">Zone 4 - Mitay 1</option>
+            <option value="Zone 5">Zone 5 - Sitio Gubat</option>
+            <option value="Zone 6">Zone 6 - Bangko St.</option>
+            <option value="Zone 7">Zone 7 - Barangka St.</option>
           </select>
         </div>
         <div class="col-span-2">
@@ -1390,8 +1390,8 @@
   const ZONE_MATCH_RULES = [
     {
       zone: 'Zone 1',
-      landmark: 'Aquariadise / Siling Bata',
-      keywords: ['aquariadise', 'siling bata', 'massway', 'petshop', 'residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3'],
+      landmark: 'Residence 3 (Barangay Hall)',
+      keywords: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3', 'barangay hall', 'brgy hall', 'aquariadise', 'siling bata', 'massway', 'petshop'],
     },
     {
       zone: 'Zone 2',
@@ -1405,22 +1405,22 @@
     },
     {
       zone: 'Zone 4',
-      landmark: 'Mitay 1 / Jollibee Pandi',
+      landmark: 'Mitay 1',
       keywords: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno', 'pandi village 1', 'jollibee', 'jollibee - pandi', 'jollibee pandi', "adam's hotel", "adam's hotel apartment", 'adams hotel'],
     },
     {
       zone: 'Zone 5',
-      landmark: 'Sitio Gubat / Center',
-      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center', 'barangay hall'],
+      landmark: 'Sitio Gubat',
+      keywords: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center'],
     },
     {
       zone: 'Zone 6',
-      landmark: 'Balai Loreta / Bangko St.',
-      keywords: ['balai loreta', 'balai loreta private resort', 'bangko st', 'bangko street', 'bangko', 'kalye bangko'],
+      landmark: 'Bangko St.',
+      keywords: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'balai loreta', 'balai loreta private resort'],
     },
     {
       zone: 'Zone 7',
-      landmark: 'Barangka St. / Pandi-Angat Rd',
+      landmark: 'Barangka St.',
       keywords: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi-angat road', 'pandi angat', 'pandi-angat rd'],
     },
   ];
@@ -2163,6 +2163,7 @@
       console.error('initIncidents error:', initErr);
     }
   };
+  window.initIncident = window.initIncidents;
   initIncidents();
 
 </script>

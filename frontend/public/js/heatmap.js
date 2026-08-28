@@ -12,25 +12,25 @@
  * Official 7-Zone mapping reference for Barangay Mapulang Lupa, Pandi, Bulacan
  */
 const HEATMAP_OFFICIAL_ZONES = [
-  { id: 'Zone 1', name: 'Aquariadise / Siling Bata', label: 'Zone 1 - Aquariadise / Siling Bata' },
+  { id: 'Zone 1', name: 'Residence 3 (Barangay Hall)', label: 'Zone 1 - Residence 3 (Barangay Hall)' },
   { id: 'Zone 2', name: 'Residence 1', label: 'Zone 2 - Residence 1' },
   { id: 'Zone 3', name: 'Pandi Village 2 (Atlantica)', label: 'Zone 3 - Pandi Village 2 (Atlantica)' },
-  { id: 'Zone 4', name: 'Mitay 1 / Jollibee Pandi', label: 'Zone 4 - Mitay 1 / Jollibee Pandi' },
-  { id: 'Zone 5', name: 'Sitio Gubat / Center', label: 'Zone 5 - Sitio Gubat / Center' },
-  { id: 'Zone 6', name: 'Balai Loreta / Bangko St.', label: 'Zone 6 - Balai Loreta / Bangko St.' },
-  { id: 'Zone 7', name: 'Barangka St. / Pandi Angat Rd', label: 'Zone 7 - Barangka St. / Pandi Angat Rd' }
+  { id: 'Zone 4', name: 'Mitay 1', label: 'Zone 4 - Mitay 1' },
+  { id: 'Zone 5', name: 'Sitio Gubat', label: 'Zone 5 - Sitio Gubat' },
+  { id: 'Zone 6', name: 'Bangko St.', label: 'Zone 6 - Bangko St.' },
+  { id: 'Zone 7', name: 'Barangka St.', label: 'Zone 7 - Barangka St.' }
 ];
 
 /**
  * Official permanent zone label dictionary
  */
 const OFFICIAL_ZONE_LABELS = {
-  'Zone 1': 'Zone 1 - Aquariadise / Siling Bata',
+  'Zone 1': 'Zone 1 - Residence 3 (Barangay Hall)',
   'Zone 2': 'Zone 2 - Residence 1',
-  'Zone 3': 'Zone 3 - Pandi Village 2',
-  'Zone 4': 'Zone 4 - Mitay 1 / Jollibee',
+  'Zone 3': 'Zone 3 - Pandi Village 2 (Atlantica)',
+  'Zone 4': 'Zone 4 - Mitay 1',
   'Zone 5': 'Zone 5 - Sitio Gubat',
-  'Zone 6': 'Zone 6 - Balai Loreta',
+  'Zone 6': 'Zone 6 - Bangko St.',
   'Zone 7': 'Zone 7 - Barangka St.'
 };
 
