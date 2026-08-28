@@ -480,8 +480,10 @@
   function renderSettlements() {
     const filtered = getStlFiltered();
     const total = filtered.length;
-    const start = (stlPage-1)*STL_ROWS;
-    const page = filtered.slice(start, start+STL_ROWS);
+    const totalPages = Math.ceil(total / STL_ROWS) || 1;
+    if (stlPage > totalPages) stlPage = totalPages;
+    const start = (stlPage - 1) * STL_ROWS;
+    const page = filtered.slice(start, start + STL_ROWS);
 
     const tbody = document.getElementById('settlementTableBody');
     if (page.length === 0) {

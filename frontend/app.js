@@ -1819,7 +1819,7 @@ class BcBatchManager {
     const entityLabel = totalSelected === 1 ? this.opts.entityName : this.opts.entityPlural;
     const activeRole = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE) || (window.CURRENT_USER && window.CURRENT_USER.role);
     const canDelete = (typeof roleCan === 'function') ? roleCan(activeRole, 'delete_records') : (activeRole === 'System Admin');
-    const canArchive = (typeof roleCan === 'function') ? roleCan(activeRole, 'archive_records') : (activeRole !== 'Data Encoder');
+    const canArchive = (typeof roleCan === 'function') ? roleCan(activeRole, 'archive_records') : true;
 
     this._barEl.innerHTML = `
       <div class="bc-batch-count">
@@ -1845,7 +1845,7 @@ class BcBatchManager {
             ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
           </button>
         ` : `
-          <button id="bcBatchArchiveBtn" class="bc-batch-btn archive opacity-40 cursor-not-allowed" disabled title="Data Encoders are not authorized to archive records.">
+          <button id="bcBatchArchiveBtn" class="bc-batch-btn archive opacity-40 cursor-not-allowed" disabled title="You are not authorized to archive records.">
             ${typeof iconSvg === 'function' ? iconSvg('archive', 14) : ''} Archive Selected (${totalSelected})
           </button>
         `}
@@ -1887,9 +1887,13 @@ class BcBatchManager {
       await BCApi.batchArchive(this.opts.apiType, ids);
       showToast(`${count} ${label} archived successfully.`);
       this.clearSelection();
-      await this.opts.onRefresh();
+      try {
+        await this.opts.onRefresh();
+      } catch (rErr) {
+        console.warn('Post-archive refresh error:', rErr);
+      }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Failed to archive records', 'error');
     }
   }
 
@@ -1909,9 +1913,13 @@ class BcBatchManager {
       await BCApi.batchRestore(this.opts.apiType, ids);
       showToast(`${count} ${label} restored to active list.`);
       this.clearSelection();
-      await this.opts.onRefresh();
+      try {
+        await this.opts.onRefresh();
+      } catch (rErr) {
+        console.warn('Post-restore refresh error:', rErr);
+      }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Failed to restore records', 'error');
     }
   }
 
@@ -1938,9 +1946,13 @@ class BcBatchManager {
       await BCApi.batchPermanentDelete(this.opts.apiType, ids);
       showToast(`${count} ${label} permanently deleted.`);
       this.clearSelection();
-      await this.opts.onRefresh();
+      try {
+        await this.opts.onRefresh();
+      } catch (rErr) {
+        console.warn('Post-delete refresh error:', rErr);
+      }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Failed to delete records', 'error');
     }
   }
 }
@@ -2058,6 +2070,9 @@ function _confirmExportFilter() {
 // (currently the Dashboard); harmless no-op calls elsewhere.
 const NOTIF_TYPE_CONFIG = {
   incident_crud: { icon: 'incident', color: '#16a34a', badge: 'INCIDENT', bg: '#f0fdf4' },
+  incident_elevated: { icon: 'blotter', color: '#ea580c', badge: 'ELEVATED TO BLOTTER', bg: '#fff7ed' },
+  settlement_updated: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', bg: '#f0f9ff' },
+  settlement_created: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', bg: '#f0f9ff' },
   new_incident: { icon: 'warning', color: '#dc2626', badge: 'HIGH PRIORITY', bg: '#fef2f2' },
   heatmap_hotspot: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', bg: '#fffbeb' },
   predictive_risk: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
@@ -2303,21 +2318,34 @@ function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSel
 // age, address, and household number in each suggestion, instead of
 // a plain dropdown of names. Call bcInitResidentPicker() once per page
 // after residentOptions has been loaded.
-const _bcResidentPickers = {}; // keyed by input id, holds { options, hiddenId, onPick }
+const _bcResidentPickers = {}; // keyed by input id, holds { options, hiddenId, listId, onPick, validate }
 
 function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, validate) {
   _bcResidentPickers[inputId] = { options, hiddenId, listId, onPick, validate };
   const input = document.getElementById(inputId);
-  if (!input || input.dataset.bcPickerBound) return;
-  input.dataset.bcPickerBound = '1';
-  input.addEventListener('input', () => _bcFilterResidents(inputId));
-  input.addEventListener('focus', () => _bcFilterResidents(inputId));
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#' + listId) && e.target !== input) {
-      const list = document.getElementById(listId);
-      if (list) list.classList.add('hidden');
-    }
-  });
+  if (!input) return;
+  if (!input.dataset.bcPickerBound) {
+    input.dataset.bcPickerBound = '1';
+    input.addEventListener('input', () => _bcFilterResidents(inputId));
+    input.addEventListener('focus', () => _bcFilterResidents(inputId));
+    input.addEventListener('click', () => _bcFilterResidents(inputId));
+  }
+
+  if (!window._bcResidentPickerDocClickBound) {
+    window._bcResidentPickerDocClickBound = true;
+    document.addEventListener('click', (e) => {
+      Object.keys(_bcResidentPickers).forEach(id => {
+        const p = _bcResidentPickers[id];
+        if (!p) return;
+        const curInput = document.getElementById(id);
+        const curList = document.getElementById(p.listId);
+        if (!curList || curList.classList.contains('hidden')) return;
+        if (!curList.contains(e.target) && e.target !== curInput) {
+          curList.classList.add('hidden');
+        }
+      });
+    });
+  }
 }
 
 function bcResidentPickerSetOptions(inputId, options) {
@@ -2328,12 +2356,14 @@ function _bcFilterResidents(inputId) {
   const picker = _bcResidentPickers[inputId];
   if (!picker) return;
   const input = document.getElementById(inputId);
+  if (!input) return;
   const list = document.getElementById(picker.listId);
+  if (!list) return;
   const q = input.value.trim().toLowerCase();
 
   const matches = q === ''
-    ? picker.options.slice(0, 20)
-    : picker.options.filter(r => `${r.lastName} ${r.firstName} ${r.middleName}`.toLowerCase().includes(q)).slice(0, 20);
+    ? (picker.options || []).slice(0, 20)
+    : (picker.options || []).filter(r => `${r.lastName} ${r.firstName} ${r.middleName || ''}`.toLowerCase().includes(q)).slice(0, 20);
 
   if (matches.length === 0) {
     list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
@@ -2345,7 +2375,8 @@ function _bcFilterResidents(inputId) {
         ? 'Deceased residents cannot be recorded as respondents.'
         : 'Deceased residents cannot be filed as complainants/reporters.';
       return `
-      <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${isDeceased ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50'}"
+      <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${isDeceased ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
+              onmousedown="event.preventDefault()"
               onclick="${isDeceased ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${r.id})`}">
         <div class="flex items-center justify-between gap-2">
           <div class="text-sm font-semibold ${isDeceased ? 'text-gray-500 line-through' : 'text-forest-800'}">
@@ -2363,7 +2394,7 @@ function _bcFilterResidents(inputId) {
 function bcResidentPickerChoose(inputId, residentId) {
   const picker = _bcResidentPickers[inputId];
   if (!picker) return;
-  const r = picker.options.find(x => x.id === residentId);
+  const r = (picker.options || []).find(x => x.id === residentId);
   if (!r) return;
 
   const isDeceased = r.status === 'Deceased' || r.is_deceased;
@@ -2373,7 +2404,8 @@ function bcResidentPickerChoose(inputId, residentId) {
       ? 'Deceased residents cannot be recorded as respondents.'
       : 'Deceased residents cannot be filed as complainants/reporters.';
     showToast(msg, 'error');
-    document.getElementById(picker.listId).classList.add('hidden');
+    const list = document.getElementById(picker.listId);
+    if (list) list.classList.add('hidden');
     return;
   }
 
@@ -2381,24 +2413,30 @@ function bcResidentPickerChoose(inputId, residentId) {
     const reason = picker.validate(r);
     if (reason) {
       showToast(reason, 'error');
-      document.getElementById(picker.listId).classList.add('hidden');
+      const list = document.getElementById(picker.listId);
+      if (list) list.classList.add('hidden');
       return;
     }
   }
-  document.getElementById(inputId).value = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
-  document.getElementById(picker.hiddenId).value = String(residentId);
-  document.getElementById(picker.listId).classList.add('hidden');
-  picker.onPick(r);
+  const input = document.getElementById(inputId);
+  if (input) input.value = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
+  const hidden = document.getElementById(picker.hiddenId);
+  if (hidden) hidden.value = String(residentId);
+  const list = document.getElementById(picker.listId);
+  if (list) list.classList.add('hidden');
+  if (typeof picker.onPick === 'function') picker.onPick(r);
 }
 
 function bcResidentPickerClear(inputId) {
   const picker = _bcResidentPickers[inputId];
   if (!picker) return;
-  document.getElementById(inputId).value = '';
-  document.getElementById(picker.hiddenId).value = '';
+  const input = document.getElementById(inputId);
+  if (input) input.value = '';
+  const hidden = document.getElementById(picker.hiddenId);
+  if (hidden) hidden.value = '';
   const list = document.getElementById(picker.listId);
   if (list) list.classList.add('hidden');
-  picker.onPick(null);
+  if (typeof picker.onPick === 'function') picker.onPick(null);
 }
 
 // ============================================================

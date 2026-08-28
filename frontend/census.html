@@ -433,6 +433,8 @@ function renderResidents(){
   if (!tb) return;
   const f = getFiltered();
   const total = f.length;
+  const tp = Math.ceil(total / ROWS) || 1;
+  if (curPage > tp) curPage = tp;
   const start = (curPage - 1) * ROWS;
   const page = f.slice(start, start + ROWS);
   if (page.length === 0) {

@@ -295,8 +295,7 @@
         <div>
           <label class="form-label">Status</label>
           <select id="f_status" class="form-input" required>
-            <option value="" disabled selected hidden>-Select-</option>
-            <option value="Pending">Pending</option>
+            <option value="Pending" selected>Pending</option>
             <option value="Resolved">Resolved</option>
           </select>
           <div id="f_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
@@ -639,6 +638,8 @@
   function renderTable() {
     const filtered = getFiltered();
     const total = filtered.length;
+    const totalPages = Math.ceil(total / ROWS_PER_PAGE) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
     const start = (currentPage - 1) * ROWS_PER_PAGE;
     const page = filtered.slice(start, start + ROWS_PER_PAGE);
 
@@ -707,7 +708,11 @@
     document.getElementById('f_respondentFreeText').classList.add('hidden');
     document.getElementById('f_respondentFreeText').value = '';
     document.getElementById('f_docketNo').value = '';
-    document.getElementById('f_status').disabled = false;
+    const statusEl = document.getElementById('f_status');
+    if (statusEl) {
+      statusEl.value = 'Pending';
+      statusEl.disabled = false;
+    }
     const noteEl = document.getElementById('f_status_note');
     if (noteEl) noteEl.classList.add('hidden');
     _updateOutsideToggleAvailability();
@@ -819,7 +824,7 @@
       respondentAddr: document.getElementById('f_respondentAddr').value.trim(),
       nature: document.getElementById('f_nature').value.trim(),
       type: document.getElementById('f_type').value,
-      status: document.getElementById('f_status').value,
+      status: editingId ? (document.getElementById('f_status').value || 'Pending') : 'Pending',
     };
     if (!editingId && !elevateSourceIncidentId) {
       await bcAlert('All official Blotter cases must originate from an Incident Report. Please file or select an Incident Report and click "Elevate to Blotter".', { title: 'Elevation Required', okLabel: 'Go to Incidents' });

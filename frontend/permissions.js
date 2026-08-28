@@ -9,9 +9,9 @@
 const PERMISSIONS = {
   view_records:     { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': true  },
   add_blotter:      { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': true  },
-  edit_records:     { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': false },
+  edit_records:     { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': true  },
   delete_records:   { 'System Admin': true,  'Barangay Captain': false, 'Desk Officer': false, 'Data Encoder': false },
-  archive_records:  { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': false },
+  archive_records:  { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': true  },
   generate_reports: { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': false },
   view_analytics:   { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': true,  'Data Encoder': false },
   manage_users:     { 'System Admin': true,  'Barangay Captain': true,  'Desk Officer': false, 'Data Encoder': false },

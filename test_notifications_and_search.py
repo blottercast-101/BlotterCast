@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from app import create_app
 from app.config import Config
 from app.extensions import db
-from app.models import Incident, MlRun, Notification, User, SystemSetting
+from app.models import Incident, MlRun, Notification, Settlement, SystemSetting, User
 
 
 class TestConfig(Config):
@@ -135,6 +135,58 @@ class TestNotificationsAndSearch(unittest.TestCase):
         types = [item["type"] for item in items]
         self.assertIn("heatmap_hotspot", types)
         self.assertIn("predictive_risk", types)
+
+    def test_elevation_and_settlement_notifications(self):
+        self._login()
+        # 1. Create incident
+        res = self.client.post("/api/records.php?type=incidents", json={
+            "reportNo": "INC-2026-0888",
+            "date": "2026-08-25",
+            "timeReported": "10:00",
+            "zone": "Zone 1",
+            "location": "Purok 1",
+            "category": "Physical Assault",
+            "priority": "High",
+            "status": "Pending",
+            "reporter": "Maria Santos",
+            "officer": "Officer Reyes",
+            "description": "Altercation on street"
+        })
+        self.assertEqual(res.status_code, 201)
+        inc_id = res.get_json()["id"]
+
+        # 2. Elevate incident to blotter
+        res_elevate = self.client.post(f"/api/incidents/{inc_id}/elevate", json={
+            "complainant": "Maria Santos",
+            "respondent": "Pedro Penduko",
+            "nature": "Physical Assault",
+            "dateFiled": "2026-08-25"
+        })
+        self.assertEqual(res_elevate.status_code, 201)
+        elev_data = res_elevate.get_json()
+        self.assertTrue(elev_data.get("ok"))
+
+        elev_notifs = Notification.query.filter_by(type="incident_elevated").all()
+        self.assertTrue(len(elev_notifs) >= 1)
+        self.assertIn("INC-2026-0888", elev_notifs[-1].body)
+        self.assertIn("ELEVATED", elev_notifs[-1].body)
+
+        # 3. Update Settlement Status
+        stl_case_no = elev_data.get("case_no")
+        stl = Settlement.query.filter_by(case_no=stl_case_no).first()
+        self.assertIsNotNone(stl)
+
+        res_stl_update = self.client.put(f"/api/settlements/{stl.id}/status", json={
+            "status": "Settled",
+            "actionTaken": "Amicable settlement reached",
+            "dateSettlement": "2026-08-26"
+        })
+        self.assertEqual(res_stl_update.status_code, 200)
+
+        stl_notifs = Notification.query.filter_by(type="settlement_updated").all()
+        self.assertTrue(len(stl_notifs) >= 1)
+        self.assertIn(stl.case_no, stl_notifs[-1].body)
+        self.assertIn("Settled", stl_notifs[-1].body)
 
 
 if __name__ == "__main__":

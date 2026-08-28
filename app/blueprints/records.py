@@ -95,6 +95,19 @@ def update_settlement_status(settlement_id):
         settlement.remarks = d.get("remarks")
 
     _sync_settlement_to_blotter_and_incident(settlement)
+
+    actor = session.get("username") or "System"
+    ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+    db.session.add(Notification(
+        type="settlement_updated",
+        title=f"Settlement Status Updated: {settlement.case_no}",
+        body=f"[SETTLEMENT] Case ID: {settlement.case_no} • Status: {new_status} • Actor: {actor} • {ts}",
+        severity="info" if new_status in ("Settled", "Complied", "Resolved") else "warning",
+        link=f"settlement.html?highlight={settlement.case_no}",
+        ref_table="settlements",
+        ref_id=settlement.id,
+    ))
+
     db.session.commit()
 
     b = BlotterRecord.query.get(settlement.blotter_id) if settlement.blotter_id else None
@@ -249,6 +262,20 @@ def elevate_incident_endpoint(incident_id):
         archived=False,
     )
     db.session.add(stl)
+    db.session.flush()
+
+    actor = session.get("username") or "System"
+    ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+    db.session.add(Notification(
+        type="incident_elevated",
+        title=f"Incident Elevated to Blotter: {inc.report_no}",
+        body=f"[ELEVATED] Case ID: {inc.report_no} ({inc.category}) • Elevated to Blotter Case {docket_no} ({stl_case_no}) • Actor: {actor} • {ts}",
+        severity="warning",
+        link=f"blotter.html?highlight={docket_no}",
+        ref_table="blotter_records",
+        ref_id=record.id,
+    ))
+
     db.session.commit()
 
     return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
@@ -773,7 +800,7 @@ def _incidents():
         incident.guardian_address = guardian_address
         incident.involved_parties = involved_parties
         incident.officer = d.get("officer", "")
-        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter"}
+        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter", "Resolved", "Closed"}
         status_input = (d.get("status") or incident.status or "Pending").strip()
         if status_input not in ALLOWED_INCIDENT_STATUSES:
             if status_input in ("Under Investigation", "Open"):
@@ -781,7 +808,7 @@ def _incidents():
             elif status_input in ("Elevated", "Elevated to Blotter Records"):
                 status_input = "Elevated to Blotter"
             elif status_input not in ALLOWED_INCIDENT_STATUSES:
-                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter.", 400)
+                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter, Resolved, Closed.", 400)
 
         incident.priority = d.get("priority") or "Medium"
         incident.status = status_input
@@ -916,7 +943,7 @@ def _blotter():
             docket_no=docket_no, date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
             complainant=complainant, complainant_id=complainant_id, complainant_addr=d.get("complainantAddr", ""),
             respondent=respondent, respondent_id=respondent_id, respondent_addr=d.get("respondentAddr", ""),
-            nature=d.get("nature", ""), case_type=d.get("type") or "CRIM", status=d.get("status") or "Pending",
+            nature=d.get("nature", ""), case_type=d.get("type") or "CRIM", status="Pending",
             zone_id=d.get("zone"),
             source_incident_id=source_incident_id,
             incident_time=parse_time(d.get("incidentTime")) if d.get("incidentTime") else None,
@@ -951,6 +978,19 @@ def _blotter():
             db.session.add(settlement)
         else:
             stl_case_no = existing_stl.case_no
+
+        if source_incident_id and inc:
+            actor = session.get("username") or "System"
+            ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+            db.session.add(Notification(
+                type="incident_elevated",
+                title=f"Incident Elevated to Blotter: {inc.report_no}",
+                body=f"[ELEVATED] Case ID: {inc.report_no} ({inc.category}) • Elevated to Blotter Case {docket_no} ({stl_case_no}) • Actor: {actor} • {ts}",
+                severity="warning",
+                link=f"blotter.html?highlight={docket_no}",
+                ref_table="blotter_records",
+                ref_id=record.id,
+            ))
 
         db.session.commit()
         return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
@@ -1168,6 +1208,19 @@ def _settlements():
         )
         db.session.add(settlement)
         _sync_settlement_to_blotter_and_incident(settlement)
+
+        actor = session.get("username") or "System"
+        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        db.session.add(Notification(
+            type="settlement_created",
+            title=f"New Settlement Case: {settlement.case_no}",
+            body=f"[SETTLEMENT] Case ID: {settlement.case_no} • {settlement.case_title} • Status: {settlement.status} • Actor: {actor} • {ts}",
+            severity="info",
+            link=f"settlement.html?highlight={settlement.case_no}",
+            ref_table="settlements",
+            ref_id=settlement.id,
+        ))
+
         db.session.commit()
         return jsonify({"ok": True, "id": settlement.id}), 201
 
@@ -1193,6 +1246,19 @@ def _settlements():
         settlement.status = d.get("status") or "Pending"
         settlement.remarks = d.get("remarks", "")
         _sync_settlement_to_blotter_and_incident(settlement)
+
+        actor = session.get("username") or "System"
+        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        db.session.add(Notification(
+            type="settlement_updated",
+            title=f"Settlement Case Updated: {settlement.case_no}",
+            body=f"[SETTLEMENT] Case ID: {settlement.case_no} • Status: {settlement.status} • Action: {settlement.action_taken or 'Updated'} • Actor: {actor} • {ts}",
+            severity="info" if settlement.status in ("Settled", "Complied", "Resolved") else "warning",
+            link=f"settlement.html?highlight={settlement.case_no}",
+            ref_table="settlements",
+            ref_id=settlement.id,
+        ))
+
         db.session.commit()
         return jsonify({"ok": True})
 

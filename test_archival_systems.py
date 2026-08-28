@@ -400,7 +400,7 @@ class TestArchivalSystems(unittest.TestCase):
         self.assertIsNone(Incident.query.get(inc_id))
 
     def test_archive_and_restore_role_permissions(self):
-        allowed_roles = ["System Admin", "Barangay Captain", "Desk Officer"]
+        allowed_roles = ["System Admin", "Barangay Captain", "Desk Officer", "Data Encoder"]
         for role in allowed_roles:
             self.login_as(role=role, username="user_" + role.lower().replace(" ", "_"))
             inc = Incident(report_no=f"INC-ROLE-{role[:3]}", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", archived=False)
@@ -417,17 +417,6 @@ class TestArchivalSystems(unittest.TestCase):
             res = self.client.post("/api/records.php?type=incidents&action=batch_restore", json={"ids": [inc_id]})
             self.assertEqual(res.status_code, 200, f"Role {role} failed to restore")
             self.assertFalse(Incident.query.get(inc_id).archived)
-
-        # Data Encoder should be forbidden from archiving
-        self.login_as(role="Data Encoder", username="encoder_user")
-        inc = Incident(report_no="INC-ENC-BLOCK", incident_date=date(2026, 8, 1), time_reported=time(10, 0), zone_id="Zone 1", category="Theft", archived=False)
-        db.session.add(inc)
-        db.session.commit()
-        inc_id = inc.id
-
-        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
-        self.assertEqual(res.status_code, 403, "Data Encoder should be forbidden from archiving records")
-        self.assertFalse(Incident.query.get(inc_id).archived)
 
     def test_clearance_gatekeeper_blocks_unresolved_respondent_and_lifts_on_settlement(self):
         self.login_as(role="System Admin")

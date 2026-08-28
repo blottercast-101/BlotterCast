@@ -13,9 +13,9 @@ from .models import SystemSetting
 PERMISSIONS = {
     "view_records":     {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
     "add_blotter":       {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
-    "edit_records":      {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
+    "edit_records":      {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
     "delete_records":     {"System Admin": True, "Barangay Captain": False, "Desk Officer": False, "Data Encoder": False},
-    "archive_records":    {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
+    "archive_records":    {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": True},
     "generate_reports": {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
     "view_analytics":    {"System Admin": True, "Barangay Captain": True, "Desk Officer": True, "Data Encoder": False},
     "manage_users":     {"System Admin": True, "Barangay Captain": True, "Desk Officer": False, "Data Encoder": False},

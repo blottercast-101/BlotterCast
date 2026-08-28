@@ -40,11 +40,11 @@ r = client.post("/api/records.php?type=blotter", json={
 })
 print("blotter, same person both sides:", r.status_code, r.get_json())
 
-# switch to a Data Encoder (no edit/delete rights) and confirm 403 on PUT
+# switch to a Data Encoder (has edit rights) and confirm 200 on PUT
 client.get("/api/auth.php?action=logout")
 mfa_login(client, "pencoder", "encoder123")
 r = client.put("/api/records.php?type=incidents&id=1", json={"status": "Resolved"})
-print("encoder PUT incidents (should 403):", r.status_code, r.get_json())
+print("encoder PUT incidents (should 200):", r.status_code, r.get_json())
 
 r = client.post("/api/documents.php?type=census", json={
     "lastName": f"EncoderTest_{uid_str}", "firstName": "Ana", "dob": "2000-01-01", "sex": "Female",
