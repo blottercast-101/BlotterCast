@@ -437,8 +437,8 @@
             </div>
           </div>
 
-          <!-- Map: fills the remaining vertical height to match right column -->
-          <div id="map" class="flex-1 w-full min-h-[500px]"></div>
+          <!-- Map: explicit, non-zero height with styling to avoid collapse -->
+          <div id="map" class="h-[520px] min-h-[520px] w-full relative rounded-b-2xl overflow-hidden border-t border-emerald-100/60 bg-slate-50"></div>
         </div>
 
         <div class="flex flex-col gap-6 h-full">
@@ -959,25 +959,19 @@
       }
     }
 
-    // ── Prevent Leaflet Map Duplicate Instances and Thread Freezes ──
-    if (window.heatmapInstance) {
-      try {
-        window.heatmapInstance.remove();
-      } catch (e) {
-        console.warn('Error removing previous heatmap instance:', e);
-      }
-      window.heatmapInstance = null;
-    }
-    const mapContainer = document.getElementById('map');
-    if (mapContainer && mapContainer._leaflet_id) {
-      mapContainer._leaflet_id = null;
-    }
-
-    const map = L.map('map', {
-      zoomControl: true,
-      preferCanvas: true
-    }).setView(MAP_CENTER, 16);
-    window.heatmapInstance = map;
+    let map = null;
+    let boundaryLayer = null;
+    let boundaryGeojson = null;
+    let zonesLayer = null;
+    let zonesGeojson = null;
+    let zonePolygonLayers = {};
+    let hasHandledInitialUrlParams = false;
+    let heatLayer = null;
+    let markerLayer = null;
+    let highlightLayer = null;
+    let markerMap = new Map();
+    let pulseTimer = null;
+    let activeRowId = null;
 
     function safeInvalidateMapSize() {
       if (window.heatmapInstance && window.heatmapInstance._container && window.heatmapInstance._container.offsetWidth > 0) {
@@ -987,40 +981,55 @@
       }
     }
 
-    setTimeout(safeInvalidateMapSize, 300);
-    window.addEventListener('load', safeInvalidateMapSize);
-    window.addEventListener('resize', safeInvalidateMapSize);
+    function ensureHeatmapInitialized() {
+      const mapContainer = document.getElementById('map');
+      if (!mapContainer) return;
 
-    // Debounced ResizeObserver to prevent layout thrashing and infinite loops
-    if (window.ResizeObserver && mapContainer) {
-      if (window._heatmapResizeObserver) {
-        try { window._heatmapResizeObserver.disconnect(); } catch (_) {}
+      if (!map || window.heatmapInstance !== map || !map._container || !document.body.contains(map._container)) {
+        if (window.heatmapInstance) {
+          try {
+            window.heatmapInstance.remove();
+          } catch (e) {
+            console.warn('Error removing previous heatmap instance:', e);
+          }
+          window.heatmapInstance = null;
+        }
+        if (mapContainer._leaflet_id) {
+          mapContainer._leaflet_id = null;
+        }
+
+        map = L.map('map', {
+          zoomControl: true,
+          preferCanvas: true
+        }).setView(MAP_CENTER, 16);
+        window.heatmapInstance = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        markerLayer = L.layerGroup().addTo(map);
+        highlightLayer = L.layerGroup().addTo(map);
+
+        // Debounced ResizeObserver to prevent layout thrashing and infinite loops
+        if (window.ResizeObserver) {
+          if (window._heatmapResizeObserver) {
+            try { window._heatmapResizeObserver.disconnect(); } catch (_) {}
+          }
+          let _resizeDebounce = null;
+          window._heatmapResizeObserver = new ResizeObserver(() => {
+            if (_resizeDebounce) clearTimeout(_resizeDebounce);
+            _resizeDebounce = setTimeout(safeInvalidateMapSize, 150);
+          });
+          window._heatmapResizeObserver.observe(mapContainer);
+        }
       }
-      let _resizeDebounce = null;
-      window._heatmapResizeObserver = new ResizeObserver(() => {
-        if (_resizeDebounce) clearTimeout(_resizeDebounce);
-        _resizeDebounce = setTimeout(safeInvalidateMapSize, 150);
-      });
-      window._heatmapResizeObserver.observe(mapContainer);
+      safeInvalidateMapSize();
     }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    let boundaryLayer = null;
-    let boundaryGeojson = null;
-    let zonesLayer = null;
-    let zonesGeojson = null;
-    let zonePolygonLayers = {};
-    let hasHandledInitialUrlParams = false;
-    let heatLayer = null;
-    let markerLayer = L.layerGroup().addTo(map);
-    let highlightLayer = L.layerGroup().addTo(map);
-    let markerMap = new Map();
-    let pulseTimer = null;
-    let activeRowId = null;
+    window.addEventListener('load', safeInvalidateMapSize);
+    window.addEventListener('resize', safeInvalidateMapSize);
 
     const periodFilter = document.getElementById('periodFilter');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -1747,9 +1756,15 @@
 
     window.initHeatmap = async function () {
       try {
+        ensureHeatmapInitialized();
         await loadBoundary();
         await loadIncidents();
         await updateHeatMapPage();
+
+        // Guaranteed microtask/timer invalidations to fix 0-height Leaflet container collapse
+        setTimeout(safeInvalidateMapSize, 50);
+        setTimeout(safeInvalidateMapSize, 150);
+        setTimeout(safeInvalidateMapSize, 350);
       } catch (err) {
         console.error('Could not load incident data:', err);
       }

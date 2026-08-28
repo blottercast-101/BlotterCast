@@ -352,6 +352,15 @@ async function _bcExecuteRouteLifecycle(targetUrl) {
     }
   } catch (err) {
     console.error('View initialization failed:', err);
+  } finally {
+    try {
+      if (typeof renderIcons === 'function') renderIcons();
+    } catch (_) {}
+    try {
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+      }
+    } catch (_) {}
   }
 }
 
@@ -407,10 +416,9 @@ async function bcNavigate(targetUrl, pushState = true) {
 
     const newModals = doc.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]');
 
-    // Swap inner markup into static shell container
+    // Swap inner markup into static shell container without breaking flex/layout shell
     if (currentContainer) {
       currentContainer.innerHTML = newContainer.innerHTML;
-      currentContainer.className = newContainer.className;
       currentContainer.classList.remove('bc-content-loading');
       currentContainer.classList.remove('bc-content-enter');
       void currentContainer.offsetWidth; // trigger reflow
