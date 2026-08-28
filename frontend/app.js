@@ -471,11 +471,13 @@ async function bcNavigate(targetUrl, pushState = true) {
       if (!s.getAttribute('src') && s.textContent.trim()) {
         try {
           const rawScript = s.textContent;
-          // Convert top-level const and let declarations to var so repeated navigation doesn't throw SyntaxError
+          // Comprehensive conversion of const and let (including destructuring [a,b] and {a,b}) to var
+          // so repeated client-side navigation never throws SyntaxError: Identifier already declared
           const safeScript = rawScript
-            .replace(/\bconst\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*=)/g, 'var $1')
-            .replace(/\blet\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*=)/g, 'var $1')
-            .replace(/\blet\s+([a-zA-Z_$][0-9a-zA-Z_$]*\s*;)/g, 'var $1');
+            .replace(/\bconst\b(\s*[\{\[\w\$])/g, 'var$1')
+            .replace(/\blet\b(\s*[\{\[\w\$])/g, 'var$1')
+            .replace(/\bconst\s+/g, 'var ')
+            .replace(/\blet\s+/g, 'var ');
 
           const newScript = document.createElement('script');
           newScript.textContent = safeScript;
