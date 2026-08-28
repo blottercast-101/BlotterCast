@@ -442,11 +442,18 @@ async function navigateTo(url, pushState = true) {
     });
 
     if (newMain) {
-      // Sync classes and attributes from the incoming view container
+      // Sync classes from the incoming view container but always
+      // preserve the ml-64 layout class that keeps content
+      // positioned next to the fixed sidebar.
       if (newMain.className) {
-        const preservedClasses = ['bc-content-loading', 'bc-content-enter'];
+        const preservedClasses = ['bc-content-loading', 'bc-content-enter', 'ml-64'];
         const currentFlags = preservedClasses.filter(c => contentContainer.classList.contains(c));
         contentContainer.className = newMain.className;
+        // Ensure ml-64 is always present (some pages like heatmap use
+        // extra classes on #app-content that differ from the standard set)
+        if (!contentContainer.classList.contains('ml-64')) {
+          contentContainer.classList.add('ml-64');
+        }
         currentFlags.forEach(c => contentContainer.classList.add(c));
       }
       contentContainer.innerHTML = newMain.innerHTML;
@@ -513,11 +520,20 @@ async function navigateTo(url, pushState = true) {
     // executeModuleInit() below once everything is ready).
     for (const s of scriptTags) {
       if (!s.getAttribute('src') && s.textContent.trim()) {
+        // Skip the Tailwind config script — re-running it causes
+        // Tailwind CDN to fully reinitialize, which briefly strips
+        // layout classes (fixed, ml-64, etc.) from the sidebar.
+        if (s.textContent.includes('tailwind.config')) continue;
+
         try {
           const rawScript = s.textContent;
+          // Convert const/let → var to avoid SyntaxError on
+          // redeclaration across SPA navigations. The replacement
+          // must insert a space between 'var' and destructuring
+          // brackets so `const{a,b}` → `var {a,b}` (not `vara,b}`).
           const safeScript = rawScript
-            .replace(/\bconst\b(\s*[\{\[\w\$])/g, 'var$1')
-            .replace(/\blet\b(\s*[\{\[\w\$])/g, 'var$1')
+            .replace(/\b(const|let)\s*\{/g, 'var {')
+            .replace(/\b(const|let)\s*\[/g, 'var [')
             .replace(/\bconst\s+/g, 'var ')
             .replace(/\blet\s+/g, 'var ');
 
