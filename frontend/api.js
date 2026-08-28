@@ -9,17 +9,40 @@ const BC_API = '.'; // same-origin, relative to current folder: http://localhost
 
 const BCApi = {
   async _fetch(url, opts = {}) {
-    const res = await fetch(url, { credentials: 'include', ...opts });
+    const method = (opts.method || 'GET').toUpperCase();
+    let finalUrl = url;
+    if (method === 'GET') {
+      const sep = finalUrl.includes('?') ? '&' : '?';
+      finalUrl = `${finalUrl}${sep}_t=${Date.now()}`;
+    }
+    const headers = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      ...(opts.headers || {}),
+    };
+    const res = await fetch(finalUrl, { credentials: 'include', cache: 'no-store', ...opts, headers });
     if (res.status === 401 && !url.includes('api/auth.php') && !window.location.pathname.endsWith('login.html')) {
       window.location.href = 'login.html';
       throw new Error('Not authenticated');
     }
     if (!res.ok) {
       let msg = 'Request failed';
-      try { msg = (await res.json()).error || msg; } catch (e) {}
+      try {
+        const errJson = await res.json();
+        msg = errJson.message || errJson.error || msg;
+      } catch (e) {}
       throw new Error(msg);
     }
-    return res.status === 204 ? null : res.json();
+    const data = res.status === 204 ? null : await res.json();
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      try {
+        window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { url, method, data } }));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('bc_data_updated', Date.now().toString());
+        }
+      } catch (_) {}
+    }
+    return data;
   },
 
   // ---- auth ----

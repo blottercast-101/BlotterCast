@@ -186,6 +186,66 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
 }
 
+// ── Real-Time Reactive Sync Dispatcher ─────────────────────
+function bcTriggerLiveRefresh(detail = {}) {
+  try {
+    if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
+  } catch (_) {}
+
+  // Identify active page context and re-fetch latest data immediately
+  const path = (window.location.pathname || '').toLowerCase();
+
+  try {
+    if (path.endsWith('dashboard.html') || path.endsWith('dashboard') || document.getElementById('statBlotters')) {
+      if (typeof loadDashboardData === 'function') loadDashboardData();
+    } else if (path.endsWith('incident.html') || document.getElementById('incidentTableBody')) {
+      if (typeof loadIncidents === 'function') loadIncidents();
+    } else if (path.endsWith('blotter.html') || document.getElementById('blotterTableBody')) {
+      if (typeof loadBlotter === 'function') loadBlotter();
+    } else if (path.endsWith('settlement.html') || document.getElementById('settlementTableBody')) {
+      if (typeof loadSettlements === 'function') loadSettlements();
+    } else if (path.endsWith('census.html') || document.getElementById('residentBody')) {
+      if (typeof loadResidents === 'function') loadResidents();
+    } else if (path.endsWith('clearance.html') || document.getElementById('clLogBody')) {
+      if (typeof loadLog === 'function') loadLog();
+    } else if (path.endsWith('residency.html') || document.getElementById('residencyLog')) {
+      if (typeof loadResLog === 'function') loadResLog();
+    } else if (path.endsWith('non_residency.html') || document.getElementById('nonResidencyLog')) {
+      if (typeof loadNrLog === 'function') loadNrLog();
+    } else if (path.endsWith('indigency.html') || document.getElementById('indLog')) {
+      if (typeof loadIndLog === 'function') loadIndLog();
+    } else if (path.endsWith('users.html') || document.getElementById('usersTableBody')) {
+      if (typeof loadUsers === 'function') loadUsers();
+      if (typeof loadAuditLog === 'function') loadAuditLog();
+    } else if (path.endsWith('reports.html') || document.getElementById('recentReports')) {
+      if (typeof loadRecentReports === 'function') loadRecentReports();
+    } else if (path.endsWith('heatmap.html') || document.getElementById('kpiTotalIncidents')) {
+      if (typeof loadIncidents === 'function') loadIncidents();
+    } else if (path.endsWith('trends.html') || document.getElementById('zonalMatrixBody')) {
+      if (typeof updateCharts === 'function') updateCharts();
+    }
+  } catch (err) {
+    console.warn('Reactive live refresh notice:', err);
+  }
+}
+window.bcTriggerLiveRefresh = bcTriggerLiveRefresh;
+
+window.addEventListener('bc-data-changed', (e) => {
+  bcTriggerLiveRefresh(e.detail || {});
+});
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'bc_data_updated') {
+    bcTriggerLiveRefresh();
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    bcTriggerLiveRefresh();
+  }
+});
+
 // ── In-App Client-Side Routing & Persistent Layout Shell ────
 let _bcNavigating = false;
 const _bcLoadedScriptSrcs = new Set(
