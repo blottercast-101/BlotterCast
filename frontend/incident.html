@@ -664,7 +664,6 @@
     isArchivedView: () => viewingArchived,
     onRefresh: async () => { await loadIncidents(); },
   });
-  window.incBatchManager = incBatchManager;
 
   function renderIncidents() {
     const filtered = getIncFiltered();

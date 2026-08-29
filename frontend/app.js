@@ -189,7 +189,6 @@ if (document.readyState === 'loading') {
 // ── Real-Time Reactive Sync Dispatcher (Debounced) ─────────
 let _bcRefreshDebounceTimer = null;
 function bcTriggerLiveRefresh(detail = {}) {
-  if (_bcNavigating) return; // Do not trigger background refresh during active SPA view swap
   if (_bcRefreshDebounceTimer) {
     clearTimeout(_bcRefreshDebounceTimer);
   }
@@ -200,7 +199,6 @@ function bcTriggerLiveRefresh(detail = {}) {
 }
 
 function _bcExecuteLiveRefresh(detail = {}) {
-  if (_bcNavigating) return;
   try {
     if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
   } catch (_) {}
@@ -371,6 +369,10 @@ function _bcCleanupPreviousView() {
   });
 
   // 4. Clear running intervals and timeouts from previous view
+  if (_bcRefreshDebounceTimer) {
+    clearTimeout(_bcRefreshDebounceTimer);
+    _bcRefreshDebounceTimer = null;
+  }
   if (window._bcActiveIntervals && Array.isArray(window._bcActiveIntervals)) {
     window._bcActiveIntervals.forEach(id => clearInterval(id));
     window._bcActiveIntervals = [];
@@ -388,38 +390,38 @@ function executeModuleInit(url) {
   const fullPath = '/' + path;
 
   const initMap = {
-    'dashboard.html': () => window.initDashboard?.(),
-    '/dashboard.html': () => window.initDashboard?.(),
-    'blotter.html': () => window.initBlotter?.(),
-    '/blotter.html': () => window.initBlotter?.(),
-    'incident.html': () => window.initIncidents?.() || window.initIncident?.(),
-    '/incident.html': () => window.initIncidents?.() || window.initIncident?.(),
-    'incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
-    '/incidents.html': () => window.initIncidents?.() || window.initIncident?.(),
-    'settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
-    '/settlement.html': () => window.initSettlement?.() || window.initSettlements?.(),
-    'census.html': () => window.initCensus?.(),
-    '/census.html': () => window.initCensus?.(),
-    'clearance.html': () => window.initClearance?.(),
-    '/clearance.html': () => window.initClearance?.(),
-    'residency.html': () => window.initResidency?.(),
-    '/residency.html': () => window.initResidency?.(),
-    'non_residency.html': () => window.initNonResidency?.(),
-    '/non_residency.html': () => window.initNonResidency?.(),
-    'non-residency.html': () => window.initNonResidency?.(),
-    '/non-residency.html': () => window.initNonResidency?.(),
-    'indigency.html': () => window.initIndigency?.(),
-    '/indigency.html': () => window.initIndigency?.(),
+    'dashboard.html': () => window.initDashboard?.() || window.loadDashboardData?.(),
+    '/dashboard.html': () => window.initDashboard?.() || window.loadDashboardData?.(),
+    'blotter.html': () => window.initBlotter?.() || window.loadBlotter?.(),
+    '/blotter.html': () => window.initBlotter?.() || window.loadBlotter?.(),
+    'incident.html': () => window.initIncidents?.() || window.initIncident?.() || window.loadIncidents?.(),
+    '/incident.html': () => window.initIncidents?.() || window.initIncident?.() || window.loadIncidents?.(),
+    'incidents.html': () => window.initIncidents?.() || window.initIncident?.() || window.loadIncidents?.(),
+    '/incidents.html': () => window.initIncidents?.() || window.initIncident?.() || window.loadIncidents?.(),
+    'settlement.html': () => window.initSettlement?.() || window.initSettlements?.() || window.loadSettlements?.(),
+    '/settlement.html': () => window.initSettlement?.() || window.initSettlements?.() || window.loadSettlements?.(),
+    'census.html': () => window.initCensus?.() || window.loadResidents?.(),
+    '/census.html': () => window.initCensus?.() || window.loadResidents?.(),
+    'clearance.html': () => window.initClearance?.() || window.loadLog?.(),
+    '/clearance.html': () => window.initClearance?.() || window.loadLog?.(),
+    'residency.html': () => window.initResidency?.() || window.loadResLog?.(),
+    '/residency.html': () => window.initResidency?.() || window.loadResLog?.(),
+    'non_residency.html': () => window.initNonResidency?.() || window.loadNrLog?.(),
+    '/non_residency.html': () => window.initNonResidency?.() || window.loadNrLog?.(),
+    'non-residency.html': () => window.initNonResidency?.() || window.loadNrLog?.(),
+    '/non-residency.html': () => window.initNonResidency?.() || window.loadNrLog?.(),
+    'indigency.html': () => window.initIndigency?.() || window.loadIndLog?.(),
+    '/indigency.html': () => window.initIndigency?.() || window.loadIndLog?.(),
     'heatmap.html': () => window.initHeatmap?.(),
     '/heatmap.html': () => window.initHeatmap?.(),
-    'trends.html': () => window.initTrends?.(),
-    '/trends.html': () => window.initTrends?.(),
+    'trends.html': () => window.initTrends?.() || window.updateCharts?.(),
+    '/trends.html': () => window.initTrends?.() || window.updateCharts?.(),
     'predictions.html': () => window.initPredictions?.(),
     '/predictions.html': () => window.initPredictions?.(),
-    'users.html': () => window.initUsers?.(),
-    '/users.html': () => window.initUsers?.(),
-    'reports.html': () => window.initReports?.(),
-    '/reports.html': () => window.initReports?.(),
+    'users.html': () => window.initUsers?.() || window.loadUsers?.(),
+    '/users.html': () => window.initUsers?.() || window.loadUsers?.(),
+    'reports.html': () => window.initReports?.() || window.loadRecentReports?.(),
+    '/reports.html': () => window.initReports?.() || window.loadRecentReports?.(),
     'settings.html': () => window.initSettings?.(),
     '/settings.html': () => window.initSettings?.()
   };
@@ -451,10 +453,8 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Bulletproof SPA Navigation & Content Swap ──────────────
-let _bcNavSafetyTimer = null;
-
 async function navigateTo(url, pushState = true) {
-  if (!url) return;
+  if (!url || _bcNavigating) return;
 
   const cleanUrl = url.split('?')[0].split('#')[0];
   if (cleanUrl.endsWith('login.html') || cleanUrl.endsWith('index.html') || cleanUrl === '/' || cleanUrl === '') {
@@ -466,26 +466,11 @@ async function navigateTo(url, pushState = true) {
   const targetRel = url.split('/').pop();
   if (currentFull === targetRel && !pushState) return;
 
-  if (_bcNavigating) {
-    // If a navigation is already running, clear previous timer and allow fast transition
-    if (_bcNavSafetyTimer) clearTimeout(_bcNavSafetyTimer);
-  }
-
   // ── SPA navigation pre-flight ─────────────────────────────
-  if (_bcRefreshDebounceTimer) {
-    clearTimeout(_bcRefreshDebounceTimer);
-    _bcRefreshDebounceTimer = null;
-  }
-  _bcAuthGuardPromise = null;
+  _bcAuthGuardRunning = false;
   window._bcSpaNavActive = true;
+
   _bcNavigating = true;
-
-  // Auto safety unlock to guarantee router never locks up under network failures
-  _bcNavSafetyTimer = setTimeout(() => {
-    _bcNavigating = false;
-    window._bcSpaNavActive = false;
-  }, 4000);
-
   const contentContainer = document.querySelector('#app-content') || document.querySelector('.ml-64');
   if (!contentContainer) {
     window._bcSpaNavActive = false;
@@ -610,12 +595,23 @@ async function navigateTo(url, pushState = true) {
     }
 
     // Execute inline scripts safely with redeclaration protection.
+    // window._bcSpaNavActive=true suppresses the direct initXxx()
+    // call at the bottom of every page script (those calls are for
+    // direct browser-open only; during SPA nav the router calls
+    // executeModuleInit() below once everything is ready).
     for (const s of scriptTags) {
       if (!s.getAttribute('src') && s.textContent.trim()) {
+        // Skip the Tailwind config script — re-running it causes
+        // Tailwind CDN to fully reinitialize, which briefly strips
+        // layout classes (fixed, ml-64, etc.) from the sidebar.
         if (s.textContent.includes('tailwind.config')) continue;
 
         try {
           const rawScript = s.textContent;
+          // Convert const/let → var to avoid SyntaxError on
+          // redeclaration across SPA navigations. The replacement
+          // must insert a space between 'var' and destructuring
+          // brackets so `const{a,b}` → `var {a,b}` (not `vara,b}`).
           const safeScript = rawScript
             .replace(/\b(const|let)\s*\{/g, 'var {')
             .replace(/\b(const|let)\s*\[/g, 'var [')
@@ -625,6 +621,7 @@ async function navigateTo(url, pushState = true) {
           const newScript = document.createElement('script');
           newScript.textContent = safeScript;
           document.body.appendChild(newScript);
+          // Remove after a tick — script has already run synchronously
           setTimeout(() => newScript.remove(), 0);
         } catch (scriptErr) {
           console.error('Error preparing page script:', scriptErr);
@@ -632,7 +629,8 @@ async function navigateTo(url, pushState = true) {
       }
     }
 
-    // Clear SPA navigation flag so init calls run normally
+    // Clear the SPA nav flag now that all page scripts have run.
+    // window.initXxx is now defined and ready to be called.
     window._bcSpaNavActive = false;
 
     // Re-hydrate session & live permissions
@@ -645,7 +643,10 @@ async function navigateTo(url, pushState = true) {
     }
     if (typeof initCustomSelects === 'function') initCustomSelects();
 
-    // Trigger module lifecycle safely
+    // Trigger module lifecycle safely.
+    // By this point all inline scripts have run synchronously
+    // (appendChild of a script tag runs it immediately), so
+    // window.initXxx is guaranteed to be defined.
     await executeModuleInit(url);
 
     // Re-scan Tailwind after dynamic component rendering
@@ -681,12 +682,9 @@ async function navigateTo(url, pushState = true) {
     `;
     if (typeof renderIcons === 'function') renderIcons();
   } finally {
-    if (_bcNavSafetyTimer) {
-      clearTimeout(_bcNavSafetyTimer);
-      _bcNavSafetyTimer = null;
-    }
     _bcNavigating = false;
-    window._bcSpaNavActive = false;
+    _bcAuthGuardRunning = false;   // ensure auth guard never gets stuck
+    window._bcSpaNavActive = false; // ensure flag is cleared even on error
     contentContainer.classList.remove('bc-content-loading');
     contentContainer.style.opacity = '1';
     contentContainer.style.pointerEvents = 'auto';
@@ -725,9 +723,6 @@ window.addEventListener('popstate', () => {
 let _bcAuthGuardPromise = null;
 
 async function requireAuth() {
-  if (window.CURRENT_USER && window.CURRENT_USER.role) {
-    return window.CURRENT_USER;
-  }
   if (_bcAuthGuardPromise) {
     return _bcAuthGuardPromise;
   }
@@ -752,7 +747,6 @@ async function requireAuth() {
         localStorage.setItem('bc_cached_user', JSON.stringify(status.user));
       } catch (e) {}
 
-      window.CURRENT_USER = status.user;
       const role = status.user.role;
       if (typeof enforcePageAccess === 'function' && !enforcePageAccess(role)) {
         return null; // enforcePageAccess already redirected away
@@ -765,10 +759,10 @@ async function requireAuth() {
       const roleEl = document.querySelector('[data-user-role]');
       const avatarEl = document.querySelector('[data-user-avatar]');
       const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
-      if (nameEl) nameEl.textContent = status.user.full_name;
-      if (roleEl) roleEl.textContent = status.user.role;
-      if (avatarEl) avatarEl.textContent = bcInitials(status.user.full_name);
-      if (greetingEl) {
+      if (nameEl && status.user.full_name) nameEl.textContent = status.user.full_name;
+      if (roleEl && status.user.role) roleEl.textContent = status.user.role;
+      if (avatarEl && status.user.full_name) avatarEl.textContent = bcInitials(status.user.full_name);
+      if (greetingEl && status.user.full_name) {
         const firstName = bcFirstName(status.user.full_name || status.user.firstName || status.user.first_name);
         greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
       }
@@ -1967,7 +1961,6 @@ class BcBatchManager {
   }
 
   async executeBatchArchive() {
-    if (this.isBusy) return;
     const ids = Array.from(this.selectedIds);
     if (!ids.length) return;
     const count = ids.length;
@@ -1979,17 +1972,13 @@ class BcBatchManager {
     );
     if (!confirmed) return;
 
-    this.isBusy = true;
     try {
       await BCApi.batchArchive(this.opts.apiType, ids);
       showToast(`${count} ${label} archived successfully.`);
     } catch (err) {
       showToast(err.message || 'Failed to archive records', 'error');
     } finally {
-      this.isBusy = false;
       this.clearSelection();
-      if (this._barEl) this._barEl.classList.remove('visible');
-      document.body.style.overflow = '';
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
@@ -1999,7 +1988,6 @@ class BcBatchManager {
   }
 
   async executeBatchRestore() {
-    if (this.isBusy) return;
     const ids = Array.from(this.selectedIds);
     if (!ids.length) return;
     const count = ids.length;
@@ -2011,17 +1999,13 @@ class BcBatchManager {
     );
     if (!confirmed) return;
 
-    this.isBusy = true;
     try {
       await BCApi.batchRestore(this.opts.apiType, ids);
       showToast(`${count} ${label} restored to active list.`);
     } catch (err) {
       showToast(err.message || 'Failed to restore records', 'error');
     } finally {
-      this.isBusy = false;
       this.clearSelection();
-      if (this._barEl) this._barEl.classList.remove('visible');
-      document.body.style.overflow = '';
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
@@ -2031,7 +2015,6 @@ class BcBatchManager {
   }
 
   async executeBatchPermanentDelete() {
-    if (this.isBusy) return;
     const activeRole = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE) || (window.CURRENT_USER && window.CURRENT_USER.role);
     const canDelete = (typeof roleCan === 'function') ? roleCan(activeRole, 'delete_records') : (activeRole === 'System Admin');
     if (!canDelete) {
@@ -2050,17 +2033,13 @@ class BcBatchManager {
     );
     if (!confirmed) return;
 
-    this.isBusy = true;
     try {
       await BCApi.batchPermanentDelete(this.opts.apiType, ids);
       showToast(`${count} ${label} permanently deleted.`);
     } catch (err) {
       showToast(err.message || 'Failed to delete records', 'error');
     } finally {
-      this.isBusy = false;
       this.clearSelection();
-      if (this._barEl) this._barEl.classList.remove('visible');
-      document.body.style.overflow = '';
       try {
         await this.opts.onRefresh();
       } catch (rErr) {
@@ -2069,6 +2048,7 @@ class BcBatchManager {
     }
   }
 }
+window.BcBatchManager = BcBatchManager;
 
 // ── Sidebar shared HTML builder (call once per page) ───────
 function buildSidebar(activePage) {
