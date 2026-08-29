@@ -519,16 +519,29 @@
   let censusResidentsForBlotter = []; // shared options list for both complainant and respondent pickers
 
   async function loadCensusResidentsForBlotterPickers() {
-    const raw = await BCApi.docList('census');
-    censusResidentsForBlotter = raw.map(r => {
-      const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
-      return {
-        id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
-        age, address: r.address || '', householdNo: r.household_no || '', status: r.status || 'Active',
-      };
-    });
-    bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked, validateComplainantParty);
-    bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked, validateRespondentParty);
+    try {
+      const raw = await BCApi.docList('census');
+      censusResidentsForBlotter = (raw || []).map(r => {
+        const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
+        const addrParts = [r.address, r.zone_id || r.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+        const fullAddress = r.address ? (r.address.includes('Mapulang Lupa') ? r.address : addrParts.join(', ')) : (addrParts.length ? addrParts.join(', ') : '');
+        return {
+          id: Number(r.id),
+          lastName: r.last_name || '',
+          firstName: r.first_name || '',
+          middleName: r.middle_name || '',
+          age,
+          address: fullAddress || r.address || '',
+          zone: r.zone_id || r.zone || '',
+          householdNo: r.household_no || '',
+          status: r.status || 'Active',
+        };
+      });
+      bcInitResidentPicker('f_complainantSearch', 'f_complainantId', 'f_complainantSuggestions', censusResidentsForBlotter, onComplainantPicked, validateComplainantParty);
+      bcInitResidentPicker('f_respondentSearch', 'f_respondentId', 'f_respondentSuggestions', censusResidentsForBlotter, onRespondentPicked, validateRespondentParty);
+    } catch (err) {
+      console.warn('Could not load census residents for blotter pickers:', err);
+    }
   }
 
   const MIN_BLOTTER_PARTY_AGE = 15;
@@ -554,16 +567,36 @@
   }
 
   function onComplainantPicked(r) {
-    document.getElementById('f_complainant').value = r ? `${r.lastName}, ${r.firstName} ${r.middleName}`.trim() : '';
-    if (r && r.address && !document.getElementById('f_complainantAddr').value) {
-      document.getElementById('f_complainantAddr').value = r.address;
+    if (r) {
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
+      document.getElementById('f_complainant').value = fullName;
+      document.getElementById('f_complainantSearch').value = fullName;
+      document.getElementById('f_complainantId').value = String(r.id);
+      const addr = r.address || (r.zone ? `${r.zone}, Barangay Mapulang Lupa, Valenzuela City` : '');
+      if (addr) {
+        document.getElementById('f_complainantAddr').value = addr;
+      }
+    } else {
+      document.getElementById('f_complainant').value = '';
+      document.getElementById('f_complainantId').value = '';
+      document.getElementById('f_complainantAddr').value = '';
     }
   }
 
   function onRespondentPicked(r) {
-    document.getElementById('f_respondent').value = r ? `${r.lastName}, ${r.firstName} ${r.middleName}`.trim() : '';
-    if (r && r.address && !document.getElementById('f_respondentAddr').value) {
-      document.getElementById('f_respondentAddr').value = r.address;
+    if (r) {
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
+      document.getElementById('f_respondent').value = fullName;
+      document.getElementById('f_respondentSearch').value = fullName;
+      document.getElementById('f_respondentId').value = String(r.id);
+      const addr = r.address || (r.zone ? `${r.zone}, Barangay Mapulang Lupa, Valenzuela City` : '');
+      if (addr) {
+        document.getElementById('f_respondentAddr').value = addr;
+      }
+    } else {
+      document.getElementById('f_respondent').value = '';
+      document.getElementById('f_respondentId').value = '';
+      document.getElementById('f_respondentAddr').value = '';
     }
   }
 
