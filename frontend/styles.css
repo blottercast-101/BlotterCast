@@ -1668,6 +1668,9 @@ path.zone-pulse-active {
   border-right: 1px solid rgba(184, 224, 192, 0.25);
   white-space: nowrap;
 }
+.bc-batch-count-label {
+  white-space: nowrap;
+}
 .bc-batch-count-badge {
   background: linear-gradient(135deg, #4fa868 0%, #2f8a4c 100%);
   color: #ffffff;
@@ -1695,6 +1698,20 @@ path.zone-pulse-active {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+}
+.bc-batch-btn.select-all {
+  background: rgba(255, 255, 255, 0.12);
+  color: #bbf7d0;
+  border: 1px solid rgba(187, 247, 208, 0.35);
+  font-size: 0.775rem;
+  padding: 0.35rem 0.75rem;
+  margin-left: 0.15rem;
+}
+.bc-batch-btn.select-all:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
 }
 .bc-batch-btn.archive {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
