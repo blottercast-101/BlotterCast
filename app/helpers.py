@@ -58,43 +58,69 @@ def next_or_no() -> str:
 ZONE_LANDMARK_DEFINITIONS = {
     "Zone 1": {
         "name": "Residence 3",
-        "aliases": ["residence 3", "residences 3", "pandi residences 3", "pandi residence 3", "res 3", "res3"],
+        "aliases": [
+            "residence 3", "residences 3", "pandi residences 3", "pandi residence 3",
+            "res 3", "res3", "bagtasan", "barangay hall", "brgy hall", "health center",
+            "covered court", "daycare center", "residens 3", "phase 3", "ph 3", "ph3", "purok 1", "zone 1"
+        ],
         "latitude": 14.883760,
         "longitude": 120.968420,
     },
     "Zone 2": {
         "name": "Residence 1",
-        "aliases": ["residence 1", "residences 1", "pandi residences 1", "pandi residence 1", "res 1", "res1", "pasong kalabaw", "kalabaw st"],
+        "aliases": [
+            "residence 1", "residences 1", "pandi residences 1", "pandi residence 1",
+            "res 1", "res1", "pasong kalabaw", "kalabaw st", "kalabaw street",
+            "pasong kalabaw road", "pasung kalabaw", "residens 1", "phase 1", "ph 1", "ph1", "purok 2", "zone 2"
+        ],
         "latitude": 14.882000,
         "longitude": 120.958000,
     },
     "Zone 3": {
         "name": "Pandi Village 2 (Atlantica)",
-        "aliases": ["pandi village 2", "pandi village", "atlantica", "pv2", "pv 2"],
+        "aliases": [
+            "pandi village 2", "atlantica", "pv2", "pv 2",
+            "atlantica homes", "atlantica subdivision", "atalantica", "pandi village ph 2",
+            "pandi village phase 2", "phase 2", "ph 2", "ph2", "purok 3", "zone 3"
+        ],
         "latitude": 14.879000,
         "longitude": 120.972000,
     },
     "Zone 4": {
         "name": "Mitay 1",
-        "aliases": ["mitay 1", "mitay", "sitio mitay", "pandi village 1"],
+        "aliases": [
+            "mitay 1", "mitay", "sitio mitay", "pandi village 1", "pv1", "pv 1",
+            "mitay st", "mitay street", "mytay", "pandi village ph 1", "purok 4", "zone 4"
+        ],
         "latitude": 14.887500,
         "longitude": 120.962000,
     },
     "Zone 5": {
         "name": "Sitio Gubat",
-        "aliases": ["sitio gubat", "gubat", "purok gubat", "barangay center", "mapulang lupa center"],
+        "aliases": [
+            "sitio gubat", "gubat", "purok gubat", "barangay center", "mapulang lupa center",
+            "mapulang lupa elementary school", "main road", "gubat st", "gubat street",
+            "central sitio", "gubatt", "purok 5", "zone 5"
+        ],
         "latitude": 14.882500,
         "longitude": 120.964500,
     },
     "Zone 6": {
         "name": "Bangko St.",
-        "aliases": ["bangko st", "bangko street", "bangko"],
+        "aliases": [
+            "bangko st", "bangko street", "bangko", "calle bangko", "sitio bangko",
+            "bangco", "bangco st", "purok 6", "zone 6"
+        ],
         "latitude": 14.877500,
         "longitude": 120.966500,
     },
     "Zone 7": {
         "name": "Barangka St.",
-        "aliases": ["barangka st", "barangka street", "barangka", "pandi-angat road", "pandi angat"],
+        "aliases": [
+            "barangka st", "barangka street", "barangka", "pandi-angat road", "pandi angat",
+            "encampment", "calle barangka", "sitio barangka", "barangca", "boundary angat",
+            "purok 7", "zone 7"
+        ],
         "latitude": 14.878500,
         "longitude": 120.959500,
     },

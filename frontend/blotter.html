@@ -1145,12 +1145,26 @@
         throw new Error(data.error || 'Failed to process import.');
       }
 
+      const zoneHtml = data.zoneBreakdown
+        ? Object.entries(data.zoneBreakdown)
+            .filter(([_, count]) => count > 0)
+            .map(([z, count]) => `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded-md text-[11px] font-semibold border border-emerald-200">${z}: ${count}</span>`)
+            .join(' ')
+        : '';
+
       const successMsg = data.message || (isSettlement
-        ? `Successfully processed ${data.updated || 0} Blotter Settlement records.`
-        : `Successfully imported ${data.imported || 0} Blotter Entry records with linked incident backfills.`);
+        ? `Successfully processed ${data.imported || 0} Blotter Settlement records (${data.settlementsCreated || 0} settlements created/updated).`
+        : `Successfully imported ${data.imported || 0} Blotter Entry records with linked incident & settlement backfills.`);
 
       if (statusEl) {
-        statusEl.innerHTML = `<span class="text-emerald-600 font-semibold">✓ ${successMsg}</span>`;
+        statusEl.innerHTML = `
+          <div class="space-y-2 mt-2">
+            <div class="text-emerald-700 font-semibold text-xs flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span>${successMsg}</span>
+            </div>
+            ${zoneHtml ? `<div class="flex flex-wrap items-center gap-1.5 pt-1"><span class="text-[11px] font-medium text-forest-600">Zonal Distribution:</span> ${zoneHtml}</div>` : ''}
+          </div>`;
       }
       showToast(successMsg, 'success');
 
@@ -1158,7 +1172,7 @@
         closeModal('importModal');
         clearBlotterImportFile();
         loadBlotter();
-      }, 1200);
+      }, 2000);
     } catch (err) {
       if (statusEl) {
         statusEl.innerHTML = `<span class="text-rose-600 font-semibold">✗ Error: ${err.message}</span>`;
