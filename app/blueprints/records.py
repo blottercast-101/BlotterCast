@@ -76,9 +76,15 @@ def update_settlement_status(settlement_id):
         return json_error("Settlement record not found.", 404)
 
     d = request.get_json(silent=True) or {}
-    new_status = d.get("status")
+    new_status = (d.get("status") or "").strip()
     if not new_status:
         return json_error("Status is required.", 400)
+    if new_status in ("Resolved", "Settled", "Complied"):
+        new_status = "Complied"
+    elif new_status in ("Not Complied", "Repudiated", "CFA Issued"):
+        new_status = "Not Complied"
+    elif new_status in ("Pending", "Ongoing"):
+        new_status = "Pending"
 
     settlement.status = new_status
     if d.get("actionTaken") or d.get("action_taken"):
@@ -1217,13 +1223,21 @@ def _settlements():
             return json_error("That blotter record does not exist.", 404)
 
         case_no = d.get("caseNo") or next_seq_no(Settlement, "case_no", "STL")
+        raw_status = (d.get("status") or "Pending").strip()
+        if raw_status in ("Resolved", "Settled", "Complied"):
+            status_val = "Complied"
+        elif raw_status in ("Not Complied", "Repudiated", "CFA Issued"):
+            status_val = "Not Complied"
+        else:
+            status_val = "Pending"
+
         settlement = Settlement(
             blotter_id=blotter_id, case_no=case_no,
             case_title=f"{b.complainant} vs. {b.respondent}", complaint_title=b.nature,
             nature="Criminal" if b.case_type == "CRIM" else "Civil", date_filed=b.date_filed,
             date_confrontation=parse_date(d.get("dateConfrontation")) or None, action_taken=d.get("actionTaken", ""),
             date_settlement=parse_date(d.get("dateSettlement")) or None, date_execution=parse_date(d.get("dateExecution")) or None,
-            main_point=d.get("mainPoint", ""), status=d.get("status") or "Pending", remarks=d.get("remarks", ""),
+            main_point=d.get("mainPoint", ""), status=status_val, remarks=d.get("remarks", ""),
             archived=False,
         )
         db.session.add(settlement)
@@ -1263,7 +1277,13 @@ def _settlements():
         settlement.date_settlement = parse_date(d.get("dateSettlement")) or None
         settlement.date_execution = parse_date(d.get("dateExecution")) or None
         settlement.main_point = d.get("mainPoint", "")
-        settlement.status = d.get("status") or "Pending"
+        raw_put_status = (d.get("status") or settlement.status or "Pending").strip()
+        if raw_put_status in ("Resolved", "Settled", "Complied"):
+            settlement.status = "Complied"
+        elif raw_put_status in ("Not Complied", "Repudiated", "CFA Issued"):
+            settlement.status = "Not Complied"
+        else:
+            settlement.status = "Pending"
         settlement.remarks = d.get("remarks", "")
         _sync_settlement_to_blotter_and_incident(settlement)
 

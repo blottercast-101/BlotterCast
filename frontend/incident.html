@@ -183,7 +183,7 @@
         </select>
         <select id="incStatusFilter" class="filter-input" onchange="incPage=1; renderIncidents()">
           <option value="">All Statuses</option>
-          <option value="Pending">Pending</option>
+          <option value="Under Investigation">Under Investigation</option>
           <option value="Referred">Referred</option>
           <option value="Elevated to Blotter">Elevated to Blotter</option>
         </select>
@@ -233,7 +233,9 @@
 
     <!-- Elevated Lock Notice Banner -->
     <div id="if_elevatedLockBanner" class="hidden mb-4 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-center gap-2.5">
-      <span class="text-amber-600 font-bold flex-shrink-0 text-base">🛡️</span>
+      <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
       <div>
         <strong class="font-semibold block text-amber-950">Official Blotter Case</strong>
         <span id="if_elevatedLockBannerText">This incident has been elevated to an official Blotter Record. Details are locked from further editing.</span>
@@ -467,7 +469,7 @@
       <div>
         <label class="form-label">Status</label>
         <select id="if_status" class="form-input" required>
-          <option value="Pending" selected>Pending</option>
+          <option value="Under Investigation" selected>Under Investigation</option>
           <option value="Referred">Referred</option>
           <option value="Elevated to Blotter">Elevated to Blotter</option>
         </select>
@@ -484,7 +486,10 @@
             onclick="openElevateConfirmFromModal()"
             class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
-            <span>📄 Elevate to Blotter</span>
+            <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Elevate to Blotter</span>
           </button>
           <button 
             type="button" 
@@ -493,7 +498,10 @@
             class="hidden px-4 py-2 bg-gray-100 text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed opacity-60 flex items-center gap-2"
             title="Already elevated to Blotter. Cannot be reverted."
           >
-            <span>🛡️ Already Elevated</span>
+            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <span>Already Elevated</span>
           </button>
         </div>
 
@@ -1777,7 +1785,7 @@
     updateSubmitButtonState();
     resetFormDropdowns('incidentForm');
     const statusSelect = document.getElementById('if_status');
-    if (statusSelect) statusSelect.value = 'Pending';
+    if (statusSelect) statusSelect.value = 'Under Investigation';
   }
 
   async function openAddIncident() {
@@ -2001,14 +2009,14 @@
       complainantResidentId: complainantResId,
       involvedParties: involvedParties,
       officer: document.getElementById('if_officer').value.trim(),
-      status: document.getElementById('if_status').value || 'Pending',
+      status: document.getElementById('if_status').value || 'Under Investigation',
       zone: document.getElementById('if_zone').value,
       lat: document.getElementById('if_lat').value || null,
       lng: document.getElementById('if_lng').value || null,
     };
-    const ALLOWED_INCIDENT_STATUSES = ['Pending', 'Referred', 'Elevated to Blotter'];
+    const ALLOWED_INCIDENT_STATUSES = ['Under Investigation', 'Pending', 'Referred', 'Elevated to Blotter', 'Resolved', 'Closed'];
     if (!ALLOWED_INCIDENT_STATUSES.includes(vals.status)) {
-      vals.status = 'Pending';
+      vals.status = 'Under Investigation';
     }
     if (!vals.location || !vals.reporter) {
       await bcAlert(isNonRes ? 'Please fill in required fields (Location and Reporter Name).' : 'Please select the Reporter from Census, or check "Non-Resident Reporter" to enter their name directly.');

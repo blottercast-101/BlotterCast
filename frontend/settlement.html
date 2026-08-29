@@ -172,12 +172,9 @@
         </select>
         <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
           <option value="">All Statuses</option>
-          <option value="Resolved">Resolved</option>
+          <option value="Pending">Pending</option>
           <option value="Complied">Complied</option>
           <option value="Not Complied">Not Complied</option>
-          <option value="Pending">Pending</option>
-          <option value="Ongoing">Ongoing</option>
-          <option value="CFA Issued">CFA Issued</option>
         </select>
       </div>
 
@@ -212,28 +209,32 @@
   </main>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Add/Edit Settlement Modal -->
 <div class="modal-overlay" id="settlementModal">
-  <div class="modal-box" style="width:750px">
-    <div class="flex items-center justify-between mb-6">
+  <div class="modal-box" style="width:680px">
+    <div class="flex items-center justify-between mb-4">
       <h2 class="font-display text-xl text-forest-800" id="stlModalTitle">New Settlement Record</h2>
       <button onclick="closeModal('settlementModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form id="settlementForm" class="space-y-4">
-      <div id="sf_blotter_picker_wrap" class="relative">
-        <label class="form-label">Blotter Case <span class="text-red-500">*</span></label>
-        <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type a docket no. or name to search…" autocomplete="off"/>
-        <input type="hidden" id="sf_blotterId"/>
+      <div id="sf_blotter_picker_wrap" class="relative z-30">
+        <label class="form-label">Link to Blotter Case <span class="text-xs text-forest-500 font-normal">(Search docket no. or complainant)</span></label>
+        <div class="relative">
+          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off"/>
+          <input type="hidden" id="sf_blotterId"/>
+          <button type="button" onclick="clearBlotterCasePicker()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-forest-400 hover:text-forest-700 bg-forest-50 hover:bg-forest-100 px-2 py-0.5 rounded border border-forest-200">Clear</button>
+        </div>
         <div id="sf_blotterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
-        <p class="text-xs text-forest-400 mt-1">A settlement can only be created for a case that's already in the Blotter Book. Case title, complaint title, nature, and date filed are inherited from that record.</p>
-      </div>
-      <div class="grid grid-cols-3 gap-4" id="sf_derived_preview">
-        <div><label class="form-label">Case No.</label><input type="text" id="sf_caseNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
-        <div><label class="form-label">Case Title</label><input type="text" id="sf_caseTitle" class="form-input" disabled/></div>
-        <div><label class="form-label">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input" disabled/></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
+        <div><label class="form-label">Case No.</label><input type="text" id="sf_caseNo" class="form-input bg-forest-50" placeholder="Auto-generated" disabled/></div>
+        <div><label class="form-label">Case Title</label><input type="text" id="sf_caseTitle" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" disabled/></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="form-label">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" disabled/></div>
         <div><label class="form-label">Date of Initial Confrontation</label><input type="date" id="sf_dateConfrontation" class="form-input" data-no-future/></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="form-label">Action Taken</label>
           <select id="sf_actionTaken" class="form-input" required>
@@ -245,10 +246,11 @@
             <option value="C46+">C46+</option>
           </select>
         </div>
+        <div><label class="form-label">Date of Settlement or Award</label><input type="date" id="sf_dateSettlement" class="form-input" data-no-future/></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Date of Settlement or Award</label><input type="date" id="sf_dateSettlement" class="form-input" data-no-future/></div>
         <div><label class="form-label">Date of Execution</label><input type="date" id="sf_dateExecution" class="form-input"/></div>
+        <div><label class="form-label">Remarks</label><input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/></div>
       </div>
       <div><label class="form-label">Main Point of Agreement</label><textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms of the agreement…"></textarea></div>
       <div class="grid grid-cols-2 gap-4">
@@ -256,20 +258,16 @@
           <label class="form-label">Status of Compliance / Resolution</label>
           <select id="sf_status" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
-            <option value="Resolved">Resolved / Agreement Signed</option>
-            <option value="Complied">Complied</option>
-            <option value="Ongoing">Ongoing / Under Mediation</option>
             <option value="Pending">Pending</option>
+            <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
-            <option value="CFA Issued">CFA Issued</option>
           </select>
         </div>
-        <div><label class="form-label">Remarks</label><input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/></div>
       </div>
       <div class="flex items-center justify-between gap-3 pt-3 border-t border-forest-100">
         <div class="flex items-center gap-2">
-          <button type="button" onclick="quickSetResolved()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
-            ✓ Mark as Resolved
+          <button type="button" onclick="quickSetComplied()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
+            ✓ Mark as Complied
           </button>
         </div>
         <div class="flex gap-2">
@@ -540,7 +538,7 @@
           <td><span class="badge ${r.nature==='Criminal'?'badge-criminal':'badge-civil'}">${r.nature}</span></td>
           <td class="text-xs">${r.dateFiled||''}</td>
           <td class="text-xs font-medium text-forest-700">${r.actionTaken||''}</td>
-          <td><span class="badge ${r.status==='Complied'||r.status==='Resolved'||r.status==='Settled'?'badge-resolved':r.status==='Not Complied'?'badge-not-complied':r.status==='Ongoing'?'badge-ongoing':'badge-pending'}" style="white-space:nowrap">${r.status==='Settled'?'Resolved':r.status}</span></td>
+          <td><span class="badge ${r.status==='Complied'||r.status==='Resolved'||r.status==='Settled'?'badge-resolved':r.status==='Not Complied'?'badge-not-complied':'badge-pending'}" style="white-space:nowrap">${(r.status==='Resolved'||r.status==='Settled')?'Complied':r.status}</span></td>
           <td>
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
@@ -670,22 +668,29 @@
     }
   }
 
-  function quickSetResolved() {
-    document.getElementById('sf_status').value = 'Resolved';
-    if (!document.getElementById('sf_actionTaken').value) {
-      document.getElementById('sf_actionTaken').value = 'Mediation (M)';
+  function quickSetComplied() {
+    const statusEl = document.getElementById('sf_status');
+    if (statusEl) {
+      statusEl.value = 'Complied';
+      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(statusEl);
+    }
+    const actionEl = document.getElementById('sf_actionTaken');
+    if (actionEl && !actionEl.value) {
+      actionEl.value = 'Mediation (M)';
+      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(actionEl);
     }
     const today = new Date().toISOString().split('T')[0];
     if (!document.getElementById('sf_dateSettlement').value) {
       document.getElementById('sf_dateSettlement').value = today;
     }
     if (!document.getElementById('sf_mainPoint').value) {
-      document.getElementById('sf_mainPoint').value = 'Amicable agreement reached and signed by all parties.';
+      document.getElementById('sf_mainPoint').value = 'Amicable agreement reached and complied by all parties.';
     }
-    showToast('Form pre-filled as Resolved. Click "Save Record" to finalize.', 'info');
+    showToast('Form pre-filled as Complied. Click "Save Record" to finalize.', 'info');
   }
-  window.quickSetSettled = quickSetResolved;
-  window.quickSetResolved = quickSetResolved;
+  window.quickSetComplied = quickSetComplied;
+  window.quickSetSettled = quickSetComplied;
+  window.quickSetResolved = quickSetComplied;
 
   async function archiveSettlement(id) {
     if (!(await bcConfirm('Archive this settlement record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
