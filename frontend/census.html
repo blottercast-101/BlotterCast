@@ -286,6 +286,9 @@
 <script src="custom-controls.js"></script>
 <script>
 let censusData = [];
+const ROWS = 8;
+let curPage = 1, editId = null, currentRole = null;
+let viewingArchived = false;
 
 function mapResident(r) {
   const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
@@ -293,14 +296,28 @@ function mapResident(r) {
     id: Number(r.id), resNo: r.resident_no, lastName: r.last_name, firstName: r.first_name, midName: r.middle_name || '',
     dob: r.date_of_birth || '', age: age ?? '—',
     sex: r.sex, civil: r.civil_status, nationality: r.nationality || 'Filipino', zone: r.zone_id || '',
-      address: r.address || '', household: r.household_no || '', contact: r.contact_no || '',
+    address: r.address || '', household: r.household_no || '', contact: r.contact_no || '',
     voter: r.voter_status, occupation: r.occupation || '', status: r.status,
   };
 }
 
-let viewingArchived = false;
+const resBatchManager = new BcBatchManager({
+  entityName: 'resident',
+  entityPlural: 'residents',
+  apiType: 'census',
+  selectAllId: 'selectAllCensus',
+  getPageItems: () => {
+    const filtered = getFiltered();
+    const start = (curPage - 1) * ROWS;
+    return filtered.slice(start, start + ROWS);
+  },
+  getAllItems: () => getFiltered(),
+  isArchivedView: () => viewingArchived,
+  onRefresh: async () => { await loadResidents(); },
+});
 
 async function loadResidents(silent = false) {
+  if (!document.getElementById('residentBody')) return;
   if (!silent) {
     bcSetStatsLoading(['cTotal', 'cHousehold', 'cMale', 'cFemale', 'cSenior'], true);
     bcRenderTableSkeleton('residentBody', { template: 'census', rows: ROWS });
@@ -308,6 +325,7 @@ async function loadResidents(silent = false) {
 
   try {
     const raw = await BCApi.docList('census', viewingArchived ? { archived: '1' } : {});
+    if (!document.getElementById('residentBody')) return;
     const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
     censusData = list.filter(Boolean).map(mapResident);
     calcStats();
@@ -319,6 +337,7 @@ async function loadResidents(silent = false) {
       render: renderResidents
     });
   } catch (err) {
+    if (!document.getElementById('residentBody')) return;
     console.error('loadResidents error:', err);
     censusData = [];
     bcSetStatsLoading(['cTotal', 'cHousehold', 'cMale', 'cFemale', 'cSenior'], false, '0');
@@ -346,23 +365,6 @@ async function toggleArchivedView() {
     showToast('Could not load residents: ' + err.message, 'error');
   }
 }
-
-const ROWS=8; let curPage=1; let editId=null; let currentRole=null;
-
-const resBatchManager = new BcBatchManager({
-  entityName: 'resident',
-  entityPlural: 'residents',
-  apiType: 'census',
-  selectAllId: 'selectAllCensus',
-  getPageItems: () => {
-    const filtered = getFiltered();
-    const start = (curPage - 1) * ROWS;
-    return filtered.slice(start, start + ROWS);
-  },
-  getAllItems: () => getFiltered(),
-  isArchivedView: () => viewingArchived,
-  onRefresh: async () => { await loadResidents(); },
-});
 
 // Fields a Desk Officer is allowed to edit are just Status (and, as its
 // automatic consequence, Voter Status). Every other field in the form is

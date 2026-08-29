@@ -318,6 +318,7 @@
   let viewingArchived = false;
 
   async function loadSettlements(silent = false) {
+    if (!document.getElementById('settlementTableBody')) return;
     if (!silent) {
       bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
       bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
@@ -325,6 +326,7 @@
 
     try {
       const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
+      if (!document.getElementById('settlementTableBody')) return;
       settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
       updateStlSummary();
       renderSettlements();
@@ -335,6 +337,7 @@
         render: renderSettlements
       });
     } catch (err) {
+      if (!document.getElementById('settlementTableBody')) return;
       console.error('loadSettlements error:', err);
       settlementData = [];
       bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
@@ -347,10 +350,15 @@
     viewingArchived = !viewingArchived;
     stlPage = 1;
     stlBatchManager.clearSelection();
-    document.getElementById('stlTitle').textContent = viewingArchived ? 'Archived Settlement Records' : 'Settlement Records';
-    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
-      ? '<span data-icon="settlement" data-icon-size="14"></span> Back to Active'
-      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    const titleEl = document.getElementById('stlTitle');
+    if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Settlement Records' : 'Settlement Records';
+    const toggleBtn = document.getElementById('archiveToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = viewingArchived
+        ? '<span data-icon="settlement" data-icon-size="14"></span> Back to Active'
+        : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+      if (typeof renderIcons === 'function') renderIcons();
+    }
     try {
       await loadSettlements();
     } catch (err) {
@@ -376,13 +384,13 @@
 
   function _bindBlotterCasePicker() {
     const input = document.getElementById('sf_blotterSearch');
-    if (input.dataset.bound) return;
+    if (!input || input.dataset.bound) return;
     input.dataset.bound = '1';
     input.addEventListener('input', _filterBlotterCases);
     input.addEventListener('focus', _filterBlotterCases);
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#sf_blotterSuggestions') && e.target !== input) {
-        document.getElementById('sf_blotterSuggestions').classList.add('hidden');
+        document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
       }
     });
   }
@@ -396,6 +404,7 @@
   function _filterBlotterCases() {
     const input = document.getElementById('sf_blotterSearch');
     const list = document.getElementById('sf_blotterSuggestions');
+    if (!input || !list) return;
     const q = input.value.trim().toLowerCase();
 
     const matches = q === ''
@@ -421,44 +430,60 @@
   function chooseBlotterCase(id) {
     const b = blotterOptions.find(x => x.id === id);
     if (!b) return;
-    document.getElementById('sf_blotterSearch').value = `${b.docketNo} — ${b.complainant} vs. ${b.respondent}`;
-    document.getElementById('sf_blotterId').value = String(id);
-    document.getElementById('sf_blotterSuggestions').classList.add('hidden');
+    const searchEl = document.getElementById('sf_blotterSearch');
+    const idEl = document.getElementById('sf_blotterId');
+    if (searchEl) searchEl.value = `${b.docketNo} — ${b.complainant} vs. ${b.respondent}`;
+    if (idEl) idEl.value = String(id);
+    document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
     onBlotterPicked();
   }
 
   function clearBlotterCasePicker() {
-    document.getElementById('sf_blotterSearch').value = '';
-    document.getElementById('sf_blotterId').value = '';
-    document.getElementById('sf_blotterSuggestions').classList.add('hidden');
+    const searchEl = document.getElementById('sf_blotterSearch');
+    const idEl = document.getElementById('sf_blotterId');
+    if (searchEl) searchEl.value = '';
+    if (idEl) idEl.value = '';
+    document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
     onBlotterPicked();
   }
 
   function onBlotterPicked() {
-    const id = Number(document.getElementById('sf_blotterId').value);
+    const idEl = document.getElementById('sf_blotterId');
+    const id = idEl ? Number(idEl.value) : 0;
     const b = blotterOptions.find(x => x.id === id);
+    const titleEl = document.getElementById('sf_caseTitle');
+    const natureEl = document.getElementById('sf_nature_display');
     if (!b) {
-      document.getElementById('sf_caseTitle').value = '';
-      document.getElementById('sf_nature_display').value = '';
+      if (titleEl) titleEl.value = '';
+      if (natureEl) natureEl.value = '';
       return;
     }
-    document.getElementById('sf_caseTitle').value = `${b.complainant} vs. ${b.respondent}`;
-    document.getElementById('sf_nature_display').value = (b.caseType === 'CRIM' ? 'Criminal' : 'Civil') + ' — ' + b.nature;
+    if (titleEl) titleEl.value = `${b.complainant} vs. ${b.respondent}`;
+    if (natureEl) natureEl.value = (b.caseType === 'CRIM' ? 'Criminal' : 'Civil') + ' — ' + b.nature;
   }
 
   function updateStlSummary() {
-    document.getElementById('stlTotal').textContent = settlementData.length;
-    document.getElementById('stlComplied').textContent = settlementData.filter(r=>r.status==='Complied').length;
-    document.getElementById('stlNotComplied').textContent = settlementData.filter(r=>r.status==='Not Complied').length;
-    document.getElementById('stlPending').textContent = settlementData.filter(r=>r.status==='Pending').length;
+    const totalEl = document.getElementById('stlTotal');
+    const compEl = document.getElementById('stlComplied');
+    const notCompEl = document.getElementById('stlNotComplied');
+    const pendEl = document.getElementById('stlPending');
+    if (!totalEl && !compEl && !notCompEl && !pendEl) return;
+
+    if (totalEl) totalEl.textContent = settlementData.length;
+    if (compEl) compEl.textContent = settlementData.filter(r=>r.status==='Complied').length;
+    if (notCompEl) notCompEl.textContent = settlementData.filter(r=>r.status==='Not Complied').length;
+    if (pendEl) pendEl.textContent = settlementData.filter(r=>r.status==='Pending').length;
   }
 
   function getStlFiltered() {
-    const s = document.getElementById('stlSearch').value.trim().toLowerCase();
-    const n = document.getElementById('stlNatureFilter').value;
-    const st = document.getElementById('stlStatusFilter').value;
+    const searchEl = document.getElementById('stlSearch');
+    const natEl = document.getElementById('stlNatureFilter');
+    const statEl = document.getElementById('stlStatusFilter');
+    const s = (searchEl ? searchEl.value : '').trim().toLowerCase();
+    const n = natEl ? natEl.value : '';
+    const st = statEl ? statEl.value : '';
     return settlementData.filter(r =>
-      (!s || r.caseNo.toLowerCase().includes(s) || (r.caseTitle||'').toLowerCase().includes(s)) &&
+      (!s || (r.caseNo || '').toLowerCase().includes(s) || (r.caseTitle||'').toLowerCase().includes(s)) &&
       (!n || n === 'ALL' || n === 'All Natures' || r.nature === n) &&
       (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
     );
@@ -480,6 +505,8 @@
   });
 
   function renderSettlements() {
+    const tbody = document.getElementById('settlementTableBody');
+    if (!tbody) return;
     const filtered = getStlFiltered();
     const total = filtered.length;
     const totalPages = Math.ceil(total / STL_ROWS) || 1;
@@ -487,7 +514,6 @@
     const start = (stlPage - 1) * STL_ROWS;
     const page = filtered.slice(start, start + STL_ROWS);
 
-    const tbody = document.getElementById('settlementTableBody');
     if (page.length === 0) {
       if (viewingArchived) {
         bcSetTableEmpty('settlementTableBody', "There's no archived settlement records.", 'settlement', 9);
@@ -530,8 +556,10 @@
         </tr>`).join('');
     }
 
-    document.getElementById('stlPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
-    bcRenderPagination(document.getElementById('stlPaginationControls'), stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
+    const infoEl = document.getElementById('stlPaginationInfo');
+    if (infoEl) infoEl.textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
+    const ctrlEl = document.getElementById('stlPaginationControls');
+    if (ctrlEl) bcRenderPagination(ctrlEl, stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
     stlBatchManager.updateUI();
   }
 

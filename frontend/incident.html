@@ -579,6 +579,7 @@
   let viewingArchived = false;
 
   async function loadIncidents(silent = false) {
+    if (!document.getElementById('incidentTableBody')) return;
     if (!silent) {
       bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], true);
       bcRenderTableSkeleton('incidentTableBody', { template: 'incident', rows: INC_ROWS });
@@ -586,6 +587,7 @@
 
     try {
       const raw = await BCApi.list('incidents', viewingArchived ? { archived: '1' } : {});
+      if (!document.getElementById('incidentTableBody')) return;
       incidentData = Array.isArray(raw) ? raw.map(mapIncident) : [];
       updateSummary();
       renderIncidents();
@@ -596,6 +598,7 @@
         render: renderIncidents
       });
     } catch (err) {
+      if (!document.getElementById('incidentTableBody')) return;
       console.error('loadIncidents error:', err);
       incidentData = [];
       bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], false, '0');
@@ -608,10 +611,15 @@
     viewingArchived = !viewingArchived;
     incPage = 1;
     incBatchManager.clearSelection();
-    document.getElementById('incTitle').textContent = viewingArchived ? 'Archived Incident Reports' : 'Incident Records';
-    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
-      ? '<span data-icon="incident" data-icon-size="14"></span> Back to Active'
-      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    const titleEl = document.getElementById('incTitle');
+    if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Incident Reports' : 'Incident Records';
+    const toggleBtn = document.getElementById('archiveToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = viewingArchived
+        ? '<span data-icon="incident" data-icon-size="14"></span> Back to Active'
+        : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+      if (typeof renderIcons === 'function') renderIcons();
+    }
     try {
       await loadIncidents();
     } catch (err) {
@@ -631,19 +639,29 @@
   }
 
   function updateSummary() {
-    document.getElementById('countTotal').textContent = incidentData.length;
-    document.getElementById('countHigh').textContent = incidentData.filter(r=>r.priority==='High').length;
-    document.getElementById('countInvestigating').textContent = incidentData.filter(r=>r.status==='Under Investigation').length;
-    document.getElementById('countResolved').textContent = incidentData.filter(r=>r.status==='Resolved').length;
+    const totalEl = document.getElementById('countTotal');
+    const highEl = document.getElementById('countHigh');
+    const invEl = document.getElementById('countInvestigating');
+    const resEl = document.getElementById('countResolved');
+    if (!totalEl && !highEl && !invEl && !resEl) return;
+
+    if (totalEl) totalEl.textContent = incidentData.length;
+    if (highEl) highEl.textContent = incidentData.filter(r=>r.priority==='High').length;
+    if (invEl) invEl.textContent = incidentData.filter(r=>r.status==='Under Investigation').length;
+    if (resEl) resEl.textContent = incidentData.filter(r=>r.status==='Resolved').length;
   }
 
   function getIncFiltered() {
-    const s = document.getElementById('incSearchInput').value.trim().toLowerCase();
-    const c = document.getElementById('incCategoryFilter').value;
-    const p = document.getElementById('incPriorityFilter').value;
-    const st = document.getElementById('incStatusFilter').value;
+    const searchEl = document.getElementById('incSearchInput');
+    const catEl = document.getElementById('incCategoryFilter');
+    const prioEl = document.getElementById('incPriorityFilter');
+    const statEl = document.getElementById('incStatusFilter');
+    const s = (searchEl ? searchEl.value : '').trim().toLowerCase();
+    const c = catEl ? catEl.value : '';
+    const p = prioEl ? prioEl.value : '';
+    const st = statEl ? statEl.value : '';
     return incidentData.filter(r =>
-      (!s || r.reportNo.toLowerCase().includes(s) || r.location.toLowerCase().includes(s) || r.reporter.toLowerCase().includes(s)) &&
+      (!s || (r.reportNo || '').toLowerCase().includes(s) || (r.location || '').toLowerCase().includes(s) || (r.reporter || '').toLowerCase().includes(s)) &&
       (!c || c === 'ALL' || c === 'All Categories' || r.category === c) &&
       (!p || p === 'ALL' || p === 'All Priorities' || r.priority === p) &&
       (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
@@ -666,6 +684,8 @@
   });
 
   function renderIncidents() {
+    const tbody = document.getElementById('incidentTableBody');
+    if (!tbody) return;
     const filtered = getIncFiltered();
     const total = filtered.length;
     const totalPages = Math.ceil(total / INC_ROWS) || 1;
@@ -673,7 +693,6 @@
     const start = (incPage - 1) * INC_ROWS;
     const page = filtered.slice(start, start + INC_ROWS);
 
-    const tbody = document.getElementById('incidentTableBody');
     if (page.length === 0) {
       if (viewingArchived) {
         bcSetTableEmpty('incidentTableBody', "There's no archived incident records.", 'incident', 12);
@@ -744,8 +763,10 @@
         </tr>`).join('');
     }
 
-    document.getElementById('incPaginationInfo').textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+INC_ROWS,total)} of ${total}`;
-    bcRenderPagination(document.getElementById('incPaginationControls'), incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
+    const infoEl = document.getElementById('incPaginationInfo');
+    if (infoEl) infoEl.textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+INC_ROWS,total)} of ${total}`;
+    const ctrlEl = document.getElementById('incPaginationControls');
+    if (ctrlEl) bcRenderPagination(ctrlEl, incPage, totalPages, (p) => { incPage = p; renderIncidents(); });
     incBatchManager.updateUI();
   }
 

@@ -199,6 +199,7 @@ function bcTriggerLiveRefresh(detail = {}) {
 }
 
 function _bcExecuteLiveRefresh(detail = {}) {
+  if (_bcNavigating || window._bcSpaNavActive) return;
   try {
     if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
   } catch (_) {}

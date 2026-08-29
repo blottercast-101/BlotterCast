@@ -445,6 +445,7 @@
   }
 
   async function loadBlotter(silent = false) {
+    if (!document.getElementById('blotterTableBody')) return;
     if (!silent) {
       bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], true);
       bcRenderTableSkeleton('blotterTableBody', { template: 'blotter', rows: ROWS_PER_PAGE });
@@ -452,6 +453,7 @@
 
     try {
       const raw = await BCApi.list('blotter', viewingArchived ? { archived: '1' } : {});
+      if (!document.getElementById('blotterTableBody')) return;
       blotterData = Array.isArray(raw) ? raw.map(mapRow) : [];
       renderSummaryCards();
       renderTable();
@@ -462,6 +464,7 @@
         render: renderTable
       });
     } catch (err) {
+      if (!document.getElementById('blotterTableBody')) return;
       console.error('loadBlotter error:', err);
       blotterData = [];
       bcSetStatsLoading(['blTotalCount', 'blOngoingCount', 'blPendingCount', 'blResolvedCount'], false, '0');
@@ -479,10 +482,15 @@
     viewingArchived = !viewingArchived;
     currentPage = 1;
     bltBatchManager.clearSelection();
-    document.getElementById('blTitle').textContent = viewingArchived ? 'Archived Blotter Records' : 'Blotter Records';
-    document.getElementById('archiveToggleBtn').innerHTML = viewingArchived
-      ? '<span data-icon="blotter" data-icon-size="14"></span> Back to Active'
-      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+    const titleEl = document.getElementById('blTitle');
+    if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Blotter Records' : 'Blotter Records';
+    const toggleBtn = document.getElementById('archiveToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = viewingArchived
+        ? '<span data-icon="blotter" data-icon-size="14"></span> Back to Active'
+        : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+      if (typeof renderIcons === 'function') renderIcons();
+    }
     try {
       await loadBlotter();
     } catch (err) {
@@ -491,10 +499,11 @@
   }
 
   function renderSummaryCards() {
-    const totalEl = document.getElementById('blTotalCount');
-    const ongoingEl = document.getElementById('blOngoingCount');
-    const pendingEl = document.getElementById('blPendingCount');
-    const resolvedEl = document.getElementById('blResolvedCount');
+    const totalEl = document.getElementById('blTotalCount') || document.getElementById('statTotal');
+    const ongoingEl = document.getElementById('blOngoingCount') || document.getElementById('statOngoing');
+    const pendingEl = document.getElementById('blPendingCount') || document.getElementById('statPending');
+    const resolvedEl = document.getElementById('blResolvedCount') || document.getElementById('statSettled');
+    if (!totalEl && !ongoingEl && !pendingEl && !resolvedEl) return;
     
     const total = blotterData.length;
     const ongoing = blotterData.filter(r => r && (r.status === 'Ongoing' || r.status === 'Under Mediation' || r.status === 'Hearing Scheduled')).length;
@@ -638,6 +647,8 @@
   });
 
   function renderTable() {
+    const tbody = document.getElementById('blotterTableBody');
+    if (!tbody) return;
     const filtered = getFiltered();
     const total = filtered.length;
     const totalPages = Math.ceil(total / ROWS_PER_PAGE) || 1;
@@ -645,7 +656,6 @@
     const start = (currentPage - 1) * ROWS_PER_PAGE;
     const page = filtered.slice(start, start + ROWS_PER_PAGE);
 
-    const tbody = document.getElementById('blotterTableBody');
     if (page.length === 0) {
       if (viewingArchived) {
         bcSetTableEmpty('blotterTableBody', "There's no archived blotter records.", 'blotter', 11);
@@ -696,10 +706,13 @@
       }).join('');
     }
 
-    document.getElementById('recordCount').textContent = `${total} record${total!==1?'s':''}`;
-    document.getElementById('paginationInfo').textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
+    const countEl = document.getElementById('recordCount');
+    if (countEl) countEl.textContent = `${total} record${total!==1?'s':''}`;
+    const infoEl = document.getElementById('paginationInfo');
+    if (infoEl) infoEl.textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
 
-    bcRenderPagination(document.getElementById('paginationControls'), currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
+    const ctrlEl = document.getElementById('paginationControls');
+    if (ctrlEl) bcRenderPagination(ctrlEl, currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
     bltBatchManager.updateUI();
   }
 
