@@ -76,6 +76,7 @@ def create_app(config_class=Config):
         """Disable caching on API endpoints and HTML pages to ensure sensitive
         authenticated views are never served stale from browser disk/memory cache."""
         from flask import request
+        path = (request.path or '').lower()
         if path.startswith("/api/") or path.endswith(".html") or path.endswith(".js") or path.endswith(".css") or path.endswith(".json") or path in ("/", ""):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
