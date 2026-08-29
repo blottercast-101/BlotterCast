@@ -6,7 +6,7 @@ from openpyxl import Workbook
 
 from app import create_app
 from app.extensions import db
-from app.models import BlotterRecord, Incident, Settlement, User
+from app.models import BlotterRecord, CensusRecord, Incident, Settlement, User
 from app.blueprints.blotter_import import resolve_zone_from_address
 
 
@@ -25,6 +25,31 @@ class TestAdaptiveImport(unittest.TestCase):
             sess["user_id"] = 1
             sess["username"] = "admin"
             sess["role"] = "System Admin"
+
+        # Ensure seed Census residents exist for testing
+        test_residents = [
+            ("Juan", "Dela Cruz", "Zone 2", "Pasong Kalabaw"),
+            ("Maria", "Clara", "Zone 3", "Atlantica Homes PV2"),
+            ("Elias", "Salome", "Zone 4", "Sitio Mitay"),
+            ("Simoun", "Ibarra", "Zone 7", "Barangka Street"),
+            ("Cardo", "Dalisay", "Zone 1", "Residence 3"),
+            ("Narda", "Custodio", "Zone 5", "Sitio Gubat"),
+            ("Enteng", "Kabisote", "Zone 6", "Calle Bangko"),
+        ]
+        for idx, (first, last, zone, addr) in enumerate(test_residents, start=1000):
+            res = CensusRecord.query.filter_by(first_name=first, last_name=last).first()
+            if not res:
+                res = CensusRecord(
+                    resident_no=f"RES-TEST-{idx}",
+                    first_name=first,
+                    last_name=last,
+                    zone_id=zone,
+                    address=addr,
+                    status="Active",
+                    archived=False,
+                )
+                db.session.add(res)
+        db.session.commit()
 
     def tearDown(self):
         self.ctx.pop()
@@ -71,7 +96,6 @@ class TestAdaptiveImport(unittest.TestCase):
         for addr, seed in external_addresses:
             z_id, _, _ = resolve_zone_from_address(addr, deterministic_seed=seed)
             resolved_zones.add(z_id)
-        # Verify that multiple different zones were assigned across varied seeds
         self.assertGreater(len(resolved_zones), 2, "External records are clustering into too few zones")
 
     def test_csv_import_with_tagalog_headers_and_varied_addresses(self):
@@ -82,7 +106,7 @@ class TestAdaptiveImport(unittest.TestCase):
         writer.writerow(["BARANGAY MAPULANG LUPA", "OFFICIAL BLOTTER LOG", "", "", "", ""])
         # True header with Tagalog / mixed labels
         writer.writerow(["Entry No.", "Petsa", "Nagrereklamo", "Tirahan", "Ipinagrereklamo", "Kaso", "Uri", "Katayuan"])
-        # Data rows with varied addresses
+        # Data rows with registered Census residents
         writer.writerow(["BLT-TEST-001", "2026-08-10", "Juan Dela Cruz", "Pasong Kalabaw, Zone 2", "Pedro Santos", "Suntukan sa kalsada", "Criminal", "Settled"])
         writer.writerow(["BLT-TEST-002", "2026-08-11", "Maria Clara", "Atlantica Homes PV2", "Crisostomo Ibarra", "Alitan ng kapitbahay", "Civil", "Pending"])
         writer.writerow(["BLT-TEST-003", "2026-08-12", "Elias Salome", "Sitio Mitay", "Lucas Tirona", "Paninira ng gamit", "Criminal", "Settled"])
@@ -132,6 +156,30 @@ class TestAdaptiveImport(unittest.TestCase):
         self.assertIn("Zone 1", res_json["zoneBreakdown"])
         self.assertIn("Zone 5", res_json["zoneBreakdown"])
         self.assertIn("Zone 6", res_json["zoneBreakdown"])
+
+    def test_residency_policy_rejection_when_neither_party_in_census(self):
+        """Verify that rows where NEITHER party exists in the Census database are rejected."""
+        csv_data = io.StringIO()
+        writer = csv.writer(csv_data)
+        writer.writerow(["Docket", "Date", "Complainant", "Respondent", "Location", "Nature"])
+        # Non-existent parties (not in Census)
+        writer.writerow(["BLT-REJECT-01", "2026-08-18", "Nonexistent Person One", "Nonexistent Person Two", "Zone 1", "Dispute"])
+        writer.writerow(["BLT-REJECT-02", "2026-08-18", "Alien Visitor", "Ghost Party", "Zone 2", "Theft"])
+        # One valid party in Census (Cardo Dalisay)
+        writer.writerow(["BLT-ACCEPT-01", "2026-08-18", "Cardo Dalisay", "Unknown Nonresident", "Zone 1", "Assault"])
+
+        csv_bytes = csv_data.getvalue().encode("utf-8")
+        data = {
+            "file": (io.BytesIO(csv_bytes), "residency_test.csv"),
+            "importType": "blotter-entry"
+        }
+        res = self.client.post("/api/import/blotter-entry", data=data, content_type="multipart/form-data")
+        self.assertEqual(res.status_code, 200)
+        res_json = res.get_json()
+        self.assertTrue(res_json["ok"])
+        self.assertEqual(res_json["imported"], 1, "Only the record with at least one census resident should be imported")
+        self.assertEqual(res_json["skipped"], 2, "Records without any census residents must be skipped/rejected")
+        self.assertTrue(any("Neither complainant" in err or "must be a registered Census resident" in err for err in res_json["errors"]))
 
 
 if __name__ == "__main__":

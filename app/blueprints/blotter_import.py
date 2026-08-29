@@ -358,6 +358,13 @@ def blotter_import():
             if not record:
                 raw_title = _get_val(row, "case_title")
                 c_name, r_name = _split_case_title(raw_title) if raw_title else ("Complainant", "Respondent")
+                c_id = find_census_resident_id_by_name(c_name)
+                r_id = find_census_resident_id_by_name(r_name)
+                if not c_id and not r_id:
+                    skipped += 1
+                    errors.append(f"Row {row_num}: Rejected — At least one party in '{raw_title or docket_no}' must be a registered Census resident.")
+                    continue
+
                 nature_val = _get_val(row, "nature", "Settlement Case")
                 zone_val = _get_val(row, "zone")
                 z_id, _, _ = resolve_zone_from_address(zone_val, c_name, r_name, deterministic_seed=docket_no)
@@ -366,7 +373,9 @@ def blotter_import():
                     docket_no=docket_no,
                     date_filed=datetime.utcnow().date(),
                     complainant=c_name,
+                    complainant_id=c_id,
                     respondent=r_name,
+                    respondent_id=r_id,
                     nature=nature_val,
                     case_type="CIVIL",
                     status="Pending",
@@ -477,6 +486,14 @@ def blotter_import():
 
         complainant_id = find_census_resident_id_by_name(complainant)
         respondent_id = find_census_resident_id_by_name(respondent)
+
+        # Strict Residency Policy Enforcement:
+        # At least one party (either complainant or respondent) must exist in the Census database.
+        # If neither person matches a registered resident in Census, reject the entry and skip importing.
+        if not complainant_id and not respondent_id:
+            skipped += 1
+            errors.append(f"Row {row_num}: Rejected — At least one party must be a registered Census resident. Neither complainant ('{complainant}') nor respondent ('{respondent}') was found in Census.")
+            continue
 
         if complainant_id:
             c_res = CensusRecord.query.get(complainant_id)

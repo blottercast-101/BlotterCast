@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time
 
 from .models import CensusRecord, Zone
@@ -174,29 +175,39 @@ def compute_age(dob) -> int | None:
 
 
 def is_name_a_census_resident(name: str) -> bool:
-    name = (name or "").strip()
-    if not name:
-        return False
-    name_lower = name.lower()
-    residents = CensusRecord.query.with_entities(CensusRecord.last_name, CensusRecord.first_name).all()
-    return any(r.last_name.lower() in name_lower and r.first_name.lower() in name_lower for r in residents)
+    return find_census_resident_id_by_name(name) is not None
 
 
 def find_census_resident_id_by_name(name: str) -> int | None:
-    """Same tolerant match as is_name_a_census_resident(), but returns the resident's
-    id only when there's exactly one match — ambiguous matches are left unlinked."""
+    """Matches a person's name against registered Census records (active)."""
     name = (name or "").strip()
-    if not name:
+    if not name or name.lower() in ("unspecified complainant", "unspecified respondent", "n/a", "none", "unknown"):
         return None
-    name_lower = name.lower()
-    residents = CensusRecord.query.with_entities(
-        CensusRecord.id, CensusRecord.last_name, CensusRecord.first_name
-    ).all()
-    matches = [
-        r.id for r in residents
-        if r.last_name.lower() in name_lower and r.first_name.lower() in name_lower
-    ]
-    return matches[0] if len(matches) == 1 else None
+    name_clean = re.sub(r"[^\w\s]", "", name).lower()
+    residents = CensusRecord.query.filter_by(archived=False).all()
+
+    # 1. Full name exact matches
+    for r in residents:
+        first = (r.first_name or "").strip().lower()
+        last = (r.last_name or "").strip().lower()
+        mid = (r.middle_name or "").strip().lower()
+
+        fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+        fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+        rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+        rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+
+        if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+            return r.id
+
+    # 2. Both first and last name substring matches
+    for r in residents:
+        first = (r.first_name or "").strip().lower()
+        last = (r.last_name or "").strip().lower()
+        if first and last and first in name_clean and last in name_clean:
+            return r.id
+
+    return None
 
 
 def parse_date(value):
