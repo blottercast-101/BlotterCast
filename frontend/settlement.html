@@ -715,6 +715,14 @@
     openModal('stlViewModal');
   }
 
+  window.loadSettlements = loadSettlements;
+  window.archiveSettlement = archiveSettlement;
+  window.restoreSettlement = restoreSettlement;
+  window.permanentDeleteSettlement = permanentDeleteSettlement;
+  window.viewSettlement = viewSettlement;
+  window.editSettlement = editSettlement;
+  window.toggleArchivedView = toggleArchivedView;
+
   window.initSettlement = async function () {
     try {
       await requireAuth();

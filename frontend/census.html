@@ -904,21 +904,29 @@ async function handleCensusFile(e) {
   }
 }
 
-window.initCensus = async function () {
-  try {
-    const user = await requireAuth();
-    if (user) currentRole = user.role;
-    if (user && typeof roleCan === 'function' && !roleCan(user.role, 'import_data')) {
-      const btn = document.getElementById('importBtn');
-      if (btn) btn.style.display = 'none';
+  window.loadResidents = loadResidents;
+  window.archiveResident = archiveResident;
+  window.restoreResident = restoreResident;
+  window.permanentDeleteResident = permanentDeleteResident;
+  window.viewResident = viewResident;
+  window.editResident = editResident;
+  window.toggleArchivedView = toggleArchivedView;
+
+  window.initCensus = async function () {
+    try {
+      const user = await requireAuth();
+      if (user) currentRole = user.role;
+      if (user && typeof roleCan === 'function' && !roleCan(user.role, 'import_data')) {
+        const btn = document.getElementById('importBtn');
+        if (btn) btn.style.display = 'none';
+      }
+      await loadResidents();
+    } catch (err) {
+      console.error('initCensus error:', err);
+      showToast('Could not load residents: ' + (err.message || err), 'error');
     }
-    await loadResidents();
-  } catch (err) {
-    console.error('initCensus error:', err);
-    showToast('Could not load residents: ' + (err.message || err), 'error');
-  }
-};
-if (!window._bcSpaNavActive) { initCensus(); }
+  };
+  if (!window._bcSpaNavActive) { initCensus(); }
 
 </script>
 </body>

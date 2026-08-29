@@ -2156,6 +2156,14 @@
     }
   }, true);
 
+  window.loadIncidents = loadIncidents;
+  window.archiveIncident = archiveIncident;
+  window.restoreIncident = restoreIncident;
+  window.permanentDeleteIncident = permanentDeleteIncident;
+  window.viewIncident = viewIncident;
+  window.editIncident = editIncident;
+  window.toggleArchivedView = toggleArchivedView;
+
   window.initIncidents = async function () {
     try {
       await requireAuth();

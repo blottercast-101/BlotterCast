@@ -1222,6 +1222,14 @@
     }
   }
 
+  window.loadBlotter = loadBlotter;
+  window.archiveRecord = archiveRecord;
+  window.restoreRecord = restoreRecord;
+  window.permanentDeleteRecord = permanentDeleteRecord;
+  window.viewRecord = viewRecord;
+  window.editRecord = editRecord;
+  window.toggleArchivedView = toggleArchivedView;
+
   window.initBlotter = async function () {
     try {
       await requireAuth();

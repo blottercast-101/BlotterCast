@@ -203,37 +203,35 @@ function _bcExecuteLiveRefresh(detail = {}) {
     if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
   } catch (_) {}
 
-  // Identify active page context and re-fetch latest data smoothly (in-place without skeleton flashing)
-  const path = (window.location.pathname || '').toLowerCase();
-
+  // Identify active page context by inspecting the DOM and re-fetch latest data in-place
   try {
-    if (path.endsWith('dashboard.html') || path.endsWith('dashboard') || document.getElementById('statBlotters')) {
-      if (typeof loadDashboardData === 'function') loadDashboardData(true);
-    } else if (path.endsWith('incident.html') || document.getElementById('incidentTableBody')) {
-      if (typeof loadIncidents === 'function') loadIncidents(true);
-    } else if (path.endsWith('blotter.html') || document.getElementById('blotterTableBody')) {
-      if (typeof loadBlotter === 'function') loadBlotter(true);
-    } else if (path.endsWith('settlement.html') || document.getElementById('settlementTableBody')) {
-      if (typeof loadSettlements === 'function') loadSettlements(true);
-    } else if (path.endsWith('census.html') || document.getElementById('residentBody')) {
-      if (typeof loadResidents === 'function') loadResidents(true);
-    } else if (path.endsWith('clearance.html') || document.getElementById('clLogBody')) {
-      if (typeof loadLog === 'function') loadLog(true);
-    } else if (path.endsWith('residency.html') || document.getElementById('residencyLog')) {
-      if (typeof loadResLog === 'function') loadResLog(true);
-    } else if (path.endsWith('non_residency.html') || document.getElementById('nonResidencyLog')) {
-      if (typeof loadNrLog === 'function') loadNrLog(true);
-    } else if (path.endsWith('indigency.html') || document.getElementById('indLog')) {
-      if (typeof loadIndLog === 'function') loadIndLog(true);
-    } else if (path.endsWith('users.html') || document.getElementById('usersTableBody')) {
-      if (typeof loadUsers === 'function') loadUsers(true);
-      if (typeof loadAuditLog === 'function') loadAuditLog(true);
-    } else if (path.endsWith('reports.html') || document.getElementById('recentReports')) {
-      if (typeof loadRecentReports === 'function') loadRecentReports(true);
-    } else if (path.endsWith('heatmap.html') || document.getElementById('kpiTotalIncidents')) {
-      if (typeof loadIncidents === 'function') loadIncidents(true);
-    } else if (path.endsWith('trends.html') || document.getElementById('zonalMatrixBody')) {
-      if (typeof updateCharts === 'function') updateCharts(true);
+    if (document.getElementById('blotterTableBody')) {
+      if (typeof window.loadBlotter === 'function') window.loadBlotter(true);
+    } else if (document.getElementById('incidentTableBody')) {
+      if (typeof window.loadIncidents === 'function') window.loadIncidents(true);
+    } else if (document.getElementById('settlementTableBody')) {
+      if (typeof window.loadSettlements === 'function') window.loadSettlements(true);
+    } else if (document.getElementById('residentBody')) {
+      if (typeof window.loadResidents === 'function') window.loadResidents(true);
+    } else if (document.getElementById('clLogBody')) {
+      if (typeof window.loadLog === 'function') window.loadLog(true);
+    } else if (document.getElementById('residencyLog')) {
+      if (typeof window.loadResLog === 'function') window.loadResLog(true);
+    } else if (document.getElementById('nonResidencyLog')) {
+      if (typeof window.loadNrLog === 'function') window.loadNrLog(true);
+    } else if (document.getElementById('indLog')) {
+      if (typeof window.loadIndLog === 'function') window.loadIndLog(true);
+    } else if (document.getElementById('usersTableBody')) {
+      if (typeof window.loadUsers === 'function') window.loadUsers(true);
+      if (typeof window.loadAuditLog === 'function') window.loadAuditLog(true);
+    } else if (document.getElementById('recentReports')) {
+      if (typeof window.loadRecentReports === 'function') window.loadRecentReports(true);
+    } else if (document.getElementById('statBlotters') || document.getElementById('dashboardGreeting')) {
+      if (typeof window.loadDashboardData === 'function') window.loadDashboardData(true);
+    } else if (document.getElementById('kpiTotalIncidents') || document.getElementById('heatmap')) {
+      if (typeof window.loadIncidents === 'function') window.loadIncidents(true);
+    } else if (document.getElementById('zonalMatrixBody')) {
+      if (typeof window.updateCharts === 'function') window.updateCharts(true);
     }
   } catch (err) {
     console.warn('Reactive live refresh notice:', err);
@@ -308,6 +306,18 @@ async function _bcLoadScriptOnce(src) {
 }
 
 function _bcCleanupPreviousView() {
+  // 0. Finish any pending dialog promises and close modals
+  if (typeof _bcDialogFinish === 'function') _bcDialogFinish(false);
+  if (typeof _bcPermDeleteFinish === 'function') _bcPermDeleteFinish(false);
+
+  // Hide batch floating bar and reset selection banners
+  const batchBar = document.getElementById('bcBatchFloatingBar');
+  if (batchBar) batchBar.classList.remove('visible');
+  document.querySelectorAll('.bc-selection-banner-wrap').forEach(b => {
+    b.innerHTML = '';
+    b.style.display = 'none';
+  });
+
   // 1. Destroy all active Leaflet map instances
   const maps = [
     window.currentMap,
@@ -453,21 +463,14 @@ async function navigateTo(url, pushState = true) {
   if (currentFull === targetRel && !pushState) return;
 
   // ── SPA navigation pre-flight ─────────────────────────────
-  // Reset the auth guard so requireAuth() isn't blocked on the
-  // new page because the previous page's guard was still active.
   _bcAuthGuardRunning = false;
-
-  // Signal to inline page scripts that they are running inside
-  // the SPA router — suppresses the direct initXxx() call that
-  // every page includes at its bottom (to support direct-open
-  // load). The router calls executeModuleInit() instead, which
-  // runs after DOM and scripts are fully ready.
   window._bcSpaNavActive = true;
 
   _bcNavigating = true;
   const contentContainer = document.querySelector('#app-content') || document.querySelector('.ml-64');
   if (!contentContainer) {
     window._bcSpaNavActive = false;
+    _bcNavigating = false;
     window.location.href = url;
     return;
   }
@@ -492,30 +495,26 @@ async function navigateTo(url, pushState = true) {
     _bcCleanupPreviousView();
 
     // Dismiss open modals before swapping
-    document.querySelectorAll('.modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
+    document.querySelectorAll('.modal-overlay.open, .modal-overlay.show, .modal.show, [id$="Modal"].show').forEach(m => {
       m.classList.remove('show');
+      m.classList.remove('open');
     });
 
-    // Remove obsolete page-level modals from previous view
-    document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]').forEach(m => {
+    // Remove obsolete page-level modals from previous view, preserving global system dialogs
+    document.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal)').forEach(m => {
       m.remove();
     });
 
-    const newModals = doc.querySelectorAll('body > .modal-overlay, body > [id$="Modal"]');
+    const newModals = doc.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal)');
     newModals.forEach(m => {
       document.body.appendChild(m);
     });
 
     if (newMain) {
-      // Sync classes from the incoming view container but always
-      // preserve the ml-64 layout class that keeps content
-      // positioned next to the fixed sidebar.
       if (newMain.className) {
         const preservedClasses = ['bc-content-loading', 'bc-content-enter', 'ml-64'];
         const currentFlags = preservedClasses.filter(c => contentContainer.classList.contains(c));
         contentContainer.className = newMain.className;
-        // Ensure ml-64 is always present (some pages like heatmap use
-        // extra classes on #app-content that differ from the standard set)
         if (!contentContainer.classList.contains('ml-64')) {
           contentContainer.classList.add('ml-64');
         }
@@ -1489,8 +1488,16 @@ let _bcDialogEl = null;
 let _bcDialogResolve = null;
 
 function _bcEnsureDialog() {
-  if (_bcDialogEl) return _bcDialogEl;
-  const el = document.createElement('div');
+  if (_bcDialogEl && document.body.contains(_bcDialogEl)) return _bcDialogEl;
+
+  let el = document.getElementById('bcDialogOverlay');
+  if (el) {
+    if (!document.body.contains(el)) document.body.appendChild(el);
+    _bcDialogEl = el;
+    return el;
+  }
+
+  el = document.createElement('div');
   el.id = 'bcDialogOverlay';
   el.className = 'modal-overlay';
   el.setAttribute('data-no-dismiss', ''); // clicking the backdrop shouldn't silently dismiss it
@@ -1512,17 +1519,14 @@ function _bcEnsureDialog() {
   document.getElementById('bcDialogCancelBtn').addEventListener('click', () => _bcDialogFinish(false));
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') _bcDialogFinish(false);
-    // Enter is intentionally NOT force-bound to "confirm" here — the
-    // focused button (see _bcOpenDialog, which focuses Cancel by default
-    // for danger actions) already handles Enter/Space natively, so a
-    // destructive dialog can't be confirmed by an accidental Enter press.
   });
   return el;
 }
 
 function _bcDialogFinish(result) {
-  if (!_bcDialogEl || !_bcDialogEl.classList.contains('open')) return;
-  _bcDialogEl.classList.remove('open');
+  if (_bcDialogEl) {
+    _bcDialogEl.classList.remove('open');
+  }
   document.body.style.overflow = '';
   const resolve = _bcDialogResolve;
   _bcDialogResolve = null;
@@ -1530,6 +1534,13 @@ function _bcDialogFinish(result) {
 }
 
 function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger }) {
+  // If there was an unresolved dialog promise, unlock it immediately
+  if (_bcDialogResolve) {
+    const prevResolve = _bcDialogResolve;
+    _bcDialogResolve = null;
+    try { prevResolve(false); } catch (_) {}
+  }
+
   const el = _bcEnsureDialog();
   document.getElementById('bcDialogTitle').textContent = title;
   document.getElementById('bcDialogMessage').textContent = message;
@@ -1540,9 +1551,6 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   okBtn.textContent = okLabel || (isConfirm ? 'Confirm' : 'OK');
   okBtn.className = danger ? 'btn-danger' : 'btn-primary';
 
-  // Swap the icon (info for plain alerts, warning for danger confirms) —
-  // reset the icon-library's "already rendered" flag first so it actually
-  // redraws instead of keeping whatever icon was shown last time.
   const icon = document.getElementById('bcDialogIcon');
   icon.dataset.icon = danger ? 'warning' : 'info';
   icon.innerHTML = '';
@@ -1552,9 +1560,6 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
 
   el.classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Default focus sits on whichever button is the "safe" choice: Cancel
-  // for destructive (danger) confirms, OK otherwise — so a stray Enter
-  // press never accidentally triggers a delete.
   setTimeout(() => (danger && isConfirm ? cancelBtn : okBtn).focus(), 50);
   return new Promise(resolve => { _bcDialogResolve = resolve; });
 }
@@ -1577,8 +1582,16 @@ let _bcPermDeleteEl = null;
 let _bcPermDeleteResolve = null;
 
 function _bcEnsurePermDeleteDialog() {
-  if (_bcPermDeleteEl) return _bcPermDeleteEl;
-  const el = document.createElement('div');
+  if (_bcPermDeleteEl && document.body.contains(_bcPermDeleteEl)) return _bcPermDeleteEl;
+
+  let el = document.getElementById('bcPermDeleteOverlay');
+  if (el) {
+    if (!document.body.contains(el)) document.body.appendChild(el);
+    _bcPermDeleteEl = el;
+    return el;
+  }
+
+  el = document.createElement('div');
   el.id = 'bcPermDeleteOverlay';
   el.className = 'modal-overlay';
   el.setAttribute('data-no-dismiss', '');
@@ -1640,8 +1653,9 @@ function _bcEnsurePermDeleteDialog() {
 }
 
 function _bcPermDeleteFinish(result) {
-  if (!_bcPermDeleteEl || !_bcPermDeleteEl.classList.contains('open')) return;
-  _bcPermDeleteEl.classList.remove('open');
+  if (_bcPermDeleteEl) {
+    _bcPermDeleteEl.classList.remove('open');
+  }
   document.body.style.overflow = '';
   const resolve = _bcPermDeleteResolve;
   _bcPermDeleteResolve = null;
@@ -1655,6 +1669,13 @@ function _bcPermDeleteFinish(result) {
  * @returns {Promise<boolean>}
  */
 function bcConfirmPermanentDelete(message, opts = {}) {
+  // If there was an unresolved delete promise, unlock it immediately
+  if (_bcPermDeleteResolve) {
+    const prevResolve = _bcPermDeleteResolve;
+    _bcPermDeleteResolve = null;
+    try { prevResolve(false); } catch (_) {}
+  }
+
   const el = _bcEnsurePermDeleteDialog();
   document.getElementById('bcPermDeleteTitle').textContent = opts.title || 'Permanently Delete Record';
   document.getElementById('bcPermDeleteMessage').textContent = message || 'Are you sure you want to permanently delete this record?';
