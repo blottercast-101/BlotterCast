@@ -636,6 +636,7 @@
     isArchivedView: () => viewingArchived,
     onRefresh: async () => { await loadBlotter(); },
   });
+  window.bltBatchManager = bltBatchManager;
 
   function renderTable() {
     const filtered = getFiltered();

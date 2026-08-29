@@ -478,6 +478,7 @@
     isArchivedView: () => viewingArchived,
     onRefresh: async () => { await loadSettlements(); },
   });
+  window.stlBatchManager = stlBatchManager;
 
   function renderSettlements() {
     const filtered = getStlFiltered();

@@ -363,6 +363,7 @@ const resBatchManager = new BcBatchManager({
   isArchivedView: () => viewingArchived,
   onRefresh: async () => { await loadResidents(); },
 });
+window.resBatchManager = resBatchManager;
 
 // Fields a Desk Officer is allowed to edit are just Status (and, as its
 // automatic consequence, Voter Status). Every other field in the form is
