@@ -270,18 +270,29 @@ def seed_data(app_instance=None, force_reset: bool = False):
             idle_timeout_duration_minutes=120,
         ))
 
-    # 3. Demo Users
+    # 3. Demo Users (Ensure active, unlocked, and valid password hashes)
     for username, password, full_name, role, email in DEMO_USERS:
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
         if not user:
             db.session.add(User(
-                username=username, password=hash_password(password),
-                full_name=full_name, role=role, status="Active", email=email,
+                username=username,
+                password=hash_password(password),
+                full_name=full_name,
+                role=role,
+                status="Active",
+                email=email,
+                failed_attempts=0,
+                locked_until=None,
             ))
         else:
             user.email = email
             user.full_name = full_name
             user.role = role
+            user.status = "Active"
+            user.locked_until = None
+            user.failed_attempts = 0
+            if not user.password or not str(user.password).startswith("$2"):
+                user.password = hash_password(password)
 
     # 4. Incident Reports Seeding (Non-destructive: preserves existing reports)
     existing_incidents_count = Incident.query.count()

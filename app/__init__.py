@@ -17,13 +17,11 @@ def _auto_migrate_schema(app):
             from .migrate import ensure_columns
             ensure_columns(db)
 
-            from .models import User
-            if User.query.count() == 0:
-                try:
-                    from .seed import seed_data
-                    seed_data(app)
-                except Exception as seed_err:
-                    app.logger.warning(f"Auto-seed notice: {seed_err}")
+            try:
+                from .seed import seed_data
+                seed_data(app)
+            except Exception as seed_err:
+                app.logger.warning(f"Auto-seed notice: {seed_err}")
         except Exception as e:
             app.logger.warning(f"Auto-migration notice: {e}")
 
