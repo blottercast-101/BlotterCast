@@ -824,15 +824,26 @@ def _incidents():
 
         actor = session.get("username") or "System"
         ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
-        db.session.add(Notification(
-            type="incident_crud",
-            title=f"Incident Report Updated: {incident.report_no}",
-            body=f"[EDIT] Case ID: {incident.report_no} • Status: {incident.status} • Actor: {actor} • {ts}",
-            severity="warning" if incident.priority == "High" else "info",
-            link=f"incident.html?highlight={incident.report_no}",
-            ref_table="incidents",
-            ref_id=incident.id,
-        ))
+        if incident.status == "Elevated to Blotter":
+            db.session.add(Notification(
+                type="incident_elevated",
+                title=f"Incident Elevated to Blotter: {incident.report_no}",
+                body=f"[ELEVATED] Case ID: {incident.report_no} ({incident.category}) • Elevated to Blotter • Actor: {actor} • {ts}",
+                severity="warning",
+                link=f"incident.html?highlight={incident.report_no}",
+                ref_table="incidents",
+                ref_id=incident.id,
+            ))
+        else:
+            db.session.add(Notification(
+                type="incident_crud",
+                title=f"Incident Report Updated: {incident.report_no}",
+                body=f"[EDIT] Case ID: {incident.report_no} • Status: {incident.status} • Actor: {actor} • {ts}",
+                severity="warning" if incident.priority == "High" else "info",
+                link=f"incident.html?highlight={incident.report_no}",
+                ref_table="incidents",
+                ref_id=incident.id,
+            ))
 
         db.session.commit()
         return jsonify({"ok": True})

@@ -2422,7 +2422,17 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
     input.dataset.bcPickerBound = '1';
     input.addEventListener('input', () => _bcFilterResidents(inputId));
     input.addEventListener('focus', () => _bcFilterResidents(inputId));
-    input.addEventListener('click', () => _bcFilterResidents(inputId));
+    input.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _bcFilterResidents(inputId);
+    });
+  }
+
+  const list = document.getElementById(listId);
+  if (list && !list.dataset.bcListBound) {
+    list.dataset.bcListBound = '1';
+    list.addEventListener('mousedown', (e) => e.stopPropagation());
+    list.addEventListener('click', (e) => e.stopPropagation());
   }
 
   if (!window._bcResidentPickerDocClickBound) {
@@ -2434,9 +2444,17 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
         const curInput = document.getElementById(id);
         const curList = document.getElementById(p.listId);
         if (!curList || curList.classList.contains('hidden')) return;
-        if (!curList.contains(e.target) && e.target !== curInput) {
-          curList.classList.add('hidden');
+        if (
+          e.target === curInput ||
+          (curInput && curInput.contains(e.target)) ||
+          e.target.closest('#' + id) ||
+          e.target === curList ||
+          curList.contains(e.target) ||
+          e.target.closest('#' + p.listId)
+        ) {
+          return;
         }
+        curList.classList.add('hidden');
       });
     });
   }
@@ -2470,7 +2488,7 @@ function _bcFilterResidents(inputId) {
         : 'Deceased residents cannot be filed as complainants/reporters.';
       return `
       <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${isDeceased ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
-              onmousedown="event.preventDefault()"
+              onmousedown="event.stopPropagation(); event.preventDefault();"
               onclick="${isDeceased ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${r.id})`}">
         <div class="flex items-center justify-between gap-2">
           <div class="text-sm font-semibold ${isDeceased ? 'text-gray-500 line-through' : 'text-forest-800'}">

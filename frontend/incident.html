@@ -378,8 +378,8 @@
         </div>
       </div>
       <div><label class="form-label">Description</label><textarea id="if_description" class="form-input h-20 resize-none" placeholder="Detailed description of the incident…"></textarea></div>
-      <div class="grid grid-cols-2 gap-4 items-start">
-        <div class="relative z-30">
+      <div class="grid grid-cols-2 gap-4 items-start relative z-40">
+        <div class="relative z-40">
           <div class="flex items-end justify-between gap-2 mb-2 h-10">
             <label class="form-label mb-0 leading-tight">
               Reporter Name<span class="text-red-500 ml-0.5">*</span>
@@ -417,7 +417,7 @@
       </div>
 
       <!-- Minor Reporter Guardian Section (Rule 1) -->
-      <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2 relative z-20">
+      <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2 relative z-30">
         <div class="flex items-start gap-2">
           <span class="text-amber-600 font-bold text-base">⚠️</span>
           <div>
@@ -426,7 +426,7 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-1">
-          <div class="relative z-30">
+          <div class="relative z-40">
             <label class="form-label text-xs mb-1 text-amber-950 font-semibold">Parent / Legal Guardian<span class="text-red-500">*</span></label>
             <input type="text" id="if_guardianSearch" class="form-input text-xs bg-white" placeholder="Search adult resident from Census…" autocomplete="off"/>
             <input type="hidden" id="if_guardianName"/>
@@ -442,7 +442,7 @@
       </div>
 
       <!-- Vehicular / Eyewitness Involved Parties Section (Rule 2) -->
-      <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2 relative z-20">
+      <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2 relative z-30">
         <div class="flex items-start gap-2">
           <span class="text-blue-600 font-bold text-base">ℹ️</span>
           <div>
@@ -451,7 +451,7 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-1">
-          <div class="relative z-30">
+          <div class="relative z-40">
             <label class="form-label text-xs mb-1 text-blue-950 font-semibold">Primary Complainant / Victim (Resident)</label>
             <input type="text" id="if_complainantSearch" class="form-input text-xs bg-white" placeholder="Search victim/driver from Census…" autocomplete="off"/>
             <input type="hidden" id="if_complainant"/>
