@@ -229,6 +229,33 @@ def elevate_incident_endpoint(incident_id):
         if r_dec:
             return json_error("Deceased residents cannot be recorded as respondents.", 422)
 
+    # Conditional Residency Validation:
+    # 1. If Complainant is already a verified resident in Census, selecting a Census resident for Respondent is strictly OPTIONAL.
+    # 2. Only require Respondent to be a verified Census resident if Complainant is a non-resident.
+    complainant_is_resident = (
+        bool(CensusRecord.query.get(complainant_id)) if complainant_id
+        else is_name_a_census_resident(complainant)
+    )
+    respondent_is_resident = (
+        bool(CensusRecord.query.get(respondent_id)) if respondent_id
+        else is_name_a_census_resident(respondent)
+    )
+
+    if not complainant_is_resident and not respondent_is_resident:
+        return json_error(
+            "At least one party (complainant or respondent) must be a registered resident in Census before elevating to a blotter case.",
+            422
+        )
+
+    for pid, label in ((complainant_id, "Complainant"), (respondent_id, "Respondent")):
+        if not pid:
+            continue
+        resident_ent = CensusRecord.query.get(pid)
+        if resident_ent:
+            err = _blotter_party_error(resident_ent, label)
+            if err:
+                return err
+
     docket_no = d.get("docketNo") or next_seq_no(BlotterRecord, "docket_no", "BLT")
     record = BlotterRecord(
         docket_no=docket_no,

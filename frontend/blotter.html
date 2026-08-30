@@ -625,6 +625,9 @@
     const respondentOutside = document.getElementById('f_respondentOutside').checked;
     const complainantCheckbox = document.getElementById('f_complainantOutside');
     const respondentCheckbox = document.getElementById('f_respondentOutside');
+
+    // If Complainant is marked as outside/non-resident, Respondent is required to be a Census resident (outside mode disabled)
+    // If Complainant is a verified Census resident, selecting a Census resident for Respondent is strictly OPTIONAL
     complainantCheckbox.disabled = respondentOutside;
     respondentCheckbox.disabled = complainantOutside;
     document.getElementById('f_complainantOutsideLabel').classList.toggle('opacity-40', respondentOutside);
@@ -856,14 +859,28 @@
   async function saveBlotter() {
     const complainantOutside = document.getElementById('f_complainantOutside').checked;
     const respondentOutside = document.getElementById('f_respondentOutside').checked;
-    const complainantName = complainantOutside
+    const complainantSearchVal = (document.getElementById('f_complainantSearch').value || '').trim();
+    const respondentSearchVal = (document.getElementById('f_respondentSearch').value || '').trim();
+
+    let complainantName = complainantOutside
       ? document.getElementById('f_complainantFreeText').value.trim()
-      : document.getElementById('f_complainant').value.trim();
-    const respondentName = respondentOutside
+      : (document.getElementById('f_complainant').value.trim() || complainantSearchVal);
+    let respondentName = respondentOutside
       ? document.getElementById('f_respondentFreeText').value.trim()
-      : document.getElementById('f_respondent').value.trim();
-    const complainantId = complainantOutside ? null : (document.getElementById('f_complainantId').value || null);
-    const respondentId = respondentOutside ? null : (document.getElementById('f_respondentId').value || null);
+      : (document.getElementById('f_respondent').value.trim() || respondentSearchVal);
+
+    let complainantId = complainantOutside ? null : (document.getElementById('f_complainantId').value || null);
+    let respondentId = respondentOutside ? null : (document.getElementById('f_respondentId').value || null);
+
+    // If Complainant is a verified Census resident, selecting a Census resident for Respondent is strictly OPTIONAL.
+    // If the respondent was typed without clicking a suggestion, treat it as valid free-text entry.
+    if (!respondentId && respondentSearchVal && !respondentOutside) {
+      respondentName = respondentSearchVal;
+    }
+    if (!complainantId && complainantSearchVal && !complainantOutside) {
+      complainantName = complainantSearchVal;
+    }
+
     const vals = {
       // On create, the Docket No. field only ever shows a preview (see
       // openAdd()) — it must NOT be sent as-is, or two people opening
@@ -876,10 +893,10 @@
       docketNo: editingId ? document.getElementById('f_docketNo').value.trim() : '',
       dateFiled: document.getElementById('f_dateFiled').value,
       complainant: complainantName,
-      complainantId,
+      complainantId: complainantId ? Number(complainantId) : null,
       complainantAddr: document.getElementById('f_complainantAddr').value.trim(),
       respondent: respondentName,
-      respondentId,
+      respondentId: respondentId ? Number(respondentId) : null,
       respondentAddr: document.getElementById('f_respondentAddr').value.trim(),
       nature: document.getElementById('f_nature').value.trim(),
       type: document.getElementById('f_type').value,
@@ -901,7 +918,7 @@
       return;
     }
     if (!vals.respondent) {
-      await bcAlert(respondentOutside ? 'Please enter the respondent\'s name.' : 'Please select the respondent from Census, or check "Not a resident" to enter their name directly.');
+      await bcAlert('Please enter or select the respondent\'s name.');
       return;
     }
     if (!vals.type) { await bcAlert('Please select the case Type.'); return; }

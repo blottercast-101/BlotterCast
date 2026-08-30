@@ -1,9 +1,9 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from app import create_app
 from app.config import Config
 from app.extensions import db
-from app.models import Incident, MlRun, Notification, Settlement, SystemSetting, User
+from app.models import CensusRecord, Incident, MlRun, Notification, Settlement, SystemSetting, User
 
 
 class TestConfig(Config):
@@ -138,6 +138,24 @@ class TestNotificationsAndSearch(unittest.TestCase):
 
     def test_elevation_and_settlement_notifications(self):
         self._login()
+
+        # Ensure Maria Santos exists as Census resident
+        if not CensusRecord.query.filter_by(first_name="Maria", last_name="Santos").first():
+            res_santos = CensusRecord(
+                resident_no="RES-0888",
+                first_name="Maria",
+                last_name="Santos",
+                date_of_birth=date(1990, 5, 20),
+                sex="Female",
+                civil_status="Single",
+                nationality="Filipino",
+                zone_id="Zone 1",
+                address="Purok 1, Zone 1, Mapulang Lupa",
+                status="Active",
+            )
+            db.session.add(res_santos)
+            db.session.commit()
+
         # 1. Create incident
         res = self.client.post("/api/records.php?type=incidents", json={
             "reportNo": "INC-2026-0888",
@@ -177,7 +195,7 @@ class TestNotificationsAndSearch(unittest.TestCase):
         self.assertIsNotNone(stl)
 
         res_stl_update = self.client.put(f"/api/settlements/{stl.id}/status", json={
-            "status": "Settled",
+            "status": "Complied",
             "actionTaken": "Amicable settlement reached",
             "dateSettlement": "2026-08-26"
         })
@@ -186,7 +204,7 @@ class TestNotificationsAndSearch(unittest.TestCase):
         stl_notifs = Notification.query.filter_by(type="settlement_updated").all()
         self.assertTrue(len(stl_notifs) >= 1)
         self.assertIn(stl.case_no, stl_notifs[-1].body)
-        self.assertIn("Settled", stl_notifs[-1].body)
+        self.assertIn("Complied", stl_notifs[-1].body)
 
 
 if __name__ == "__main__":
