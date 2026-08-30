@@ -692,15 +692,17 @@ def _incidents():
                 if g_age is not None and g_age < 18:
                     return json_error("Guardian must be an adult (18 years or older).", 422)
 
-        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter"}
-        status_input = (d.get("status") or "Pending").strip()
+        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter"}
+        status_input = (d.get("status") or "Under Investigation").strip()
         if status_input not in ALLOWED_INCIDENT_STATUSES:
-            if status_input in ("Under Investigation", "Open"):
-                status_input = "Pending"
-            elif status_input in ("Elevated", "Elevated to Blotter Records"):
+            if status_input in ("Pending", "Open", "INVESTIGATING", "Pending Investigation"):
+                status_input = "Under Investigation"
+            elif status_input in ("Elevated", "Elevated to Blotter Records", "ELEVATED"):
                 status_input = "Elevated to Blotter"
-            elif status_input not in ALLOWED_INCIDENT_STATUSES:
-                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter.", 400)
+            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED"):
+                status_input = "Referred"
+            else:
+                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter.", 400)
 
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
@@ -844,15 +846,17 @@ def _incidents():
         incident.guardian_address = guardian_address
         incident.involved_parties = involved_parties
         incident.officer = d.get("officer", "")
-        ALLOWED_INCIDENT_STATUSES = {"Pending", "Referred", "Elevated to Blotter", "Resolved", "Closed"}
-        status_input = (d.get("status") or incident.status or "Pending").strip()
+        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter"}
+        status_input = (d.get("status") or incident.status or "Under Investigation").strip()
         if status_input not in ALLOWED_INCIDENT_STATUSES:
-            if status_input in ("Under Investigation", "Open"):
-                status_input = "Pending"
-            elif status_input in ("Elevated", "Elevated to Blotter Records"):
+            if status_input in ("Pending", "Open", "INVESTIGATING", "Pending Investigation"):
+                status_input = "Under Investigation"
+            elif status_input in ("Elevated", "Elevated to Blotter Records", "ELEVATED"):
                 status_input = "Elevated to Blotter"
-            elif status_input not in ALLOWED_INCIDENT_STATUSES:
-                return json_error("Invalid status. Allowed statuses are: Pending, Referred, Elevated to Blotter, Resolved, Closed.", 400)
+            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED"):
+                status_input = "Referred"
+            else:
+                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter.", 400)
 
         incident.priority = d.get("priority") or "Medium"
         incident.status = status_input

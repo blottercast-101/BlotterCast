@@ -306,9 +306,33 @@ def blotter_import():
                 zone_val = _get_val(row, "zone")
                 z_id, _, _ = resolve_zone_from_address(zone_val, c_name, r_name, deterministic_seed=docket_no)
 
+                inc_report_no = next_seq_no(Incident, "report_no", "INC")
+                incident = Incident(
+                    report_no=inc_report_no,
+                    incident_date=datetime.utcnow().date(),
+                    time_reported=datetime.strptime("08:00:00", "%H:%M:%S").time(),
+                    hour=8,
+                    zone_id=z_id,
+                    location=f"{z_id}, Barangay Mapulang Lupa",
+                    category=_map_cat(nature_val),
+                    priority="Medium",
+                    description=nature_val,
+                    reporter=c_name,
+                    reporter_resident_id=c_id,
+                    involved_parties=f"Complainant: {c_name} | Respondent: {r_name}",
+                    officer=current_username or "Desk Officer",
+                    status="Elevated to Blotter",
+                    is_blotter=True,
+                    blotter_docket_no=docket_no,
+                    archived=False,
+                )
+                db.session.add(incident)
+                db.session.flush()
+
                 record = BlotterRecord(
                     docket_no=docket_no,
                     date_filed=datetime.utcnow().date(),
+                    source_incident_id=incident.id,
                     complainant=c_name,
                     complainant_id=c_id,
                     respondent=r_name,
@@ -320,6 +344,14 @@ def blotter_import():
                 )
                 db.session.add(record)
                 db.session.flush()
+            else:
+                if record.source_incident_id:
+                    inc = Incident.query.get(record.source_incident_id)
+                    if inc:
+                        inc.is_blotter = True
+                        inc.blotter_docket_no = record.docket_no
+                        if inc.status not in ("Resolved", "Closed", "Settled"):
+                            inc.status = "Elevated to Blotter"
 
             hearing_date_raw = _get_val(row, "date_filed")
             hearing_date = parse_date(_parse_flexible_date(hearing_date_raw)) or datetime.utcnow().date()
@@ -502,6 +534,37 @@ def blotter_import():
                     inc.reporter_resident_id = complainant_id
                     inc.reporter_address = comp_addr or effective_location
                     inc.involved_parties = f"Complainant: {complainant} | Respondent: {respondent}"
+                    inc.is_blotter = True
+                    inc.blotter_docket_no = record.docket_no
+                    if inc.status not in ("Resolved", "Closed", "Settled"):
+                        inc.status = "Elevated to Blotter"
+            else:
+                inc_report_no = next_seq_no(Incident, "report_no", "INC")
+                incident = Incident(
+                    report_no=inc_report_no,
+                    incident_date=date_filed,
+                    time_reported=datetime.strptime("08:00:00", "%H:%M:%S").time(),
+                    hour=8,
+                    zone_id=zone_id,
+                    location=effective_location,
+                    lat=lat,
+                    lng=lng,
+                    category=category,
+                    priority="Medium",
+                    description=nature_desc,
+                    reporter=complainant,
+                    reporter_resident_id=complainant_id,
+                    reporter_address=comp_addr or effective_location,
+                    involved_parties=f"Complainant: {complainant} | Respondent: {respondent}",
+                    officer=duty_officer,
+                    status="Elevated to Blotter",
+                    is_blotter=True,
+                    blotter_docket_no=record.docket_no,
+                    archived=False,
+                )
+                db.session.add(incident)
+                db.session.flush()
+                record.source_incident_id = incident.id
             db.session.flush()
         else:
             # Create linked root incident report
@@ -523,6 +586,8 @@ def blotter_import():
                 involved_parties=f"Complainant: {complainant} | Respondent: {respondent}",
                 officer=duty_officer,
                 status="Elevated to Blotter",
+                is_blotter=True,
+                blotter_docket_no=docket_no,
                 archived=False,
             )
             db.session.add(incident)

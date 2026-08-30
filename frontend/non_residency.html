@@ -175,13 +175,17 @@
               <p class="cert-body-paragraph">This certification was issued upon the request of <span class="cert-line-field min-w-[180px]" id="nr_purpose"></span>.</p>
               <p class="cert-body-paragraph">Given this <span class="cert-line-field min-w-[35px]" id="nr_day"></span> day of <span class="cert-line-field min-w-[80px]" id="nr_month"></span> <span class="cert-line-field min-w-[45px]" id="nr_year"></span>, at the office of the Barangay Chairman, Mapulang Lupa, Pandi.</p>
             </div>
-            <div class="cert-ov-nr-voter-mask"></div>
-            <div class="cert-ov cert-ov-nr-voter">( &nbsp;<span id="nr_voter_check">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="nr_nonvoter_check">&nbsp;</span>&nbsp; ) NON-VOTER</div>
+            <div class="cert-ov-nr-voter-checks">
+              <span id="nr_voter_check" class="cert-ov-nr-check-voter"></span>
+              <span id="nr_nonvoter_check" class="cert-ov-nr-check-nonvoter"></span>
+            </div>
             <div class="cert-ov cert-ov-nr-applicant-name" id="nr_applicant_name"></div>
             <div class="cert-ov cert-ov-nr-sigimg" id="nr_sigimg_wrap"></div>
             <div class="cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
               <div class="h-9 flex items-end justify-center pb-0.5">
-                <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="nr_captain"></span>
+                <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="nr_captain">
+                  HON. ALEX ROQUE CRUZ
+                </span>
               </div>
               <!-- Underline directly below Punong Barangay name -->
               <div class="cert-sig-line border-b-[1.5px] border-black w-full mb-1"></div>
@@ -431,6 +435,9 @@ function previewNrLog(id){
   document.getElementById('nr_ctrl_display').textContent=`Control No.: ${r.ctrl}`;
   document.getElementById('nr_applicant_name').textContent=r.name.toUpperCase();
   setNrVoterCheckmarks(r.voterStatus);
+  if (typeof bindCertificateCaptainName === 'function') {
+    bindCertificateCaptainName();
+  }
   showToast('Certificate loaded for preview.');
 }
 
@@ -511,18 +518,26 @@ window.initNonResidency = async function () {
   try {
     await requireAuth();
     try {
+      if (typeof bindCertificateCaptainName === 'function') {
+        await bindCertificateCaptainName();
+      }
       const cap = await BCApi.captainSignature();
-      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+      const rawCaptain = (cap && (cap.fullName || cap.signatory_captain || cap.barangay_captain))
+        ? (cap.fullName || cap.signatory_captain || cap.barangay_captain)
+        : (typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz'));
+      const captainName = (rawCaptain && rawCaptain !== 'Kapitan Jose Reyes') ? rawCaptain : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz');
       const capEl = document.getElementById('nr_captain');
-      if (capEl) capEl.textContent = captainName.toUpperCase();
+      const formattedCaptain = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
+      if (capEl) capEl.textContent = formattedCaptain;
       const sigWrap = document.getElementById('nr_sigimg_wrap');
       if (cap && cap.signaturePath && sigWrap) {
         sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
       }
     } catch (e) {
-      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+      const fallbackCaptain = typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz');
       const capEl = document.getElementById('nr_captain');
-      if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+      const formattedCaptain = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
+      if (capEl) capEl.textContent = formattedCaptain;
     }
 
     try { await loadNrResidentOptionsForPicker(); } catch (err) { showToast('Could not load Census records: ' + (err.message || err), 'error'); }

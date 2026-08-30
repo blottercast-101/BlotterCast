@@ -119,5 +119,48 @@ def ensure_columns(db):
                 # Catch per-column exception so it doesn't abort subsequent columns
                 print(f"  [migration] column check notice for {table}.{column}: {col_err}")
 
+        # Ensure all incidents marked "Elevated to Blotter" or linked to blotter records have is_blotter=True
+        try:
+            with db.engine.begin() as conn:
+                conn.execute(text("""
+                    UPDATE incidents
+                    SET is_blotter = 1
+                    WHERE status = 'Elevated to Blotter' OR status = 'ELEVATED' OR id IN (
+                        SELECT source_incident_id FROM blotter_records WHERE source_incident_id IS NOT NULL
+                    );
+                """))
+                conn.execute(text("""
+                    UPDATE incidents
+                    SET blotter_docket_no = (
+                        SELECT docket_no FROM blotter_records WHERE blotter_records.source_incident_id = incidents.id LIMIT 1
+                    )
+                    WHERE blotter_docket_no IS NULL AND id IN (
+                        SELECT source_incident_id FROM blotter_records WHERE source_incident_id IS NOT NULL
+                    );
+                """))
+        except Exception as repair_err:
+            print(f"  [migration] is_blotter repair notice: {repair_err}")
+
+        # Standardize incident statuses to the 3 permitted lifecycle statuses (Under Investigation, Referred, Elevated to Blotter)
+        try:
+            with db.engine.begin() as conn:
+                conn.execute(text("""
+                    UPDATE incidents
+                    SET status = 'Under Investigation'
+                    WHERE status IN ('Pending', 'Open', 'INVESTIGATING', 'Pending Investigation') OR status IS NULL OR status = '';
+                """))
+                conn.execute(text("""
+                    UPDATE incidents
+                    SET status = 'Elevated to Blotter'
+                    WHERE status IN ('Elevated', 'ELEVATED', 'Elevated to Blotter Records') OR is_blotter = 1;
+                """))
+                conn.execute(text("""
+                    UPDATE incidents
+                    SET status = 'Referred'
+                    WHERE status IN ('Resolved', 'Closed', 'RESOLVED', 'CLOSED');
+                """))
+        except Exception as status_err:
+            print(f"  [migration] incident status standardization notice: {status_err}")
+
     except Exception as e:
         print(f"  [migration] ensure_columns warning: {e}")

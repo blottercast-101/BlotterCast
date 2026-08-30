@@ -263,7 +263,7 @@ class Incident(db.Model):
     reporter = db.Column(db.String(150))
     officer = db.Column(db.String(100))
     priority = db.Column(db.String(10), nullable=False, default="Medium")
-    status = db.Column(db.String(30), nullable=False, default="Pending")
+    status = db.Column(db.String(30), nullable=False, default="Under Investigation")
     is_blotter = db.Column(db.Boolean, nullable=False, default=False)
     blotter_docket_no = db.Column(db.String(50))
     is_non_resident = db.Column(db.Boolean, nullable=False, default=False)

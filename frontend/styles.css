@@ -1004,8 +1004,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
    without re-measuring, or the overlay will drift off the letterhead. */
 @media print {
   @page {
-    size: portrait;
-    margin: 0;
+    size: letter portrait;
+    margin: 0 !important;
   }
 
   html, body {
@@ -1014,60 +1014,374 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  body * {
-    visibility: hidden;
+  /* Hide all non-printable wrappers & controls */
+  #sidebar,
+  aside,
+  nav,
+  header,
+  .page-header,
+  .filter-bar,
+  .stat-card-grad,
+  .data-table,
+  .modal-overlay,
+  .modal-box,
+  button,
+  .btn-primary,
+  .btn-secondary,
+  .grid-cols-3,
+  .stat-icon-badge,
+  .grid-cols-2 > div:first-child,
+  .grid-cols-2 > div:last-child > div:first-child {
+    display: none !important;
   }
 
-  #certPrint,
-  #certPrint * {
-    visibility: visible;
+  #app-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    display: block !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .grid,
+  .grid-cols-2,
+  .grid-cols-2 > div:last-child {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100% !important;
   }
 
   #certPrint {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: static !important;
     width: 100% !important;
-    height: 100% !important;
-    min-height: 100vh !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     display: flex !important;
-    align-items: center !important;
     justify-content: center !important;
-    background: #ffffff !important;
-    z-index: 999999 !important;
-  }
-
-  .cert-sheet {
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100vw !important;
-    height: auto !important;
-    max-height: 100vh !important;
-    aspect-ratio: 1795 / 2539 !important;
+    align-items: flex-start !important;
+    background: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    margin: 0 auto !important;
-    background: #ffffff !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    z-index: auto !important;
+    visibility: visible !important;
   }
 
+  /* Isolate printable document container to full letter page */
+  .cert-sheet {
+    width: 8.5in !important;
+    height: 11in !important;
+    max-height: 11in !important;
+    min-height: 11in !important;
+    margin: 0 auto !important;
+    padding: 0.5in 0.65in 1.15in 0.65in !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+    aspect-ratio: auto !important;
+    visibility: visible !important;
+  }
+
+  /* Full background letterhead / seal */
   .cert-bg {
     position: absolute !important;
     inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: fill !important;
     display: block !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* Watermark background seal remains absolute centered */
+  .cert-watermark,
+  .cert-watermark-seal,
+  .cert-seal {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Reset document child content blocks to regular relative flow */
+  .cert-ov,
+  .cert-ov-or,
+  .cert-ov-nr-ctrl,
+  .cert-ov-nr-ctrl-non,
+  .cert-ov-title,
+  .cert-ov-title-non,
+  .cert-ov-body,
+  .cert-ov-nr-body,
+  .cert-ov-voter,
+  .cert-ov-nr-voter,
+  .cert-ov-sigimg,
+  .cert-ov-nr-sigimg,
+  .cert-ov-signatories,
+  .cert-ov-sigblock,
+  .cert-ov-nr-sigblock,
+  .cert-ov-applicant-sigblock,
+  .cert-ov-nr-applicant-name {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Header / Control / OR row */
+  .cert-ov-or,
+  .cert-ov-nr-ctrl,
+  .cert-ov-nr-ctrl-non {
+    margin-top: 1.35in !important;
+    width: 100% !important;
+    font-size: 0.65rem !important;
+    text-align: right !important;
+    margin-bottom: 0.15in !important;
+  }
+
+  /* Document Title */
+  .cert-ov-title {
+    font-size: 1.55rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    text-decoration: underline !important;
+    text-underline-offset: 6px !important;
+    margin-bottom: 0.25in !important;
+    width: 100% !important;
+  }
+
+  .cert-ov-title-non {
+    font-size: 1.55rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    text-decoration: underline !important;
+    text-underline-offset: 6px !important;
+    margin-bottom: 0.25in !important;
+    width: 100% !important;
+  }
+
+  /* Body Paragraphs */
+  .cert-ov-body {
+    font-size: 0.88rem !important;
+    line-height: 1.85 !important;
+    text-align: justify !important;
+    width: 100% !important;
+    margin-bottom: 0.2in !important;
+  }
+
+  .cert-ov-body p {
+    text-indent: 2.4em !important;
+    margin-bottom: 0.85em !important;
+  }
+
+  .cert-ov-body p.no-indent {
+    text-indent: 0 !important;
+  }
+
+  /* Certificate of Non-Residency body & column */
+  .cert-ov-nr-body {
+    margin-left: 38% !important;
+    width: 60% !important;
+    font-size: 0.85rem !important;
+    line-height: 1.75 !important;
+    text-align: justify !important;
+    margin-bottom: 0.2in !important;
+  }
+
+  .cert-ov-nr-body p {
+    text-indent: 2em !important;
+    margin-bottom: 0.65em !important;
+  }
+
+  .cert-ov-nr-body p.no-indent {
+    text-indent: 0 !important;
+  }
+
+  .cert-ov-nr-voter-mask {
+    display: none !important;
+  }
+
+  .cert-ov-nr-voter-checks {
+    position: absolute !important;
+    top: 68.8% !important;
+    left: 42.5% !important;
+    width: 35% !important;
+    height: 3% !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+
+  .cert-ov-nr-check-voter {
+    position: absolute !important;
+    left: 2.2% !important;
+    top: 0 !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #1e5c1e !important;
+  }
+
+  .cert-ov-nr-check-nonvoter {
+    position: absolute !important;
+    left: 48.5% !important;
+    top: 0 !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #1e5c1e !important;
+  }
+
+  .cert-ov-nr-voter {
+    display: none !important;
+  }
+
+  .cert-ov-nr-applicant-name {
+    margin-left: 38% !important;
+    width: 60% !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    color: #1a1a1a !important;
+    margin-bottom: 0.2in !important;
+  }
+
+  .cert-ov-nr-sigimg {
+    margin-left: 38% !important;
+    width: 60% !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    margin-bottom: -10px !important;
+  }
+
+  .cert-ov-nr-sigimg img {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .cert-ov-nr-sigblock {
+    margin-left: 45% !important;
+    width: 50% !important;
+    text-align: center !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Thumbmarks and Voter status row: sits strictly below date text line */
+  .cert-ov-voter {
+    display: flex !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #1e5c1e !important;
+    text-align: right !important;
+    margin-top: 0.1in !important;
+    margin-bottom: 0.25in !important;
+  }
+
+  /* E-signature preview wrapper */
+  .cert-ov-sigimg {
+    width: 100% !important;
+    height: 40px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: flex-end !important;
+    margin-bottom: -15px !important;
+    padding-right: 2.5rem !important;
+  }
+
+  .cert-ov-sigimg img {
+    max-height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  /* Signatures Row: Anchored slightly above the green bottom footer */
+  .cert-ov-signatories {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .cert-signatory-col {
+    width: 210px !important;
+    max-width: 210px !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    flex: none !important;
+  }
+
+  .cert-signatory-col .h-9 {
+    height: 2.25rem !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding-bottom: 0.125rem !important;
+  }
+
+  .cert-ov-applicant-name,
+  .cert-ov-chairman-name {
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: #111 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+  }
+
+  .cert-ov-applicant-title,
+  .cert-ov-chairman-title {
+    font-size: 11px !important;
+    color: #374151 !important;
+    margin-top: 1px !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.3 !important;
+    display: block !important;
   }
 
   .cert-line-field {
@@ -1080,6 +1394,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .cert-sig-line,
   .border-b-\[1\.5px\] {
     border-bottom: 1.5px solid #000000 !important;
+    width: 100% !important;
+    margin: 2px 0 3px 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -1212,13 +1528,36 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
    stays short of the "RIGHT THUMBMARK" box border at ~78.9%. nowrap
    keeps the re-rendered line from breaking onto two lines in the box. */
 .cert-ov-nr-voter-mask {
-  position: absolute; top: 68.3%; left: 42.5%; width: 34%; height: 3.8%;
-  background: rgb(235, 239, 235);
+  display: none !important;
+  background: transparent !important;
+}
+.cert-ov-nr-voter-checks {
+  position: absolute;
+  top: 68.8%;
+  left: 42.5%;
+  width: 35%;
+  height: 3%;
+  pointer-events: none;
+  font-family: 'Georgia', serif;
+}
+.cert-ov-nr-check-voter {
+  position: absolute;
+  left: 2.2%;
+  top: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e5c1e;
+}
+.cert-ov-nr-check-nonvoter {
+  position: absolute;
+  left: 48.5%;
+  top: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e5c1e;
 }
 .cert-ov-nr-voter {
-  top: 69.1%; left: 42.5%; right: auto; width: 34%;
-  font-size: 0.72rem; font-weight: 700; color: #1e5c1e; text-align: center;
-  white-space: nowrap;
+  display: none !important;
 }
 
 /* "SIGNATURE OVER PRINTED NAME" — like the voter checkboxes above, this

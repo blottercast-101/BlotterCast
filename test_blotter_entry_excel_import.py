@@ -79,7 +79,7 @@ class TestBlotterEntryExcelImport(unittest.TestCase):
         b1 = BlotterRecord.query.filter_by(complainant="JONALD J. BORRETA").first()
         self.assertIsNotNone(b1)
         self.assertEqual(b1.respondent, "ARNOLD ATCHACOSO")
-        self.assertEqual(b1.complainant_addr, "Pandi Residence 3, Barangay Mapulang Lupa")
+        self.assertEqual(b1.complainant_addr, "Pandi Residence 3")
         self.assertEqual(b1.respondent_addr, "Bangko St.")
         self.assertEqual(b1.case_type, "CIVIL")
 
@@ -88,12 +88,30 @@ class TestBlotterEntryExcelImport(unittest.TestCase):
         self.assertEqual(b4.complainant, "ELENA BORRETA")
         self.assertEqual(b4.case_type, "CRIM")
 
-        # Verify linked incident reports were created
+        # Verify linked incident reports were created with is_blotter=True
         self.assertIsNotNone(b1.source_incident_id)
         inc1 = Incident.query.get(b1.source_incident_id)
         self.assertIsNotNone(inc1)
         self.assertEqual(inc1.reporter, "JONALD J. BORRETA")
         self.assertEqual(inc1.category, "Physical Assault")
+        self.assertTrue(inc1.is_blotter)
+        self.assertEqual(inc1.status, "Elevated to Blotter")
+        self.assertIsNotNone(inc1.blotter_docket_no)
+
+        # Verify Trends API accurately counts imported blotter entries as Elevated to Blotter
+        trends_resp = self.client.get("/api/analytics.php?action=trends&year=2025")
+        self.assertEqual(trends_resp.status_code, 200)
+        t_data = trends_resp.get_json()
+        self.assertIn("summary", t_data)
+        self.assertGreaterEqual(t_data["summary"]["total_blottered"], 10)
+        self.assertGreater(t_data["summary"]["elevation_rate"], 0.0)
+
+        # Verify monthly timeline reflects the 10 imported records across Jan and Feb
+        timeline = {item["m"]: item for item in t_data.get("timeline", [])}
+        self.assertIn(1, timeline)
+        self.assertIn(2, timeline)
+        self.assertGreaterEqual(timeline[1]["blottered_count"], 6)
+        self.assertGreaterEqual(timeline[2]["blottered_count"], 4)
 
 
 if __name__ == "__main__":

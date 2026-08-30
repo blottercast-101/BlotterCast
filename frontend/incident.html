@@ -145,10 +145,10 @@
       </div>
       <div class="stat-card-grad dark">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium">Resolved</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
+          <span class="text-white/70 text-sm font-medium">Referred</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="forward" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="countResolved">0</div>
+        <div class="font-display text-3xl text-white" id="countReferred">0</div>
       </div>
     </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
@@ -567,6 +567,15 @@
   let incPage = 1, incEditId = null;
   let incidentData = [];
 
+  function normalizeIncidentStatus(s) {
+    if (!s) return 'Under Investigation';
+    if (s === 'Pending' || s === 'Open') return 'Under Investigation';
+    if (s === 'Elevated' || s === 'Elevated to Blotter Records') return 'Elevated to Blotter';
+    if (s === 'Resolved' || s === 'Closed') return 'Referred';
+    if (['Under Investigation', 'Referred', 'Elevated to Blotter'].includes(s)) return s;
+    return 'Under Investigation';
+  }
+
   function mapIncident(r) {
     const time5 = (r.time_reported || '').slice(0,5);
     const [y,m,d] = (r.incident_date || '').split('-');
@@ -579,7 +588,13 @@
       isNonResident: Boolean(r.is_non_resident),
       reporterResidentId: r.reporter_resident_id ? Number(r.reporter_resident_id) : null,
       reporterAddress: r.reporter_address || '',
-      officer: r.officer, priority: r.priority, status: r.status,
+      guardian_name: r.guardian_name || '',
+      guardian_resident_id: r.guardian_resident_id ? Number(r.guardian_resident_id) : null,
+      guardian_address: r.guardian_address || '',
+      complainant: r.complainant || '',
+      complainant_resident_id: r.complainant_resident_id ? Number(r.complainant_resident_id) : null,
+      involved_parties: r.involved_parties || '',
+      officer: r.officer, priority: r.priority, status: normalizeIncidentStatus(r.status),
       is_blotter: Boolean(r.is_blotter), blotter_docket_no: r.blotter_docket_no
     };
   }
@@ -589,7 +604,7 @@
   async function loadIncidents(silent = false) {
     if (!document.getElementById('incidentTableBody')) return;
     if (!silent) {
-      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], true);
+      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countReferred'], true);
       bcRenderTableSkeleton('incidentTableBody', { template: 'incident', rows: INC_ROWS });
     }
 
@@ -609,7 +624,7 @@
       if (!document.getElementById('incidentTableBody')) return;
       console.error('loadIncidents error:', err);
       incidentData = [];
-      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countResolved'], false, '0');
+      bcSetStatsLoading(['countTotal', 'countHigh', 'countInvestigating', 'countReferred'], false, '0');
       bcSetTableError('incidentTableBody', 'Could not load incident reports from server.', 'loadIncidents()', 12);
       showToast('Could not load incidents: ' + (err.message || err), 'error');
     }
@@ -637,26 +652,23 @@
 
   function priorityClass(p) { return p==='High'?'priority-high':p==='Medium'?'priority-medium':'priority-low'; }
   function statusClass(s) {
-    if (s==='Pending') return 'status-pending';
     if (s==='Under Investigation') return 'status-investigating';
     if (s==='Elevated to Blotter') return 'status-elevated';
     if (s==='Referred') return 'status-referred';
-    if (s==='Resolved') return 'status-resolved';
-    if (s==='Closed') return 'status-closed';
-    return 'status-pending';
+    return 'status-investigating';
   }
 
   function updateSummary() {
     const totalEl = document.getElementById('countTotal');
     const highEl = document.getElementById('countHigh');
     const invEl = document.getElementById('countInvestigating');
-    const resEl = document.getElementById('countResolved');
-    if (!totalEl && !highEl && !invEl && !resEl) return;
+    const refEl = document.getElementById('countReferred');
+    if (!totalEl && !highEl && !invEl && !refEl) return;
 
     if (totalEl) totalEl.textContent = incidentData.length;
     if (highEl) highEl.textContent = incidentData.filter(r=>r.priority==='High').length;
     if (invEl) invEl.textContent = incidentData.filter(r=>r.status==='Under Investigation').length;
-    if (resEl) resEl.textContent = incidentData.filter(r=>r.status==='Resolved').length;
+    if (refEl) refEl.textContent = incidentData.filter(r=>r.status==='Referred').length;
   }
 
   function getIncFiltered() {
@@ -1826,8 +1838,12 @@
     document.getElementById('if_category').value = r.category;
     document.getElementById('if_priority').value = r.priority;
     document.getElementById('if_description').value = r.description;
-    document.getElementById('if_officer').value = r.officer;
-    document.getElementById('if_status').value = r.status;
+    document.getElementById('if_officer').value = r.officer || '';
+    const statusSelect = document.getElementById('if_status');
+    if (statusSelect) {
+      statusSelect.value = normalizeIncidentStatus(r.status);
+      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(statusSelect);
+    }
 
     const isNonRes = Boolean(r.isNonResident);
     document.getElementById('if_is_non_resident').checked = isNonRes;
@@ -2014,9 +2030,9 @@
       lat: document.getElementById('if_lat').value || null,
       lng: document.getElementById('if_lng').value || null,
     };
-    const ALLOWED_INCIDENT_STATUSES = ['Under Investigation', 'Pending', 'Referred', 'Elevated to Blotter', 'Resolved', 'Closed'];
+    const ALLOWED_INCIDENT_STATUSES = ['Under Investigation', 'Referred', 'Elevated to Blotter'];
     if (!ALLOWED_INCIDENT_STATUSES.includes(vals.status)) {
-      vals.status = 'Under Investigation';
+      vals.status = normalizeIncidentStatus(vals.status);
     }
     if (!vals.location || !vals.reporter) {
       await bcAlert(isNonRes ? 'Please fill in required fields (Location and Reporter Name).' : 'Please select the Reporter from Census, or check "Non-Resident Reporter" to enter their name directly.');
@@ -2046,6 +2062,83 @@
     }
 
     vals.location = bcStripZonePrefix(vals.location);
+
+    if (vals.status === 'Elevated to Blotter') {
+      if (incEditId) {
+        const existingInc = incidentData.find(x => x.id === incEditId);
+        const saveVals = {
+          ...vals,
+          status: (existingInc && existingInc.status !== 'Elevated to Blotter') ? existingInc.status : 'Under Investigation'
+        };
+        try {
+          await BCApi.update('incidents', incEditId, saveVals);
+          await loadIncidents(true);
+        } catch (err) {
+          console.warn('Could not save incident prior to elevation:', err);
+        }
+        pendingElevateIncident = {
+          ...vals,
+          id: incEditId,
+          reportNo: vals.reportNo,
+          reporter: vals.reporter,
+          reporterResidentId: vals.reporterResidentId,
+          reporterAddress: vals.reporterAddress,
+          isNonResident: vals.isNonResident,
+          guardian_name: vals.guardianName,
+          guardian_resident_id: vals.guardianResidentId,
+          guardian_address: vals.guardianAddress,
+          complainant: vals.complainant,
+          complainant_resident_id: vals.complainantResidentId,
+          involved_parties: vals.involvedParties,
+          date: vals.date,
+          timeReported: vals.timeReported,
+          zone: vals.zone,
+          category: vals.category,
+          description: vals.description
+        };
+        closeModal('incidentModal');
+        const targetEl = document.getElementById('elevateTargetReportNo');
+        if (targetEl) targetEl.textContent = vals.reportNo || 'this incident';
+        openModal('elevateConfirmModal');
+        return;
+      } else {
+        try {
+          const createVals = { ...vals, status: 'Under Investigation' };
+          const res = await BCApi.create('incidents', createVals);
+          await loadIncidents(true);
+          pendingElevateIncident = {
+            ...vals,
+            id: res.id,
+            reportNo: res.report_no || res.reportNo || 'New Report',
+            reporter: vals.reporter,
+            reporterResidentId: vals.reporterResidentId,
+            reporterAddress: vals.reporterAddress,
+            isNonResident: vals.isNonResident,
+            guardian_name: vals.guardianName,
+            guardian_resident_id: vals.guardianResidentId,
+            guardian_address: vals.guardianAddress,
+            complainant: vals.complainant,
+            complainant_resident_id: vals.complainantResidentId,
+            involved_parties: vals.involvedParties,
+            date: vals.date,
+            timeReported: vals.timeReported,
+            zone: vals.zone,
+            category: vals.category,
+            description: vals.description
+          };
+          closeModal('incidentModal');
+          resetIncidentFormFields();
+          const targetEl = document.getElementById('elevateTargetReportNo');
+          if (targetEl) targetEl.textContent = pendingElevateIncident.reportNo;
+          openModal('elevateConfirmModal');
+          return;
+        } catch (err) {
+          showToast(err.message, 'error');
+          return;
+        }
+      }
+    }
+
     try {
       if (incEditId) {
         await BCApi.update('incidents', incEditId, vals);

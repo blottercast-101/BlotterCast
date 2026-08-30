@@ -31,7 +31,7 @@ OFFICIAL_ZONES = ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Zone 6", "Z
 @login_required
 def analytics_router():
     try:
-        action = request.args.get("action", "")
+        action = request.args.get("action") or request.args.get("type") or ""
         path = request.path.lower()
         if "dashboard" in path or action == "dashboard":
             return _dashboard()
@@ -415,9 +415,15 @@ def _trends_impl():
             (Incident.archived == False) | (Incident.archived == None)
         ).count()
 
+        is_elevated_filter = (
+            (Incident.is_blotter == True) |
+            (Incident.status.in_(["Elevated to Blotter", "ELEVATED", "Elevated"])) |
+            (Incident.blotter_docket_no.isnot(None))
+        )
+
         total_blottered = Incident.query.filter(
             extract("year", Incident.incident_date) == year,
-            Incident.is_blotter == True,
+            is_elevated_filter,
             (Incident.archived == False) | (Incident.archived == None)
         ).count()
 
@@ -457,7 +463,7 @@ def _trends_impl():
 
         monthly_blottered_raw = (
             db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
-            .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, (Incident.archived == False) | (Incident.archived == None))
+            .filter(extract("year", Incident.incident_date) == year, is_elevated_filter, (Incident.archived == False) | (Incident.archived == None))
             .group_by("m").order_by("m").all()
         )
         blt_by_month = {int(r.m): int(r.c) for r in monthly_blottered_raw}
@@ -506,7 +512,7 @@ def _trends_impl():
         )
         cat_elevated_raw = (
             db.session.query(Incident.category, func.count().label("c"))
-            .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, (Incident.archived == False) | (Incident.archived == None))
+            .filter(extract("year", Incident.incident_date) == year, is_elevated_filter, (Incident.archived == False) | (Incident.archived == None))
             .group_by(Incident.category).all()
         )
         elevated_by_cat = {r.category: int(r.c) for r in cat_elevated_raw}
@@ -538,7 +544,7 @@ def _trends_impl():
 
         zonal_elevated_raw = (
             db.session.query(Incident.zone_id, func.count().label("c"))
-            .filter(extract("year", Incident.incident_date) == year, Incident.is_blotter == True, (Incident.archived == False) | (Incident.archived == None))
+            .filter(extract("year", Incident.incident_date) == year, is_elevated_filter, (Incident.archived == False) | (Incident.archived == None))
             .group_by(Incident.zone_id).all()
         )
         elev_by_zone = {r.zone_id: int(r.c) for r in zonal_elevated_raw}
