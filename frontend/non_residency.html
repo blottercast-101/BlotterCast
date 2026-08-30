@@ -219,15 +219,23 @@
         <div><label class="form-label">O.R. Number</label><input type="text" id="nr_or_input" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Amount Paid (₱)</label><input type="number" id="nr_fee" class="form-input" value="20"/></div>
       </div>
-      <div id="nr_blotter_warning" class="hidden bg-rose-50 border border-rose-300 rounded-xl p-4">
-        <div class="flex items-start gap-2.5 mb-2">
-          <span class="text-rose-600 text-lg flex-shrink-0" data-icon="alert" data-icon-size="20">⛔</span>
-          <div>
-            <div class="font-bold text-rose-900 text-sm">Issuance Blocked</div>
-            <div class="text-xs text-rose-700 mt-0.5 leading-relaxed">This transferred resident has active derogatory records. Resolution via Lupon / Barangay Settlement is required before any certificate can be released.</div>
+      <div id="nr_blotter_warning" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 transition-all">
+        <div class="flex items-start gap-2.5 mb-2.5">
+          <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="alert" data-icon-size="18"></span>
+          <div class="flex-1">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="font-semibold text-amber-900 text-sm flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                Applicant has an active blotter record
+              </span>
+              <span class="badge badge-pending text-xs font-semibold px-2 py-0.5">Derogatory Alert</span>
+            </div>
+            <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+              This transferred resident has active derogatory records. Resolution via Lupon / Barangay Settlement is required before any certificate can be released.
+            </p>
           </div>
         </div>
-        <div id="nr_blotter_list" class="space-y-2 mt-2"></div>
+        <div id="nr_blotter_list" class="space-y-2 pt-1 border-t border-amber-200/70"></div>
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('nonResidencyFormModal')" class="btn-secondary">Cancel</button>
@@ -313,15 +321,25 @@ async function onNrResidentPicked(r) {
       }
 
       listEl.innerHTML = activeCases.map(b => `
-        <div class="bg-white border border-rose-200 rounded-lg p-2.5 text-xs">
-          <div class="flex justify-between items-center mb-1">
-            <span class="font-mono font-bold text-forest-800">${b.docket_no}</span>
-            <span class="badge badge-pending font-bold text-rose-700 bg-rose-100">UNRESOLVED RESPONDENT</span>
+        <div class="bg-white border border-amber-200 rounded-xl p-3 text-xs shadow-sm">
+          <div class="flex justify-between items-center mb-1.5">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono font-bold text-forest-800 text-xs">${b.docket_no}</span>
+              <span class="text-[11px] text-forest-500 font-medium">&bull; Filed ${b.date_filed || '—'}</span>
+            </div>
+            <span class="badge badge-ongoing text-[11px] font-semibold">${b.role || 'Respondent'} (${b.status})</span>
           </div>
-          <div class="text-forest-700"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
-          <div class="text-forest-500 text-[11px] mt-1">${b.nature} &middot; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &middot; Filed ${b.date_filed} &middot; Status: <span class="text-rose-600 font-semibold">${b.status}</span></div>
+          <div class="text-forest-700 font-medium mb-1"><strong>${b.complainant}</strong> vs. <strong>${b.respondent}</strong></div>
+          <div class="text-forest-500 text-[11px] mb-2">${b.nature} &bull; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &bull; Status: <span class="font-semibold text-amber-700">${b.status}</span></div>
+          <div class="pt-2 border-t border-amber-100 flex items-center justify-between">
+            <span class="text-amber-800 font-medium text-[11px] truncate max-w-[230px]">Active Blotter Case (${b.docket_no})</span>
+            <a href="blotter.html?highlight=${encodeURIComponent(b.docket_no)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
+              <span data-icon="view" data-icon-size="13"></span> View Blotter Case &rarr;
+            </a>
+          </div>
         </div>`).join('');
       warningBox.classList.remove('hidden');
+      if (window.renderIcons) renderIcons(warningBox);
       showToast('⛔ Issuance Blocked: This transferred resident has active blotter records.', 'error');
     }
   } catch (e) {
