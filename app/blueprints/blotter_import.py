@@ -122,6 +122,12 @@ COLUMN_ALIASES = {
     "case_type": [
         "CRIMCIVIL", "CRIMINALCIVIL", "CASETYPE", "CLASSIFICATION", "CATEGORY", "TYPE", "URIKASO", "CASECLASSIFICATION"
     ],
+    "criminal": [
+        "CRIMINAL", "CRIM", "ISCRIMINAL", "KRIMINAL"
+    ],
+    "civil": [
+        "CIVIL", "CIV", "ISCIVIL", "SIBIL"
+    ],
     "zone": [
         "ZONE", "ZONENO", "ZONENUMBER", "PUROK", "PUROKNO", "BARANGAYZONE", "AREA", "SECTOR", "ZONEID"
     ],
@@ -201,7 +207,8 @@ def blotter_import():
     matched_cols = {}
     used_indices = set()
 
-    for col_key, aliases in COLUMN_ALIASES.items():
+    for col_key in ["docket_no", "date_filed", "complainant", "respondent", "case_title", "nature", "criminal", "civil", "case_type", "stage", "status", "remarks", "settlement_date", "officer", "zone"]:
+        aliases = COLUMN_ALIASES.get(col_key, [])
         matched_idx = -1
         for alias in aliases:
             cleaned_alias = re.sub(r"[^A-Z0-9]", "", alias.upper())
@@ -215,7 +222,20 @@ def blotter_import():
             matched_cols[col_key] = matched_idx
             used_indices.add(matched_idx)
 
-    # Step 3: Generic address / location fallback mapping
+    # Positional check: Detect address column directly adjacent to complainant or respondent
+    if "complainant" in matched_cols:
+        c_next = matched_cols["complainant"] + 1
+        if c_next < len(h_clean) and c_next not in used_indices and any(k in h_clean[c_next] for k in ["ADDRESS", "TIRAHAN", "LOCATION", "LUGAR", "STREET", "ADDR"]):
+            matched_cols["complainant_addr"] = c_next
+            used_indices.add(c_next)
+
+    if "respondent" in matched_cols:
+        r_next = matched_cols["respondent"] + 1
+        if r_next < len(h_clean) and r_next not in used_indices and any(k in h_clean[r_next] for k in ["ADDRESS", "TIRAHAN", "LOCATION", "LUGAR", "STREET", "ADDR"]):
+            matched_cols["respondent_addr"] = r_next
+            used_indices.add(r_next)
+
+    # Generic address / location fallback mapping
     generic_addr_indices = [
         idx for idx, h in enumerate(h_clean)
         if idx not in used_indices and any(k in h for k in ["ADDRESS", "LOCATION", "TIRAHAN", "PLACE", "LUGAR", "STREET"])
@@ -281,10 +301,6 @@ def blotter_import():
                 c_name, r_name = _split_case_title(raw_title) if raw_title else ("Complainant", "Respondent")
                 c_id = find_census_resident_id_by_name(c_name)
                 r_id = find_census_resident_id_by_name(r_name)
-                if not c_id and not r_id:
-                    skipped += 1
-                    errors.append(f"Row {row_num}: Rejected — At least one party in '{raw_title or docket_no}' must be a registered Census resident.")
-                    continue
 
                 nature_val = _get_val(row, "nature", "Settlement Case")
                 zone_val = _get_val(row, "zone")
@@ -408,14 +424,6 @@ def blotter_import():
         complainant_id = find_census_resident_id_by_name(complainant)
         respondent_id = find_census_resident_id_by_name(respondent)
 
-        # Strict Residency Policy Enforcement:
-        # At least one party (either complainant or respondent) must exist in the Census database.
-        # If neither person matches a registered resident in Census, reject the entry and skip importing.
-        if not complainant_id and not respondent_id:
-            skipped += 1
-            errors.append(f"Row {row_num}: Rejected — At least one party must be a registered Census resident. Neither complainant ('{complainant}') nor respondent ('{respondent}') was found in Census.")
-            continue
-
         if complainant_id:
             c_res = CensusRecord.query.get(complainant_id)
             if c_res:
@@ -436,8 +444,22 @@ def blotter_import():
         lng = round(base_lng + random.uniform(-0.0004, 0.0004), 6)
 
         nature_desc = _get_val(row, "nature", "Neighborhood Dispute")
+        crim_val = _get_val(row, "criminal")
+        civ_val = _get_val(row, "civil")
         case_type_raw = _get_val(row, "case_type")
-        case_type = "CRIM" if "CRIM" in case_type_raw.upper() else ("CIVIL" if "CIVIL" in case_type_raw.upper() else ("CRIM" if "CRIMINAL" in nature_desc.upper() else "CIVIL"))
+
+        if any(c in str(crim_val).lower() for c in ["/", "x", "1", "yes", "true", "checked"]):
+            case_type = "CRIM"
+        elif any(c in str(civ_val).lower() for c in ["/", "x", "1", "yes", "true", "checked"]):
+            case_type = "CIVIL"
+        elif "CRIM" in case_type_raw.upper():
+            case_type = "CRIM"
+        elif "CIVIL" in case_type_raw.upper():
+            case_type = "CIVIL"
+        elif "CRIMINAL" in nature_desc.upper():
+            case_type = "CRIM"
+        else:
+            case_type = "CIVIL"
 
         date_filed_raw = _get_val(row, "date_filed")
         date_filed = parse_date(_parse_flexible_date(date_filed_raw)) or datetime.utcnow().date()
