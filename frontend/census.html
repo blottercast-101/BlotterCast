@@ -6,6 +6,7 @@
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Census — BlotterCast</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
   <script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414'}},fontFamily:{display:['DM Serif Display','serif'],body:['DM Sans','sans-serif']}}}}</script>
@@ -256,8 +257,8 @@
     </div>
     <div class="border-2 border-dashed border-forest-300 rounded-xl p-10 text-center bg-forest-50 hover:bg-forest-100 transition-colors cursor-pointer" onclick="document.getElementById('censusFileInput').click()">
       <div class="flex justify-center mb-3" style="color:var(--forest-500)" data-icon="folder" data-icon-size="40"></div>
-      <div class="font-semibold text-forest-700 mb-1" id="importDropLabel">Click to choose a CSV file</div>
-      <input type="file" id="censusFileInput" accept=".csv" class="hidden" onchange="handleCensusFile(event)"/>
+      <div class="font-semibold text-forest-700 mb-1" id="importDropLabel">Click to choose a CSV or Excel file (.xlsx, .xls)</div>
+      <input type="file" id="censusFileInput" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" class="hidden" onchange="handleCensusFile(event)"/>
       <button class="mt-4 btn-primary text-sm px-5 py-2" onclick="event.stopPropagation(); document.getElementById('censusFileInput').click()">Browse Files</button>
     </div>
     <p class="text-xs text-forest-400 mt-3" id="importStatus"></p>
@@ -760,28 +761,46 @@ const CENSUS_HEADER_SYNONYMS = {
   'residentno': 'residentNo', 'residentnumber': 'residentNo', 'resno': 'residentNo', 'idno': 'residentNo',
 };
 
-function parseCensusCsv(text) {
-  if (!text) return { error: 'File is empty.', rows: [] };
+function normalizeDateStr(val) {
+  if (!val) return '';
+  if (val instanceof Date && !isNaN(val)) {
+    return val.toISOString().split('T')[0];
+  }
+  const str = String(val).trim();
+  if (!str) return '';
+  // Match YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // Match MM/DD/YYYY or M/D/YYYY or MM-DD-YYYY
+  const m1 = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m1) {
+    const [, m, d, y] = m1;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  // Fallback to Date parser if recognizable
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+    return parsed.toISOString().split('T')[0];
+  }
+  return str;
+}
 
-  // Strip UTF-8 BOM
-  let cleanText = text.replace(/^\uFEFF/, '').trim();
-  if (!cleanText) return { error: 'File is empty.', rows: [] };
+function parseCensusRows(rawRows) {
+  if (!Array.isArray(rawRows) || rawRows.length === 0) {
+    return { error: 'File is empty.', rows: [] };
+  }
 
-  // Split by CRLF, LF, or CR
-  const rawLines = cleanText.split(/\r\n|\r|\n/);
-  // Filter out empty lines or lines with only commas/whitespace
-  const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0 && !/^[,;\t\s]+$/.test(l));
+  // Filter out completely blank rows
+  const cleanRows = rawRows.filter(r => Array.isArray(r) && r.some(c => c !== null && c !== undefined && String(c).trim() !== ''));
 
-  if (lines.length === 0) {
+  if (cleanRows.length === 0) {
     return { error: 'No content found in file.', rows: [] };
   }
-  if (lines.length < 2) {
-    return { error: 'CSV file contains only a header line with no data rows.', rows: [] };
+  if (cleanRows.length < 2) {
+    return { error: 'File contains only a header line with no data rows.', rows: [] };
   }
 
-  const delimiter = detectCsvDelimiter(lines[0]);
-  const rawHeaders = parseCsvLine(lines[0], delimiter);
-  
+  const rawHeaders = cleanRows[0].map(c => String(c ?? '').trim());
+
   // Normalize headers
   const mappedHeaders = rawHeaders.map(h => {
     const norm = h.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -797,7 +816,7 @@ function parseCensusCsv(text) {
     if (!hasFirstName) missing.push('First Name');
     if (!hasLastName) missing.push('Last Name');
     return {
-      error: `Missing required column(s): ${missing.join(', ')}. (Detected headers: ${rawHeaders.join(', ')})`,
+      error: `Missing required column(s): ${missing.join(', ')}. (Detected headers: ${rawHeaders.filter(Boolean).join(', ')})`,
       rows: [],
       rawHeaders
     };
@@ -806,9 +825,8 @@ function parseCensusCsv(text) {
   const parsedRows = [];
   const skipReasons = [];
 
-  for (let idx = 1; idx < lines.length; idx++) {
-    const line = lines[idx];
-    const cells = parseCsvLine(line, delimiter);
+  for (let idx = 1; idx < cleanRows.length; idx++) {
+    const cells = cleanRows[idx].map(c => (c !== null && c !== undefined ? String(c).trim() : ''));
     if (cells.every(c => c === '')) continue; // Skip blank row
 
     const rowObj = {};
@@ -842,6 +860,11 @@ function parseCensusCsv(text) {
           rowObj.lastName = rowObj.lastName || parts[0];
         }
       }
+    }
+
+    // Normalize date of birth
+    if (rowObj.dob) {
+      rowObj.dob = normalizeDateStr(rowObj.dob);
     }
 
     // Normalize sex
@@ -900,7 +923,47 @@ function parseCensusCsv(text) {
     parsedRows.push(rowObj);
   }
 
-  return { error: null, rows: parsedRows, skipReasons, totalLines: lines.length - 1 };
+  return { error: null, rows: parsedRows, skipReasons, totalLines: cleanRows.length - 1 };
+}
+
+function parseCensusCsv(text) {
+  if (!text) return { error: 'File is empty.', rows: [] };
+
+  // Strip UTF-8 BOM
+  let cleanText = text.replace(/^\uFEFF/, '').trim();
+  if (!cleanText) return { error: 'File is empty.', rows: [] };
+
+  // Split by CRLF, LF, or CR
+  const rawLines = cleanText.split(/\r\n|\r|\n/);
+  const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0 && !/^[,;\t\s]+$/.test(l));
+
+  if (lines.length === 0) {
+    return { error: 'No content found in file.', rows: [] };
+  }
+  if (lines.length < 2) {
+    return { error: 'CSV file contains only a header line with no data rows.', rows: [] };
+  }
+
+  const delimiter = detectCsvDelimiter(lines[0]);
+  const rawRows = lines.map(line => parseCsvLine(line, delimiter));
+  return parseCensusRows(rawRows);
+}
+
+function parseCensusExcel(arrayBuffer) {
+  if (typeof XLSX === 'undefined') {
+    throw new Error('Excel parser library (XLSX) is not loaded.');
+  }
+  const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    return { error: 'Excel workbook contains no sheets.', rows: [] };
+  }
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  if (!worksheet) {
+    return { error: 'First active worksheet is empty or unreadable.', rows: [] };
+  }
+  const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: '' });
+  return parseCensusRows(rawRows);
 }
 
 async function handleCensusFile(e) {
@@ -913,11 +976,18 @@ async function handleCensusFile(e) {
     return;
   }
   const status = document.getElementById('importStatus');
-  status.textContent = 'Reading and analyzing CSV file…';
+  const ext = file.name.split('.').pop().toLowerCase();
+  status.textContent = `Reading and analyzing ${ext.toUpperCase()} file…`;
 
   try {
-    const text = await file.text();
-    const result = parseCensusCsv(text);
+    let result;
+    if (ext === 'xlsx' || ext === 'xls') {
+      const buffer = await file.arrayBuffer();
+      result = parseCensusExcel(buffer);
+    } else {
+      const text = await file.text();
+      result = parseCensusCsv(text);
+    }
 
     if (result.error) {
       status.innerHTML = `<span class="text-rose-600 font-medium">${result.error}</span>`;
@@ -927,7 +997,7 @@ async function handleCensusFile(e) {
 
     const { rows, skipReasons, totalLines } = result;
     if (rows.length === 0) {
-      status.innerHTML = `<span class="text-rose-600 font-medium">No valid data rows found in CSV.${skipReasons?.length ? ' ' + skipReasons.slice(0, 3).join('; ') : ''}</span>`;
+      status.innerHTML = `<span class="text-rose-600 font-medium">No valid resident rows found in file.${skipReasons?.length ? ' ' + skipReasons.slice(0, 3).join('; ') : ''}</span>`;
       e.target.value = '';
       return;
     }
@@ -964,6 +1034,7 @@ async function handleCensusFile(e) {
     showToast(summaryText, ok > 0 ? 'success' : 'warning');
     await loadResidents();
   } catch (err) {
+    console.error('Census import error:', err);
     status.innerHTML = `<span class="text-rose-600 font-medium">Import failed: ${err.message || err}</span>`;
     showToast('Import failed: ' + (err.message || err), 'error');
   } finally {
