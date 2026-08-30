@@ -362,18 +362,6 @@
           <option value="week">This Week</option>
         </select>
 
-        <select id="categoryFilter" class="filter-input">
-          <option value="all">All Categories</option>
-          <option value="Physical Assault">Physical Assault</option>
-          <option value="Theft">Theft</option>
-          <option value="Public Disturbance">Public Disturbance</option>
-          <option value="Vehicular Accident">Vehicular Accident</option>
-          <option value="Domestic Dispute">Domestic Dispute</option>
-          <option value="Trespassing">Trespassing</option>
-          <option value="Vandalism">Vandalism</option>
-          <option value="Drug-Related Activity">Drug-Related Activity</option>
-        </select>
-
         <label class="flex items-center gap-2 bg-white border border-forest-200 rounded-xl px-3 py-2 text-sm text-forest-700">
           <input type="checkbox" id="showMarkers" checked />
           Show Incident Markers
@@ -1616,7 +1604,8 @@
 
     async function loadZoneDensity() {
       try {
-        const category = categoryFilter.value;
+        const cEl = document.getElementById('categoryFilter');
+        const category = cEl ? cEl.value : 'all';
         const params = {};
         if (category && category !== 'all') params.category = category;
         const res = await BCApi.zoneDensity(params);
