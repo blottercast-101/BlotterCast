@@ -150,14 +150,19 @@ function bcPrewarmMLService() {
   }, 1200);
 }
 
-// ── Instant Session Hydration ──────────────────────────────
-function bcHydrateCachedSession() {
+// ── Centralized Global State & User Profile Hydration ─────────
+function hydrateGlobalState() {
   let user = null;
   if (typeof bcGetCachedUser === 'function') {
     user = bcGetCachedUser();
   } else {
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      const raw = localStorage.getItem('bc_cached_user') || 
+                  sessionStorage.getItem('bc_cached_user') ||
+                  localStorage.getItem('currentUser') ||
+                  sessionStorage.getItem('currentUser') ||
+                  localStorage.getItem('bc_user') ||
+                  sessionStorage.getItem('bc_user');
       user = raw ? JSON.parse(raw) : null;
     } catch (e) {}
   }
@@ -190,14 +195,20 @@ function bcHydrateCachedSession() {
     applyNavPermissions(role);
   }
 }
-window.bcHydrateCachedSession = bcHydrateCachedSession;
-window.updateUserBadge = bcHydrateCachedSession;
+window.hydrateGlobalState = hydrateGlobalState;
+window.bcHydrateCachedSession = hydrateGlobalState;
+window.updateUserBadge = hydrateGlobalState;
 
-// Immediately hydrate cached user profile on script load and DOMContentLoaded
-bcHydrateCachedSession();
+// Synchronously hydrate on load, DOMContentLoaded, and storage sync
+hydrateGlobalState();
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bcHydrateCachedSession, { once: true });
+  document.addEventListener('DOMContentLoaded', hydrateGlobalState, { once: true });
 }
+window.addEventListener('storage', (e) => {
+  if (e.key === 'bc_cached_user' || e.key === 'currentUser' || e.key === 'bc_user') {
+    hydrateGlobalState();
+  }
+});
 
 // ── Real-Time Reactive Sync Dispatcher (Debounced) ─────────
 let _bcRefreshDebounceTimer = null;
@@ -214,6 +225,7 @@ function bcTriggerLiveRefresh(detail = {}) {
 function _bcExecuteLiveRefresh(detail = {}) {
   if (_bcNavigating || window._bcSpaNavActive) return;
   try {
+    hydrateGlobalState();
     if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
   } catch (_) {}
 
@@ -254,6 +266,7 @@ function _bcExecuteLiveRefresh(detail = {}) {
 window.bcTriggerLiveRefresh = bcTriggerLiveRefresh;
 
 window.addEventListener('bc-data-changed', (e) => {
+  hydrateGlobalState();
   bcTriggerLiveRefresh(e.detail || {});
 });
 
@@ -641,13 +654,12 @@ async function navigateTo(url, pushState = true) {
     }
 
     // Clear the SPA nav flag now that all page scripts have run.
-    // window.initXxx is now defined and ready to be called.
     window._bcSpaNavActive = false;
 
     // Re-hydrate session & live permissions
-    bcHydrateCachedSession();
+    hydrateGlobalState();
 
-    // Re-render icons
+    // Re-render icons & controls
     if (typeof renderIcons === 'function') renderIcons();
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
       window.lucide.createIcons();
@@ -655,10 +667,15 @@ async function navigateTo(url, pushState = true) {
     if (typeof initCustomSelects === 'function') initCustomSelects();
 
     // Trigger module lifecycle safely.
-    // By this point all inline scripts have run synchronously
-    // (appendChild of a script tag runs it immediately), so
-    // window.initXxx is guaranteed to be defined.
     await executeModuleInit(url);
+
+    // Re-hydrate state and controls after async data render
+    hydrateGlobalState();
+    if (typeof renderIcons === 'function') renderIcons();
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+    if (typeof initCustomSelects === 'function') initCustomSelects();
 
     // Re-scan Tailwind after dynamic component rendering
     if (window.tailwind && typeof window.tailwind.refresh === 'function') {
@@ -689,16 +706,16 @@ async function navigateTo(url, pushState = true) {
             </button>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
     if (typeof renderIcons === 'function') renderIcons();
   } finally {
     _bcNavigating = false;
-    _bcAuthGuardRunning = false;   // ensure auth guard never gets stuck
-    window._bcSpaNavActive = false; // ensure flag is cleared even on error
+    _bcAuthGuardRunning = false;
+    window._bcSpaNavActive = false;
     contentContainer.classList.remove('bc-content-loading');
     contentContainer.style.opacity = '1';
     contentContainer.style.pointerEvents = 'auto';
+    hydrateGlobalState();
   }
 }
 const bcNavigate = navigateTo;
@@ -734,12 +751,12 @@ window.addEventListener('popstate', () => {
 let _bcAuthGuardPromise = null;
 
 async function requireAuth() {
+  // Instant visual hydration before awaiting network
+  hydrateGlobalState();
+
   if (_bcAuthGuardPromise) {
     return _bcAuthGuardPromise;
   }
-
-  // Instant visual hydration before awaiting network
-  bcHydrateCachedSession();
 
   _bcAuthGuardPromise = (async () => {
     try {
@@ -748,14 +765,21 @@ async function requireAuth() {
         try {
           localStorage.removeItem('bc_cached_user');
           sessionStorage.removeItem('bc_cached_user');
+          localStorage.removeItem('currentUser');
+          sessionStorage.removeItem('currentUser');
+          localStorage.removeItem('bc_user');
+          sessionStorage.removeItem('bc_user');
         } catch (e) {}
         _handleUnauthenticatedRedirect();
         return null;
       }
 
-      // Persist verified user session
+      // Persist verified user session across all keys
       try {
         localStorage.setItem('bc_cached_user', JSON.stringify(status.user));
+        sessionStorage.setItem('bc_cached_user', JSON.stringify(status.user));
+        localStorage.setItem('currentUser', JSON.stringify(status.user));
+        sessionStorage.setItem('currentUser', JSON.stringify(status.user));
       } catch (e) {}
 
       const role = status.user.role;
@@ -766,16 +790,27 @@ async function requireAuth() {
       bcPrewarmMLService();
       if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(role);
 
-      bcHydrateCachedSession();
+      hydrateGlobalState();
       if (status.user.mustChangePassword) bcShowForcedPasswordChange();
       bcSyncTimeFormatFromServer().catch(() => {});
       _bcStartIdleTracker();
       return status.user;
     } catch (e) {
-      try {
-        localStorage.removeItem('bc_cached_user');
-        sessionStorage.removeItem('bc_cached_user');
-      } catch (_) {}
+      if (e.message && e.message.includes('Not authenticated')) {
+        try {
+          localStorage.removeItem('bc_cached_user');
+          sessionStorage.removeItem('bc_cached_user');
+          localStorage.removeItem('currentUser');
+          sessionStorage.removeItem('currentUser');
+        } catch (_) {}
+        _handleUnauthenticatedRedirect();
+        return null;
+      }
+      const cached = bcGetCachedUser();
+      if (cached) {
+        hydrateGlobalState();
+        return cached;
+      }
       _handleUnauthenticatedRedirect();
       return null;
     } finally {
