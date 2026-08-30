@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, session
@@ -162,19 +163,54 @@ def _census():
 
         d = request.get_json(silent=True) or {}
         dob = d.get("dob") or d.get("date_of_birth") or d.get("birth_date") or None
-        last_name = (d.get("lastName") or d.get("last_name") or d.get("surname") or "").strip()
+        last_name = (d.get("lastName") or d.get("last_name") or d.get("surname") or d.get("apelyido") or "").strip()
         first_name = (d.get("firstName") or d.get("first_name") or d.get("given_name") or "").strip()
-        middle_name = (d.get("middleName") or d.get("middle_name") or d.get("mi") or "").strip()
+        middle_name = (d.get("middleName") or d.get("middle_name") or d.get("mi") or d.get("middle") or "").strip()
+
+        # Handle full name fallback if split names are absent
+        if (not last_name or not first_name) and (d.get("fullName") or d.get("name") or d.get("full_name") or d.get("pangalan")):
+            full_n = (d.get("fullName") or d.get("name") or d.get("full_name") or d.get("pangalan") or "").strip()
+            if "," in full_n:
+                parts = full_n.split(",", 1)
+                last_name = last_name or parts[0].strip()
+                rest = parts[1].strip().split()
+                if rest:
+                    first_name = first_name or rest[0]
+                    if len(rest) > 1 and not middle_name:
+                        middle_name = " ".join(rest[1:])
+            else:
+                parts = full_n.split()
+                if len(parts) >= 2:
+                    first_name = first_name or parts[0]
+                    last_name = last_name or parts[-1]
+                    if len(parts) > 2 and not middle_name:
+                        middle_name = " ".join(parts[1:-1])
+                elif parts:
+                    first_name = first_name or parts[0]
+                    last_name = last_name or parts[0]
+
         sex = d.get("sex") or d.get("gender") or "Male"
         civil_status = d.get("civilStatus") or d.get("civil_status") or d.get("marital_status") or "Single"
         nationality = d.get("nationality") or d.get("citizenship") or "Filipino"
-        zone = d.get("zone") or d.get("zone_id") or d.get("purok")
-        address = (d.get("address") or d.get("street_address") or "").strip()
-        household = (d.get("householdNo") or d.get("household_no") or d.get("household") or "").strip()
-        contact = (d.get("contactNo") or d.get("contact_no") or d.get("phone") or d.get("mobile") or "").strip()
-        voter = d.get("voterStatus") or d.get("voter_status") or "Not Registered"
-        occupation = (d.get("occupation") or d.get("job") or "").strip()
-        status = d.get("status") or "Active"
+        zone = d.get("zone") or d.get("zone_id") or d.get("purok") or d.get("purok_no") or d.get("sector") or d.get("area")
+
+        # Comprehensive address extraction across all possible key synonyms
+        address = (
+            d.get("address") or d.get("street_address") or d.get("street") or
+            d.get("location") or d.get("residence") or d.get("tirahan") or
+            d.get("house_address") or d.get("home_address") or d.get("sitio") or
+            d.get("street_name") or d.get("complete_address") or d.get("full_address") or
+            d.get("present_address") or d.get("residential_address") or d.get("permanent_address") or
+            d.get("address_line") or d.get("address_line_1") or d.get("address_location") or
+            d.get("pook") or d.get("lugar") or d.get("house") or d.get("block_lot") or
+            d.get("subdivision") or d.get("landmark") or ""
+        ).strip()
+
+        household = (d.get("householdNo") or d.get("household_no") or d.get("household") or d.get("hh_no") or d.get("hh") or d.get("sambahayan") or "").strip()
+        contact = (d.get("contactNo") or d.get("contact_no") or d.get("phone") or d.get("mobile") or d.get("telepono") or d.get("contact") or "").strip()
+        voter = d.get("voterStatus") or d.get("voter_status") or d.get("voter") or d.get("botante") or "Not Registered"
+        occupation = (d.get("occupation") or d.get("job") or d.get("profession") or d.get("work") or d.get("trabaho") or d.get("hanapbuhay") or "").strip()
+        status = d.get("status") or d.get("resident_status") or d.get("katayuan") or "Active"
 
         if sex:
             s_low = str(sex).strip().lower()
@@ -183,12 +219,32 @@ def _census():
             elif s_low in ("f", "female", "babae"):
                 sex = "Female"
 
-        if zone:
+        # Adaptive Zone and Address Resolution
+        if not zone and address:
+            from ..helpers import resolve_zone_from_address
+            resolved_z, _, _ = resolve_zone_from_address(address)
+            if resolved_z:
+                zone = resolved_z
+        elif zone:
             z_str = str(zone).strip()
             if z_str.isdigit():
                 zone = f"Zone {z_str}"
             elif z_str.lower().startswith("purok"):
-                zone = z_str.replace("purok", "Zone").replace("Purok", "Zone").strip()
+                zone = re.sub(r"(?i)purok\s*", "Zone ", z_str).strip()
+            elif z_str.lower().startswith("p-") or z_str.lower().startswith("z"):
+                m = re.search(r"\d+", z_str)
+                if m:
+                    zone = f"Zone {m.group(0)}"
+            else:
+                from ..helpers import resolve_zone_from_address
+                resolved_z, _, _ = resolve_zone_from_address(z_str)
+                if resolved_z:
+                    zone = resolved_z
+
+        # If address is still blank but zone is known, persist a canonical address
+        if not address and zone:
+            address = f"{zone}, Barangay Mapulang Lupa"
+
         if status == "Deceased":
             voter = "Deactivated"
 

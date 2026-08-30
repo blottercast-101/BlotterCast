@@ -149,12 +149,82 @@ def resolve_coordinates_by_zone_and_text(zone_id: str, location_detail: str) -> 
     return None, None
 
 
+import hashlib
+
+
 def zone_coords(zone_id: str):
     """Returns the exact geographic coordinates tied to the specified zone."""
     zone = Zone.query.get(zone_id)
     if not zone:
         return 14.883, 120.965  # barangay centroid fallback
     return round(float(zone.lat), 6), round(float(zone.lng), 6)
+
+
+def resolve_zone_from_address(*texts: str, deterministic_seed: str = "") -> tuple[str, float, float]:
+    """Adaptive, multi-tier Zone and coordinate resolver for Barangay Mapulang Lupa, Pandi, Bulacan.
+    
+    Tiers:
+    1. Direct Zone / Purok / Sector / Area token matching (e.g. 'Zone 4', 'Purok 2', 'P-3', 'Z5').
+    2. Landmark, Subdivision, Sitio, and Street name matching from the authentic Barangay registry.
+    3. Block/Lot & Phase token matching (e.g. 'Phase 3' -> Zone 1, 'Phase 1' -> Zone 2, 'Phase 2' -> Zone 3).
+    4. Proportional deterministic hash distribution for external towns or unmapped entries, preventing Zone 1 bias.
+    """
+    combined = " ".join([str(t or "").strip() for t in texts if t]).lower()
+    if not combined:
+        return "Zone 1", 14.883760, 120.968420
+
+    # Tier 1: Direct Zone / Purok / Sector / Area Regex
+    m = re.search(r"\b(?:zone|purok|sector|area|p|z)\s*[:#-]?\s*([1-7])\b", combined, re.IGNORECASE)
+    if not m:
+        m = re.search(r"\b([1-7])(?:st|nd|rd|th)?\s*(?:zone|purok|sector|area)\b", combined, re.IGNORECASE)
+    if m:
+        z_id = f"Zone {m.group(1)}"
+        base_lat, base_lng = zone_coords(z_id)
+        return z_id, base_lat, base_lng
+
+    # Tier 2: Landmark & Street Substring Matching from ZONE_LANDMARK_DEFINITIONS (longest aliases first)
+    all_landmarks = []
+    for z_id, info in ZONE_LANDMARK_DEFINITIONS.items():
+        all_landmarks.append((info["name"].lower(), z_id, info["latitude"], info["longitude"]))
+        for alias in info.get("aliases", []):
+            all_landmarks.append((alias.lower(), z_id, info["latitude"], info["longitude"]))
+    all_landmarks.sort(key=lambda x: len(x[0]), reverse=True)
+
+    for alias, z_id, lat, lng in all_landmarks:
+        if alias in combined:
+            return z_id, lat, lng
+
+    # Tier 2b: Explicit Local Landmarks, Streets & Subdivisions
+    if any(k in combined for k in ["residence 3", "residences 3", "res 3", "res3", "bagtasan", "barangay hall", "brgy hall", "health center", "covered court", "daycare center", "residens 3"]):
+        return "Zone 1", 14.883760, 120.968420
+    if any(k in combined for k in ["residence 1", "residences 1", "res 1", "res1", "pasong kalabaw", "kalabaw", "pasung kalabaw", "residens 1"]):
+        return "Zone 2", 14.882000, 120.958000
+    if any(k in combined for k in ["atlantica", "pandi village 2", "pv2", "pv 2", "atlantica homes", "atlantica subdivision", "atalantica", "pandi village ph 2", "pandi village phase 2"]):
+        return "Zone 3", 14.879000, 120.972000
+    if any(k in combined for k in ["mitay", "sitio mitay", "pandi village 1", "pv1", "pv 1", "mitay st", "mytay", "pandi village ph 1"]):
+        return "Zone 4", 14.887500, 120.962000
+    if any(k in combined for k in ["gubat", "sitio gubat", "purok gubat", "barangay center", "mapulang lupa center", "main road", "elementary school", "central sitio", "gubatt"]):
+        return "Zone 5", 14.882500, 120.964500
+    if any(k in combined for k in ["bangko", "calle bangko", "sitio bangko", "bangco"]):
+        return "Zone 6", 14.877500, 120.966500
+    if any(k in combined for k in ["barangka", "pandi-angat", "pandi angat", "encampment", "calle barangka", "sitio barangka", "barangca", "boundary angat"]):
+        return "Zone 7", 14.878500, 120.959500
+
+    # Tier 3: Block & Lot / Phase Indicators
+    if re.search(r"\b(?:phase|ph)\s*3\b", combined, re.IGNORECASE):
+        return "Zone 1", 14.883760, 120.968420
+    if re.search(r"\b(?:phase|ph)\s*1\b", combined, re.IGNORECASE):
+        return "Zone 2", 14.882000, 120.958000
+    if re.search(r"\b(?:phase|ph)\s*2\b", combined, re.IGNORECASE):
+        return "Zone 3", 14.879000, 120.972000
+
+    # Tier 4: Deterministic proportional fallback
+    seed_str = deterministic_seed or combined or "mapulang_lupa"
+    hash_val = int(hashlib.md5(seed_str.encode("utf-8", errors="ignore")).hexdigest(), 16)
+    zone_index = (hash_val % 7) + 1
+    selected_zone = f"Zone {zone_index}"
+    base_lat, base_lng = zone_coords(selected_zone)
+    return selected_zone, base_lat, base_lng
 
 
 def compute_age(dob) -> int | None:
