@@ -27,6 +27,7 @@ ADDITIVE_COLUMNS = [
     ("blotter_records", "archived", "BOOLEAN", "FALSE", True),
     ("incidents", "archived", "BOOLEAN", "FALSE", True),
     ("settlements", "archived", "BOOLEAN", "FALSE", True),
+    ("settlements", "officer", "VARCHAR(100)", "NULL", False),
 
     # Incident Reporter, Guardian, Complainant, Involved Parties & Resolution
     ("incidents", "is_non_resident", "BOOLEAN", "FALSE", True),

@@ -216,14 +216,15 @@
       <h2 class="font-display text-xl text-forest-800" id="stlModalTitle">New Settlement Record</h2>
       <button onclick="closeModal('settlementModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
-    <form id="settlementForm" class="space-y-4">
+    <form id="settlementForm" class="space-y-4" novalidate onsubmit="event.preventDefault(); saveSettlement();">
       <div id="sf_blotter_picker_wrap" class="relative z-30">
-        <label class="form-label">Link to Blotter Case <span class="text-xs text-forest-500 font-normal">(Search docket no. or complainant)</span></label>
+        <label class="form-label">Link to Blotter Case <span class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal">(Search docket no. or complainant)</span></label>
         <div class="relative">
-          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off"/>
+          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off" oninput="clearFieldSpecificError('sf_blotterId')"/>
           <input type="hidden" id="sf_blotterId"/>
           <button type="button" onclick="clearBlotterCasePicker()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-forest-400 hover:text-forest-700 bg-forest-50 hover:bg-forest-100 px-2 py-0.5 rounded border border-forest-200">Clear</button>
         </div>
+        <p id="err_sf_blotterId" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         <div id="sf_blotterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -232,12 +233,16 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="form-label">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" disabled/></div>
-        <div><label class="form-label">Date of Initial Confrontation</label><input type="date" id="sf_dateConfrontation" class="form-input" data-no-future/></div>
+        <div>
+          <label class="form-label">Date of Initial Confrontation</label>
+          <input type="date" id="sf_dateConfrontation" class="form-input" data-no-future onchange="clearFieldSpecificError('sf_dateConfrontation')"/>
+          <p id="err_sf_dateConfrontation" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Action Taken</label>
-          <select id="sf_actionTaken" class="form-input" required>
+          <label class="form-label">Action Taken <span class="text-red-500">*</span></label>
+          <select id="sf_actionTaken" class="form-input" required onchange="clearFieldSpecificError('sf_actionTaken')">
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Mediation (M)">Mediation (M)</option>
             <option value="Conciliation (C)">Conciliation (C)</option>
@@ -245,35 +250,50 @@
             <option value="w EP">w EP</option>
             <option value="C46+">C46+</option>
           </select>
+          <p id="err_sf_actionTaken" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
-        <div><label class="form-label">Date of Settlement or Award</label><input type="date" id="sf_dateSettlement" class="form-input" data-no-future/></div>
+        <div>
+          <label class="form-label">Date of Settlement or Award <span class="text-red-500">*</span></label>
+          <input type="date" id="sf_dateSettlement" class="form-input" data-no-future required onchange="clearFieldSpecificError('sf_dateSettlement')"/>
+          <p id="err_sf_dateSettlement" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Date of Execution</label><input type="date" id="sf_dateExecution" class="form-input"/></div>
-        <div><label class="form-label">Remarks</label><input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/></div>
-      </div>
-      <div><label class="form-label">Main Point of Agreement</label><textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms of the agreement…"></textarea></div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Status of Compliance / Resolution</label>
-          <select id="sf_status" class="form-input" required>
+          <label class="form-label">Date of Execution</label>
+          <input type="date" id="sf_dateExecution" class="form-input" onchange="clearFieldSpecificError('sf_dateExecution')"/>
+          <p id="err_sf_dateExecution" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
+        <div>
+          <label class="form-label">Officer-in-Charge / Conciliator <span class="text-red-500">*</span></label>
+          <input type="text" id="sf_officer" class="form-input" placeholder="e.g. Punong Barangay / Pangkat Chairman" required oninput="clearFieldSpecificError('sf_officer')"/>
+          <p id="err_sf_officer" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Main Point of Agreement / Settlement Terms <span class="text-red-500">*</span></label>
+        <textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms and conditions of the settlement agreement…" required oninput="clearFieldSpecificError('sf_mainPoint')"></textarea>
+        <p id="err_sf_mainPoint" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Status of Compliance / Resolution <span class="text-red-500">*</span></label>
+          <select id="sf_status" class="form-input" required onchange="clearFieldSpecificError('sf_status')">
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Pending">Pending</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
           </select>
+          <p id="err_sf_status" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
+        <div>
+          <label class="form-label">Remarks</label>
+          <input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/>
         </div>
       </div>
-      <div class="flex items-center justify-between gap-3 pt-3 border-t border-forest-100">
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="quickSetComplied()" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
-            ✓ Mark as Complied
-          </button>
-        </div>
-        <div class="flex gap-2">
-          <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary">Cancel</button>
-          <button type="button" onclick="saveSettlement()" class="btn-primary">Save Record</button>
-        </div>
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-forest-100">
+        <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary">Cancel</button>
+        <button type="button" onclick="saveSettlement()" class="btn-primary">Save Record</button>
       </div>
     </form>
   </div>
@@ -307,7 +327,7 @@
       caseNo: r.case_no, caseTitle: r.case_title, complaintTitle: r.complaint_title,
       nature: r.nature, dateFiled: r.date_filed, dateConfrontation: r.date_confrontation,
       actionTaken: r.action_taken, dateSettlement: r.date_settlement, dateExecution: r.date_execution,
-      mainPoint: r.main_point, status: r.status, remarks: r.remarks || '',
+      mainPoint: r.main_point, status: r.status, officer: r.officer || '', remarks: r.remarks || '',
       complainant: r.complainant, complainantAddr: r.complainant_addr,
       respondent: r.respondent, respondentAddr: r.respondent_addr,
     };
@@ -561,13 +581,42 @@
     stlBatchManager.updateUI();
   }
 
+  function clearFieldSpecificError(fieldId) {
+    const inputEl = document.getElementById(fieldId);
+    const errEl = document.getElementById(`err_${fieldId}`);
+    if (inputEl) {
+      inputEl.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+    }
+    if (errEl) {
+      errEl.textContent = '';
+      errEl.classList.add('hidden');
+    }
+  }
+  window.clearFieldSpecificError = clearFieldSpecificError;
+
+  function clearSettlementFormErrors() {
+    const form = document.getElementById('settlementForm');
+    if (!form) return;
+    form.querySelectorAll('.border-rose-500, .bg-rose-50\\/40, .focus\\:ring-rose-400').forEach(el => {
+      el.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+    });
+    form.querySelectorAll('[id^="err_sf_"]').forEach(el => {
+      el.textContent = '';
+      el.classList.add('hidden');
+    });
+  }
+  window.clearSettlementFormErrors = clearSettlementFormErrors;
+
   async function openAddSettlement() {
-    stlEditId=null; document.getElementById('stlModalTitle').textContent='New Settlement Record';
+    stlEditId = null;
+    document.getElementById('stlModalTitle').textContent = 'New Settlement Record';
     document.getElementById('settlementForm').reset();
+    clearSettlementFormErrors();
     resetFormDropdowns('settlementForm');
     document.getElementById('sf_blotter_picker_wrap').classList.remove('hidden');
     clearBlotterCasePicker();
     document.getElementById('sf_caseNo').value = 'Loading…';
+    document.getElementById('sf_officer').value = '';
     openModal('settlementModal');
     try {
       const { seqNo } = await BCApi.peekSeq('settlements');
@@ -581,6 +630,7 @@
   function editSettlement(id) {
     const r = settlementData.find(x => x.id === id);
     stlEditId = id;
+    clearSettlementFormErrors();
     document.getElementById('stlModalTitle').textContent = 'Edit Settlement Record';
     document.getElementById('sf_blotter_picker_wrap').classList.add('hidden');
     document.getElementById('sf_caseNo').value = r.caseNo;
@@ -590,107 +640,120 @@
     document.getElementById('sf_actionTaken').value = r.actionTaken || '';
     document.getElementById('sf_dateSettlement').value = r.dateSettlement || '';
     document.getElementById('sf_dateExecution').value = r.dateExecution || '';
+    document.getElementById('sf_officer').value = r.officer || '';
     document.getElementById('sf_mainPoint').value = r.mainPoint || '';
-    document.getElementById('sf_status').value = r.status;
+    document.getElementById('sf_status').value = r.status || 'Pending';
     document.getElementById('sf_remarks').value = r.remarks || '';
     openModal('settlementModal');
   }
 
-  // Shared by both the edit and create paths below. Date of Execution is
-  // deliberately not restricted to "not future" (a Pending case can have
-  // a compliance date that's still ahead), but it still can't come
-  // before the settlement it's executing, and the two "already happened"
-  // dates can't be in the future or out of order relative to each other.
-  function bcValidateSettlementDates(vals) {
-    if (!vals.actionTaken) return 'Please select the Action Taken.';
-    if (!vals.status) return 'Please select the Status of Compliance.';
+  function validateSettlementForm(vals, isEdit) {
+    clearSettlementFormErrors();
+    let isValid = true;
+    let firstInvalidEl = null;
+
+    function setFieldError(fieldId, errorMsg) {
+      isValid = false;
+      const inputEl = document.getElementById(fieldId);
+      const errEl = document.getElementById(`err_${fieldId}`);
+      if (inputEl) {
+        inputEl.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+        if (!firstInvalidEl) firstInvalidEl = inputEl;
+      }
+      if (errEl) {
+        errEl.textContent = errorMsg;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    if (!isEdit && !vals.blotterId) {
+      setFieldError('sf_blotterId', 'Please link an official Blotter case to this settlement.');
+      const searchInput = document.getElementById('sf_blotterSearch');
+      if (searchInput) {
+        searchInput.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+        if (!firstInvalidEl) firstInvalidEl = searchInput;
+      }
+    }
+
+    if (!vals.actionTaken) {
+      setFieldError('sf_actionTaken', 'Please select the Action Taken.');
+    }
+
+    if (!vals.dateSettlement) {
+      setFieldError('sf_dateSettlement', 'Date of Settlement or Award is required.');
+    } else if (bcIsFutureDate(vals.dateSettlement)) {
+      setFieldError('sf_dateSettlement', 'Date of Settlement or Award cannot be in the future.');
+    }
+
     if (vals.dateConfrontation && bcIsFutureDate(vals.dateConfrontation)) {
-      return 'Date of Initial Confrontation cannot be in the future.';
+      setFieldError('sf_dateConfrontation', 'Date of Initial Confrontation cannot be in the future.');
     }
-    if (vals.dateSettlement && bcIsFutureDate(vals.dateSettlement)) {
-      return 'Date of Settlement or Award cannot be in the future.';
-    }
+
     if (vals.dateSettlement && vals.dateConfrontation && bcIsBeforeDate(vals.dateSettlement, vals.dateConfrontation)) {
-      return 'Date of Settlement or Award cannot be earlier than the Date of Initial Confrontation.';
+      setFieldError('sf_dateSettlement', 'Date of Settlement cannot be earlier than Date of Initial Confrontation.');
     }
+
     if (vals.dateExecution && vals.dateSettlement && bcIsBeforeDate(vals.dateExecution, vals.dateSettlement)) {
-      return 'Date of Execution cannot be earlier than the Date of Settlement or Award.';
+      setFieldError('sf_dateExecution', 'Date of Execution cannot be earlier than Date of Settlement.');
     }
-    return null;
+
+    if (!vals.officer) {
+      setFieldError('sf_officer', 'Officer-in-Charge / Conciliator is required.');
+    }
+
+    if (!vals.mainPoint) {
+      setFieldError('sf_mainPoint', 'Main point and key terms of agreement are required.');
+    }
+
+    if (!vals.status) {
+      setFieldError('sf_status', 'Status of Compliance is required.');
+    }
+
+    return { isValid, firstInvalidEl };
   }
 
   async function saveSettlement() {
-    if (stlEditId) {
-      const vals = {
-        dateConfrontation: document.getElementById('sf_dateConfrontation').value,
-        actionTaken: document.getElementById('sf_actionTaken').value,
-        dateSettlement: document.getElementById('sf_dateSettlement').value,
-        dateExecution: document.getElementById('sf_dateExecution').value,
-        mainPoint: document.getElementById('sf_mainPoint').value.trim(),
-        status: document.getElementById('sf_status').value,
-        remarks: document.getElementById('sf_remarks').value.trim(),
-      };
-      const dateErr = bcValidateSettlementDates(vals);
-      if (dateErr) { await bcAlert(dateErr); return; }
-      try {
-        await BCApi.update('settlements', stlEditId, vals);
-        showToast('Settlement record updated!');
-        closeModal('settlementModal');
-        await loadSettlements();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-      return;
-    }
-
-    const blotterId = document.getElementById('sf_blotterId').value;
-    if (!blotterId) { await bcAlert('Please select the blotter case this settlement belongs to.'); return; }
+    const isEdit = Boolean(stlEditId);
+    const blotterId = isEdit ? null : document.getElementById('sf_blotterId').value;
     const vals = {
-      blotterId,
       caseNo: document.getElementById('sf_caseNo').value.trim(),
       dateConfrontation: document.getElementById('sf_dateConfrontation').value,
       actionTaken: document.getElementById('sf_actionTaken').value,
       dateSettlement: document.getElementById('sf_dateSettlement').value,
       dateExecution: document.getElementById('sf_dateExecution').value,
+      officer: document.getElementById('sf_officer').value.trim(),
       mainPoint: document.getElementById('sf_mainPoint').value.trim(),
       status: document.getElementById('sf_status').value,
       remarks: document.getElementById('sf_remarks').value.trim(),
     };
-    const dateErr = bcValidateSettlementDates(vals);
-    if (dateErr) { await bcAlert(dateErr); return; }
+
+    if (!isEdit) {
+      vals.blotterId = blotterId ? Number(blotterId) : null;
+    }
+
+    const { isValid, firstInvalidEl } = validateSettlementForm(vals, isEdit);
+    if (!isValid) {
+      if (firstInvalidEl && typeof firstInvalidEl.focus === 'function') {
+        firstInvalidEl.focus();
+      }
+      showToast('Please complete all required settlement fields.', 'warning');
+      return; // Keep modal open!
+    }
+
     try {
-      await BCApi.create('settlements', vals);
-      showToast('Settlement record added!');
+      if (isEdit) {
+        await BCApi.update('settlements', stlEditId, vals);
+        showToast('Settlement record updated successfully!');
+      } else {
+        await BCApi.create('settlements', vals);
+        showToast('Settlement record created successfully!');
+      }
       closeModal('settlementModal');
       await loadSettlements();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || err, 'error');
     }
   }
-
-  function quickSetComplied() {
-    const statusEl = document.getElementById('sf_status');
-    if (statusEl) {
-      statusEl.value = 'Complied';
-      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(statusEl);
-    }
-    const actionEl = document.getElementById('sf_actionTaken');
-    if (actionEl && !actionEl.value) {
-      actionEl.value = 'Mediation (M)';
-      if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(actionEl);
-    }
-    const today = new Date().toISOString().split('T')[0];
-    if (!document.getElementById('sf_dateSettlement').value) {
-      document.getElementById('sf_dateSettlement').value = today;
-    }
-    if (!document.getElementById('sf_mainPoint').value) {
-      document.getElementById('sf_mainPoint').value = 'Amicable agreement reached and complied by all parties.';
-    }
-    showToast('Form pre-filled as Complied. Click "Save Record" to finalize.', 'info');
-  }
-  window.quickSetComplied = quickSetComplied;
-  window.quickSetSettled = quickSetComplied;
-  window.quickSetResolved = quickSetComplied;
 
   async function archiveSettlement(id) {
     if (!(await bcConfirm('Archive this settlement record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
@@ -731,16 +794,24 @@
   }
 
   function viewSettlement(id) {
-    const r=settlementData.find(x=>x.id===id);
-    const rows=[
-      ['Linked Blotter Case',r.blotterDocketNo],
-      ['Case No.',r.caseNo],['Case Title',r.caseTitle],['Complaint Title',r.complaintTitle],
-      ['Nature',r.nature],['Date Filed',r.dateFiled],['Date of Confrontation',r.dateConfrontation],
-      ['Action Taken',r.actionTaken],['Date of Settlement',r.dateSettlement||'—'],
-      ['Date of Execution',r.dateExecution||'—'],['Main Point of Agreement',r.mainPoint],
-      ['Status of Compliance',r.status],['Remarks',r.remarks||'—'],
+    const r = settlementData.find(x => x.id === id);
+    const rows = [
+      ['Linked Blotter Case', r.blotterDocketNo || '—'],
+      ['Case No.', r.caseNo],
+      ['Case Title', r.caseTitle || '—'],
+      ['Complaint Title', r.complaintTitle || '—'],
+      ['Nature', r.nature],
+      ['Date Filed', r.dateFiled || '—'],
+      ['Date of Confrontation', r.dateConfrontation || '—'],
+      ['Action Taken', r.actionTaken || '—'],
+      ['Date of Settlement', r.dateSettlement || '—'],
+      ['Date of Execution', r.dateExecution || '—'],
+      ['Officer-in-Charge', r.officer || '—'],
+      ['Main Point of Agreement', r.mainPoint || '—'],
+      ['Status of Compliance', r.status || 'Pending'],
+      ['Remarks', r.remarks || '—'],
     ];
-    document.getElementById('stlViewContent').innerHTML=rows.map(([k,v])=>`
+    document.getElementById('stlViewContent').innerHTML = rows.map(([k, v]) => `
       <div class="flex gap-4 py-2 border-b border-forest-50">
         <span class="w-52 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
         <span class="text-forest-800">${v}</span>

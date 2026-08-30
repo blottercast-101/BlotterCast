@@ -499,6 +499,7 @@ class Settlement(db.Model):
     date_execution = db.Column(db.Date)
     main_point = db.Column(db.Text)
     status = db.Column(db.String(20), nullable=False, default="Pending")
+    officer = db.Column(db.String(100))
     remarks = db.Column(db.String(255))
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
@@ -520,6 +521,7 @@ class Settlement(db.Model):
         date_execution=None,
         main_point="",
         status="Pending",
+        officer="",
         remarks="",
         archived=False,
         created_at=None,
@@ -545,6 +547,7 @@ class Settlement(db.Model):
             self.date_execution = date_execution
         self.main_point = main_point
         self.status = status
+        self.officer = officer
         self.remarks = remarks
         self.archived = archived
         if created_at is not None:
@@ -565,7 +568,7 @@ class Settlement(db.Model):
             "action_taken": self.action_taken,
             "date_settlement": self.date_settlement.isoformat() if hasattr(self.date_settlement, "isoformat") else (str(self.date_settlement) if self.date_settlement else None),
             "date_execution": self.date_execution.isoformat() if hasattr(self.date_execution, "isoformat") else (str(self.date_execution) if self.date_execution else None),
-            "main_point": self.main_point, "status": self.status, "remarks": self.remarks,
+            "main_point": self.main_point, "status": self.status, "officer": self.officer or "", "remarks": self.remarks,
             "blotter_docket_no": b.docket_no if b else None,
             "complainant": b.complainant if b else None,
             "complainant_addr": b.complainant_addr if b else None,

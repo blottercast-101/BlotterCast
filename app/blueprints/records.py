@@ -97,7 +97,9 @@ def update_settlement_status(settlement_id):
         settlement.date_confrontation = parse_date(d.get("dateConfrontation") or d.get("date_confrontation"))
     if d.get("mainPoint") or d.get("main_point"):
         settlement.main_point = d.get("mainPoint") or d.get("main_point")
-    if d.get("remarks"):
+    if d.get("officer") or d.get("officer_in_charge"):
+        settlement.officer = (d.get("officer") or d.get("officer_in_charge") or "").strip()
+    if d.get("remarks") is not None:
         settlement.remarks = d.get("remarks")
 
     _sync_settlement_to_blotter_and_incident(settlement)
@@ -1264,7 +1266,9 @@ def _settlements():
             nature="Criminal" if b.case_type == "CRIM" else "Civil", date_filed=b.date_filed,
             date_confrontation=parse_date(d.get("dateConfrontation")) or None, action_taken=d.get("actionTaken", ""),
             date_settlement=parse_date(d.get("dateSettlement")) or None, date_execution=parse_date(d.get("dateExecution")) or None,
-            main_point=d.get("mainPoint", ""), status=status_val, remarks=d.get("remarks", ""),
+            main_point=d.get("mainPoint", ""), status=status_val,
+            officer=(d.get("officer") or d.get("officer_in_charge") or "").strip(),
+            remarks=d.get("remarks", ""),
             archived=False,
         )
         db.session.add(settlement)
@@ -1304,6 +1308,8 @@ def _settlements():
         settlement.date_settlement = parse_date(d.get("dateSettlement")) or None
         settlement.date_execution = parse_date(d.get("dateExecution")) or None
         settlement.main_point = d.get("mainPoint", "")
+        if d.get("officer") or d.get("officer_in_charge"):
+            settlement.officer = (d.get("officer") or d.get("officer_in_charge") or "").strip()
         raw_put_status = (d.get("status") or settlement.status or "Pending").strip()
         if raw_put_status in ("Resolved", "Settled", "Complied"):
             settlement.status = "Complied"
