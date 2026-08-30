@@ -566,10 +566,17 @@ def _trends_impl():
                 "settlement_rate": round((z_res / max(1, z_tot)) * 100, 1) if z_tot > 0 else 0.0,
             })
 
+        peak_month_num = max(inc_by_month, key=inc_by_month.get) if inc_by_month and any(inc_by_month.values()) else None
+        peak_month_count = inc_by_month.get(peak_month_num, 0) if peak_month_num else 0
+        FULL_MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        peak_month_name = FULL_MONTH_NAMES[peak_month_num - 1] if peak_month_num and peak_month_count > 0 else "N/A"
+
         summary_obj = {
             "total_incidents": total_incidents,
             "total_blottered": total_blottered,
             "elevation_rate": elevation_rate,
+            "peak_month": peak_month_name,
+            "peak_month_count": peak_month_count,
             "total_blotter_cases": total_blotter_cases,
             "total_settled_blotters": total_settled_blotters,
             "lupon_settlement_rate": settlement_rate,

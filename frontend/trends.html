@@ -129,11 +129,11 @@
 
       <div class="stat-card-grad moss cursor-default">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Elevation Rate</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="trends" data-icon-size="18"></div>
+          <span class="text-white/80 text-sm font-medium">Peak Month</span>
+          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="calendar" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="kpiElevationRate">—</div>
-        <div class="text-xs text-white/70 mt-1">Escalated to Lupon Tagapamayapa</div>
+        <div class="font-display text-2xl sm:text-3xl text-white truncate" id="kpiPeakMonth">—</div>
+        <div class="text-xs text-white/70 mt-1" id="kpiPeakMonthSub">Highest incident volume</div>
       </div>
 
       <div class="stat-card-grad dark cursor-default">
@@ -283,14 +283,14 @@ async function initYears() {
     renderFromData(data || {});
   } catch (err) {
     console.error('initYears trends error:', err);
-    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], false, '0');
+    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiPeakMonth', 'kpiSettlementRate'], false, '0');
     bcSetTableError('zonalMatrixBody', 'Could not load trends matrix from server.', 'initYears()', 6);
     showToast('Could not load trends data: ' + err.message, 'error');
   }
 }
 
 async function updateCharts() {
-  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], true);
+  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiPeakMonth', 'kpiSettlementRate'], true);
   bcRenderTableSkeleton('zonalMatrixBody', { cols: 6, rows: 7 });
   const year = document.getElementById('trendYear').value;
   try {
@@ -298,7 +298,7 @@ async function updateCharts() {
     renderFromData(data || {});
   } catch (err) {
     console.error('updateCharts trends error:', err);
-    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], false, '0');
+    bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiPeakMonth', 'kpiSettlementRate'], false, '0');
     bcSetTableError('zonalMatrixBody', 'Could not load trends matrix for selected year.', 'updateCharts()', 6);
     showToast('Could not load trends data: ' + err.message, 'error');
   }
@@ -310,28 +310,11 @@ function renderFromData(data) {
   
   const totalIncidents = summary.total_incidents ?? data?.total ?? 0;
   const totalBlottered = summary.total_blottered ?? 0;
-  const elevationRate = summary.elevation_rate ?? (totalIncidents > 0 ? ((totalBlottered / totalIncidents) * 100).toFixed(1) : 0);
   const settlementRate = summary.lupon_settlement_rate ?? summary.settlement_rate ?? 0;
   const totalSettled = summary.total_settled_blotters ?? summary.resolvedCount ?? 0;
   const totalBlotters = summary.total_blotter_cases ?? totalBlottered;
 
-  // 1. Update 4 Top KPI Cards
-  document.getElementById('kpiTotal').textContent = totalIncidents;
-  document.getElementById('kpiElevated').textContent = totalBlottered;
-  document.getElementById('kpiElevationRate').textContent = `${Number(elevationRate).toFixed(1)}%`;
-  document.getElementById('kpiSettlementRate').textContent = `${Number(settlementRate).toFixed(1)}%`;
-  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases resolved`;
-
-  const prevYearTotal = summary.prevYearTotal ?? data?.prevYearTotal ?? 0;
-  if (prevYearTotal > 0) {
-    const diffPct = Math.abs(Math.round(((totalIncidents - prevYearTotal) / prevYearTotal) * 100));
-    const icon = totalIncidents >= prevYearTotal ? '↑' : '↓';
-    document.getElementById('kpiTotalSub').textContent = `${icon} ${diffPct}% vs ${Number(year) - 1}`;
-  } else {
-    document.getElementById('kpiTotalSub').textContent = 'All field incident logs';
-  }
-
-  // 2. Comparative Dual-Line / Area Chart
+  // 1. Comparative Dual-Line / Area Chart & Monthly Aggregation
   document.getElementById('lineTitle').textContent = `Monthly Comparative Pipeline (${year})`;
   const timeline = data?.timeline || [];
   const monthlyIncidents = new Array(12).fill(0);
@@ -352,6 +335,46 @@ function renderFromData(data) {
       const idx = (row.m || 1) - 1;
       if (idx >= 0 && idx < 12) monthlyIncidents[idx] = row.c ?? 0;
     });
+  }
+
+  // 2. Peak Month Calculation
+  const FULL_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  let peakMonthName = 'N/A';
+  let peakCount = 0;
+  
+  for (let i = 0; i < 12; i++) {
+    const c = monthlyIncidents[i] || 0;
+    if (c > peakCount) {
+      peakCount = c;
+      peakMonthName = FULL_MONTH_NAMES[i];
+    }
+  }
+
+  // 3. Update 4 Top KPI Cards
+  document.getElementById('kpiTotal').textContent = totalIncidents;
+  document.getElementById('kpiElevated').textContent = totalBlottered;
+  
+  const peakMonthEl = document.getElementById('kpiPeakMonth');
+  const peakMonthSubEl = document.getElementById('kpiPeakMonthSub');
+  if (peakMonthEl) {
+    peakMonthEl.textContent = peakCount > 0 ? peakMonthName : 'N/A';
+  }
+  if (peakMonthSubEl) {
+    peakMonthSubEl.textContent = peakCount > 0
+      ? `${peakCount} recorded incident${peakCount !== 1 ? 's' : ''}`
+      : '0 incidents';
+  }
+
+  document.getElementById('kpiSettlementRate').textContent = `${Number(settlementRate).toFixed(1)}%`;
+  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases resolved`;
+
+  const prevYearTotal = summary.prevYearTotal ?? data?.prevYearTotal ?? 0;
+  if (prevYearTotal > 0) {
+    const diffPct = Math.abs(Math.round(((totalIncidents - prevYearTotal) / prevYearTotal) * 100));
+    const icon = totalIncidents >= prevYearTotal ? '↑' : '↓';
+    document.getElementById('kpiTotalSub').textContent = `${icon} ${diffPct}% vs ${Number(year) - 1}`;
+  } else {
+    document.getElementById('kpiTotalSub').textContent = 'All field incident logs';
   }
 
   if (lineChart) lineChart.destroy();
