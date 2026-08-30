@@ -574,8 +574,9 @@ async function resetDemoData() {
   if (!(await bcConfirm('Reset all records to a freshly seeded demo dataset? Records you added will be removed. This runs api/seed.php on the server.', { title: 'Reset Demo Data', okLabel: 'Reset', danger: true }))) return;
   try {
     await BCApi._fetch('api/seed.php');
-    showToast('Demo dataset reseeded. Reloading…');
-    setTimeout(() => window.location.reload(), 1200);
+    if (typeof BCApi.invalidateCache === 'function') BCApi.invalidateCache();
+    showToast('Demo dataset reseeded successfully!');
+    await Promise.all([loadSettings(), loadBackupHistory(), loadMyAccount()]);
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -641,9 +642,28 @@ async function saveMyAccount() {
   try {
     const result = await BCApi.updateMyAccount(fullName, email, contact);
     showToast('Account details updated successfully.');
-    // Keep the sidebar's name/role display in sync immediately.
-    const nameEl = document.querySelector('[data-user-name]');
-    if (nameEl) nameEl.textContent = result.user.fullName;
+    
+    // Immediately synchronize local storage & session storage
+    let cachedUser = {};
+    try {
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      cachedUser = raw ? JSON.parse(raw) : {};
+    } catch (_) {}
+    cachedUser.full_name = fullName;
+    cachedUser.fullName = fullName;
+    cachedUser.email = email;
+    cachedUser.contact = contact;
+    try {
+      localStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
+      localStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
+    } catch (_) {}
+
+    // Re-hydrate all user badge elements across the page
+    if (typeof bcHydrateCachedSession === 'function') {
+      bcHydrateCachedSession();
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }

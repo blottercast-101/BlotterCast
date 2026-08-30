@@ -703,6 +703,9 @@
     if (typeof userOrName === 'object' && userOrName !== null) {
       try {
         localStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
+        sessionStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
+        localStorage.setItem('currentUser', JSON.stringify(userOrName));
+        sessionStorage.setItem('currentUser', JSON.stringify(userOrName));
       } catch (e) {}
     }
 

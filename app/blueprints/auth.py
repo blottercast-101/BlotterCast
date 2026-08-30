@@ -757,17 +757,25 @@ def _me():
     if timeout_seconds > 0 and last_activity and (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
         session.clear()
         return jsonify({"authenticated": False})
-    session["last_activity"] = datetime.utcnow().timestamp()
-
     uid = session.get("user_id")
+    user_obj = None
     if uid:
-        user = db.session.get(User, uid)
-        if user and user.status != "Suspended":
-            user.last_seen = datetime.utcnow()
+        user_obj = db.session.get(User, uid)
+        if user_obj and user_obj.status != "Suspended":
+            user_obj.last_seen = datetime.utcnow()
+            session["full_name"] = user_obj.full_name
+            session["role"] = user_obj.role
+            session["username"] = user_obj.username
             db.session.commit()
 
+    active_full_name = (user_obj.full_name if user_obj else None) or session.get("full_name") or "User"
+    active_role = (user_obj.role if user_obj else None) or session.get("role") or "Desk Officer"
+
     return jsonify({"authenticated": True, "user": {
-        "full_name": session.get("full_name"), "role": session.get("role"),
+        "full_name": active_full_name,
+        "fullName": active_full_name,
+        "role": active_role,
+        "username": session.get("username"),
         "mustChangePassword": bool(session.get("must_change_password")),
     }})
 
@@ -904,10 +912,11 @@ def _update_my_account():
     user.full_name = full_name
     user.email = email
     user.contact_no = contact
+    session["full_name"] = full_name
     db.session.commit()
     log_audit(user.username, "Updated", "System", "Updated their own account details")
 
     return jsonify({"ok": True, "user": {
-        "username": user.username, "fullName": user.full_name,
+        "username": user.username, "fullName": user.full_name, "full_name": user.full_name,
         "email": user.email, "contact": user.contact_no, "role": user.role,
     }})

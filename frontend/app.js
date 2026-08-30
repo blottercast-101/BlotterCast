@@ -163,22 +163,35 @@ function bcHydrateCachedSession() {
   }
   if (!user) return;
 
-  const nameEl = document.querySelector('[data-user-name]');
-  const roleEl = document.querySelector('[data-user-role]');
-  const avatarEl = document.querySelector('[data-user-avatar]');
-  const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
+  const fullName = user.full_name || user.fullName || user.name || '';
+  const role = user.role || '';
 
-  if (nameEl && user.full_name) nameEl.textContent = user.full_name;
-  if (roleEl && user.role) roleEl.textContent = user.role;
-  if (avatarEl && user.full_name) avatarEl.textContent = bcInitials(user.full_name);
-  if (greetingEl && user.full_name) {
-    const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
+  document.querySelectorAll('[data-user-name]').forEach(el => {
+    if (fullName) el.textContent = fullName;
+  });
+  document.querySelectorAll('[data-user-role]').forEach(el => {
+    if (role) el.textContent = role;
+  });
+  document.querySelectorAll('[data-user-avatar]').forEach(el => {
+    if (fullName) el.textContent = bcInitials(fullName);
+  });
+  document.querySelectorAll('[data-user-greeting]').forEach(el => {
+    if (fullName) {
+      const firstName = bcFirstName(fullName);
+      el.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+    }
+  });
+  const greetingEl = document.getElementById('dashboardGreeting');
+  if (greetingEl && fullName) {
+    const firstName = bcFirstName(fullName);
     greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
   }
-  if (user.role && typeof applyNavPermissions === 'function') {
-    applyNavPermissions(user.role);
+  if (role && typeof applyNavPermissions === 'function') {
+    applyNavPermissions(role);
   }
 }
+window.bcHydrateCachedSession = bcHydrateCachedSession;
+window.updateUserBadge = bcHydrateCachedSession;
 
 // Immediately hydrate cached user profile on script load and DOMContentLoaded
 bcHydrateCachedSession();
@@ -753,17 +766,7 @@ async function requireAuth() {
       bcPrewarmMLService();
       if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(role);
 
-      const nameEl = document.querySelector('[data-user-name]');
-      const roleEl = document.querySelector('[data-user-role]');
-      const avatarEl = document.querySelector('[data-user-avatar]');
-      const greetingEl = document.querySelector('[data-user-greeting]') || document.getElementById('dashboardGreeting');
-      if (nameEl && status.user.full_name) nameEl.textContent = status.user.full_name;
-      if (roleEl && status.user.role) roleEl.textContent = status.user.role;
-      if (avatarEl && status.user.full_name) avatarEl.textContent = bcInitials(status.user.full_name);
-      if (greetingEl && status.user.full_name) {
-        const firstName = bcFirstName(status.user.full_name || status.user.firstName || status.user.first_name);
-        greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
-      }
+      bcHydrateCachedSession();
       if (status.user.mustChangePassword) bcShowForcedPasswordChange();
       bcSyncTimeFormatFromServer().catch(() => {});
       _bcStartIdleTracker();
@@ -954,6 +957,10 @@ async function doLogout() {
     localStorage.removeItem('bc_last_active_timestamp');
     localStorage.removeItem('bc_cached_user');
     sessionStorage.removeItem('bc_cached_user');
+    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
+    localStorage.removeItem('bc_user');
+    sessionStorage.removeItem('bc_user');
   } catch (e) {}
   try { await BCApi.logout(); } catch (e) {}
   window.location.replace('login.html');

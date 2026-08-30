@@ -1972,7 +1972,11 @@
       narrative: inc.description
     };
     sessionStorage.setItem('elevate_blotter_data', JSON.stringify(elevatePayload));
-    window.location.href = 'blotter.html?elevate=1';
+    if (typeof bcNavigate === 'function') {
+      bcNavigate('blotter.html?elevate=1');
+    } else {
+      window.location.href = 'blotter.html?elevate=1';
+    }
   }
 
   async function saveIncident() {
@@ -2207,10 +2211,12 @@
     if (zone) params.set('zone', zone);
     if (lat) params.set('lat', lat);
     if (lng) params.set('lng', lng);
-    params.set('focus', 'marker');
-    params.set('highlight', 'true');
-
-    window.location.href = `heatmap.html?${params.toString()}`;
+    const heatmapTarget = `heatmap.html?${params.toString()}`;
+    if (typeof bcNavigate === 'function') {
+      bcNavigate(heatmapTarget);
+    } else {
+      window.location.href = heatmapTarget;
+    }
   }
 
   function viewIncident(id) {

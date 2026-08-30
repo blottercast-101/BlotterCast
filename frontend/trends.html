@@ -377,107 +377,127 @@ function renderFromData(data) {
     document.getElementById('kpiTotalSub').textContent = 'All field incident logs';
   }
 
-  if (lineChart) lineChart.destroy();
-  const lineCtx = document.getElementById('lineChart').getContext('2d');
-  
-  const grad1 = lineCtx.createLinearGradient(0, 0, 0, 240);
-  grad1.addColorStop(0, 'rgba(35, 112, 60, 0.25)');
-  grad1.addColorStop(1, 'rgba(35, 112, 60, 0.01)');
+  const lineCanvas = document.getElementById('lineChart');
+  if (lineCanvas) {
+    if (lineChart && lineChart.canvas === lineCanvas) {
+      lineChart.data.labels = MONTHS;
+      lineChart.data.datasets[0].data = monthlyIncidents;
+      lineChart.data.datasets[1].data = monthlyBlottered;
+      lineChart.data.datasets[2].data = monthlyResolved;
+      lineChart.update();
+    } else {
+      if (lineChart) lineChart.destroy();
+      const lineCtx = lineCanvas.getContext('2d');
+      
+      const grad1 = lineCtx.createLinearGradient(0, 0, 0, 240);
+      grad1.addColorStop(0, 'rgba(35, 112, 60, 0.25)');
+      grad1.addColorStop(1, 'rgba(35, 112, 60, 0.01)');
 
-  const grad2 = lineCtx.createLinearGradient(0, 0, 0, 240);
-  grad2.addColorStop(0, 'rgba(217, 119, 6, 0.25)');
-  grad2.addColorStop(1, 'rgba(217, 119, 6, 0.01)');
+      const grad2 = lineCtx.createLinearGradient(0, 0, 0, 240);
+      grad2.addColorStop(0, 'rgba(217, 119, 6, 0.25)');
+      grad2.addColorStop(1, 'rgba(217, 119, 6, 0.01)');
 
-  lineChart = new Chart(lineCtx, {
-    type: 'line',
-    data: {
-      labels: MONTHS,
-      datasets: [
-        {
-          label: 'Total Incidents',
-          data: monthlyIncidents,
-          borderColor: '#23703c',
-          backgroundColor: grad1,
-          borderWidth: 2.5,
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#23703c',
-          pointBorderWidth: 2,
-          pointRadius: 4,
+      lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: MONTHS,
+          datasets: [
+            {
+              label: 'Total Incidents',
+              data: monthlyIncidents,
+              borderColor: '#23703c',
+              backgroundColor: grad1,
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#23703c',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+            },
+            {
+              label: 'Elevated Blotters',
+              data: monthlyBlottered,
+              borderColor: '#d97706',
+              backgroundColor: grad2,
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#d97706',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+            },
+            {
+              label: 'Resolved Cases',
+              data: monthlyResolved,
+              borderColor: '#0e7c86',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.35,
+              fill: false,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#0e7c86',
+              pointBorderWidth: 2,
+              pointRadius: 3,
+            }
+          ]
         },
-        {
-          label: 'Elevated Blotters',
-          data: monthlyBlottered,
-          borderColor: '#d97706',
-          backgroundColor: grad2,
-          borderWidth: 2.5,
-          tension: 0.35,
-          fill: true,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#d97706',
-          pointBorderWidth: 2,
-          pointRadius: 4,
-        },
-        {
-          label: 'Resolved Cases',
-          data: monthlyResolved,
-          borderColor: '#0e7c86',
-          borderWidth: 2,
-          borderDash: [4, 4],
-          tension: 0.35,
-          fill: false,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#0e7c86',
-          pointBorderWidth: 2,
-          pointRadius: 3,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#123d22',
+              padding: 10,
+              cornerRadius: 8,
+              titleFont: { weight: '600' }
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } },
+            x: { grid: { display: false }, border: { display: false } }
+          }
         }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#123d22',
-          padding: 10,
-          cornerRadius: 8,
-          titleFont: { weight: '600' }
-        }
-      },
-      scales: {
-        y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false } },
-        x: { grid: { display: false }, border: { display: false } }
-      }
+      });
     }
-  });
+  }
 
   // 3. Category Doughnut Chart & Severity Breakdown
   const categories = data?.categories || [];
   const catNames = categories.map(c => c.category || 'Other');
   const catCounts = categories.map(c => c.count ?? c.c ?? 0);
 
-  if (doughnutChart) doughnutChart.destroy();
-  doughnutChart = new Chart(document.getElementById('doughnutChart'), {
-    type: 'doughnut',
-    data: {
-      labels: catNames,
-      datasets: [{
-        data: catCounts,
-        backgroundColor: COLORS,
-        borderWidth: 3,
-        borderColor: '#fff',
-        hoverOffset: 6
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
-      },
-      cutout: '68%'
+  const doughnutCanvas = document.getElementById('doughnutChart');
+  if (doughnutCanvas) {
+    if (doughnutChart && doughnutChart.canvas === doughnutCanvas) {
+      doughnutChart.data.labels = catNames;
+      doughnutChart.data.datasets[0].data = catCounts;
+      doughnutChart.update();
+    } else {
+      if (doughnutChart) doughnutChart.destroy();
+      doughnutChart = new Chart(doughnutCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: catNames,
+          datasets: [{
+            data: catCounts,
+            backgroundColor: COLORS,
+            borderWidth: 3,
+            borderColor: '#fff',
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
+          },
+          cutout: '68%'
+        }
+      });
     }
-  });
+  }
 
   document.getElementById('doughnutLegend').innerHTML = categories.map((cat, i) => {
     const name = cat.category || 'Other';

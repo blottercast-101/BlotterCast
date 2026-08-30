@@ -343,7 +343,7 @@
         const dNo = r.docket_no || r.docketNo || '';
         const statusClass = r.status === 'Resolved' ? 'badge-resolved' : r.status === 'Ongoing' ? 'badge-ongoing' : 'badge-pending';
         tbody.innerHTML += `
-          <tr class="hover:bg-forest-50/70 transition-colors cursor-pointer" onclick="window.location.href='blotter.html?highlight=${encodeURIComponent(dNo)}'" title="View and highlight in Blotter Records">
+          <tr class="hover:bg-forest-50/70 transition-colors cursor-pointer" onclick="if(typeof bcNavigate==='function') bcNavigate('blotter.html?highlight=' + encodeURIComponent('${dNo}')); else window.location.href='blotter.html?highlight=' + encodeURIComponent('${dNo}');" title="View and highlight in Blotter Records">
             <td class="font-semibold text-forest-700">${dNo || '—'}</td>
             <td>${r.complainant || '—'}</td>
             <td>${r.nature || '—'}</td>

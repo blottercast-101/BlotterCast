@@ -112,12 +112,18 @@ function applyElementPermissionsLive(role) {
 
 function bcGetCachedUser() {
   try {
-    const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+    const raw = localStorage.getItem('bc_cached_user') || 
+                sessionStorage.getItem('bc_cached_user') ||
+                localStorage.getItem('currentUser') ||
+                sessionStorage.getItem('currentUser') ||
+                localStorage.getItem('bc_user') ||
+                sessionStorage.getItem('bc_user');
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
     return null;
   }
 }
+window.bcGetCachedUser = bcGetCachedUser;
 
 // Block direct navigation to a gated page the current role can't use.
 // Returns true if access is allowed, false if the page redirected away.

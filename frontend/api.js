@@ -8,6 +8,29 @@ const BC_API = '.'; // same-origin, relative to current folder: http://localhost
 // go through api/ml_proxy.php so login + role permissions are enforced.
 
 const BCApi = {
+  _memoryCache: new Map(),
+
+  async _cachedFetch(cacheKey, fetchFn, ttlMs = 300000) {
+    const now = Date.now();
+    const entry = this._memoryCache.get(cacheKey);
+    if (entry && (now - entry.timestamp < ttlMs)) {
+      return entry.data;
+    }
+    const data = await fetchFn();
+    this._memoryCache.set(cacheKey, { timestamp: now, data });
+    return data;
+  },
+
+  invalidateCache(pattern = null) {
+    if (!pattern) {
+      this._memoryCache.clear();
+    } else {
+      for (const k of this._memoryCache.keys()) {
+        if (k.includes(pattern)) this._memoryCache.delete(k);
+      }
+    }
+  },
+
   async _fetch(url, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
     let finalUrl = url;
@@ -35,6 +58,20 @@ const BCApi = {
     }
     const data = res.status === 204 ? null : await res.json();
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      if (url.includes('census') || url.includes('type=census')) {
+        this.invalidateCache('census');
+      }
+      if (url.includes('users') || url.includes('captain_signature')) {
+        this.invalidateCache('captain');
+        this.invalidateCache('users');
+      }
+      if (url.includes('incidents') || url.includes('blotter') || url.includes('settlements')) {
+        this.invalidateCache('trends');
+        this.invalidateCache('dashboard');
+        this.invalidateCache('heatmap');
+        this.invalidateCache('analytics');
+      }
+
       const isSystemPing = url.includes('action=heartbeat') || url.includes('action=check_session') || url.includes('action=unread_count');
       if (!isSystemPing && !opts.skipBroadcast) {
         try {
@@ -209,7 +246,7 @@ const BCApi = {
       return this._fetch(`${BC_API}/api/analytics.php?action=trends${year ? '&year=' + year : ''}`);
     });
   },
-  zones() { return this._fetch(`${BC_API}/api/analytics.php?action=zones`); },
+  zones() { return this._cachedFetch('zones_geojson', () => this._fetch(`${BC_API}/api/analytics.php?action=zones`), 600000); },
   zoneDensity(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return this._fetch(`${BC_API}/api/analytics.php?action=zone-density${qs ? '&' + qs : ''}`);
@@ -267,7 +304,7 @@ const BCApi = {
   removeSignature(userId) {
     return this._fetch(`${BC_API}/api/users.php?action=remove_signature&id=${userId}`, { method: 'POST' });
   },
-  captainSignature() { return this._fetch(`${BC_API}/api/users.php?action=captain_signature`); },
+  captainSignature() { return this._cachedFetch('captain_signature', () => this._fetch(`${BC_API}/api/users.php?action=captain_signature`), 300000); },
   notifList(limit = 20) { return this._fetch(`${BC_API}/api/notifications.php?action=list&limit=${limit}`); },
   notifUnreadCount() { return this._fetch(`${BC_API}/api/notifications.php?action=unread_count`); },
   notifMarkRead(id) { return this._fetch(`${BC_API}/api/notifications.php?action=mark_read&id=${id}`, { method: 'POST' }); },
@@ -276,6 +313,9 @@ const BCApi = {
   // ---- census / clearance / indigency (record & monitor only) ----
   docList(type, params = {}) {
     const qs = new URLSearchParams({ type, ...params }).toString();
+    if (type === 'census' && (!params || Object.keys(params).length === 0)) {
+      return this._cachedFetch('census_active_records', () => this._fetch(`${BC_API}/api/documents.php?${qs}`), 180000);
+    }
     return this._fetch(`${BC_API}/api/documents.php?${qs}`);
   },
   docRestore(type, id) {

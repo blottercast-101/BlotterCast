@@ -904,7 +904,11 @@
     };
     if (!editingId && !elevateSourceIncidentId) {
       await bcAlert('All official Blotter cases must originate from an Incident Report. Please file or select an Incident Report and click "Elevate to Blotter".', { title: 'Elevation Required', okLabel: 'Go to Incidents' });
-      window.location.href = 'incident.html';
+      if (typeof bcNavigate === 'function') {
+        bcNavigate('incident.html');
+      } else {
+        window.location.href = 'incident.html';
+      }
       return;
     }
     if (!editingId && elevateSourceIncidentId) {
