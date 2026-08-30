@@ -1,4 +1,6 @@
 // app.js — shared application logic
+window.BC_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+window.BC_SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // Local "YYYY-MM-DD" for today — deliberately NOT `new Date().toISOString()`,
 // since that gives the UTC date. In timezones ahead of UTC (e.g. the
@@ -639,6 +641,7 @@ async function navigateTo(url, pushState = true) {
           const safeScript = rawScript
             .replace(/\b(const|let)\s*\{/g, 'var {')
             .replace(/\b(const|let)\s*\[/g, 'var [')
+            .replace(/\b(const|let)\s+([a-zA-Z0-9_$]+)\s*=/g, 'var $2 =')
             .replace(/\bconst\s+/g, 'var ')
             .replace(/\blet\s+/g, 'var ');
 

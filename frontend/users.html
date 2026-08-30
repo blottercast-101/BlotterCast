@@ -243,7 +243,7 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
-const permissions = [
+var permissions = [
   { label:'View All Records',    admin:true, captain:true,  officer:true,  encoder:true  },
   { label:'Add Blotter Entry',   admin:true, captain:true,  officer:true,  encoder:true  },
   { label:'Edit Any Record',     admin:true, captain:true,  officer:true,  encoder:true  },
@@ -257,7 +257,7 @@ const permissions = [
   { label:'System Settings',     admin:true, captain:false, officer:false, encoder:false },
 ];
 
-const check = v => v
+var check = v => v
   ? '<span class="perm-yes" data-icon="check" data-icon-size="14"></span>'
   : '<span class="perm-no">&#8212;</span>';
 
@@ -270,7 +270,7 @@ document.getElementById('permMatrix').innerHTML = permissions.map(p=>`
     <td class="perm-cell">${check(p.encoder)}</td>
   </tr>`).join('');
 
-let usersData = []; let usersPage = 1; const USERS_ROWS = 8;
+var usersData = []; var usersPage = 1; var USERS_ROWS = 8;
 let editUserId = null;function mapUser(u) {
   const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
   return {

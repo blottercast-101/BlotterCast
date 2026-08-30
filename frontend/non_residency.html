@@ -255,7 +255,7 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
-const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
 let nrLogData=[]; let nrPage=1; const NR_ROWS=8;
 
 function mapNonResidency(r) {

@@ -1401,8 +1401,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
 }
 .cert-sheet {
-  position: relative; width: 680px; aspect-ratio: 1795 / 2539;
-  background: white; box-shadow: var(--shadow-md);
+  position: relative;
+  width: 680px;
+  max-width: 100%;
+  aspect-ratio: 1795 / 2539;
+  background: white;
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#certPrint {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  overflow-x: auto;
 }
 .cert-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .cert-ov {
