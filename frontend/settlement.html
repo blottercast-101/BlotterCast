@@ -387,16 +387,25 @@
   let blotterOptions = []; // cases available to attach a new settlement to
 
   async function loadBlotterOptionsForPicker() {
-    const raw = await BCApi.list('blotter');
-    const settledBlotterIds = new Set(settlementData.map(s => s.blotterId));
-    // Only offer blotter cases that don't already have a settlement attached —
-    // one settlement per blotter case, matching how the real logbook works.
-    blotterOptions = raw
-      .filter(b => !settledBlotterIds.has(Number(b.id)))
-      .map(b => ({
-        id: Number(b.id), docketNo: b.docket_no, complainant: b.complainant, respondent: b.respondent,
-        nature: b.nature, caseType: b.case_type, dateFiled: b.date_filed,
-      }));
+    try {
+      const raw = await BCApi.list('blotter');
+      // Include all active (non-archived) blotter records (Pending, Ongoing, etc.)
+      blotterOptions = (raw || [])
+        .filter(b => !b.archived)
+        .map(b => ({
+          id: Number(b.id),
+          docketNo: b.docket_no || b.docketNo || '',
+          complainant: b.complainant || '',
+          respondent: b.respondent || '',
+          nature: b.nature || '',
+          caseType: b.case_type || b.caseType || 'CRIM',
+          dateFiled: b.date_filed || b.dateFiled || '',
+          status: b.status || 'Pending'
+        }));
+    } catch (e) {
+      console.error('Error loading blotter options for picker:', e);
+      blotterOptions = [];
+    }
     _bindBlotterCasePicker();
   }
 
@@ -415,8 +424,12 @@
 
   function _formatDateFiled(dateStr) {
     if (!dateStr) return '—';
-    const [y, m, d] = dateStr.split('-');
-    return `${m}/${d}/${y}`;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts;
+      return `${m}/${d}/${y}`;
+    }
+    return dateStr;
   }
 
   function _filterBlotterCases() {
@@ -428,19 +441,30 @@
     const matches = q === ''
       ? blotterOptions.slice(0, 20)
       : blotterOptions.filter(b =>
-          b.docketNo.toLowerCase().includes(q) ||
+          (b.docketNo || '').toLowerCase().includes(q) ||
+          (b.complainant || '').toLowerCase().includes(q) ||
+          (b.respondent || '').toLowerCase().includes(q) ||
+          (b.nature || '').toLowerCase().includes(q) ||
           `${b.complainant} vs. ${b.respondent}`.toLowerCase().includes(q)
         ).slice(0, 20);
 
     if (matches.length === 0) {
-      list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching blotter cases.' : 'No blotter cases available to settle.'}</div>`;
+      list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching blotter cases.' : 'No active blotter cases available.'}</div>`;
     } else {
-      list.innerHTML = matches.map(b => `
-        <button type="button" class="w-full text-left px-3 py-2 hover:bg-forest-50 border-b border-forest-50 last:border-0"
+      list.innerHTML = matches.map(b => {
+        const isOngoing = (b.status || '').toLowerCase() === 'ongoing';
+        const isPending = (b.status || '').toLowerCase() === 'pending';
+        const badgeClass = isOngoing ? 'bg-amber-100 text-amber-800' : (isPending ? 'bg-forest-100 text-forest-800' : 'bg-gray-100 text-gray-700');
+        return `
+        <button type="button" class="w-full text-left px-3 py-2.5 hover:bg-forest-50 border-b border-forest-50 last:border-0 transition-colors"
                 onclick="chooseBlotterCase(${b.id})">
-          <div class="text-sm font-semibold text-forest-800">${b.docketNo}</div>
-          <div class="text-xs text-forest-500">${b.complainant} vs. ${b.respondent} &middot; Filed ${_formatDateFiled(b.dateFiled)}</div>
-        </button>`).join('');
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-forest-800">${b.docketNo}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeClass}">${(b.status || 'Pending').toUpperCase()}</span>
+          </div>
+          <div class="text-xs text-forest-500 mt-0.5">${b.complainant} vs. ${b.respondent} &middot; Filed ${_formatDateFiled(b.dateFiled)} &middot; ${b.nature || ''}</div>
+        </button>`;
+      }).join('');
     }
     list.classList.remove('hidden');
   }
