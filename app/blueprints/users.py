@@ -84,13 +84,24 @@ def _captain_signature():
     row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
     if not capt_name and row and row.full_name:
         capt_name = row.full_name
+
+    sig_path = None
+    if row and row.signature_path:
+        rel = row.signature_path.lstrip("/")
+        full_p = os.path.join(current_app.static_folder, rel)
+        if os.path.isfile(full_p):
+            sig_path = f"/{rel}"
+
+    if not sig_path:
+        sig_path = "/assets/signatures/default-kapitan-signature.png"
+
     return jsonify({
         "fullName": capt_name or "Kapitan Jose Reyes",
         "signatory_captain": capt_name or "Kapitan Jose Reyes",
         "barangay_captain": capt_name or "Kapitan Jose Reyes",
         "captain_name": capt_name or "Kapitan Jose Reyes",
         "punong_barangay": capt_name or "Kapitan Jose Reyes",
-        "signaturePath": row.signature_path if row else None,
+        "signaturePath": sig_path,
     })
 
 
@@ -307,16 +318,11 @@ def _upload_signature():
     os.makedirs(sig_dir, exist_ok=True)
 
     ext = "png" if file.mimetype == "image/png" else "jpeg"
-    filename = secure_filename(f"sig-{uid}-{int(time.time())}.{ext}")
+    filename = secure_filename(f"captain_signature_{uid}.{ext}")
     dest_path = os.path.join(sig_dir, filename)
     file.save(dest_path)
 
-    if user.signature_path:
-        old_file = os.path.join(current_app.static_folder, user.signature_path)
-        if os.path.isfile(old_file):
-            os.remove(old_file)
-
-    relative_path = f"assets/signatures/{filename}"
+    relative_path = f"/assets/signatures/{filename}"
     user.signature_path = relative_path
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"Signature uploaded for {user.username}")

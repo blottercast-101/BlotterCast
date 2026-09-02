@@ -288,6 +288,8 @@ const BCApi = {
       try { msg = (await res.json()).error || msg; } catch (e) {}
       throw new Error(msg);
     }
+    this.invalidateCache('captain');
+    this.invalidateCache('users');
     return res.json();
   },
   async importBlotterFile(file) {
@@ -304,7 +306,9 @@ const BCApi = {
     }
     return res.json();
   },
-  removeSignature(userId) {
+  async removeSignature(userId) {
+    this.invalidateCache('captain');
+    this.invalidateCache('users');
     return this._fetch(`${BC_API}/api/users.php?action=remove_signature&id=${userId}`, { method: 'POST' });
   },
   captainSignature() { return this._cachedFetch('captain_signature', () => this._fetch(`${BC_API}/api/users.php?action=captain_signature`), 300000); },

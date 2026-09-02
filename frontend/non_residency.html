@@ -186,7 +186,9 @@
             <div class="cert-ov cert-ov-nr-applicant-name" id="nr_applicant_name"></div>
             <div class="captain-signatory-block cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
               <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-              <div class="captain-sig-wrapper" id="nr_sigimg_wrap"></div>
+              <div class="captain-sig-wrapper" id="nr_sigimg_wrap">
+                <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
+              </div>
               <div class="h-9 flex items-end justify-center pb-0.5">
                 <span class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="nr_captain">
                   HON. ALEX ROQUE CRUZ
@@ -534,14 +536,19 @@ window.initNonResidency = async function () {
       const formattedCaptain = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
       if (capEl) capEl.textContent = formattedCaptain;
       const sigWrap = document.getElementById('nr_sigimg_wrap');
-      if (cap && cap.signaturePath && sigWrap) {
-        sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+      if (sigWrap) {
+        const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
+        sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
       }
     } catch (e) {
       const fallbackCaptain = typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz');
       const capEl = document.getElementById('nr_captain');
       const formattedCaptain = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
       if (capEl) capEl.textContent = formattedCaptain;
+      const sigWrap = document.getElementById('nr_sigimg_wrap');
+      if (sigWrap) {
+        sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
+      }
     }
 
     try { await loadNrResidentOptionsForPicker(); } catch (err) { showToast('Could not load Census records: ' + (err.message || err), 'error'); }

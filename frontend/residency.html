@@ -193,7 +193,9 @@
               <!-- Right Signatory: Punong Barangay -->
               <div class="captain-signatory-block cert-signatory-col w-48 text-center flex flex-col justify-end">
                 <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-                <div class="captain-sig-wrapper" id="r_sigimg_wrap"></div>
+                <div class="captain-sig-wrapper" id="r_sigimg_wrap">
+                  <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
+                </div>
                 <!-- Printed Captain Name above the line -->
                 <div class="h-9 flex items-end justify-center pb-0.5">
                   <span class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="r_captain">
@@ -586,13 +588,18 @@ window.initResidency = async function () {
       const capEl = document.getElementById('r_captain');
       if (capEl) capEl.textContent = captainName.toUpperCase();
       const sigWrap = document.getElementById('r_sigimg_wrap');
-      if (cap && cap.signaturePath && sigWrap) {
-        sigWrap.innerHTML = `<img src="${cap.signaturePath}" alt="Punong Barangay signature"/>`;
+      if (sigWrap) {
+        const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
+        sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
       }
     } catch (e) {
       const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
       const capEl = document.getElementById('r_captain');
       if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+      const sigWrap = document.getElementById('r_sigimg_wrap');
+      if (sigWrap) {
+        sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
+      }
     }
 
     try { await loadResResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
