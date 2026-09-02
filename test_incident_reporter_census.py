@@ -96,6 +96,39 @@ class IncidentReporterCensusTestCase(unittest.TestCase):
             self.assertIsNone(inc.reporter_resident_id)
             self.assertEqual(inc.reporter_address, "Meycauayan, Bulacan (Outside Barangay)")
 
+    def test_create_incident_with_unverified_reporter_defaults_to_non_resident(self):
+        with self.app.app_context():
+            mfa_login(self.client, "admin", "admin123")
+
+            # Create incident with manually typed reporter (no reporterResidentId passed)
+            res = self.client.post("/api/records.php?type=incidents", json={
+                "date": "2026-08-25",
+                "timeReported": "17:00",
+                "location": "Residence 3",
+                "zone": "Zone 1",
+                "category": "Public Disturbance",
+                "priority": "Medium",
+                "status": "Under Investigation",
+                "reporter": "SSD",
+                "reporterAddress": "Zone 1, Barangay Mapulang Lupa",
+                "isNonResident": False,
+            })
+            self.assertEqual(res.status_code, 201)
+            inc_id = res.get_json()["id"]
+
+            inc = Incident.query.get(inc_id)
+            self.assertIsNotNone(inc)
+            self.assertTrue(inc.is_non_resident, "Unlinked reporter must automatically default to is_non_resident = True")
+            self.assertIsNone(inc.reporter_resident_id)
+
+            get_res = self.client.get("/api/records.php?type=incidents")
+            self.assertEqual(get_res.status_code, 200)
+            items = get_res.get_json()
+            matching = next((x for x in items if x["id"] == inc_id), None)
+            self.assertIsNotNone(matching)
+            self.assertTrue(matching["is_non_resident"])
+            self.assertIsNone(matching["reporter_resident_id"])
+
 
 if __name__ == "__main__":
     unittest.main()

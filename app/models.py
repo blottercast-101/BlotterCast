@@ -283,6 +283,7 @@ class Incident(db.Model):
     reporter_resident = db.relationship("CensusRecord", foreign_keys=[reporter_resident_id], lazy="joined")
     complainant_resident = db.relationship("CensusRecord", foreign_keys=[complainant_resident_id], lazy="joined")
     guardian_resident = db.relationship("CensusRecord", foreign_keys=[guardian_resident_id], lazy="joined")
+    blotter_records = db.relationship("BlotterRecord", backref="source_incident", cascade="all, delete-orphan", passive_deletes=True)
 
     def __init__(
         self,
@@ -339,8 +340,12 @@ class Incident(db.Model):
         self.status = status
         self.is_blotter = bool(is_blotter)
         self.blotter_docket_no = blotter_docket_no
-        self.is_non_resident = bool(is_non_resident)
-        self.reporter_resident_id = reporter_resident_id
+        if is_non_resident or reporter_resident_id is None:
+            self.is_non_resident = True
+            self.reporter_resident_id = None
+        else:
+            self.is_non_resident = False
+            self.reporter_resident_id = reporter_resident_id
         self.reporter_address = reporter_address
         self.complainant = complainant
         self.complainant_resident_id = complainant_resident_id
@@ -370,8 +375,8 @@ class Incident(db.Model):
             "priority": self.priority, "status": self.status,
             "is_blotter": bool(self.is_blotter),
             "blotter_docket_no": self.blotter_docket_no,
-            "is_non_resident": bool(self.is_non_resident),
-            "reporter_resident_id": self.reporter_resident_id,
+            "is_non_resident": bool(self.is_non_resident) or (self.reporter_resident_id is None),
+            "reporter_resident_id": self.reporter_resident_id if not bool(self.is_non_resident) else None,
             "reporter_address": self.reporter_address or "",
             "complainant": self.complainant or "",
             "complainant_resident_id": self.complainant_resident_id,
@@ -389,7 +394,7 @@ class BlotterRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     docket_no = db.Column(db.String(30), nullable=False, unique=True)
     date_filed = db.Column(db.Date, nullable=False)
-    source_incident_id = db.Column(db.Integer, db.ForeignKey("incidents.id", ondelete="SET NULL"))
+    source_incident_id = db.Column(db.Integer, db.ForeignKey("incidents.id", ondelete="CASCADE"))
     incident_time = db.Column(db.Time)
     complainant = db.Column(db.String(150), nullable=False)
     complainant_id = db.Column(db.Integer, db.ForeignKey("census_records.id", ondelete="SET NULL"))
@@ -406,6 +411,8 @@ class BlotterRecord(db.Model):
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=now)
     updated_at = db.Column(db.DateTime, default=now, onupdate=now)
+
+    settlements = db.relationship("Settlement", backref="blotter_parent", cascade="all, delete-orphan", passive_deletes=True)
 
     def __init__(
         self,

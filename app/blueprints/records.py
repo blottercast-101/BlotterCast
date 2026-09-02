@@ -431,6 +431,19 @@ def _handle_batch(rtype, action):
             for r in rows:
                 r.archived = True
 
+            if model == Incident:
+                inc_dockets = [r.blotter_docket_no for r in rows if r.blotter_docket_no]
+                blt_filters = [BlotterRecord.source_incident_id.in_(clean_ids)]
+                if inc_dockets:
+                    blt_filters.append(BlotterRecord.docket_no.in_(inc_dockets))
+                linked_blt_ids = [b.id for b in BlotterRecord.query.filter(db.or_(*blt_filters)).all()]
+                if linked_blt_ids:
+                    BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
+                    Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
+
+            elif model == BlotterRecord:
+                Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).update({"archived": True}, synchronize_session=False)
+
             db.session.commit()
             sample_ids = clean_ids[:10]
             more_cnt = len(clean_ids) - 10
@@ -445,6 +458,19 @@ def _handle_batch(rtype, action):
 
             for r in rows:
                 r.archived = False
+
+            if model == Incident:
+                inc_dockets = [r.blotter_docket_no for r in rows if r.blotter_docket_no]
+                blt_filters = [BlotterRecord.source_incident_id.in_(clean_ids)]
+                if inc_dockets:
+                    blt_filters.append(BlotterRecord.docket_no.in_(inc_dockets))
+                linked_blt_ids = [b.id for b in BlotterRecord.query.filter(db.or_(*blt_filters)).all()]
+                if linked_blt_ids:
+                    BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
+                    Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
+
+            elif model == BlotterRecord:
+                Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).update({"archived": False}, synchronize_session=False)
 
             db.session.commit()
             sample_ids = clean_ids[:10]
@@ -466,16 +492,48 @@ def _handle_batch(rtype, action):
                 )
 
             if model == Incident:
-                BlotterRecord.query.filter(BlotterRecord.source_incident_id.in_(clean_ids)).update(
-                    {"source_incident_id": None}, synchronize_session=False
-                )
+                inc_dockets = [r.blotter_docket_no for r in rows if r.blotter_docket_no]
+                blt_filters = [BlotterRecord.source_incident_id.in_(clean_ids)]
+                if inc_dockets:
+                    blt_filters.append(BlotterRecord.docket_no.in_(inc_dockets))
+                linked_blotters = BlotterRecord.query.filter(db.or_(*blt_filters)).all()
+                blt_ids = [b.id for b in linked_blotters]
+                blt_dockets = [b.docket_no for b in linked_blotters if b.docket_no]
+
+                if blt_ids or blt_dockets:
+                    stl_filters = []
+                    if blt_ids:
+                        stl_filters.append(Settlement.blotter_id.in_(blt_ids))
+                    if blt_dockets:
+                        stl_filters.append(Settlement.case_no.in_(blt_dockets))
+                    stl_rows = Settlement.query.filter(db.or_(*stl_filters)).all()
+                    stl_ids = [s.id for s in stl_rows]
+
+                    if stl_ids:
+                        Notification.query.filter(
+                            (Notification.ref_table == "settlements") & (Notification.ref_id.in_(stl_ids))
+                        ).delete(synchronize_session=False)
+                        Settlement.query.filter(Settlement.id.in_(stl_ids)).delete(synchronize_session=False)
+
+                    Notification.query.filter(
+                        Notification.ref_table.in_(["blotter", "blotter_records"]),
+                        Notification.ref_id.in_(blt_ids)
+                    ).delete(synchronize_session=False)
+                    BlotterRecord.query.filter(BlotterRecord.id.in_(blt_ids)).delete(synchronize_session=False)
+
                 Notification.query.filter(
                     Notification.ref_table == "incidents",
                     Notification.ref_id.in_(clean_ids)
                 ).delete(synchronize_session=False)
 
             elif model == BlotterRecord:
-                Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).delete(synchronize_session=False)
+                stl_ids = [s.id for s in Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).all()]
+                if stl_ids:
+                    Notification.query.filter(
+                        (Notification.ref_table == "settlements") & (Notification.ref_id.in_(stl_ids))
+                    ).delete(synchronize_session=False)
+                    Settlement.query.filter(Settlement.id.in_(stl_ids)).delete(synchronize_session=False)
+
                 dockets = [r.docket_no for r in rows if r.docket_no]
                 if dockets:
                     Incident.query.filter(Incident.blotter_docket_no.in_(dockets)).update(
@@ -600,8 +658,8 @@ def _incidents():
                         "status": getattr(r, "status", "Under Investigation"),
                         "is_blotter": bool(getattr(r, "is_blotter", False)),
                         "blotter_docket_no": getattr(r, "blotter_docket_no", None),
-                        "is_non_resident": bool(getattr(r, "is_non_resident", False)),
-                        "reporter_resident_id": getattr(r, "reporter_resident_id", None),
+                        "is_non_resident": bool(getattr(r, "is_non_resident", False)) or (getattr(r, "reporter_resident_id", None) is None),
+                        "reporter_resident_id": getattr(r, "reporter_resident_id", None) if not bool(getattr(r, "is_non_resident", False)) else None,
                         "reporter_address": getattr(r, "reporter_address", "") or "",
                         "complainant": getattr(r, "complainant", "") or "",
                         "complainant_resident_id": getattr(r, "complainant_resident_id", None),
@@ -658,12 +716,19 @@ def _incidents():
         )
         involved_parties = (d.get("involvedParties") or d.get("involved_parties") or "").strip()
 
-        # Validate reporter is not deceased in Census and check age
-        if reporter_resident_id and not is_non_resident:
+        # Strict Census verification: If no verified Census ID or marked non-resident -> non-resident
+        if not reporter_resident_id or is_non_resident:
+            is_non_resident = True
+            reporter_resident_id = None
+        else:
             resident = CensusRecord.query.get(reporter_resident_id)
-            if resident and resident.status == "Deceased":
+            if not resident:
+                is_non_resident = True
+                reporter_resident_id = None
+            elif resident.status == "Deceased":
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
-            if resident:
+            else:
+                is_non_resident = False
                 rep_age = compute_age(resident.date_of_birth)
                 if rep_age is not None and rep_age < MIN_BLOTTER_PARTY_AGE:
                     if not guardian_name and not guardian_resident_id:
@@ -671,14 +736,6 @@ def _incidents():
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
-        elif d.get("reporter") and not is_non_resident:
-            rep_name = (d.get("reporter") or "").strip()
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{rep_name}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         if guardian_resident_id:
             g_res = CensusRecord.query.get(guardian_resident_id)
@@ -749,6 +806,13 @@ def _incidents():
 
         if request.args.get("restore") == "1":
             incident.archived = False
+            linked_blt_ids = [b.id for b in BlotterRecord.query.filter(
+                (BlotterRecord.source_incident_id == incident.id) |
+                ((BlotterRecord.docket_no == incident.blotter_docket_no) if incident.blotter_docket_no else False)
+            ).all()]
+            if linked_blt_ids:
+                BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
+                Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
             db.session.commit()
             return jsonify({"ok": True})
 
@@ -793,11 +857,19 @@ def _incidents():
         )
         involved_parties = (d.get("involvedParties") or d.get("involved_parties") or "").strip()
 
-        if reporter_resident_id and not is_non_resident:
+        # Strict Census verification: If no verified Census ID or marked non-resident -> non-resident
+        if not reporter_resident_id or is_non_resident:
+            is_non_resident = True
+            reporter_resident_id = None
+        else:
             resident = CensusRecord.query.get(reporter_resident_id)
-            if resident and resident.status == "Deceased":
+            if not resident:
+                is_non_resident = True
+                reporter_resident_id = None
+            elif resident.status == "Deceased":
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
-            if resident:
+            else:
+                is_non_resident = False
                 rep_age = compute_age(resident.date_of_birth)
                 if rep_age is not None and rep_age < MIN_BLOTTER_PARTY_AGE:
                     if not guardian_name and not guardian_resident_id:
@@ -805,14 +877,6 @@ def _incidents():
                 if not reporter_address:
                     parts = [resident.address, resident.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
                     reporter_address = ", ".join([p for p in parts if p])
-        elif d.get("reporter") and not is_non_resident:
-            rep_name = (d.get("reporter") or "").strip()
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{rep_name}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         if guardian_resident_id:
             g_res = CensusRecord.query.get(guardian_resident_id)
@@ -900,27 +964,76 @@ def _incidents():
             if not incident.archived:
                 return json_error("Only archived records can be permanently deleted. Please archive the record first.", 400)
 
-            # Unlink any blotter records referencing this incident as source
-            BlotterRecord.query.filter_by(source_incident_id=incident.id).update({"source_incident_id": None})
+            # 1. Fetch related blotter records tied to this incident (by source_incident_id or blotter_docket_no)
+            blt_filters = [BlotterRecord.source_incident_id == incident.id]
+            if incident.blotter_docket_no:
+                blt_filters.append(BlotterRecord.docket_no == incident.blotter_docket_no)
+            linked_blotters = BlotterRecord.query.filter(db.or_(*blt_filters)).all()
+            blotter_ids = [b.id for b in linked_blotters]
+            blotter_dockets = [b.docket_no for b in linked_blotters if b.docket_no]
 
-            # Clean up notifications referencing this incident
+            # 2. Fetch related settlement records tied to those blotter IDs / dockets
+            stl_ids = []
+            if blotter_ids or blotter_dockets:
+                stl_filters = []
+                if blotter_ids:
+                    stl_filters.append(Settlement.blotter_id.in_(blotter_ids))
+                if blotter_dockets:
+                    stl_filters.append(Settlement.case_no.in_(blotter_dockets))
+                linked_settlements = Settlement.query.filter(db.or_(*stl_filters)).all()
+                stl_ids = [s.id for s in linked_settlements]
+
+            # 3. Permanently delete settlement monitor entries and notifications
+            if stl_ids:
+                Notification.query.filter(
+                    (Notification.ref_table == "settlements") & (Notification.ref_id.in_(stl_ids))
+                ).delete(synchronize_session=False)
+                Settlement.query.filter(Settlement.id.in_(stl_ids)).delete(synchronize_session=False)
+
+            # 4. Permanently delete blotter records and notifications
+            if blotter_ids:
+                Notification.query.filter(
+                    (Notification.ref_table.in_(["blotter", "blotter_records"])) & (Notification.ref_id.in_(blotter_ids))
+                ).delete(synchronize_session=False)
+                BlotterRecord.query.filter(BlotterRecord.id.in_(blotter_ids)).delete(synchronize_session=False)
+
+            # 5. Clean up notifications referencing this incident
             Notification.query.filter(
                 (Notification.ref_table == "incidents") & (Notification.ref_id == incident.id)
             ).delete(synchronize_session=False)
 
+            # 6. Permanently delete the incident itself
             report_no = incident.report_no
             db.session.delete(incident)
             db.session.commit()
 
             username = session.get("username", "system")
-            log_audit(username, "PERMANENT_DELETE", "incidents", f"Permanently deleted incident report {report_no} (ID: {rid})")
+            log_audit(
+                username,
+                "PERMANENT_DELETE",
+                "incidents",
+                f"Permanently deleted incident report {report_no} (ID: {rid}) with cascade to {len(blotter_ids)} blotter record(s) and {len(stl_ids)} settlement record(s)"
+            )
 
-            return jsonify({"ok": True, "deleted": True, "id": rid})
+            return jsonify({
+                "ok": True,
+                "deleted": True,
+                "id": rid,
+                "cascaded_blotters": len(blotter_ids),
+                "cascaded_settlements": len(stl_ids)
+            })
 
         if not role_can(session.get("role", ""), "archive_records"):
             return json_error("You do not have permission to archive records.", 403)
 
         incident.archived = True
+        linked_blt_ids = [b.id for b in BlotterRecord.query.filter(
+            (BlotterRecord.source_incident_id == incident.id) |
+            ((BlotterRecord.docket_no == incident.blotter_docket_no) if incident.blotter_docket_no else False)
+        ).all()]
+        if linked_blt_ids:
+            BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
+            Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
 
@@ -1067,6 +1180,8 @@ def _blotter():
         # full-record edit below (which always expects every field).
         if request.args.get("restore") == "1":
             record.archived = False
+            # Cascade unarchive to linked settlement records
+            Settlement.query.filter_by(blotter_id=record.id).update({"archived": False}, synchronize_session=False)
             db.session.commit()
             return jsonify({"ok": True})
 
@@ -1164,8 +1279,13 @@ def _blotter():
             if not record.archived:
                 return json_error("Only archived records can be permanently deleted. Please archive the record first.", 400)
 
-            # Delete child settlements
-            Settlement.query.filter_by(blotter_id=record.id).delete(synchronize_session=False)
+            # Atomic hard-delete of linked settlement records and their notifications
+            stl_ids = [s.id for s in Settlement.query.filter((Settlement.blotter_id == record.id) | (Settlement.case_no == record.docket_no)).all()]
+            if stl_ids:
+                Notification.query.filter(
+                    (Notification.ref_table == "settlements") & (Notification.ref_id.in_(stl_ids))
+                ).delete(synchronize_session=False)
+                Settlement.query.filter(Settlement.id.in_(stl_ids)).delete(synchronize_session=False)
 
             # Reset linked incident if any
             if record.source_incident_id:
@@ -1193,6 +1313,8 @@ def _blotter():
             return json_error("You do not have permission to archive records.", 403)
 
         record.archived = True
+        # Cascade archive to linked settlement records
+        Settlement.query.filter_by(blotter_id=record.id).update({"archived": True}, synchronize_session=False)
         db.session.commit()
         return jsonify({"ok": True, "archived": True})
 

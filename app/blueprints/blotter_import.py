@@ -67,26 +67,28 @@ def _read_rows_from_upload(file_storage, ext):
     if ext == "xlsx":
         wb = load_workbook(io.BytesIO(file_storage.read()), data_only=True)
         ws = wb.active
-        return [[("" if c.value is None else str(c.value)) for c in row] for row in ws.iter_rows()]
+        sheet_title = (ws.title or "").strip()
+        rows = [[("" if c.value is None else str(c.value)) for c in row] for row in ws.iter_rows()]
+        return rows, sheet_title
     if ext == "csv":
         text = file_storage.read().decode("utf-8-sig", errors="replace")
-        return list(csv.reader(io.StringIO(text)))
-    return None
+        return list(csv.reader(io.StringIO(text))), ""
+    return None, ""
 
 
 COLUMN_ALIASES = {
     "docket_no": [
         "DOCKETNO", "DOCKETNUMBER", "DOCKET", "CASENO", "CASENUMBER", "CASE_NO",
         "ENTRYNO", "ENTRYNUMBER", "BLOTTERNO", "BLOTTERNUMBER", "RECORDNO", "CONTROLNO",
-        "BLOTTERID", "NO", "REFNO", "REFERENCENO", "RECORDFILE", "BLOTTERENTRYNO"
+        "BLOTTERID", "REFNO", "REFERENCENO", "RECORDFILE", "BLOTTERENTRYNO", "DOCKET_NO"
     ],
     "date_filed": [
         "DATEFILED", "FILINGDATE", "DATEOFFILING", "DATEREPORTED", "REPORTEDDATE",
-        "DATEOFINCIDENT", "INCIDENTDATE", "HEARINGDATE", "PETSA", "DATE", "FILEDDATE",
-        "PETSANGPAGPUPULONG", "PETSANGPAGHAIN", "DATEENTERED"
+        "DATEOFINCIDENT", "INCIDENTDATE", "PETSA", "FILEDDATE",
+        "PETSANGPAGPUPULONG", "PETSANGPAGHAIN", "DATEENTERED", "DATE_FILED"
     ],
     "case_title": [
-        "CASETITLE", "TITLE", "TITLEOFCASE", "PANGALANNGKASO", "CASE_TITLE", "NAME",
+        "CASETITLE", "TITLEOFCASE", "PANGALANNGKASO", "CASE_TITLE",
         "PAMAGATNGKASO", "RECORDSUBJECT", "SUBJECT"
     ],
     "complainant": [
@@ -111,16 +113,16 @@ COLUMN_ALIASES = {
     ],
     "location": [
         "PLACEOFINCIDENT", "INCIDENTLOCATION", "LOCATIONOFINCIDENT", "CRIMESCENE",
-        "LUGAR", "LUGARNGPANGYAYARI", "LOCATION", "STREET", "ADDRESS", "TIRAHAN",
-        "SITIO", "PUROK", "AREA", "INCIDENTPLACE"
+        "LUGARNGPANGYAYARI", "INCIDENTPLACE", "LOCATION", "LUGAR", "STREET", "TIRAHAN",
+        "SITIO", "PUROK", "AREA"
     ],
     "nature": [
-        "NATUREOFCASE", "NATUREOFCOMPLAINT", "COMPLAINTTITLE", "NATURE", "OFFENSE",
-        "INCIDENTTYPE", "OFFENSECOMMITTED", "KASO", "URI", "REKLAMO", "DESCRIPTION",
-        "DETAILS", "NARRATIVE", "INCIDENT", "CASE", "VIOLATION", "CHARGES"
+        "NATUREOFCASE", "NATUREOFCOMPLAINT", "COMPLAINTTITLE", "OFFENSECOMMITTED",
+        "INCIDENTTYPE", "OFFENSE", "NATURE", "KASO", "REKLAMO", "VIOLATION", "CHARGES",
+        "DESCRIPTION", "DETAILS", "NARRATIVE", "INCIDENT"
     ],
     "case_type": [
-        "CRIMCIVIL", "CRIMINALCIVIL", "CASETYPE", "CLASSIFICATION", "CATEGORY", "TYPE", "URIKASO", "CASECLASSIFICATION"
+        "CRIMCIVIL", "CRIMINALCIVIL", "CASETYPE", "CLASSIFICATION", "URIKASO", "CASECLASSIFICATION", "URI"
     ],
     "criminal": [
         "CRIMINAL", "CRIM", "ISCRIMINAL", "KRIMINAL"
@@ -129,27 +131,38 @@ COLUMN_ALIASES = {
         "CIVIL", "CIV", "ISCIVIL", "SIBIL"
     ],
     "zone": [
-        "ZONE", "ZONENO", "ZONENUMBER", "PUROK", "PUROKNO", "BARANGAYZONE", "AREA", "SECTOR", "ZONEID"
+        "ZONENO", "ZONENUMBER", "PUROKNO", "BARANGAYZONE", "ZONEID", "ZONE", "PUROK", "AREA", "SECTOR"
     ],
     "officer": [
-        "DESKOFFICER", "POLICEOFFICER", "OFFICER", "DUTYOFFICER", "INVESTIGATOR", "ENCODEDBY",
-        "OFFICERONDUTY", "NAGTALA", "TAGAPAGTAGUYOD", "PERSONNEL"
+        "DESKOFFICER", "POLICEOFFICER", "DUTYOFFICER", "INVESTIGATOR", "ENCODEDBY",
+        "OFFICERONDUTY", "NAGTALA", "TAGAPAGTAGUYOD", "OFFICER", "PERSONNEL"
     ],
     "stage": [
-        "STAGE", "PATAWAG", "PROCEEDINGS", "HEARINGSTAGE", "STEP", "PAGDINIG", "ACTIONTAKEN"
+        "HEARINGSTAGE", "PATAWAG", "PROCEEDINGS", "PAGDINIG", "ACTIONTAKEN", "STAGE", "STEP"
     ],
     "status": [
-        "SETTLEMENTSTATUS", "CASESTATUS", "STATUS", "DISPOSITION", "KATAYUAN",
-        "RESOLUSYON", "STATUSOFCOMPLIANCE", "COMPLIANCESTATUS"
+        "SETTLEMENTSTATUS", "CASESTATUS", "STATUSOFCOMPLIANCE", "COMPLIANCESTATUS",
+        "RESOLUSYON", "KATAYUAN", "DISPOSITION", "STATUS"
     ],
     "remarks": [
-        "MAINPOINT", "MAINPOINTOFAGREEMENT", "AGREEMENT", "REMARKS", "NOTES",
-        "OBSERVATIONS", "KASUNDUAN", "PUNTONGKASUNDUAN", "SUMMARY", "COMMENTS"
+        "MAINPOINTOFAGREEMENT", "MAINPOINT", "PUNTONGKASUNDUAN", "KASUNDUAN",
+        "AGREEMENT", "REMARKS", "NOTES", "OBSERVATIONS", "SUMMARY", "COMMENTS"
     ],
     "settlement_date": [
-        "DATEOFSETTLEMENT", "SETTLEMENTDATE", "DATESETTLED", "DATEOFEXECUTION", "EXECUTIONDATE"
+        "HEARINGDATE", "DATEOFSETTLEMENT", "SETTLEMENTDATE", "DATESETTLED", "DATEOFEXECUTION", "EXECUTIONDATE", "HEARING_DATE"
     ],
 }
+
+FOREIGN_MODULE_HEADERS = [
+    "RESIDENTNO", "RESIDENTNUMBER", "RESIDENTID", "RESIDENT",
+    "FULLNAME", "FIRSTNAME", "LASTNAME", "MIDDLENAME", "SURNAME", "GIVENNAME",
+    "DATEOFBIRTH", "BIRTHDATE", "KAPANGANAKAN", "DOB",
+    "CIVILSTATUS", "KATAYUANGSIBIL", "MARITALSTATUS",
+    "HOUSEHOLDNO", "HOUSEHOLDNUMBER", "HOUSEHOLD", "HHNO", "SAMBAHAYAN", "FAMILYNO",
+    "VOTERSTATUS", "BOTANTE", "PRECINCT", "PRECINCTNO",
+    "CITIZENSHIP", "RELIGION", "OCCUPATION", "EDUCATIONALATTAINMENT", "BLOODTYPE",
+    "ORNUMBER", "ORNO", "CEDULA", "CTCNO"
+]
 
 
 @bp.route("/api/blotter_import.php", methods=["POST"])
@@ -160,7 +173,7 @@ COLUMN_ALIASES = {
 def blotter_import():
     file = request.files.get("file")
     if not file or not file.filename:
-        return json_error("No file uploaded, or the upload failed.")
+        return json_error("No file uploaded, or the upload failed.", 400)
 
     original_name = file.filename
     ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
@@ -169,20 +182,24 @@ def blotter_import():
     size = file.stream.tell()
     file.stream.seek(0)
     if size > 10 * 1024 * 1024:
-        return json_error("File must be smaller than 10MB.")
+        return json_error("File must be smaller than 10MB.", 400)
 
     if ext not in ("xlsx", "csv"):
-        return json_error("Please upload a .xlsx or .csv file.")
+        return json_error("Please upload a .xlsx or .csv file.", 400)
 
     try:
-        rows = _read_rows_from_upload(file, ext)
+        rows, sheet_title = _read_rows_from_upload(file, ext)
     except Exception as e:
-        return json_error(f"Could not read that file: {e}")
+        return json_error(f"Could not read that file: {e}", 400)
+
+    if sheet_title and sheet_title.strip().lower() in ("residents", "resident", "census", "demographics", "demographic", "clearances", "certificates", "users", "voters"):
+        return json_error("Invalid Template: The uploaded file is a Census Resident list ('Residents' sheet), not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.", 422)
 
     if not rows or len(rows) < 2:
-        return json_error("No data rows found in that file.")
+        return json_error("No data rows found in that file.", 422)
 
     import_type = request.args.get("type") or request.form.get("importType") or ("blotter-settlement" if "settlement" in request.path else "blotter-entry")
+    is_settlement = (import_type == "blotter-settlement")
 
     # Step 1: Scan for the optimal header row across the first 15 rows
     all_keywords = []
@@ -202,6 +219,22 @@ def blotter_import():
 
     headers = [str(c).strip() for c in rows[header_row_index]]
     h_clean = [re.sub(r"[^A-Z0-9]", "", h.upper()) for h in headers]
+
+    # Pre-validation: Reject if foreign module headers (Census / Demographic / Certificate) are detected
+    detected_foreign = []
+    for h in h_clean:
+        if not h:
+            continue
+        for f in FOREIGN_MODULE_HEADERS:
+            if f == h or (len(f) >= 4 and f in h):
+                detected_foreign.append(h)
+                break
+
+    if detected_foreign:
+        return json_error(
+            "Invalid Template: The uploaded file is a Census Resident list, not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.",
+            422
+        )
 
     # Step 2: Match columns against aliases dictionary
     matched_cols = {}
@@ -250,7 +283,29 @@ def blotter_import():
         matched_cols["location"] = generic_addr_indices[2]
         used_indices.add(generic_addr_indices[2])
 
+    # Step 2.1: Strict Schema Guardrails
+    if is_settlement:
+        has_docket = "docket_no" in matched_cols
+        has_settlement_progress = any(k in matched_cols for k in ["stage", "status", "settlement_date", "remarks"])
+        if not has_docket or not has_settlement_progress:
+            return json_error(
+                "Invalid Template: The uploaded file does not match the Blotter Record (Settlement) template. Required columns (such as Docket No, Hearing Date, Stage, Settlement Status, or Remarks) were not found. Please use the official Blotter CSV/Excel template.",
+                422
+            )
+    else:
+        has_complainant = "complainant" in matched_cols or "case_title" in matched_cols
+        has_nature = "nature" in matched_cols or "case_type" in matched_cols
+        has_other_blotter_col = any(k in matched_cols for k in ["docket_no", "date_filed", "respondent", "location", "zone", "complainant_addr", "respondent_addr", "officer"])
+        if not (has_complainant and has_nature and has_other_blotter_col):
+            return json_error(
+                "Invalid Template: The uploaded file does not match the Blotter Entry Record template. Required columns (such as Complainant/Case Title, Nature of Case, Date Filed, or Docket No) were not found. Please use the official Blotter CSV/Excel template.",
+                422
+            )
+
     data_rows = rows[header_row_index + 1:]
+    valid_data_rows = [r for r in data_rows if any(str(c).strip() and str(c).strip() != "None" for c in r)]
+    if not valid_data_rows:
+        return json_error("No valid data rows found in the uploaded file.", 422)
     imported, settlements_created, skipped = 0, 0, 0
     errors = []
     zone_breakdown = {f"Zone {i}": 0 for i in range(1, 8)}
@@ -306,10 +361,15 @@ def blotter_import():
                 zone_val = _get_val(row, "zone")
                 z_id, _, _ = resolve_zone_from_address(zone_val, c_name, r_name, deterministic_seed=docket_no)
 
+                date_filed_raw = _get_val(row, "date_filed")
+                date_filed_parsed = parse_date(_parse_flexible_date(date_filed_raw)) if date_filed_raw else datetime.utcnow().date()
+                if not date_filed_parsed:
+                    date_filed_parsed = datetime.utcnow().date()
+
                 inc_report_no = next_seq_no(Incident, "report_no", "INC")
                 incident = Incident(
                     report_no=inc_report_no,
-                    incident_date=datetime.utcnow().date(),
+                    incident_date=date_filed_parsed,
                     time_reported=datetime.strptime("08:00:00", "%H:%M:%S").time(),
                     hour=8,
                     zone_id=z_id,
@@ -331,7 +391,7 @@ def blotter_import():
 
                 record = BlotterRecord(
                     docket_no=docket_no,
-                    date_filed=datetime.utcnow().date(),
+                    date_filed=date_filed_parsed,
                     source_incident_id=incident.id,
                     complainant=c_name,
                     complainant_id=c_id,
@@ -467,6 +527,12 @@ def blotter_import():
                 resp_addr = resp_addr or r_res.address or ""
                 if not zone_raw:
                     zone_raw = r_res.zone_id or ""
+
+        # Skip row if completely lacking addresses, location, zone, and neither party in Census
+        if not comp_addr and not resp_addr and not location_val and not zone_raw and not complainant_id and not respondent_id:
+            skipped += 1
+            errors.append(f"Row {row_num}: Missing address/location data and neither party found in Census.")
+            continue
 
         # Resolve Zone with multi-tier adaptive resolution
         deterministic_key = custom_docket or f"{complainant}_{respondent}_{row_num}"

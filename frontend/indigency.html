@@ -159,7 +159,7 @@
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-display text-lg text-forest-800">Certificate Preview</h2>
-          <button onclick="window.print()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
+          <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
         </div>
         <div id="certPrint" class="flex justify-center">
           <div class="cert-sheet" id="certContent">
@@ -175,7 +175,6 @@
               <p class="cert-body-paragraph">This certification is issued upon the request of the above-named person for the purpose of <span class="cert-line-field min-w-[180px]" id="i_purpose"></span> and for whatever legal purpose it may serve.</p>
               <p class="cert-body-paragraph">Issued this <span class="cert-line-field min-w-[40px]" id="i_day"></span> day of <span class="cert-line-field min-w-[90px]" id="i_month"></span>, <span class="cert-line-field min-w-[50px]" id="i_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.</p>
             </div>
-            <div class="cert-ov cert-ov-sigimg" id="i_sigimg_wrap"></div>
             <!-- Signatory Section Container (Centered with Reduced Gap) -->
             <div class="cert-ov cert-ov-signatories w-full flex justify-center items-end gap-10 box-border">
               <!-- Left Signatory: Applicant -->
@@ -190,16 +189,18 @@
               </div>
 
               <!-- Right Signatory: Punong Barangay -->
-              <div class="cert-signatory-col cert-ov-sigblock w-48 text-center flex flex-col justify-end">
+              <div class="captain-signatory-block cert-signatory-col w-48 text-center flex flex-col justify-end">
+                <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
+                <div class="captain-sig-wrapper" id="i_sigimg_wrap"></div>
                 <!-- Printed Captain Name above the line -->
                 <div class="h-9 flex items-end justify-center pb-0.5">
-                  <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="i_captain">
+                  <span class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="i_captain">
                     HON. ALEX ROQUE CRUZ
                   </span>
                 </div>
                 <!-- Underline -->
-                <div class="border-b-[1.5px] border-black w-full mb-1"></div>
-                <span class="cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
+                <div class="captain-line border-b-[1.5px] border-black w-full mb-1"></div>
+                <span class="captain-title cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
               </div>
             </div>
           </div>
@@ -440,7 +441,7 @@ function renderIndLog(){
       <td>
         <div class="flex gap-1">
           <button onclick="previewInd(${r.id})" class="icon-btn" title="Preview"><span data-icon="view" data-icon-size="16"></span></button>
-          <button onclick="window.print()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
+          <button onclick="executePrint()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
         </div>
       </td>
     </tr>`).join('');
@@ -462,7 +463,6 @@ function previewInd(id){
   document.getElementById('i_month').textContent=months[d.getMonth()];
   document.getElementById('i_year').textContent=d.getFullYear();
   document.getElementById('i_or').innerHTML=`Control No.: ${r.ctrl} &nbsp;|&nbsp; Valid Until: 6 months from date of issue &nbsp;|&nbsp; Fee: FREE`;
-  showToast('Certificate loaded for preview.');
 }
 
 function resetIndigencyForm(){

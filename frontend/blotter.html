@@ -324,15 +324,15 @@
       <label class="form-label text-xs font-semibold uppercase tracking-wider text-forest-600 mb-2">Import Type</label>
       <div class="space-y-2.5">
         <label class="flex items-start gap-3 p-3 rounded-xl border border-forest-200 bg-white hover:bg-forest-50/60 cursor-pointer transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="radio" name="blotterImportType" value="blotter-entry" checked class="mt-1 accent-emerald-600"/>
+          <input type="radio" name="blotterImportType" value="blotter-entry" checked class="mt-1 accent-emerald-600" onchange="onBlotterImportTypeChanged()"/>
           <div>
             <div class="font-semibold text-sm text-forest-800">Blotter Entry Record</div>
-            <div class="text-xs text-forest-500 leading-relaxed">Imports case logs and automatically creates linked Incident Reports with coordinates for Heatmap & Prediction.</div>
+            <div class="text-xs text-forest-500 leading-relaxed">Imports case logs and automatically creates linked Incident Reports with coordinates for Heatmap &amp; Prediction.</div>
           </div>
         </label>
 
         <label class="flex items-start gap-3 p-3 rounded-xl border border-forest-200 bg-white hover:bg-forest-50/60 cursor-pointer transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="radio" name="blotterImportType" value="blotter-settlement" class="mt-1 accent-emerald-600"/>
+          <input type="radio" name="blotterImportType" value="blotter-settlement" class="mt-1 accent-emerald-600" onchange="onBlotterImportTypeChanged()"/>
           <div>
             <div class="font-semibold text-sm text-forest-800">Blotter Record</div>
             <div class="text-xs text-forest-500 leading-relaxed">Updates case progress and links records to the Settlement Monitor.</div>
@@ -1057,6 +1057,130 @@
     stageBlotterImportFile(file);
   }
 
+  function onBlotterImportTypeChanged() {
+    const statusEl = document.getElementById('importStatus');
+    if (statusEl) statusEl.innerHTML = '';
+    if (stagedBlotterFile) {
+      validateStagedBlotterFile(stagedBlotterFile);
+    }
+  }
+
+  function validateStagedBlotterFile(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const importType = document.querySelector('input[name="blotterImportType"]:checked')?.value || 'blotter-entry';
+    const isSettlement = importType === 'blotter-settlement';
+    const templateLabel = isSettlement ? 'Blotter Record (Settlement)' : 'Blotter Entry Record';
+    const statusEl = document.getElementById('importStatus');
+    const btnImport = document.getElementById('btnConfirmImport');
+
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.includes('resident') || lowerName.includes('census') || lowerName.includes('demographic') || lowerName.includes('household')) {
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
+            <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
+            <div>
+              <div class="font-bold text-rose-900">Invalid Template</div>
+              <div class="mt-0.5 text-rose-700 leading-relaxed">The uploaded file (${file.name}) is a Census Resident list, not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.</div>
+            </div>
+          </div>`;
+      }
+      if (btnImport) {
+        btnImport.disabled = true;
+        btnImport.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      return;
+    }
+
+    // Client-side quick check for CSV text headers
+    if (ext === 'csv') {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = (e.target.result || '').slice(0, 2048);
+        const firstLines = text.split(/\r?\n/).slice(0, 5).join(' ').toUpperCase();
+        
+        // Foreign headers
+        const foreignKeywords = ['HOUSEHOLD', 'CIVIL STATUS', 'VOTER STATUS', 'DATE OF BIRTH', 'BIRTHDATE', 'FIRST NAME', 'LAST NAME', 'PRECINCT', 'RESIDENT NO', 'FULL NAME'];
+        const foundForeign = foreignKeywords.filter(k => firstLines.includes(k));
+
+        if (foundForeign.length > 0) {
+          if (statusEl) {
+            statusEl.innerHTML = `
+              <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
+                <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
+                <div>
+                  <div class="font-bold text-rose-900">Invalid Template</div>
+                  <div class="mt-0.5 text-rose-700 leading-relaxed">The uploaded file is a Census Resident list (${foundForeign.join(', ')}), not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.</div>
+                </div>
+              </div>`;
+          }
+          if (btnImport) {
+            btnImport.disabled = true;
+            btnImport.classList.add('opacity-50', 'cursor-not-allowed');
+          }
+          return;
+        }
+
+        // Schema keywords check
+        if (isSettlement) {
+          const hasSettlementKeywords = ['DOCKET', 'STAGE', 'SETTLEMENT', 'PATAWAG', 'HEARING', 'REMARKS'].some(k => firstLines.includes(k));
+          if (!hasSettlementKeywords) {
+            if (statusEl) {
+              statusEl.innerHTML = `
+                <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
+                  <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
+                  <div>
+                    <div class="font-bold text-rose-900">Mismatched Template</div>
+                    <div class="mt-0.5 text-rose-700 leading-relaxed">The file does not contain settlement progress columns (Docket No, Stage, Hearing Date, Remarks).</div>
+                  </div>
+                </div>`;
+            }
+            if (btnImport) {
+              btnImport.disabled = true;
+              btnImport.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            return;
+          }
+        } else {
+          const hasEntryKeywords = ['COMPLAINANT', 'RESPONDENT', 'NATURE', 'DOCKET', 'INCIDENT', 'NAGREREKLAMO', 'KASO'].some(k => firstLines.includes(k));
+          if (!hasEntryKeywords) {
+            if (statusEl) {
+              statusEl.innerHTML = `
+                <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
+                  <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
+                  <div>
+                    <div class="font-bold text-rose-900">Mismatched Template</div>
+                    <div class="mt-0.5 text-rose-700 leading-relaxed">The file does not contain required Blotter Entry columns (Complainant, Respondent, Nature of Case, Docket No).</div>
+                  </div>
+                </div>`;
+            }
+            if (btnImport) {
+              btnImport.disabled = true;
+              btnImport.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            return;
+          }
+        }
+
+        // Passed client inspection
+        if (statusEl) statusEl.innerHTML = '';
+        if (btnImport) {
+          btnImport.disabled = false;
+          btnImport.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      };
+      reader.readAsText(file.slice(0, 4096));
+    } else {
+      // For XLSX, enable button and let server perform full deep schema validation
+      if (statusEl) statusEl.innerHTML = '';
+      if (btnImport) {
+        btnImport.disabled = false;
+        btnImport.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  }
+
   function stageBlotterImportFile(file) {
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
@@ -1094,11 +1218,14 @@
       const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(2)} MB` : `${sizeKb} KB`;
       fileSizeEl.textContent = `${sizeStr} • Ready to import`;
     }
+    if (statusEl) statusEl.innerHTML = '';
     if (btnImport) {
       btnImport.disabled = false;
       btnImport.classList.remove('opacity-50', 'cursor-not-allowed');
     }
-    if (statusEl) statusEl.innerHTML = '';
+
+    validateStagedBlotterFile(file);
+
     if (window.lucide) lucide.createIcons();
   }
 
@@ -1134,6 +1261,7 @@
     const btnImport = document.getElementById('btnConfirmImport');
     const importType = document.querySelector('input[name="blotterImportType"]:checked')?.value || 'blotter-entry';
     const isSettlement = importType === 'blotter-settlement';
+    let importSuccessful = false;
 
     if (btnImport) {
       btnImport.disabled = true;
@@ -1166,6 +1294,7 @@
         throw new Error(data.error || 'Failed to process import.');
       }
 
+      importSuccessful = true;
       const zoneHtml = data.zoneBreakdown
         ? Object.entries(data.zoneBreakdown)
             .filter(([_, count]) => count > 0)
@@ -1196,12 +1325,23 @@
       }, 2000);
     } catch (err) {
       if (statusEl) {
-        statusEl.innerHTML = `<span class="text-rose-600 font-semibold">✗ Error: ${err.message}</span>`;
+        statusEl.innerHTML = `
+          <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
+            <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
+            <div>
+              <div class="font-bold text-rose-900">Import Validation Failed</div>
+              <div class="mt-0.5 text-rose-700 leading-relaxed">${err.message || 'The uploaded file does not match the expected template.'}</div>
+            </div>
+          </div>`;
       }
-      showToast(`Import error: ${err.message}`, 'error');
+      showToast(err.message || 'Import error', 'error');
     } finally {
       if (btnImport) {
-        btnImport.disabled = !stagedBlotterFile;
+        btnImport.disabled = !importSuccessful && !stagedBlotterFile;
+        if (!importSuccessful) {
+          btnImport.disabled = true;
+          btnImport.classList.add('opacity-50', 'cursor-not-allowed');
+        }
         btnImport.innerHTML = '<span data-icon="upload" data-icon-size="16"></span> Upload &amp; Import';
         if (window.lucide) lucide.createIcons();
       }

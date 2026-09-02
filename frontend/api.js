@@ -66,6 +66,9 @@ const BCApi = {
         this.invalidateCache('users');
       }
       if (url.includes('incidents') || url.includes('blotter') || url.includes('settlements')) {
+        this.invalidateCache('blotter');
+        this.invalidateCache('settlements');
+        this.invalidateCache('incidents');
         this.invalidateCache('trends');
         this.invalidateCache('dashboard');
         this.invalidateCache('heatmap');

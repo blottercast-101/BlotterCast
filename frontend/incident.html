@@ -419,7 +419,7 @@
       </div>
 
       <!-- Minor Reporter Guardian Section (Rule 1) -->
-      <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2 relative z-30">
+      <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2 relative z-30 focus-within:z-40 overflow-visible" style="position: relative; z-index: 30; overflow: visible;">
         <div class="flex items-start gap-2">
           <span class="text-amber-600 font-bold text-base">⚠️</span>
           <div>
@@ -428,13 +428,13 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-1">
-          <div class="relative z-40">
+          <div class="relative z-40" style="position: relative; z-index: 40;">
             <label class="form-label text-xs mb-1 text-amber-950 font-semibold">Parent / Legal Guardian<span class="text-red-500">*</span></label>
             <input type="text" id="if_guardianSearch" class="form-input text-xs bg-white" placeholder="Search adult resident from Census…" autocomplete="off"/>
             <input type="hidden" id="if_guardianName"/>
             <input type="hidden" id="if_guardianResidentId"/>
             <input type="hidden" id="if_guardianAddress"/>
-            <div id="if_guardianSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl"></div>
+            <div id="if_guardianSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl" style="position: absolute; z-index: 9999 !important; top: 100%; left: 0; right: 0;"></div>
           </div>
           <div>
             <label class="form-label text-xs mb-1 text-amber-950 font-semibold">Guardian Relationship / Notes</label>
@@ -444,7 +444,7 @@
       </div>
 
       <!-- Vehicular / Eyewitness Involved Parties Section (Rule 2) -->
-      <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2 relative z-30">
+      <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2 relative z-10 focus-within:z-25 overflow-visible" style="position: relative; z-index: 10; overflow: visible;">
         <div class="flex items-start gap-2">
           <span class="text-blue-600 font-bold text-base">ℹ️</span>
           <div>
@@ -453,12 +453,12 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 pt-1">
-          <div class="relative z-40">
+          <div class="relative z-20" style="position: relative; z-index: 20;">
             <label class="form-label text-xs mb-1 text-blue-950 font-semibold">Primary Complainant / Victim (Resident)</label>
             <input type="text" id="if_complainantSearch" class="form-input text-xs bg-white" placeholder="Search victim/driver from Census…" autocomplete="off"/>
             <input type="hidden" id="if_complainant"/>
             <input type="hidden" id="if_complainantResidentId"/>
-            <div id="if_complainantSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl"></div>
+            <div id="if_complainantSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl" style="position: absolute; z-index: 9999 !important; top: 100%; left: 0; right: 0;"></div>
           </div>
           <div>
             <label class="form-label text-xs mb-1 text-blue-950 font-semibold">Involved Drivers / Parties / Plate Numbers</label>
@@ -579,14 +579,16 @@
   function mapIncident(r) {
     const time5 = (r.time_reported || '').slice(0,5);
     const [y,m,d] = (r.incident_date || '').split('-');
+    const resId = r.reporter_resident_id ? Number(r.reporter_resident_id) : (r.reporterResidentId ? Number(r.reporterResidentId) : null);
+    const isNonRes = Boolean(r.is_non_resident || r.isNonResident) || !resId;
     return {
       id: Number(r.id), reportNo: r.report_no, date: r.incident_date,
       dateReported: (m && d) ? `${m}/${d}/${y}` : r.incident_date,
       timeReported: time5, hour: r.hour, zone: r.zone_id, location: bcStripZonePrefix(r.location),
       lat: r.lat, lng: r.lng, category: r.category, description: r.description,
       reporter: r.reporter,
-      isNonResident: Boolean(r.is_non_resident),
-      reporterResidentId: r.reporter_resident_id ? Number(r.reporter_resident_id) : null,
+      isNonResident: isNonRes,
+      reporterResidentId: isNonRes ? null : resId,
       reporterAddress: r.reporter_address || '',
       guardian_name: r.guardian_name || '',
       guardian_resident_id: r.guardian_resident_id ? Number(r.guardian_resident_id) : null,
@@ -1993,14 +1995,17 @@
       }
     }
 
-    const isNonRes = document.getElementById('if_is_non_resident').checked;
-    const reporterName = isNonRes
+    const isNonResChecked = document.getElementById('if_is_non_resident').checked;
+    const rawResId = (document.getElementById('if_reporterResidentId').value || '').trim();
+    const finalIsNonRes = isNonResChecked || !rawResId;
+    const reporterResId = finalIsNonRes ? null : (rawResId ? Number(rawResId) : null);
+
+    const reporterName = isNonResChecked
       ? document.getElementById('if_reporterFreeText').value.trim()
       : (document.getElementById('if_reporter').value.trim() || document.getElementById('if_reporterSearch').value.trim());
-    const reporterAddr = isNonRes
+    const reporterAddr = isNonResChecked
       ? document.getElementById('if_reporterAddressManual').value.trim()
       : document.getElementById('if_reporterAddress').value.trim();
-    const reporterResId = isNonRes ? null : (document.getElementById('if_reporterResidentId').value || null);
 
     const guardianName = document.getElementById('if_guardianName').value.trim() || document.getElementById('if_guardianSearch').value.trim();
     const guardianResId = document.getElementById('if_guardianResidentId').value || null;
@@ -2019,7 +2024,7 @@
       priority: document.getElementById('if_priority').value,
       description: document.getElementById('if_description').value.trim(),
       reporter: reporterName,
-      isNonResident: isNonRes,
+      isNonResident: finalIsNonRes,
       reporterResidentId: reporterResId,
       reporterAddress: reporterAddr,
       guardianName: guardianName,
@@ -2039,7 +2044,7 @@
       vals.status = normalizeIncidentStatus(vals.status);
     }
     if (!vals.location || !vals.reporter) {
-      await bcAlert(isNonRes ? 'Please fill in required fields (Location and Reporter Name).' : 'Please select the Reporter from Census, or check "Non-Resident Reporter" to enter their name directly.');
+      await bcAlert(isNonResChecked ? 'Please fill in required fields (Location and Reporter Name).' : 'Please select the Reporter from Census, or check "Non-Resident Reporter" to enter their name directly.');
       return;
     }
     if (!vals.zone) { await bcAlert('Please select the Zone.'); return; }
@@ -2049,11 +2054,18 @@
     if (vals.reporter && !bcIsValidName(vals.reporter)) { await bcAlert('Reporter Name should only contain letters (no numbers).'); return; }
     if (vals.date && bcIsFutureDateTime(vals.date, vals.timeReported)) { await bcAlert('Date/Time Reported cannot be in the future.'); return; }
 
-    // Rule 1: Minor reporter validation
-    if (reporterResId) {
-      const repObj = censusResidentsForIncident.find(x => x.id === Number(reporterResId));
-      if (repObj && repObj.age !== null && repObj.age < 15 && !guardianName && !guardianResId) {
-        await bcAlert('Reporter is a minor (<15 years old). A parent or adult legal guardian must be selected as the primary complainant.');
+    const curMinorIsActive = !document.getElementById('if_guardianSection').classList.contains('hidden');
+    if (curMinorIsActive) {
+      if (!vals.guardianName) {
+        await bcAlert('Reporter is a minor (<15). Please select an adult parent/guardian (18+) as the Complainant.');
+        return;
+      }
+    }
+
+    const curEyewitnessIsActive = !document.getElementById('if_involvedPartiesSection').classList.contains('hidden');
+    if (curEyewitnessIsActive) {
+      if (!vals.complainant && !vals.involvedParties) {
+        await bcAlert('For Vehicular Accidents and Hazard incidents, please specify either the primary victim resident or involved drivers/parties.');
         return;
       }
     }
@@ -2224,10 +2236,10 @@
     if (!r) return;
     currentViewingIncident = r;
 
-    const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
-    const reporterBadge = r.isNonResident
-      ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>'
-      : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>';
+    const isVerifiedResident = Boolean(r.reporterResidentId || r.reporter_resident_id) && !r.isNonResident && !r.is_non_resident;
+    const reporterBadge = isVerifiedResident
+      ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>'
+      : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>';
 
     const lockBanner = isElevated
       ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">

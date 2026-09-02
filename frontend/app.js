@@ -1530,6 +1530,75 @@ function showToast(msg, type = 'success', duration = 3500) {
   }
 }
 
+// Expose programmatic toast dismissal
+window.toast = {
+  dismiss: () => {
+    const t = document.getElementById('globalToast');
+    if (t) {
+      t.classList.remove('show');
+      t.remove();
+    }
+    if (_toastTimer) {
+      clearTimeout(_toastTimer);
+      _toastTimer = null;
+    }
+  }
+};
+
+/**
+ * Hard removal of toast notifications and dynamic alerts before browser print
+ */
+function executePrint() {
+  // 1. Immediately dismiss via library API if available
+  if (window.toast && typeof window.toast.dismiss === 'function') {
+    window.toast.dismiss();
+  }
+
+  // 2. Fallback: Forcefully remove all toast and alert nodes from document.body
+  const toastSelectors = [
+    '.toast',
+    '.toast-container',
+    '[role="alert"]',
+    '[role="status"]',
+    '#toast-container',
+    '#globalToast',
+    '.toaster',
+    '.sonner-toaster',
+    '.hot-toast',
+    '.chakra-portal',
+    '.swal2-container'
+  ];
+  
+  document.querySelectorAll(toastSelectors.join(',')).forEach(el => el.remove());
+
+  // 3. Small microtask delay to let the layout recalculate before opening print dialog
+  setTimeout(() => {
+    window.print();
+  }, 50);
+}
+window.executePrint = executePrint;
+
+// Auto-purge toasts before any print event as an additional global safeguard
+window.addEventListener('beforeprint', () => {
+  if (window.toast && typeof window.toast.dismiss === 'function') {
+    window.toast.dismiss();
+  }
+  const toastSelectors = [
+    '.toast',
+    '.toast-container',
+    '[role="alert"]',
+    '[role="status"]',
+    '#toast-container',
+    '#globalToast',
+    '.toaster',
+    '.sonner-toaster',
+    '.hot-toast',
+    '.chakra-portal',
+    '.swal2-container'
+  ];
+  document.querySelectorAll(toastSelectors.join(',')).forEach(el => el.remove());
+});
+
 // ── Custom alert/confirm dialogs — drop-in async replacements for the
 // native window.alert() / window.confirm(), styled to match the rest of
 // the app instead of the browser's own popup. Built once, lazily, and
@@ -2444,6 +2513,8 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
           return;
         }
         curList.classList.add('hidden');
+        const parentSec = curInput ? curInput.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+        if (parentSec) parentSec.style.removeProperty('z-index');
       });
     });
   }
@@ -2490,6 +2561,13 @@ function _bcFilterResidents(inputId) {
     }).join('');
   }
   list.classList.remove('hidden');
+  list.style.position = 'absolute';
+  list.style.zIndex = '99999';
+  const parentSec = input.closest('#if_guardianSection, #if_involvedPartiesSection');
+  if (parentSec) {
+    parentSec.style.setProperty('z-index', '9999', 'important');
+    parentSec.style.setProperty('overflow', 'visible', 'important');
+  }
 }
 
 function bcResidentPickerChoose(inputId, residentId) {
@@ -2507,6 +2585,9 @@ function bcResidentPickerChoose(inputId, residentId) {
     showToast(msg, 'error');
     const list = document.getElementById(picker.listId);
     if (list) list.classList.add('hidden');
+    const curIn = document.getElementById(inputId);
+    const parentSec = curIn ? curIn.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+    if (parentSec) parentSec.style.removeProperty('z-index');
     return;
   }
 
@@ -2516,6 +2597,9 @@ function bcResidentPickerChoose(inputId, residentId) {
       showToast(reason, 'error');
       const list = document.getElementById(picker.listId);
       if (list) list.classList.add('hidden');
+      const curIn = document.getElementById(inputId);
+      const parentSec = curIn ? curIn.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+      if (parentSec) parentSec.style.removeProperty('z-index');
       return;
     }
   }
@@ -2525,6 +2609,8 @@ function bcResidentPickerChoose(inputId, residentId) {
   if (hidden) hidden.value = String(residentId);
   const list = document.getElementById(picker.listId);
   if (list) list.classList.add('hidden');
+  const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+  if (parentSec) parentSec.style.removeProperty('z-index');
   if (typeof picker.onPick === 'function') picker.onPick(r);
 }
 
@@ -2537,6 +2623,8 @@ function bcResidentPickerClear(inputId) {
   if (hidden) hidden.value = '';
   const list = document.getElementById(picker.listId);
   if (list) list.classList.add('hidden');
+  const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+  if (parentSec) parentSec.style.removeProperty('z-index');
   if (typeof picker.onPick === 'function') picker.onPick(null);
 }
 

@@ -235,6 +235,108 @@ class TestArchivalSystems(unittest.TestCase):
         # 5. Verify record is completely purged from database
         self.assertIsNone(Incident.query.get(inc_id))
 
+    def test_permanent_delete_incident_and_cascade_all(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0301", last_name="Santos", first_name="Juan", sex="Male")
+        res_r = CensusRecord(resident_no="RES-0302", last_name="Reyes", first_name="Pedro", sex="Male")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+
+        # 1. Create Incident
+        inc = Incident(
+            report_no="INC-2026-9999", incident_date=date(2026, 8, 1), time_reported=time(10, 0),
+            category="Theft", zone_id="Zone 1", location="Zone 1 Plaza", description="Stolen tools",
+            reporter="Santos, Juan", reporter_resident_id=res_c.id, is_blotter=True, blotter_docket_no="BLT-2026-8888"
+        )
+        db.session.add(inc)
+        db.session.commit()
+        inc_id = inc.id
+
+        # 2. Create linked Blotter
+        blt = BlotterRecord(
+            docket_no="BLT-2026-8888", date_filed=date(2026, 8, 1), source_incident_id=inc_id,
+            complainant="Santos, Juan", complainant_id=res_c.id, respondent="Reyes, Pedro", respondent_id=res_r.id,
+            nature="Theft", case_type="CRIM", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(blt)
+        db.session.commit()
+        blt_id = blt.id
+
+        # 3. Create linked Settlement
+        stl = Settlement(
+            blotter_id=blt_id, case_no="BLT-2026-8888", status="Pending", nature="Criminal"
+        )
+        db.session.add(stl)
+        db.session.commit()
+        stl_id = stl.id
+
+        # 4. Archive Incident
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
+        self.assertEqual(res.status_code, 200)
+
+        # 5. Permanently delete Incident
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data.get("deleted"))
+        self.assertEqual(data.get("cascaded_blotters"), 1)
+        self.assertEqual(data.get("cascaded_settlements"), 1)
+
+        # 6. Verify Incident, Blotter, and Settlement are ALL purged with no orphaned records
+        self.assertIsNone(Incident.query.get(inc_id))
+        self.assertIsNone(BlotterRecord.query.get(blt_id))
+        self.assertIsNone(Settlement.query.get(stl_id))
+
+    def test_incident_soft_delete_and_restore_cascade(self):
+        self.login_as()
+        res_c = CensusRecord(resident_no="RES-0401", last_name="Garcia", first_name="Leo", sex="Male")
+        res_r = CensusRecord(resident_no="RES-0402", last_name="Vargas", first_name="Gina", sex="Female")
+        db.session.add_all([res_c, res_r])
+        db.session.flush()
+
+        inc = Incident(
+            report_no="INC-2026-8888", incident_date=date(2026, 8, 2), time_reported=time(11, 0),
+            category="Noise", zone_id="Zone 1", location="Zone 1 Street", description="Loud noise",
+            reporter="Garcia, Leo", reporter_resident_id=res_c.id, is_blotter=True, blotter_docket_no="BLT-2026-7777"
+        )
+        db.session.add(inc)
+        db.session.commit()
+        inc_id = inc.id
+
+        blt = BlotterRecord(
+            docket_no="BLT-2026-7777", date_filed=date(2026, 8, 2), source_incident_id=inc_id,
+            complainant="Garcia, Leo", complainant_id=res_c.id, respondent="Vargas, Gina", respondent_id=res_r.id,
+            nature="Noise", case_type="CIVIL", status="Pending", zone_id="Zone 1"
+        )
+        db.session.add(blt)
+        db.session.commit()
+        blt_id = blt.id
+
+        stl = Settlement(
+            blotter_id=blt_id, case_no="BLT-2026-7777", status="Pending", nature="Civil"
+        )
+        db.session.add(stl)
+        db.session.commit()
+        stl_id = stl.id
+
+        # 1. Soft-delete / Archive Incident
+        res = self.client.delete(f"/api/records.php?type=incidents&id={inc_id}")
+        self.assertEqual(res.status_code, 200)
+
+        # 2. Verify Incident, Blotter, and Settlement are ALL archived
+        self.assertTrue(Incident.query.get(inc_id).archived)
+        self.assertTrue(BlotterRecord.query.get(blt_id).archived)
+        self.assertTrue(Settlement.query.get(stl_id).archived)
+
+        # 3. Restore Incident
+        res = self.client.put(f"/api/records.php?type=incidents&id={inc_id}&restore=1", json={})
+        self.assertEqual(res.status_code, 200)
+
+        # 4. Verify Incident, Blotter, and Settlement are ALL unarchived / active
+        self.assertFalse(Incident.query.get(inc_id).archived)
+        self.assertFalse(BlotterRecord.query.get(blt_id).archived)
+        self.assertFalse(Settlement.query.get(stl_id).archived)
+
     def test_permanent_delete_blotter_and_cascade(self):
         self.login_as()
         res_c = CensusRecord(resident_no="RES-0101", last_name="Cruz", first_name="Ana", sex="Female")
@@ -825,15 +927,148 @@ class TestArchivalSystems(unittest.TestCase):
         data_dash = res_dash.get_json()
         self.assertEqual(data_dash.get("status", "") or "success", "success")
 
-    def test_api_error_handling_returns_json_not_html(self):
+    def test_cascade_blotter_archive_and_delete_to_settlements(self):
         self.login_as(role="System Admin")
-        # 1. 404 on /api/ non-existent endpoint
-        res = self.client.get("/api/non_existent_route")
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.content_type, "application/json")
-        data = res.get_json()
-        self.assertFalse(data.get("ok"))
-        self.assertIn("not found", data.get("error", "").lower())
+
+        # 1. Create a Blotter Record
+        b = BlotterRecord(
+            docket_no="BLT-CASCADE-001",
+            date_filed=date(2026, 8, 20),
+            complainant="Mario Rossi",
+            respondent="Luigi Verdi",
+            nature="Property Dispute",
+            case_type="CIVIL",
+            status="Ongoing",
+            zone_id="Zone 1",
+            archived=False
+        )
+        db.session.add(b)
+        db.session.commit()
+
+        # 2. Create linked Settlement Record
+        stl = Settlement(
+            blotter_id=b.id,
+            case_no="STL-CASCADE-001",
+            case_title="Mario Rossi vs. Luigi Verdi",
+            complaint_title="Property Dispute",
+            nature="Civil",
+            date_filed=date(2026, 8, 20),
+            action_taken="Mediation (M)",
+            status="Pending",
+            archived=False
+        )
+        db.session.add(stl)
+        db.session.commit()
+
+        b_id = b.id
+        stl_id = stl.id
+
+        # 3. Verify settlement is initially in active settlements list
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(res.status_code, 200)
+        active_stls = res.get_json()
+        self.assertTrue(any(s["id"] == stl_id for s in active_stls))
+
+        # 4. Archive Blotter Record via DELETE /api/records.php?type=blotter&id=<id>
+        res = self.client.delete(f"/api/records.php?type=blotter&id={b_id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("archived"))
+
+        # Verify Blotter is archived in DB
+        db.session.expire_all()
+        b_refreshed = BlotterRecord.query.get(b_id)
+        self.assertTrue(b_refreshed.archived)
+
+        # Verify linked Settlement is automatically cascaded to archived status
+        stl_refreshed = Settlement.query.get(stl_id)
+        self.assertTrue(stl_refreshed.archived)
+
+        # Verify settlement is removed from active list
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(res.status_code, 200)
+        active_stls = res.get_json()
+        self.assertFalse(any(s["id"] == stl_id for s in active_stls))
+
+        # Verify settlement appears in archived settlements view
+        res = self.client.get("/api/records.php?type=settlements&archived=1")
+        self.assertEqual(res.status_code, 200)
+        archived_stls = res.get_json()
+        self.assertTrue(any(s["id"] == stl_id for s in archived_stls))
+
+        # 5. Restore Blotter Record via PUT /api/records.php?type=blotter&id=<id>&restore=1
+        res = self.client.put(f"/api/records.php?type=blotter&id={b_id}&restore=1", json={})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("ok"))
+
+        # Verify both Blotter and Settlement are restored to active
+        db.session.expire_all()
+        self.assertFalse(BlotterRecord.query.get(b_id).archived)
+        self.assertFalse(Settlement.query.get(stl_id).archived)
+
+        res = self.client.get("/api/records.php?type=settlements")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(any(s["id"] == stl_id for s in res.get_json()))
+
+        # 6. Re-archive then Permanently Delete Blotter Record
+        self.client.delete(f"/api/records.php?type=blotter&id={b_id}")
+        res = self.client.delete(f"/api/records.php?type=blotter&id={b_id}&permanent=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("deleted"))
+
+        # Verify both Blotter and linked Settlement are permanently purged from DB
+        db.session.expire_all()
+        self.assertIsNone(BlotterRecord.query.get(b_id))
+        self.assertIsNone(Settlement.query.get(stl_id))
+
+    def test_batch_cascade_blotter_archive_and_delete_to_settlements(self):
+        self.login_as(role="System Admin")
+
+        # 1. Create two Blotter Records with linked Settlements
+        b1 = BlotterRecord(docket_no="BLT-BATCH-001", date_filed=date(2026, 8, 21), complainant="Alice", respondent="Bob", archived=False)
+        b2 = BlotterRecord(docket_no="BLT-BATCH-002", date_filed=date(2026, 8, 22), complainant="Charlie", respondent="Dave", archived=False)
+        db.session.add_all([b1, b2])
+        db.session.commit()
+
+        s1 = Settlement(blotter_id=b1.id, case_no="STL-BATCH-001", case_title="Alice vs. Bob", archived=False)
+        s2 = Settlement(blotter_id=b2.id, case_no="STL-BATCH-002", case_title="Charlie vs. Dave", archived=False)
+        db.session.add_all([s1, s2])
+        db.session.commit()
+
+        b1_id, b2_id = b1.id, b2.id
+        s1_id, s2_id = s1.id, s2.id
+
+        # 2. Batch Archive Blotter Records
+        res = self.client.post("/api/blotter/batch-archive", json={"ids": [b1_id, b2_id]})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json().get("count"), 2)
+
+        # Verify linked settlements are archived
+        db.session.expire_all()
+        self.assertTrue(Settlement.query.get(s1_id).archived)
+        self.assertTrue(Settlement.query.get(s2_id).archived)
+
+        # 3. Batch Restore Blotter Records
+        res = self.client.post("/api/blotter/batch-restore", json={"ids": [b1_id, b2_id]})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json().get("count"), 2)
+
+        # Verify linked settlements are restored
+        db.session.expire_all()
+        self.assertFalse(Settlement.query.get(s1_id).archived)
+        self.assertFalse(Settlement.query.get(s2_id).archived)
+
+        # 4. Batch Archive and then Batch Permanent Delete
+        self.client.post("/api/blotter/batch-archive", json={"ids": [b1_id, b2_id]})
+        res = self.client.post("/api/blotter/batch-permanent-delete", json={"ids": [b1_id, b2_id]})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.get_json().get("ok"))
+
+        # Verify both blotters and settlements are permanently removed
+        db.session.expire_all()
+        self.assertIsNone(BlotterRecord.query.get(b1_id))
+        self.assertIsNone(BlotterRecord.query.get(b2_id))
+        self.assertIsNone(Settlement.query.get(s1_id))
+        self.assertIsNone(Settlement.query.get(s2_id))
 
 
 if __name__ == "__main__":

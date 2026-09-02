@@ -159,12 +159,12 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-display text-lg text-forest-800">Certificate Preview</h2>
           <div class="flex gap-2">
-            <button onclick="window.print()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
+            <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
           </div>
         </div>
         <div id="certPrint" class="flex justify-center">
           <div class="cert-sheet" id="certContent">
-            <img src="assets/non-residency-letterhead.jpg" class="cert-bg" alt="Certificate of Non-Residency letterhead"/>
+            <img src="assets/non-residency-letterhead.jpg?v=20260902_clean" class="cert-bg" alt="Certificate of Non-Residency letterhead"/>
             <div class="cert-ov cert-ov-nr-ctrl-non" id="nr_ctrl_display">
               Control No.: NR-2025-001
             </div>
@@ -175,21 +175,26 @@
               <p class="cert-body-paragraph">This certification was issued upon the request of <span class="cert-line-field min-w-[180px]" id="nr_purpose"></span>.</p>
               <p class="cert-body-paragraph">Given this <span class="cert-line-field min-w-[35px]" id="nr_day"></span> day of <span class="cert-line-field min-w-[80px]" id="nr_month"></span> <span class="cert-line-field min-w-[45px]" id="nr_year"></span>, at the office of the Barangay Chairman, Mapulang Lupa, Pandi.</p>
             </div>
-            <div class="cert-ov-nr-voter-checks">
-              <span id="nr_voter_check" class="cert-ov-nr-check-voter"></span>
-              <span id="nr_nonvoter_check" class="cert-ov-nr-check-nonvoter"></span>
+            <div class="voter-checklist-green" id="nr_voter_row">
+              <span class="voter-item">
+                (&nbsp;<span class="check-slot" id="nr_voter_check">&nbsp;</span>&nbsp;) VOTER
+              </span>
+              <span class="voter-item">
+                (&nbsp;<span class="check-slot" id="nr_nonvoter_check">&nbsp;</span>&nbsp;) NON-VOTER
+              </span>
             </div>
             <div class="cert-ov cert-ov-nr-applicant-name" id="nr_applicant_name"></div>
-            <div class="cert-ov cert-ov-nr-sigimg" id="nr_sigimg_wrap"></div>
-            <div class="cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
+            <div class="captain-signatory-block cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
+              <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
+              <div class="captain-sig-wrapper" id="nr_sigimg_wrap"></div>
               <div class="h-9 flex items-end justify-center pb-0.5">
-                <span class="cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="nr_captain">
+                <span class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="nr_captain">
                   HON. ALEX ROQUE CRUZ
                 </span>
               </div>
               <!-- Underline directly below Punong Barangay name -->
-              <div class="cert-sig-line border-b-[1.5px] border-black w-full mb-1"></div>
-              <span class="cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
+              <div class="captain-line cert-sig-line border-b-[1.5px] border-black w-full mb-1"></div>
+              <span class="captain-title cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
             </div>
           </div>
         </div>
@@ -409,7 +414,7 @@ function renderNrLog(){
       <td>
         <div class="flex gap-1">
           <button onclick="previewNrLog(${r.id})" class="icon-btn" title="Preview"><span data-icon="view" data-icon-size="16"></span></button>
-          <button onclick="window.print()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
+          <button onclick="executePrint()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
         </div>
       </td>
     </tr>`).join('');
@@ -438,7 +443,6 @@ function previewNrLog(id){
   if (typeof bindCertificateCaptainName === 'function') {
     bindCertificateCaptainName();
   }
-  showToast('Certificate loaded for preview.');
 }
 
 async function openNonResidencyForm(){

@@ -157,30 +157,50 @@ class TestAdaptiveImport(unittest.TestCase):
         self.assertIn("Zone 5", res_json["zoneBreakdown"])
         self.assertIn("Zone 6", res_json["zoneBreakdown"])
 
-    def test_residency_policy_rejection_when_neither_party_in_census(self):
-        """Verify that rows where NEITHER party exists in the Census database are rejected."""
-        csv_data = io.StringIO()
-        writer = csv.writer(csv_data)
-        writer.writerow(["Docket", "Date", "Complainant", "Respondent", "Location", "Nature"])
-        # Non-existent parties (not in Census)
-        writer.writerow(["BLT-REJECT-01", "2026-08-18", "Nonexistent Person One", "Nonexistent Person Two", "Zone 1", "Dispute"])
-        writer.writerow(["BLT-REJECT-02", "2026-08-18", "Alien Visitor", "Ghost Party", "Zone 2", "Theft"])
-        # One valid party in Census (Cardo Dalisay)
-        writer.writerow(["BLT-ACCEPT-01", "2026-08-18", "Cardo Dalisay", "Unknown Nonresident", "Zone 1", "Assault"])
+    def test_rejection_of_census_resident_file_under_blotter_import(self):
+        """Uploading a Census demographic Excel/CSV to Blotter must be strictly rejected with 422."""
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Residents"
+        # Exact headers from residents_import (1).xlsx
+        ws.append(["RESIDENT NO.", "FULL NAME", "DATE OF BIRTH", "AGE", "SEX", "CIVIL STATUS", "ZONE / PUROK", "ADDRESS", "HOUSEHOLD NO.", "STATUS", "ACTIONS"])
+        ws.append(["RES-001", "Leon F. Cruz", "01/25/1954", "72", "Male", "Widowed", "Zone 5 - Sitio Gubat", "148 Sitio Gubat, Zone 5", "HH-001", "Active"])
+        ws.append(["RES-002", "Domingo P. Reyes", "01/23/1995", "31", "Male", "Single", "Zone 3 - Pandi Village 2 (Atlantica)", "60 Pandi Village 2 (Atlantica)", "HH-002", "Active"])
 
-        csv_bytes = csv_data.getvalue().encode("utf-8")
+        xlsx_io = io.BytesIO()
+        wb.save(xlsx_io)
+        xlsx_io.seek(0)
+
         data = {
-            "file": (io.BytesIO(csv_bytes), "residency_test.csv"),
+            "file": (xlsx_io, "residents_import (1).xlsx"),
             "importType": "blotter-entry"
         }
         res = self.client.post("/api/import/blotter-entry", data=data, content_type="multipart/form-data")
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, 422)
         res_json = res.get_json()
-        self.assertTrue(res_json["ok"])
-        self.assertEqual(res_json["imported"], 1, "Only the record with at least one census resident should be imported")
-        self.assertEqual(res_json["skipped"], 2, "Records without any census residents must be skipped/rejected")
-        self.assertTrue(any("Neither complainant" in err or "must be a registered Census resident" in err for err in res_json["errors"]))
+        self.assertFalse(res_json["ok"])
+        self.assertIn("Invalid Template", res_json["error"])
+        self.assertIn("Census Resident list", res_json["error"])
+
+    def test_rejection_of_random_unrelated_csv_headers(self):
+        """A CSV file with unrelated/random headers must be rejected without creating synthetic records."""
+        csv_data = io.StringIO()
+        writer = csv.writer(csv_data)
+        writer.writerow(["Product SKU", "Item Description", "Unit Price", "Quantity in Stock", "Supplier"])
+        writer.writerow(["SKU-1001", "Ballpen 0.5 Black", "15.00", "500", "Pandi Office Supplies"])
+
+        csv_bytes = csv_data.getvalue().encode("utf-8")
+        data = {
+            "file": (io.BytesIO(csv_bytes), "inventory_data.csv"),
+            "importType": "blotter-entry"
+        }
+        res = self.client.post("/api/import/blotter-entry", data=data, content_type="multipart/form-data")
+        self.assertEqual(res.status_code, 422)
+        res_json = res.get_json()
+        self.assertFalse(res_json["ok"])
+        self.assertIn("Invalid Template", res_json["error"])
 
 
 if __name__ == "__main__":
     unittest.main()
+
