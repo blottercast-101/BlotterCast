@@ -755,6 +755,12 @@ def _me():
     timeout_seconds = settings["session_timeout"] * 60
     last_activity = session.get("last_activity")
     if timeout_seconds > 0 and last_activity and (datetime.utcnow().timestamp() - last_activity) > timeout_seconds:
+        uid = session.get("user_id")
+        if uid:
+            u = db.session.get(User, uid)
+            if u:
+                u.last_seen = None
+                db.session.commit()
         session.clear()
         return jsonify({"authenticated": False})
     uid = session.get("user_id")

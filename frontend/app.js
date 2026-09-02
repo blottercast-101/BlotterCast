@@ -988,9 +988,46 @@ function bcInitials(fullName) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
+function bcBroadcastUserPresence(status = 'Active', userId = null) {
+  let uid = userId;
+  if (!uid) {
+    try {
+      const u = JSON.parse(localStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || '{}');
+      if (u && u.id) uid = Number(u.id);
+    } catch (_) {}
+  }
+  if (!uid) return;
+
+  const payload = { type: 'USER_STATUS_CHANGED', userId: Number(uid), status: status === 'Active' ? 'Active' : 'Inactive', timestamp: Date.now() };
+
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      if (!window._bcPresenceBroadcastChannel) {
+        window._bcPresenceBroadcastChannel = new BroadcastChannel('bc_user_presence_channel');
+      }
+      window._bcPresenceBroadcastChannel.postMessage(payload);
+    } catch (_) {}
+  }
+
+  // Cross-tab storage event dispatch fallback
+  try {
+    localStorage.setItem('bc_presence_event', JSON.stringify(payload));
+  } catch (_) {}
+
+  // In-page window event dispatch
+  try {
+    window.dispatchEvent(new CustomEvent('bc-user-presence-changed', { detail: payload }));
+  } catch (_) {}
+}
+
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
   _bcStopIdleTracker();
+
+  try {
+    bcBroadcastUserPresence('Inactive');
+  } catch (_) {}
+
   try {
     localStorage.removeItem('bc_last_active_timestamp');
     localStorage.removeItem('bc_cached_user');
@@ -1005,12 +1042,16 @@ async function doLogout() {
 }
 
 // ── Real-Time Presence Heartbeat ────────────────────────────
-// Keeps active user presence marked "ACTIVE (Online)" in real-time.
+// Keeps active user presence marked "Active" in real-time.
 setInterval(() => {
   if (!document.hidden && !window.location.pathname.endsWith('login.html')) {
-    BCApi.heartbeat().catch(() => {});
+    BCApi.heartbeat().then(res => {
+      if (res && res.online) {
+        bcBroadcastUserPresence('Active');
+      }
+    }).catch(() => {});
   }
-}, 15000);
+}, 10000);
 
 
 // ── Field validation helpers ────────────────────────────────

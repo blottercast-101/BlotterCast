@@ -923,6 +923,8 @@
           const d = new Date((r.incident_date || '') + 'T00:00:00');
           return {
             id: r.id,
+            reportNo: r.report_no || r.reportNo || '',
+            report_no: r.report_no || r.reportNo || '',
             date: r.incident_date || '—',
             period: d >= weekAgo ? 'week' : d >= monthAgo ? 'month' : 'older',
             category: r.category || 'Other',
@@ -1174,21 +1176,33 @@
       const latParam = parseFloat(params.get('lat'));
       const lngParam = parseFloat(params.get('lng'));
 
-      // 1. Zone Polygon Highlighting & Pulsing (if zone specified)
-      if (targetZone && zonePolygonLayers[targetZone]) {
+      if (incidentIdParam) {
+        setTimeout(() => focusIncidentOnMap(incidentIdParam), 250);
+        return;
+      }
+
+      if (focusType === 'marker' && !isNaN(latParam) && !isNaN(lngParam) && latParam !== 0 && lngParam !== 0) {
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            map.flyTo([latParam, lngParam], 17.5, { animate: true, duration: 1.2 });
+            triggerMarkerPulse(latParam, lngParam);
+          });
+        }, 250);
+        return;
+      }
+
+      // Zone Polygon Highlighting & Pulsing (if zone specified)
+      if (targetZone && zonePolygonLayers && zonePolygonLayers[targetZone]) {
         const targetLayer = zonePolygonLayers[targetZone];
         const baseColor = typeof getDensityColor === 'function' ? getDensityColor(targetZone, zoneCounts) : '#10B981';
 
-        if (focusType !== 'marker' && (!latParam || !lngParam)) {
-          try {
-            const bounds = targetLayer.getBounds();
-            const center = bounds.getCenter();
-            map.flyTo(center, 16, { animate: true, duration: 1.0 });
-          } catch (e) {
-            const landmark = ZONE_LANDMARK_COORDINATES[targetZone];
-            if (landmark) {
-              map.flyTo([landmark.latitude, landmark.longitude], 16, { animate: true, duration: 1.0 });
-            }
+        try {
+          const bounds = targetLayer.getBounds();
+          map.flyTo(bounds.getCenter(), 16, { animate: true, duration: 1.0 });
+        } catch (e) {
+          const landmark = (ZONE_LANDMARK_COORDINATES || {})[targetZone];
+          if (landmark) {
+            map.flyTo([landmark.latitude, landmark.longitude], 16, { animate: true, duration: 1.0 });
           }
         }
 
@@ -1226,18 +1240,6 @@
             }, 6000);
           } catch (_) {}
         }
-      }
-
-      // 2. Incident Pin Direct Focus & Activation (if focus=marker or incidentId provided)
-      const numericId = incidentIdParam
-        ? (parseInt(String(incidentIdParam).replace(/\D/g, ''), 10) || parseInt(incidentIdParam, 10))
-        : null;
-
-      if (numericId) {
-        setTimeout(() => focusIncidentOnMap(numericId), 500);
-      } else if (focusType === 'marker' && !isNaN(latParam) && !isNaN(lngParam) && latParam !== 0 && lngParam !== 0) {
-        map.flyTo([latParam, lngParam], 17.5, { animate: true, duration: 1.2 });
-        triggerMarkerPulse(latParam, lngParam);
       }
     }
 
@@ -1542,8 +1544,18 @@
       }
     }
 
-    function focusIncidentOnMap(id) {
-      const item = incidents.find(r => r.id === id);
+    function focusIncidentOnMap(targetId) {
+      if (!targetId || !map) return;
+      const targetStr = String(targetId).trim().toLowerCase();
+      const numId = Number(targetId);
+
+      const item = incidents.find(r =>
+        r.id === targetId ||
+        (numId && Number(r.id) === numId) ||
+        (r.reportNo && r.reportNo.toLowerCase() === targetStr) ||
+        (r.report_no && r.report_no.toLowerCase() === targetStr)
+      );
+
       if (!item || item.isUnmapped || item.lat == null || item.lng == null) {
         if (typeof showToast === 'function') {
           showToast('Cannot locate on map: location is outside barangay boundary or unmapped.', 'warning');
@@ -1552,13 +1564,16 @@
       }
 
       // 1. Ensure incident is displayed on active table pagination page
-      let itemIdx = currentTableFilteredData.findIndex(r => r.id === id);
+      let itemIdx = currentTableFilteredData.findIndex(r => r.id === item.id);
       if (itemIdx === -1) {
-        if (heatmapSearchInput) heatmapSearchInput.value = '';
-        if (heatmapZoneFilter) heatmapZoneFilter.value = 'ALL';
-        if (heatmapCategoryFilter) heatmapCategoryFilter.value = 'ALL';
+        const sI = typeof getHeatmapSearchInput === 'function' ? getHeatmapSearchInput() : document.getElementById('heatmapSearchInput');
+        const zF = typeof getHeatmapZoneFilter === 'function' ? getHeatmapZoneFilter() : document.getElementById('heatmapZoneFilter');
+        const cF = typeof getHeatmapCategoryFilter === 'function' ? getHeatmapCategoryFilter() : document.getElementById('heatmapCategoryFilter');
+        if (sI) sI.value = '';
+        if (zF) zF.value = 'ALL';
+        if (cF) cF.value = 'ALL';
         applyTableFilters(false);
-        itemIdx = currentTableFilteredData.findIndex(r => r.id === id);
+        itemIdx = currentTableFilteredData.findIndex(r => r.id === item.id);
       }
       if (itemIdx !== -1) {
         const targetPage = Math.floor(itemIdx / TABLE_PAGE_SIZE) + 1;
@@ -1569,34 +1584,40 @@
       }
 
       // 2. Ensure markers layer is active/visible
-      if (!showMarkers.checked) {
-        showMarkers.checked = true;
+      const sM = typeof getShowMarkers === 'function' ? getShowMarkers() : document.getElementById('showMarkers');
+      if (sM && !sM.checked) {
+        sM.checked = true;
         renderMarkers(getFilteredIncidents(true));
       }
 
       // 3. Highlight the table row
       highlightTableRow(item.id);
 
-      // 4. Highlight & pulse map marker at exact coordinates
-      triggerMarkerPulse(item.lat, item.lng);
-
-      // 5. Smooth fly & zoom to the exact incident coordinate
-      map.flyTo([item.lat, item.lng], 18, { duration: 1.2 });
-
-      // 6. Auto-open popup on that marker and add temporary pulse glow ring
-      const marker = markerMap.get(item.id) || markerMap.get(Number(item.id)) || markerMap.get(String(item.id));
-      if (marker) {
-        marker.openPopup();
-        map.once('moveend', () => {
-          marker.openPopup();
+      // 4. Smooth fly & zoom to the exact incident coordinate with requestAnimationFrame
+      requestAnimationFrame(() => {
+        map.flyTo([item.lat, item.lng], 18, {
+          animate: true,
+          duration: 1.2,
+          easeLinearity: 0.25
         });
-        if (marker._path) {
-          marker._path.classList.add('focus-marker-pulse');
-          setTimeout(() => {
-            if (marker._path) marker._path.classList.remove('focus-marker-pulse');
-          }, 4000);
-        }
-      }
+
+        // 5. Highlight & pulse map marker at exact coordinates
+        triggerMarkerPulse(item.lat, item.lng);
+
+        // 6. Auto-open popup on that marker and add temporary pulse glow ring
+        setTimeout(() => {
+          const marker = markerMap.get(item.id) || markerMap.get(Number(item.id)) || markerMap.get(String(item.id));
+          if (marker) {
+            marker.openPopup();
+            if (marker._path) {
+              marker._path.classList.add('focus-marker-pulse');
+              setTimeout(() => {
+                if (marker._path) marker._path.classList.remove('focus-marker-pulse');
+              }, 4000);
+            }
+          }
+        }, 1250);
+      });
     }
 
     var zoneDensityMap = {};

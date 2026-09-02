@@ -485,6 +485,8 @@ a.stat-card-grad:hover {
 .badge-referred      { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .badge-not-complied  { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .badge-closed        { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.badge-active        { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-inactive      { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 .badge-pdf           { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .badge-excel         { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 

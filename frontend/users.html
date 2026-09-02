@@ -141,8 +141,8 @@
         </select>
         <select id="statusFilter2" class="filter-input" onchange="usersPage=1;renderUsers()">
           <option value="">All Statuses</option>
-          <option value="Active">Active (Online)</option>
-          <option value="Inactive">Inactive (Offline)</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
           <option value="Suspended">Suspended</option>
         </select>
       </div>
@@ -354,10 +354,10 @@ function renderUsers() {
     tbody.innerHTML = pageRows.map(u => {
       const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
       const statusBadge = u.status === 'Active'
-        ? `<span class="badge badge-resolved text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>ACTIVE</span>`
+        ? `<span class="badge badge-resolved badge-active text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>Active</span>`
         : u.status === 'Suspended'
-        ? `<span class="badge badge-not-complied text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>SUSPENDED</span>`
-        : `<span class="badge badge-closed text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>INACTIVE</span>`;
+        ? `<span class="badge badge-not-complied text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>Suspended</span>`
+        : `<span class="badge badge-closed badge-inactive text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>Inactive</span>`;
 
       return `
     <tr data-id="${u.id}" data-key="${u.username}">
@@ -621,6 +621,96 @@ async function removeUser(id) {
   }
 }
 
+// ── Real-Time Presence Synchronization ────────────────────────
+let userPresenceTimer = null;
+
+function applyUserPresenceUpdate(userId, newStatus, lastSeen = null, lastLogin = null) {
+  const uid = Number(userId);
+  if (!uid) return;
+  const u = usersData.find(x => x.id === uid);
+  if (!u) return;
+
+  if (u.status !== 'Suspended') {
+    const statusVal = newStatus === 'Active' ? 'Active' : 'Inactive';
+    if (u.status !== statusVal || u.is_online !== (statusVal === 'Active')) {
+      u.status = statusVal;
+      u.is_online = statusVal === 'Active';
+      if (lastLogin) u.last_login_raw = lastLogin;
+      else if (statusVal === 'Active' && !u.last_login_raw) u.last_login_raw = new Date().toISOString();
+      renderUsers();
+    }
+  }
+}
+
+function initPresenceSync() {
+  // 1. Cross-tab/window BroadcastChannel Listener
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      if (!window._bcPresenceBroadcastChannel) {
+        window._bcPresenceBroadcastChannel = new BroadcastChannel('bc_user_presence_channel');
+      }
+      window._bcPresenceBroadcastChannel.onmessage = (e) => {
+        const data = e.data;
+        if (data && data.type === 'USER_STATUS_CHANGED' && data.userId) {
+          applyUserPresenceUpdate(data.userId, data.status);
+        }
+      };
+    } catch (_) {}
+  }
+
+  // 2. Storage event listener fallback
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'bc_presence_event' && e.newValue) {
+      try {
+        const data = JSON.parse(e.newValue);
+        if (data && data.type === 'USER_STATUS_CHANGED' && data.userId) {
+          applyUserPresenceUpdate(data.userId, data.status);
+        }
+      } catch (_) {}
+    }
+  });
+
+  // 3. Custom in-page window event listener
+  window.addEventListener('bc-user-presence-changed', (e) => {
+    if (e.detail && e.detail.userId) {
+      applyUserPresenceUpdate(e.detail.userId, e.detail.status);
+    }
+  });
+
+  // 4. Background Server Presence Polling (4s interval)
+  if (userPresenceTimer) clearInterval(userPresenceTimer);
+  userPresenceTimer = setInterval(pollServerPresence, 4000);
+
+  // 5. Visibility change refresh
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) pollServerPresence();
+  });
+}
+
+async function pollServerPresence() {
+  if (document.hidden || !usersData.length) return;
+  try {
+    const presenceMap = await BCApi.userPresence();
+    if (presenceMap && typeof presenceMap === 'object') {
+      let changed = false;
+      usersData.forEach(u => {
+        const p = presenceMap[String(u.id)] || presenceMap[u.id];
+        if (p && u.status !== 'Suspended') {
+          if (u.status !== p.status || u.is_online !== p.is_online) {
+            u.status = p.status;
+            u.is_online = p.is_online;
+            if (p.last_login) u.last_login_raw = p.last_login;
+            changed = true;
+          }
+        }
+      });
+      if (changed) {
+        renderUsers();
+      }
+    }
+  } catch (_) {}
+}
+
 window.addEventListener('bc-time-format-changed', () => {
   renderUsers();
   loadAuditLog().catch(() => {});
@@ -631,6 +721,7 @@ window.initUsers = async function () {
     await requireAuth();
     try {
       await Promise.all([loadUsers(), loadAuditLog()]);
+      initPresenceSync();
     } catch (err) {
       showToast('Could not load users: ' + (err.message || err), 'error');
     }

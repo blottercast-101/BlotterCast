@@ -257,6 +257,7 @@ const BCApi = {
 
   // ---- users & audit log ----
   users() { return this._fetch(`${BC_API}/api/users.php?action=list`); },
+  userPresence() { return this._fetch(`${BC_API}/api/users.php?action=presence`); },
   createUser(data) {
     return this._fetch(`${BC_API}/api/users.php?action=create`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),

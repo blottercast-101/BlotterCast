@@ -706,6 +706,19 @@
         sessionStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
         localStorage.setItem('currentUser', JSON.stringify(userOrName));
         sessionStorage.setItem('currentUser', JSON.stringify(userOrName));
+
+        // Real-time Presence Broadcast
+        const uid = userOrName.id;
+        if (uid) {
+          const payload = { type: 'USER_STATUS_CHANGED', userId: Number(uid), status: 'Active', timestamp: Date.now() };
+          if (typeof BroadcastChannel !== 'undefined') {
+            try {
+              const ch = new BroadcastChannel('bc_user_presence_channel');
+              ch.postMessage(payload);
+            } catch (_) {}
+          }
+          try { localStorage.setItem('bc_presence_event', JSON.stringify(payload)); } catch (_) {}
+        }
       } catch (e) {}
     }
 

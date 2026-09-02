@@ -2232,10 +2232,11 @@
   }
 
   function viewIncident(id) {
-    const r = incidentData.find(x => x.id === id);
+    const r = incidentData.find(x => x.id === id || Number(x.id) === Number(id));
     if (!r) return;
     currentViewingIncident = r;
 
+    const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
     const isVerifiedResident = Boolean(r.reporterResidentId || r.reporter_resident_id) && !r.isNonResident && !r.is_non_resident;
     const reporterBadge = isVerifiedResident
       ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>'
@@ -2249,24 +2250,31 @@
       : '';
 
     const rows = [
-      ['Report No.', r.reportNo],
-      ['Date', r.dateReported],
-      ['Time', bcFormatTime(r.timeReported)],
-      ['Zone', r.zone],
-      ['Location', r.location],
-      ['Category', r.category],
-      ['Priority', r.priority],
-      ['Description', r.description],
-      ['Reporter', `${r.reporter} ${reporterBadge}`],
+      ['Report No.', r.reportNo || '—'],
+      ['Date', r.dateReported || r.date || '—'],
+      ['Time', r.timeReported ? (typeof bcFormatTime === 'function' ? bcFormatTime(r.timeReported) : r.timeReported) : '—'],
+      ['Zone', r.zone || '—'],
+      ['Location', (typeof bcFormatIncidentLocation === 'function') ? bcFormatIncidentLocation(r.zone, r.location) : (r.location || '—')],
+      ['Category', r.category || '—'],
+      ['Priority', `<span class="badge ${typeof priorityClass === 'function' ? priorityClass(r.priority) : ''}">${r.priority || 'Medium'}</span>`],
+      ['Description', r.description || '<span class="text-gray-400 italic">None provided</span>'],
+      ['Reporter', `${r.reporter || '—'} ${reporterBadge}`],
       ['Reporter Address', r.reporterAddress || '<span class="text-gray-400 italic">Not specified</span>'],
-      ['Officer', r.officer],
-      ['Status', isElevated ? 'ELEVATED' : r.status],
+      ...(r.guardian_name ? [['Parent / Guardian', r.guardian_name + (r.guardian_address ? ` (${r.guardian_address})` : '')]] : []),
+      ...(r.complainant ? [['Complainant', r.complainant]] : []),
+      ...(r.involved_parties ? [['Involved Parties', r.involved_parties]] : []),
+      ['Officer', r.officer || '<span class="text-gray-400 italic">Unassigned</span>'],
+      ['Status', `<span class="badge ${typeof statusClass === 'function' ? statusClass(r.status) : ''}">${isElevated ? 'ELEVATED' : (r.status || 'Under Investigation')}</span>`],
     ];
-    document.getElementById('incViewContent').innerHTML = lockBanner + rows.map(([k,v]) => `
-      <div class="flex gap-4 py-2 border-b border-forest-50">
-        <span class="w-44 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
-        <span class="text-forest-800">${v}</span>
-      </div>`).join('');
+
+    const contentEl = document.getElementById('incViewContent');
+    if (contentEl) {
+      contentEl.innerHTML = lockBanner + rows.map(([k,v]) => `
+        <div class="flex gap-4 py-2.5 border-b border-forest-50 last:border-0 items-start">
+          <span class="w-40 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0 pt-0.5">${k}</span>
+          <span class="text-forest-800 text-sm flex-1 leading-relaxed">${v}</span>
+        </div>`).join('');
+    }
     openModal('incViewModal');
   }
 

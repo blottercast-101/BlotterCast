@@ -28,9 +28,11 @@ def users_router():
         method = request.method
 
         # Readable by any signed-in user (certificates need the captain's name/signature
-        # regardless of role) — everything else below requires manage_users.
+        # regardless of role; presence checks needed for real-time status sync)
         if action == "captain_signature" and method == "GET":
             return _captain_signature()
+        if action == "presence" and method == "GET":
+            return _presence()
 
         from ..permissions import role_can
         if not role_can(session.get("role", ""), "manage_users"):
@@ -131,6 +133,22 @@ def _list():
         "last_seen": (u.last_seen.isoformat() + "Z") if u.last_seen else None,
         "created_at": (u.created_at.isoformat() + "Z") if u.created_at else None,
     } for u in rows])
+
+
+def _presence():
+    rows = User.query.with_entities(User.id, User.status, User.last_seen, User.last_login).all()
+    now = datetime.utcnow()
+    res = {}
+    for uid, status, last_seen, last_login in rows:
+        computed_status = "Suspended" if status == "Suspended" else ("Active" if last_seen and (now - last_seen).total_seconds() <= 45 else "Inactive")
+        res[str(uid)] = {
+            "id": uid,
+            "status": computed_status,
+            "is_online": computed_status == "Active",
+            "last_seen": (last_seen.isoformat() + "Z") if last_seen else None,
+            "last_login": (last_login.isoformat() + "Z") if last_login else None,
+        }
+    return jsonify(res)
 
 
 def _generate_temp_password(role: str) -> str:
