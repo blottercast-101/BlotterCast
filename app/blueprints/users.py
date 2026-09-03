@@ -77,15 +77,26 @@ PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
 
 def _captain_signature():
     from ..models import SystemSetting
+    row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
     setting_row = (
         SystemSetting.query.get("barangay_captain")
         or SystemSetting.query.get("punong_barangay")
         or SystemSetting.query.get("captain_name")
     )
-    capt_name = setting_row.setting_value if (setting_row and setting_row.setting_value) else None
-    row = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").order_by(User.id).first()
-    if not capt_name and row and row.full_name:
+    setting_val = setting_row.setting_value if (setting_row and setting_row.setting_value) else None
+
+    # If setting is explicitly customized beyond default "Kapitan Jose Reyes", respect it;
+    # otherwise prioritize the updated Barangay Captain user record.
+    if setting_val and setting_val != "Kapitan Jose Reyes":
+        capt_name = setting_val
+    elif row and row.full_name and row.full_name != "Barangay Captain":
         capt_name = row.full_name
+    elif setting_val:
+        capt_name = setting_val
+    elif row and row.full_name:
+        capt_name = row.full_name
+    else:
+        capt_name = "Barangay Captain"
 
     sig_path = None
     if row and row.signature_path:
@@ -98,11 +109,11 @@ def _captain_signature():
         sig_path = "/assets/signatures/default-kapitan-signature.png"
 
     return jsonify({
-        "fullName": capt_name or "Kapitan Jose Reyes",
-        "signatory_captain": capt_name or "Kapitan Jose Reyes",
-        "barangay_captain": capt_name or "Kapitan Jose Reyes",
-        "captain_name": capt_name or "Kapitan Jose Reyes",
-        "punong_barangay": capt_name or "Kapitan Jose Reyes",
+        "fullName": capt_name,
+        "signatory_captain": capt_name,
+        "barangay_captain": capt_name,
+        "captain_name": capt_name,
+        "punong_barangay": capt_name,
         "signaturePath": sig_path,
     })
 
@@ -118,21 +129,38 @@ def _get_computed_status(u: User) -> str:
 
 
 def _list():
-    rows = User.query.order_by(User.full_name).all()
-    return jsonify([{
-        "id": u.id, "username": u.username, "full_name": u.full_name, "email": u.email,
-        "contact_no": u.contact_no, "role": u.role,
-        "status": _get_computed_status(u),
-        "is_online": _get_computed_status(u) == "Active",
-        "is_protected": u.role in PROTECTED_ROLES,
-        "signature_path": u.signature_path,
-        # Naive datetimes from utcnow() have no offset — appending "Z" makes
-        # the value unambiguous UTC so the browser doesn't guess it's local
-        # time (which silently shifts it by the browser's own UTC offset).
-        "last_login": (u.last_login.isoformat() + "Z") if u.last_login else None,
-        "last_seen": (u.last_seen.isoformat() + "Z") if u.last_seen else None,
-        "created_at": (u.created_at.isoformat() + "Z") if u.created_at else None,
-    } for u in rows])
+    users = User.query.order_by(User.id.asc()).all()
+    out = []
+    for u in users:
+        sig_url = None
+        if u.signature_path:
+            rel = u.signature_path.lstrip("/")
+            full_p = os.path.join(current_app.static_folder, rel)
+            if os.path.isfile(full_p):
+                sig_url = f"/{rel}"
+
+        is_prot = u.role in PROTECTED_ROLES
+        computed_status = _get_computed_status(u)
+        if is_prot and computed_status == "Suspended":
+            computed_status = "Inactive"
+
+        out.append({
+            "id": u.id,
+            "username": u.username,
+            "name": u.full_name,
+            "fullName": u.full_name,
+            "full_name": u.full_name,
+            "email": u.email,
+            "role": u.role,
+            "status": computed_status,
+            "last_login": u.last_login.strftime("%Y-%m-%d %H:%M:%S") if u.last_login else None,
+            "contact": u.contact_no,
+            "contact_no": u.contact_no,
+            "avatar": None,
+            "signaturePath": sig_url,
+            "is_protected": is_prot,
+        })
+    return jsonify(out)
 
 
 def _presence():
@@ -169,14 +197,16 @@ def _generate_temp_password(role: str) -> str:
 
 
 def _create():
+    from ..permissions import role_can
+    if not role_can(session.get("role", ""), "manage_users"):
+        return json_error("You do not have permission to perform this action.", 403)
+
     d = request.get_json(silent=True) or {}
     username = (d.get("username") or "").strip()
     full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
-    role = (d.get("role") or "Desk Officer").strip()
-    password = (d.get("password") or "").strip()
-    if not password:
-        password = _generate_temp_password(role)
     email = (d.get("email") or "").strip()
+    role = (d.get("role") or "").strip()
+    password = d.get("password") or ""
     contact = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
     if not username or not full_name:
         return json_error("Name and username are required")
@@ -185,9 +215,13 @@ def _create():
 
     # Guard: Only Desk Officer and Data Encoder roles may be created via user management
     normalized_role = role.upper()
-    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN"} or role not in {"Desk Officer", "Data Encoder"}:
+    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN", "SYSTEM ADMINISTRATOR"}:
         return json_error("Creating accounts with 'System Admin' or 'Barangay Captain' roles is forbidden. Only Desk Officer and Data Encoder accounts can be created.", 403)
+    if role not in {"Desk Officer", "Data Encoder"}:
+        return json_error("Invalid role. Only Desk Officer and Data Encoder accounts can be created.", 400)
 
+    if not password:
+        password = _generate_temp_password(role)
     min_len = get_security_settings()["min_password_length"]
     if len(password) < min_len:
         return json_error(f"Password must be at least {min_len} characters long")
@@ -199,16 +233,17 @@ def _create():
 
     user = User(
         username=username, password=_hash_password(password), full_name=full_name,
-        email=email, contact_no=contact, role=role,
-        status="Inactive", password_changed_at=datetime.utcnow(),
+        email=email, role=role, status="Inactive", password_changed_at=datetime.utcnow(),
+        contact_no=contact,
     )
     db.session.add(user)
     db.session.commit()
-    log_audit(session.get("username"), "Created", "Users", f"New account created: {username} ({user.role})")
+    log_audit(session.get("username"), "Created", "Users", f"Account created: {full_name} ({role})")
     return jsonify({"ok": True, "id": user.id, "temp_password": password}), 201
 
 
 def _update():
+    from ..models import SystemSetting
     uid = _get_target_user_id()
     if not uid:
         return json_error("id required")
@@ -218,6 +253,7 @@ def _update():
 
     d = request.get_json(silent=True) or {}
     full_name = (d.get("name") or d.get("full_name") or d.get("fullName") or "").strip()
+    username = (d.get("username") or "").strip()
     email = (d.get("email") or "").strip()
     if not full_name:
         return json_error("Name is required")
@@ -226,20 +262,62 @@ def _update():
     if User.query.filter(User.id != uid, func.lower(User.email) == email.lower()).first():
         return json_error("That email address is already in use by another account", 409)
 
+    if username and username != user.username:
+        if User.query.filter(User.id != uid, User.username == username).first():
+            return json_error("That username is already taken", 409)
+        user.username = username
+
     user.full_name = full_name
     user.email = email
     user.contact_no = (d.get("contact") or d.get("contact_no") or d.get("contactNo") or "").strip() or None
-    user.role = d.get("role") or user.role
 
-    # Note: Status is purely system-managed (presence or suspension actions).
-    # Any manual status in the payload is ignored.
+    # Only update password if explicitly provided and not empty
+    password = (d.get("password") or "").strip()
+    if password:
+        min_len = get_security_settings()["min_password_length"]
+        if len(password) < min_len:
+            return json_error(f"Password must be at least {min_len} characters long", 400)
+        user.password = _hash_password(password)
+        user.password_changed_at = datetime.utcnow()
 
-    # Note: Admin cannot directly overwrite or change another user's password.
-    # Users independently change their own password via Settings -> Security.
+    # Role cannot demote protected roles
+    req_role = d.get("role")
+    if req_role and user.role not in PROTECTED_ROLES:
+        user.role = req_role
+
+    # If updating Barangay Captain, synchronize official settings keys
+    if user.role == "Barangay Captain":
+        for skey in ["barangay_captain", "captain_name", "punong_barangay"]:
+            s_row = SystemSetting.query.get(skey)
+            if s_row:
+                s_row.setting_value = full_name
+            else:
+                db.session.add(SystemSetting(setting_key=skey, setting_value=full_name))
+
+    # Real-time session synchronization for current user
+    if session.get("user_id") == user.id:
+        session["full_name"] = user.full_name
+        session["username"] = user.username
+        session["role"] = user.role
 
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"Account updated: {full_name}")
-    return jsonify({"ok": True})
+
+    return jsonify({
+        "ok": True,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "name": user.full_name,
+            "full_name": user.full_name,
+            "fullName": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "contact_no": user.contact_no,
+            "role": user.role,
+            "is_protected": user.role in PROTECTED_ROLES,
+        }
+    })
 
 
 def _toggle_status():

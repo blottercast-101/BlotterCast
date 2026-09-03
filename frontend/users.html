@@ -483,7 +483,7 @@ function editUser(id) {
   `;
   document.getElementById('uf_role').innerHTML = roleOpts;
   document.getElementById('uf_role').value = u.role;
-  
+
   // Password cannot be edited by admin; users change their own password
   document.getElementById('uf_password_wrap').classList.add('hidden');
   
@@ -555,6 +555,7 @@ async function saveUser() {
     role: roleVal,
     password: document.getElementById('uf_password').value.trim(),
   };
+  if (editUserId && !vals.password) delete vals.password;
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
   if (!vals.role) { await bcAlert('Please select a valid role.'); return; }
   if (!editUserId && (vals.role === 'System Admin' || vals.role === 'Barangay Captain')) {
@@ -568,8 +569,38 @@ async function saveUser() {
   if (vals.contact && !bcIsValidContact(vals.contact)) { await bcAlert('Contact No. should be a valid PH mobile number (e.g. 09171234567).'); return; }
   try {
     if (editUserId) {
-      await BCApi.updateUser(editUserId, vals);
+      const updateRes = await BCApi.updateUser(editUserId, vals);
       showToast('User updated!');
+
+      // Synchronize persistent browser auth storage and refresh reactive sidebar pill/badge
+      try {
+        let cached = JSON.parse(
+          localStorage.getItem('bc_cached_user') ||
+          sessionStorage.getItem('bc_cached_user') ||
+          localStorage.getItem('currentUser') ||
+          sessionStorage.getItem('currentUser') ||
+          '{}'
+        );
+        const originalUser = usersData.find(x => x.id === editUserId);
+        if (cached && (cached.id === editUserId || cached.username === vals.username || (originalUser && originalUser.username === cached.username))) {
+          cached.full_name = vals.name;
+          cached.fullName = vals.name;
+          cached.name = vals.name;
+          cached.username = vals.username;
+          cached.email = vals.email;
+          cached.contact = vals.contact;
+          cached.contact_no = vals.contact;
+          if (vals.role) cached.role = vals.role;
+          localStorage.setItem('bc_cached_user', JSON.stringify(cached));
+          sessionStorage.setItem('bc_cached_user', JSON.stringify(cached));
+          localStorage.setItem('currentUser', JSON.stringify(cached));
+          sessionStorage.setItem('currentUser', JSON.stringify(cached));
+          if (typeof hydrateGlobalState === 'function') {
+            hydrateGlobalState();
+          }
+        }
+      } catch (_) {}
+
       closeModal('userModal');
       await loadUsers();
       await loadAuditLog();

@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from app import create_app
 from app.alert_dispatcher import (
     calculate_zone_risk_forecast,
+    detect_heatmap_hotspots,
     detect_weekly_category_surges,
     evaluate_trends_and_predictions,
     trigger_trend_and_prediction_check,
@@ -273,6 +274,146 @@ class TestPredictionTrendAlerts(unittest.TestCase):
         pred_item = next(item for item in items if item["type"] == "prediction_alert")
         self.assertEqual(pred_item["link"], "predictions.html")
         self.assertEqual(pred_item["severity"], "critical")
+
+    def test_06_heatmap_hotspot_alert_generation(self):
+        """Verify high incident cluster (>=3 incidents in 14 days) triggers heatmap_hotspot alert"""
+        now = datetime.utcnow().date()
+        for i in range(4):
+            db.session.add(Incident(
+                report_no=f"INC-HOTSPOT-{i}",
+                incident_date=now - timedelta(days=3),
+                time_reported=datetime.utcnow().time(),
+                hour=16,
+                zone_id="Zone 6",
+                location="St. Jude Ave",
+                category="Physical Assault",
+                priority="High",
+                status="Under Investigation"
+            ))
+        db.session.commit()
+
+        hotspots = detect_heatmap_hotspots()
+        self.assertTrue(any(h["zone"] == "Zone 6" for h in hotspots))
+
+        result = evaluate_trends_and_predictions()
+        self.assertTrue(result["dispatched_count"] >= 1)
+
+        notif = Notification.query.filter_by(type="heatmap_hotspot").first()
+        self.assertIsNotNone(notif)
+        self.assertIn("Zone 6", notif.title)
+        self.assertEqual(notif.link, "heatmap.html")
+        self.assertEqual(notif.severity, "critical")
+
+    def test_07_incident_status_update_resolution_triggers_evaluation(self):
+        """Verify updating incident status/resolution executes alert engine"""
+        self._login()
+        now = datetime.utcnow().date()
+        inc = Incident(
+            report_no="INC-RESOLVE-1",
+            incident_date=now - timedelta(days=1),
+            time_reported=datetime.utcnow().time(),
+            hour=10,
+            zone_id="Zone 1",
+            location="Market",
+            category="Theft",
+            priority="Medium",
+            status="Under Investigation"
+        )
+        db.session.add(inc)
+        db.session.commit()
+
+        # Update incident status to Referred (Resolved)
+        res = self.client.put(f"/api/records.php?type=incidents&id={inc.id}", json={
+            "reportNo": inc.report_no,
+            "status": "Referred",
+            "zone": "Zone 1",
+            "location": "Market",
+            "category": "Theft",
+            "date": now.isoformat(),
+            "timeReported": "10:00"
+        })
+        self.assertEqual(res.status_code, 200)
+
+    def test_08_incident_deletion_archival_triggers_evaluation(self):
+        """Verify incident archival and restore execute change detection"""
+        self._login()
+        now = datetime.utcnow().date()
+        inc = Incident(
+            report_no="INC-DEL-1",
+            incident_date=now - timedelta(days=1),
+            time_reported=datetime.utcnow().time(),
+            hour=10,
+            zone_id="Zone 2",
+            location="Park",
+            category="Noise Complaint",
+            priority="Low",
+            status="Under Investigation"
+        )
+        db.session.add(inc)
+        db.session.commit()
+
+        # Archive incident
+        res_del = self.client.delete(f"/api/records.php?type=incidents&id={inc.id}")
+        self.assertEqual(res_del.status_code, 200)
+        self.assertTrue(res_del.get_json()["archived"])
+
+        # Restore incident
+        res_restore = self.client.put(f"/api/records.php?type=incidents&id={inc.id}&restore=1")
+        self.assertEqual(res_restore.status_code, 200)
+        self.assertTrue(res_restore.get_json()["ok"])
+
+    def test_09_user_creation_preserves_all_four_roles(self):
+        """Verify user management preserves all 4 selectable roles without side effects on role queries"""
+        self._login()
+
+        # Desk Officer
+        r_desk = self.client.post("/api/users.php?action=create", json={
+            "username": "test_desk_officer",
+            "name": "Desk Officer Test",
+            "email": "desk_test@test.gov",
+            "role": "Desk Officer",
+            "password": "Password123!"
+        })
+        self.assertEqual(r_desk.status_code, 201)
+
+        # Data Encoder
+        r_encoder = self.client.post("/api/users.php?action=create", json={
+            "username": "test_encoder_user",
+            "name": "Encoder User Test",
+            "email": "encoder_test@test.gov",
+            "role": "Data Encoder",
+            "password": "Password123!"
+        })
+        self.assertEqual(r_encoder.status_code, 201)
+
+        # Barangay Captain (Singleton protected role - blocked from creation)
+        r_captain = self.client.post("/api/users.php?action=create", json={
+            "username": "test_captain_user",
+            "name": "Captain Test",
+            "email": "captain_test@test.gov",
+            "role": "Barangay Captain",
+            "password": "Password123!"
+        })
+        self.assertEqual(r_captain.status_code, 403)
+
+        # System Administrator (Singleton protected role - blocked from creation)
+        r_admin = self.client.post("/api/users.php?action=create", json={
+            "username": "test_admin_user",
+            "name": "Admin Test",
+            "email": "admin_test@test.gov",
+            "role": "System Administrator",
+            "password": "Password123!"
+        })
+        self.assertEqual(r_admin.status_code, 403)
+
+        # Verify all roles exist in users list
+        r_list = self.client.get("/api/users.php?action=list")
+        self.assertEqual(r_list.status_code, 200)
+        roles = {u["role"] for u in r_list.get_json()}
+        self.assertIn("System Admin", roles)
+        self.assertIn("Barangay Captain", roles)
+        self.assertIn("Desk Officer", roles)
+        self.assertIn("Data Encoder", roles)
 
 
 if __name__ == "__main__":

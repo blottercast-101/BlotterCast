@@ -7,6 +7,7 @@ from ..alert_dispatcher import (
     ANALYTICS_NOTIFICATION_TYPES,
     evaluate_trends_and_predictions,
     is_encoder_role,
+    notify_analytics_change,
 )
 from ..extensions import db
 from ..models import Incident, MlRun, Notification, NotificationRead, Settlement, SystemSetting
@@ -94,15 +95,15 @@ def _generate_notifications():
             Notification.created_at >= (now_utc - timedelta(days=3))
         ).first()
         if not recent_notif:
-            db.session.add(Notification(
-                type="heatmap_hotspot",
-                title=f"Geospatial Hotspot Alert: {zone_id}",
-                body=f"High incident cluster detected in {zone_id} ({cnt} incidents recorded in the last 14 days). Increased patrol presence recommended.",
-                severity="critical" if cnt >= 4 else "warning",
-                link="heatmap.html",
-                ref_table="incidents",
-                ref_id=None,
-            ))
+            notify_analytics_change({
+                "type": "heatmap_hotspot",
+                "title": f"Geospatial Hotspot Alert: {zone_id}",
+                "body": f"High incident cluster detected in {zone_id} ({cnt} incidents recorded in the last 14 days). Increased patrol presence recommended.",
+                "severity": "critical" if cnt >= 4 else "warning",
+                "link": "heatmap.html",
+                "ref_table": "incidents",
+                "ref_id": None,
+            })
 
     # 4. Predictive ML Analytics (High-Risk Zone Forecasts)
     threshold_row = SystemSetting.query.get("risk_threshold")
@@ -126,15 +127,15 @@ def _generate_notifications():
                 if exists:
                     continue
                 pct = round(mean_prob * 100)
-                db.session.add(Notification(
-                    type="predictive_risk",
-                    title=f"Forecasted Incident Spike: Zone {zone}",
-                    body=f"ML model forecasts elevated incident probability ({pct}%) in Zone {zone}, exceeding the threshold.",
-                    severity="critical" if pct >= 80 else "warning",
-                    link="predictions.html",
-                    ref_table="ml_runs",
-                    ref_id=run.id,
-                ))
+                notify_analytics_change({
+                    "type": "predictive_risk",
+                    "title": f"Forecasted Incident Spike: Zone {zone}",
+                    "body": f"ML model forecasts elevated incident probability ({pct}%) in Zone {zone}, exceeding the threshold.",
+                    "severity": "critical" if pct >= 80 else "warning",
+                    "link": "predictions.html",
+                    "ref_table": "ml_runs",
+                    "ref_id": run.id,
+                })
         except Exception:
             pass
 
@@ -155,15 +156,15 @@ def _generate_notifications():
                 Notification.created_at >= (now_utc - timedelta(days=3))
             ).first()
             if not recent_trend_notif:
-                db.session.add(Notification(
-                    type="trend_spike",
-                    title=f"Incident Trend Surge (+{pct_increase}% WoW)",
-                    body=f"Incident volume rose by {pct_increase}% this week ({curr_week_count} incidents vs {prev_week_count} prior week). Review trend breakdown.",
-                    severity="warning",
-                    link="trends.html",
-                    ref_table="incidents",
-                    ref_id=None,
-                ))
+                notify_analytics_change({
+                    "type": "trend_spike",
+                    "title": f"Incident Trend Surge (+{pct_increase}% WoW)",
+                    "body": f"Incident volume rose by {pct_increase}% this week ({curr_week_count} incidents vs {prev_week_count} prior week). Review trend breakdown.",
+                    "severity": "warning",
+                    "link": "trends.html",
+                    "ref_table": "incidents",
+                    "ref_id": None,
+                })
 
     db.session.commit()
 

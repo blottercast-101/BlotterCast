@@ -388,30 +388,6 @@ def _login():
         settings = get_security_settings()
         user = User.query.filter(func.lower(func.trim(User.username)) == username.lower()).first()
 
-        # Failsafe / auto-recovery for standard admin login credentials
-        if username.lower() == "admin" and password == "admin123":
-            if not user:
-                user = User(
-                    username="admin",
-                    password=_hash_password("admin123"),
-                    full_name="System Administrator",
-                    role="System Admin",
-                    status="Active",
-                    email="blottercast@gmail.com",
-                    failed_attempts=0,
-                    locked_until=None,
-                )
-                db.session.add(user)
-                db.session.commit()
-            else:
-                user.status = "Active"
-                user.failed_attempts = 0
-                user.locked_until = None
-                user.role = "System Admin"
-                if not _check_password("admin123", user.password):
-                    user.password = _hash_password("admin123")
-                db.session.commit()
-
         if user and settings["lockout_enabled"] and user.locked_until and user.locked_until > datetime.utcnow():
             minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1)
             return json_error(
@@ -919,6 +895,16 @@ def _update_my_account():
     user.email = email
     user.contact_no = contact
     session["full_name"] = full_name
+
+    if user.role == "Barangay Captain":
+        from ..models import SystemSetting
+        for skey in ["barangay_captain", "captain_name", "punong_barangay"]:
+            s_row = SystemSetting.query.get(skey)
+            if s_row:
+                s_row.setting_value = full_name
+            else:
+                db.session.add(SystemSetting(setting_key=skey, setting_value=full_name))
+
     db.session.commit()
     log_audit(user.username, "Updated", "System", "Updated their own account details")
 

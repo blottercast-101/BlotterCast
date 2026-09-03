@@ -29,8 +29,8 @@ class TestCertificateCaptainBinding(unittest.TestCase):
                 p_row.setting_value = "Alex Roque Cruz"
             db.session.commit()
 
-            # Login as Desk Officer (jdelacuz)
-            mfa_login(self.client, "jdelacuz", "officer123")
+            # Login and request captain signature
+            mfa_login(self.client, "admin", "admin123")
 
             # Signatory endpoint must return "Alex Roque Cruz", NOT "J. Dela Cruz"
             res = self.client.get("/api/users.php?action=captain_signature")

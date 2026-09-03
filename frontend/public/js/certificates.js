@@ -12,6 +12,23 @@
  */
 async function getOfficialCaptainName() {
   try {
+    const res = await fetch('/api/users.php?action=captain_signature', { credentials: 'include' });
+    if (res.ok) {
+      const json = await res.json();
+      const name = json.fullName || json.signatory_captain || json.barangay_captain || json.captain_name;
+      if (name) {
+        const stored = JSON.parse(localStorage.getItem('barangay_info') || localStorage.getItem('barangayConfig') || '{}');
+        stored.barangay_captain = name;
+        stored.captain_name = name;
+        stored.punong_barangay = name;
+        localStorage.setItem('barangay_info', JSON.stringify(stored));
+        localStorage.setItem('barangayConfig', JSON.stringify(stored));
+        return name;
+      }
+    }
+  } catch (_) {}
+
+  try {
     const res = await fetch('/api/settings/general', { credentials: 'include' });
     if (res.ok) {
       const json = await res.json();
@@ -48,7 +65,7 @@ async function getOfficialCaptainName() {
     localConfig.barangay_captain ||
     localConfig.punong_barangay ||
     localConfig.captain_name ||
-    'Alex Roque Cruz'
+    'Barangay Captain'
   );
 }
 
@@ -66,7 +83,7 @@ function getCaptainName() {
     localConfig.barangay_captain ||
     localConfig.punong_barangay ||
     localConfig.captain_name ||
-    'Alex Roque Cruz'
+    'Barangay Captain'
   );
 }
 
@@ -88,11 +105,11 @@ async function bindCertificateCaptainName(certData = {}) {
     captain = getCaptainName();
   }
 
-  if (!captain || captain === 'HON. PUNONG BARANGAY') {
+  if (!captain || captain === 'HON. PUNONG BARANGAY' || captain === 'Barangay Captain') {
     captain = await getOfficialCaptainName();
   }
 
-  const rawCap = String(captain || 'Alex Roque Cruz').trim();
+  const rawCap = String(captain || 'Barangay Captain').trim();
   const upperCaptain = rawCap.toUpperCase().startsWith('HON.')
     ? rawCap.toUpperCase()
     : `HON. ${rawCap.toUpperCase()}`;

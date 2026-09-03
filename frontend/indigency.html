@@ -513,18 +513,22 @@ window.initIndigency = async function () {
     await requireAuth();
     try {
       const cap = await BCApi.captainSignature();
-      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes');
+      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : '');
       const capEl = document.getElementById('i_captain');
-      if (capEl) capEl.textContent = captainName.toUpperCase();
+      if (capEl && captainName) {
+        capEl.textContent = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
+      }
       const sigWrap = document.getElementById('i_sigimg_wrap');
       if (sigWrap) {
         const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
         sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
       }
     } catch (e) {
-      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : 'Kapitan Jose Reyes';
+      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : '';
       const capEl = document.getElementById('i_captain');
-      if (capEl) capEl.textContent = fallbackCaptain.toUpperCase();
+      if (capEl && fallbackCaptain) {
+        capEl.textContent = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
+      }
       const sigWrap = document.getElementById('i_sigimg_wrap');
       if (sigWrap) {
         sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;

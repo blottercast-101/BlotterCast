@@ -530,21 +530,25 @@ window.initNonResidency = async function () {
       const cap = await BCApi.captainSignature();
       const rawCaptain = (cap && (cap.fullName || cap.signatory_captain || cap.barangay_captain))
         ? (cap.fullName || cap.signatory_captain || cap.barangay_captain)
-        : (typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz'));
-      const captainName = (rawCaptain && rawCaptain !== 'Kapitan Jose Reyes') ? rawCaptain : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz');
+        : (typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : ''));
+      const captainName = rawCaptain || (typeof getCaptainName === 'function' ? getCaptainName() : '');
       const capEl = document.getElementById('nr_captain');
-      const formattedCaptain = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
-      if (capEl) capEl.textContent = formattedCaptain;
+      if (capEl && captainName) {
+        const formattedCaptain = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
+        capEl.textContent = formattedCaptain;
+      }
       const sigWrap = document.getElementById('nr_sigimg_wrap');
       if (sigWrap) {
         const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
         sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
       }
     } catch (e) {
-      const fallbackCaptain = typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : 'Alex Roque Cruz');
+      const fallbackCaptain = typeof getOfficialCaptainName === 'function' ? await getOfficialCaptainName() : (typeof getCaptainName === 'function' ? getCaptainName() : '');
       const capEl = document.getElementById('nr_captain');
-      const formattedCaptain = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
-      if (capEl) capEl.textContent = formattedCaptain;
+      if (capEl && fallbackCaptain) {
+        const formattedCaptain = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
+        capEl.textContent = formattedCaptain;
+      }
       const sigWrap = document.getElementById('nr_sigimg_wrap');
       if (sigWrap) {
         sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;

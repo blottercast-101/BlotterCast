@@ -11,6 +11,7 @@ Safe to re-run — it skips or synchronizes existing data.
 import sys
 from datetime import datetime, date, time, timedelta
 import bcrypt
+from sqlalchemy import func
 
 from app import create_app
 from app.extensions import db
@@ -99,12 +100,9 @@ SETTINGS = {
     "backup_time": "02:00",
 }
 
-DEMO_USERS = [
+CORE_SYSTEM_USERS = [
     ("admin", "admin123", "System Administrator", "System Admin", "blottercast@gmail.com"),
     ("kapitan", "kapitan123", "Barangay Captain", "Barangay Captain", "fhalynramos4@gmail.com"),
-    ("jdelacuz", "officer123", "J. Dela Cruz", "Desk Officer", "jdelacuz@blottercast.local"),
-    ("msantos", "officer123", "M. Santos", "Desk Officer", "msantos@blottercast.local"),
-    ("pencoder", "encoder123", "P. Encoder", "Data Encoder", "pencoder@blottercast.local"),
 ]
 
 AUTHENTIC_INCIDENTS = [
@@ -270,16 +268,24 @@ def seed_data(app_instance=None, force_reset: bool = False):
             idle_timeout_duration_minutes=120,
         ))
 
-    # 3. Demo Users
-    for username, password, full_name, role, email in DEMO_USERS:
-        user = User.query.filter_by(username=username).first()
+    # Permanently delete legacy demo dummy accounts so they never re-spawn or linger
+    User.query.filter(User.username.in_(["jdelacuz", "msantos", "pencoder"])).delete(synchronize_session=False)
+
+    # 3. Core System Users (Guarded firstOrCreate - Never overwrite existing user records or passwords upon server reload)
+    for username, password, full_name, role, email in CORE_SYSTEM_USERS:
+        user = (
+            User.query.filter_by(role=role).first()
+            or User.query.filter_by(username=username).first()
+            or User.query.filter(func.lower(User.email) == email.lower()).first()
+        )
         if not user:
             db.session.add(User(
                 username=username, password=hash_password(password),
                 full_name=full_name, role=role, status="Active", email=email,
                 failed_attempts=0, locked_until=None,
             ))
-        else:
+        elif force_reset:
+            # Only reset if explicitly instructed via CLI --reset flag
             user.email = email
             user.full_name = full_name
             user.role = role

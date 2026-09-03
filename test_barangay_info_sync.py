@@ -10,11 +10,25 @@ class TestBarangayInfoSync(unittest.TestCase):
         self.app = create_app()
         self.app.config["TESTING"] = True
         self.client = self.app.test_client()
+        with self.app.app_context():
+            from app.blueprints.auth import _hash_password
+            from app.models import User
+            u = User.query.filter_by(username="test_desk_officer").first()
+            if not u:
+                db.session.add(User(
+                    username="test_desk_officer",
+                    password=_hash_password("officer123"),
+                    full_name="Test Officer",
+                    role="Desk Officer",
+                    email="test_desk@blottercast.local",
+                    status="Active",
+                ))
+                db.session.commit()
 
     def test_get_general_settings(self):
         with self.app.app_context():
             # Login as officer
-            mfa_login(self.client, "jdelacuz", "officer123")
+            mfa_login(self.client, "test_desk_officer", "officer123")
             res = self.client.get("/api/settings/general")
             self.assertEqual(res.status_code, 200)
             data = res.get_json()
@@ -26,7 +40,7 @@ class TestBarangayInfoSync(unittest.TestCase):
     def test_update_general_settings_rbac(self):
         with self.app.app_context():
             # Officer cannot update general settings (403)
-            mfa_login(self.client, "jdelacuz", "officer123")
+            mfa_login(self.client, "test_desk_officer", "officer123")
             res = self.client.post("/api/settings/general", json={"barangay_name": "Unauthorized Barangay"})
             self.assertEqual(res.status_code, 403)
 

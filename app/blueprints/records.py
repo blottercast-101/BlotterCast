@@ -448,6 +448,8 @@ def _handle_batch(rtype, action):
                 Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).update({"archived": True}, synchronize_session=False)
 
             db.session.commit()
+            if model in (Incident, BlotterRecord, Settlement):
+                trigger_trend_and_prediction_check()
             sample_ids = clean_ids[:10]
             more_cnt = len(clean_ids) - 10
             id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
@@ -476,6 +478,8 @@ def _handle_batch(rtype, action):
                 Settlement.query.filter(Settlement.blotter_id.in_(clean_ids)).update({"archived": False}, synchronize_session=False)
 
             db.session.commit()
+            if model in (Incident, BlotterRecord, Settlement):
+                trigger_trend_and_prediction_check()
             sample_ids = clean_ids[:10]
             more_cnt = len(clean_ids) - 10
             id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
@@ -583,6 +587,8 @@ def _handle_batch(rtype, action):
                 db.session.delete(r)
 
             db.session.commit()
+            if model in (Incident, BlotterRecord, Settlement):
+                trigger_trend_and_prediction_check()
             sample_ids = clean_ids[:10]
             more_cnt = len(clean_ids) - 10
             id_desc = f"IDs: {sample_ids}" + (f"... (+{more_cnt} more)" if more_cnt > 0 else "")
@@ -818,6 +824,7 @@ def _incidents():
                 BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
                 Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": False}, synchronize_session=False)
             db.session.commit()
+            trigger_trend_and_prediction_check()
             return jsonify({"ok": True})
 
         if incident.is_blotter or incident.status in ("Elevated to Blotter", "ELEVATED"):
@@ -1011,6 +1018,7 @@ def _incidents():
             report_no = incident.report_no
             db.session.delete(incident)
             db.session.commit()
+            trigger_trend_and_prediction_check()
 
             username = session.get("username", "system")
             log_audit(
@@ -1040,6 +1048,7 @@ def _incidents():
             BlotterRecord.query.filter(BlotterRecord.id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
             Settlement.query.filter(Settlement.blotter_id.in_(linked_blt_ids)).update({"archived": True}, synchronize_session=False)
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True, "archived": True})
 
 
@@ -1189,6 +1198,7 @@ def _blotter():
             # Cascade unarchive to linked settlement records
             Settlement.query.filter_by(blotter_id=record.id).update({"archived": False}, synchronize_session=False)
             db.session.commit()
+            trigger_trend_and_prediction_check()
             return jsonify({"ok": True})
 
         d = request.get_json(silent=True) or {}
@@ -1310,6 +1320,7 @@ def _blotter():
             docket_no = record.docket_no
             db.session.delete(record)
             db.session.commit()
+            trigger_trend_and_prediction_check()
 
             username = session.get("username", "System")
             log_audit(username, "PERMANENT_DELETE", "blotter", f"Permanently deleted blotter record {docket_no} (ID: {rid})")
@@ -1323,6 +1334,7 @@ def _blotter():
         # Cascade archive to linked settlement records
         Settlement.query.filter_by(blotter_id=record.id).update({"archived": True}, synchronize_session=False)
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True, "archived": True})
 
 

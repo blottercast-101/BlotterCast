@@ -58,12 +58,31 @@ def notify_analytics_change(alert_data):
     if len(msg) > 250:
         msg = msg[:247] + "..."
 
+    # Normalize severity/priority
+    raw_sev = alert_data.get("severity") or alert_data.get("priority") or "info"
+    sev = str(raw_sev).strip().lower()
+    if sev in ("high", "critical", "urgent"):
+        sev = "critical"
+    elif sev in ("medium", "elevated", "warning"):
+        sev = "warning"
+    elif sev in ("low", "info"):
+        sev = "info"
+
+    # Normalize route/link
+    raw_link = alert_data.get("link") or alert_data.get("route") or ""
+    if "/analytics/predictions" in raw_link:
+        raw_link = "predictions.html"
+    elif "/analytics/trends" in raw_link:
+        raw_link = "trends.html"
+    elif "/analytics/heatmap" in raw_link or "/analytics/heat_map" in raw_link:
+        raw_link = "heatmap.html"
+
     notif = Notification(
         type=alert_data.get("type", "analytics"),
         title=title,
         body=msg[:255],
-        severity=alert_data.get("severity", alert_data.get("priority", "info")).lower(),
-        link=alert_data.get("link", alert_data.get("route", "")),
+        severity=sev,
+        link=raw_link,
         ref_table=alert_data.get("ref_table", "incidents"),
         ref_id=alert_data.get("ref_id"),
     )
@@ -198,10 +217,39 @@ def detect_weekly_category_surges():
     return surges
 
 
+def detect_heatmap_hotspots():
+    """
+    Detects high-density geospatial clusters (hotspots) in the last 14 days per zone.
+    Returns list of dicts:
+      [{"zone": "Zone 5", "count": 4, "severity": "critical"}, ...]
+    """
+    now = datetime.utcnow().date()
+    fourteen_days_ago = now - timedelta(days=14)
+
+    recent_zone_counts = db.session.query(
+        Incident.zone_id, db.func.count(Incident.id)
+    ).filter(
+        (Incident.archived == False) | (Incident.archived == None),
+        Incident.incident_date >= fourteen_days_ago,
+        Incident.zone_id.in_(OFFICIAL_ZONES)
+    ).group_by(Incident.zone_id).all()
+
+    hotspots = []
+    for zone_id, cnt in recent_zone_counts:
+        if not zone_id or cnt < 3:
+            continue
+        hotspots.append({
+            "zone": zone_id,
+            "count": cnt,
+            "severity": "critical" if cnt >= 4 else "warning"
+        })
+    return hotspots
+
+
 def evaluate_trends_and_predictions():
     """
-    Core change detection engine. Evaluates predictive shifts and trend spikes,
-    dispatches notifications, and updates the historical baseline.
+    Core change detection engine. Evaluates predictive shifts, trend spikes,
+    and heat map clusters, dispatches notifications, and updates the historical baseline.
     """
     now_utc = datetime.utcnow()
     three_days_ago = now_utc - timedelta(days=3)
@@ -286,7 +334,39 @@ def evaluate_trends_and_predictions():
             if notif:
                 dispatched.append(notif)
 
-    # 5. Persist updated risk levels baseline
+    # 5. Detect geospatial hotspot clusters (Heat Map)
+    hotspots = detect_heatmap_hotspots()
+    for hs in hotspots:
+        zone = hs["zone"]
+        cnt = hs["count"]
+        hs_sev = hs["severity"]
+
+        # Cooldown check: avoid duplicate alert for this zone within 3 days
+        recent_hs_alert = Notification.query.filter(
+            Notification.type.in_(["heatmap_hotspot", "heatmap_alert"]),
+            Notification.title.like(f"%{zone}%"),
+            Notification.created_at >= three_days_ago
+        ).first()
+
+        if not recent_hs_alert:
+            title = f"Geospatial Hotspot Alert: {zone}"
+            msg = f"High incident cluster detected in {zone} ({cnt} incidents recorded in the last 14 days). Increased patrol presence recommended."
+            if len(msg) > 250:
+                msg = msg[:247] + "..."
+
+            notif = notify_analytics_change({
+                "type": "heatmap_hotspot",
+                "title": title,
+                "body": msg,
+                "severity": hs_sev,
+                "link": "heatmap.html",
+                "ref_table": "incidents",
+                "ref_id": None,
+            })
+            if notif:
+                dispatched.append(notif)
+
+    # 6. Persist updated risk levels baseline
     try:
         if not setting_row:
             setting_row = SystemSetting(setting_key="purok_risk_levels", setting_value=json.dumps(current_risk))
@@ -301,6 +381,7 @@ def evaluate_trends_and_predictions():
     return {
         "current_risk": current_risk,
         "trend_spikes": trend_spikes,
+        "hotspots": hotspots,
         "dispatched_count": len(dispatched)
     }
 

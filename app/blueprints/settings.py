@@ -295,7 +295,10 @@ def general_settings_route():
         b_name = cfg.get("barangay_name", "Barangay Mapulang Lupa")
         muni = cfg.get("municipality", "Pandi, Bulacan")
         prov = cfg.get("province", "Bulacan")
-        capt = cfg.get("captain_name") or cfg.get("punong_barangay") or "Kapitan Jose Reyes"
+        from ..models import User
+        capt_user = User.query.filter_by(role="Barangay Captain").filter(User.status != "Suspended").first()
+        capt = (capt_user.full_name if (capt_user and capt_user.full_name and capt_user.full_name != "Barangay Captain")
+                else (cfg.get("captain_name") or cfg.get("punong_barangay") or (capt_user.full_name if capt_user else "Barangay Captain")))
         contact = cfg.get("contact_number") or cfg.get("contact_no") or "0917-000-0000"
         email = cfg.get("email", "mapulanglupa@pandi.gov.ph")
         logo = cfg.get("official_logo_url", "")
@@ -310,6 +313,7 @@ def general_settings_route():
                 "region": region,
                 "captain_name": capt,
                 "punong_barangay": capt,
+                "barangay_captain": capt,
                 "contact_number": contact,
                 "contact_no": contact,
                 "email": email,
@@ -336,19 +340,20 @@ def general_settings_route():
         else:
             db.session.add(SystemSetting(setting_key=clean_key, setting_value=str_val))
 
-    # Synchronize alias pairs
-    if "punong_barangay" in d and "captain_name" not in d:
-        row = SystemSetting.query.get("captain_name")
-        if row:
-            row.setting_value = str(d["punong_barangay"])
-        else:
-            db.session.add(SystemSetting(setting_key="captain_name", setting_value=str(d["punong_barangay"])))
-    elif "captain_name" in d and "punong_barangay" not in d:
-        row = SystemSetting.query.get("punong_barangay")
-        if row:
-            row.setting_value = str(d["captain_name"])
-        else:
-            db.session.add(SystemSetting(setting_key="punong_barangay", setting_value=str(d["captain_name"])))
+    # Synchronize alias pairs and Barangay Captain User
+    new_cap = d.get("captain_name") or d.get("punong_barangay") or d.get("barangay_captain")
+    if new_cap:
+        cap_val = str(new_cap).strip()
+        for skey in ["captain_name", "punong_barangay", "barangay_captain"]:
+            row = SystemSetting.query.get(skey)
+            if row:
+                row.setting_value = cap_val
+            else:
+                db.session.add(SystemSetting(setting_key=skey, setting_value=cap_val))
+        from ..models import User
+        cap_user = User.query.filter_by(role="Barangay Captain").first()
+        if cap_user:
+            cap_user.full_name = cap_val
 
     if "contact_number" in d and "contact_no" not in d:
         row = SystemSetting.query.get("contact_no")
