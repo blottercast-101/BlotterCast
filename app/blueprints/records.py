@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request, session
 
+from ..alert_dispatcher import trigger_trend_and_prediction_check
 from ..extensions import db
 from ..geocoding import forward_geocode, is_point_inside_boundary
 from ..helpers import (
@@ -117,6 +118,7 @@ def update_settlement_status(settlement_id):
     ))
 
     db.session.commit()
+    trigger_trend_and_prediction_check()
 
     b = BlotterRecord.query.get(settlement.blotter_id) if settlement.blotter_id else None
     inc = Incident.query.get(b.source_incident_id) if (b and b.source_incident_id) else None
@@ -312,6 +314,7 @@ def elevate_incident_endpoint(incident_id):
     ))
 
     db.session.commit()
+    trigger_trend_and_prediction_check()
 
     return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
 
@@ -794,6 +797,7 @@ def _incidents():
         ))
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True, "id": incident.id}), 201
 
     if method == "PUT":
@@ -949,6 +953,7 @@ def _incidents():
             ))
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True})
 
     if method == "DELETE":
@@ -1165,6 +1170,7 @@ def _blotter():
             ))
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True, "id": record.id, "docket_no": docket_no, "case_no": stl_case_no}), 201
 
     if method == "PUT":
@@ -1264,6 +1270,7 @@ def _blotter():
                 inc.updated_at = datetime.utcnow()
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True})
 
     if method == "DELETE":
@@ -1413,6 +1420,7 @@ def _settlements():
         ))
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True, "id": settlement.id}), 201
 
     if method == "PUT":
@@ -1459,6 +1467,7 @@ def _settlements():
         ))
 
         db.session.commit()
+        trigger_trend_and_prediction_check()
         return jsonify({"ok": True})
 
     if method == "DELETE":

@@ -8,6 +8,7 @@ from datetime import date, datetime
 from flask import Blueprint, jsonify, request, session
 from openpyxl import load_workbook
 
+from ..alert_dispatcher import trigger_trend_and_prediction_check
 from ..extensions import db
 from ..helpers import (
     ZONE_LANDMARK_DEFINITIONS,
@@ -716,6 +717,8 @@ def blotter_import():
         "Blotter",
         f"Imported {imported} blotter record(s) with linked incidents and settlements from {original_name}",
     )
+    if imported > 0:
+        trigger_trend_and_prediction_check()
     return jsonify({
         "ok": True,
         "importType": "blotter-entry",

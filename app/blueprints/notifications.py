@@ -3,9 +3,14 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, jsonify, request, session
 
+from ..alert_dispatcher import (
+    ANALYTICS_NOTIFICATION_TYPES,
+    evaluate_trends_and_predictions,
+    is_encoder_role,
+)
 from ..extensions import db
 from ..models import Incident, MlRun, Notification, NotificationRead, Settlement, SystemSetting
-from ..permissions import json_error, login_required
+from ..permissions import json_error, login_required, role_can
 
 bp = Blueprint("notifications", __name__)
 
@@ -27,6 +32,12 @@ def notifications_router():
 
 
 def _generate_notifications():
+    # Evaluate reactive predictive shifts and category trend spikes
+    try:
+        evaluate_trends_and_predictions()
+    except Exception as e:
+        pass
+
     now_utc = datetime.utcnow()
     three_days_ago = now_utc.date() - timedelta(days=3)
     seven_days_ago = now_utc.date() - timedelta(days=7)
@@ -161,10 +172,17 @@ def _list():
     _generate_notifications()
     limit = min(50, max(1, int(request.args.get("limit", 20))))
     user_id = session.get("user_id")
+    role = session.get("role", "")
+    is_encoder = is_encoder_role(role) or not role_can(role, "view_analytics")
+
     read_ids = {
         r.notification_id for r in NotificationRead.query.filter_by(user_id=user_id).all()
     }
-    rows = Notification.query.order_by(Notification.created_at.desc()).limit(limit).all()
+    q = Notification.query
+    if is_encoder:
+        q = q.filter(~Notification.type.in_(ANALYTICS_NOTIFICATION_TYPES))
+
+    rows = q.order_by(Notification.created_at.desc()).limit(limit).all()
     return jsonify([{
         "id": n.id, "type": n.type, "title": n.title, "body": n.body, "severity": n.severity,
         "link": n.link, "ref_table": n.ref_table, "ref_id": n.ref_id,
@@ -178,9 +196,16 @@ def _list():
 def _unread_count():
     _generate_notifications()
     user_id = session.get("user_id")
+    role = session.get("role", "")
+    is_encoder = is_encoder_role(role) or not role_can(role, "view_analytics")
+
     read_ids = {r.notification_id for r in NotificationRead.query.filter_by(user_id=user_id).all()}
-    total = Notification.query.count()
-    count = total - Notification.query.filter(Notification.id.in_(read_ids)).count() if read_ids else total
+    q = Notification.query
+    if is_encoder:
+        q = q.filter(~Notification.type.in_(ANALYTICS_NOTIFICATION_TYPES))
+
+    total = q.count()
+    count = total - q.filter(Notification.id.in_(read_ids)).count() if read_ids else total
     return jsonify({"count": count})
 
 

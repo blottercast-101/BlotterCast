@@ -1447,14 +1447,103 @@ function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
   addBtn('Next ›', { disabled: currentPage === totalPages, onClick: () => onPageChange(currentPage + 1) });
 }
 
+// ── Teleport / Portal All Modals to <body> ───────────────────
+/**
+ * Guarantee all modals, dialogs, and overlays mount directly to document.body
+ * to completely eliminate CSS stacking context and clipping issues from nested parents.
+ */
+function teleportModalsToBody() {
+  if (typeof document === 'undefined' || !document.body) return;
+  const modalSelectors = [
+    '.modal-overlay',
+    '.modal-backdrop-overlay',
+    '[role="dialog"]',
+    '#bcDialogOverlay',
+    '#bcPermDeleteOverlay',
+    '#elevateConfirmModal',
+    '#bcExportFilterModal',
+    '#userModal',
+    '#settlementModal',
+    '#stlViewModal',
+    '#residencyFormModal',
+    '#generateModal',
+    '#nonResidencyFormModal',
+    '#indFormModal',
+    '#incidentModal',
+    '#incViewModal',
+    '#clearanceFormModal',
+    '#residentModal',
+    '#importCensusModal',
+    '#censusViewModal',
+    '#blotterModal',
+    '#importModal',
+    '#viewModal'
+  ];
+
+  document.querySelectorAll(modalSelectors.join(',')).forEach(el => {
+    if (el && el.parentNode && el.parentNode !== document.body) {
+      document.body.appendChild(el);
+    }
+  });
+}
+
+// Initial teleport on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', teleportModalsToBody);
+} else {
+  teleportModalsToBody();
+}
+
+// Observe dynamic DOM insertions to auto-teleport newly constructed modals
+if (typeof MutationObserver !== 'undefined') {
+  const modalObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === 1) {
+          if (node.classList && (node.classList.contains('modal-overlay') || node.classList.contains('modal-backdrop-overlay'))) {
+            if (node.parentNode !== document.body) document.body.appendChild(node);
+          } else if (node.querySelectorAll) {
+            const nested = node.querySelectorAll('.modal-overlay, .modal-backdrop-overlay');
+            nested.forEach(m => {
+              if (m.parentNode !== document.body) document.body.appendChild(m);
+            });
+          }
+        }
+      }
+    }
+  });
+  if (document.body) {
+    modalObserver.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      modalObserver.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+}
+
 // ── Modal helpers ──────────────────────────────────────────
 function openModal(id) {
   const el = document.getElementById(id);
-  if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  if (el) {
+    // Portal/Teleport to document.body immediately before opening
+    if (el.parentNode && el.parentNode !== document.body) {
+      document.body.appendChild(el);
+    }
+    el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
 }
+
 function closeModal(id) {
   const el = document.getElementById(id);
-  if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
+  if (el) {
+    el.classList.remove('open');
+    // Only reset body overflow if no other modal or dialog is still open
+    const remainingOpen = document.querySelectorAll('.modal-overlay.open, .modal-backdrop-overlay.open');
+    if (!remainingOpen.length) {
+      document.body.style.overflow = '';
+    }
+  }
 }
 
 /**
@@ -1476,128 +1565,203 @@ function resetFormDropdowns(target) {
     select.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
+
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('modal-overlay') && !e.target.hasAttribute('data-no-dismiss')) {
+  if ((e.target.classList.contains('modal-overlay') || e.target.classList.contains('modal-backdrop-overlay')) && !e.target.hasAttribute('data-no-dismiss')) {
     e.target.classList.remove('open');
-    document.body.style.overflow = '';
+    const remainingOpen = document.querySelectorAll('.modal-overlay.open, .modal-backdrop-overlay.open');
+    if (!remainingOpen.length) {
+      document.body.style.overflow = '';
+    }
   }
 });
 
-// ── Toast System with Linear Countdown Progress Bar ────────
-let _toastTimer = null;
-let _toastRemainingTime = 0;
-let _toastStartTime = 0;
-let _toastDuration = 3500;
-
-function showToast(msg, type = 'success', duration = 3500) {
-  let t = document.getElementById('globalToast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'globalToast';
-    document.body.appendChild(t);
+// ── Centralized Multi-Toast Manager & Reactive Store ─────────
+class ToastManager {
+  constructor() {
+    this.toasts = [];
+    this._container = null;
   }
 
-  // Clear existing timer if toast is already active
-  if (_toastTimer) {
-    clearTimeout(_toastTimer);
-    _toastTimer = null;
+  _getContainer() {
+    if (typeof document === 'undefined') return null;
+    let c = document.getElementById('toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'toast-container';
+      c.className = 'toast-container';
+      c.setAttribute('aria-live', 'polite');
+      c.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(c);
+    } else if (c.parentNode !== document.body) {
+      document.body.appendChild(c);
+    }
+    this._container = c;
+    return c;
   }
 
-  _toastDuration = duration || 3500;
-  _toastRemainingTime = _toastDuration;
+  showToast(optionsOrMessage, type = 'success', duration = 3500) {
+    let message = '';
+    let toastType = type;
+    let toastDuration = duration;
 
-  // Icon per type: success → check, warning → alert-triangle, error → x, info → info
-  const iconName = type === 'error' ? 'x' : type === 'warning' ? 'alert-triangle' : type === 'info' ? 'info' : 'check';
-  const typeClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'info' ? 'info' : 'success';
-
-  t.className = `toast ${typeClass}`;
-  t.innerHTML = `
-    <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
-      <span data-icon="${iconName}" data-icon-size="16"></span>
-      <span class="leading-snug">${msg}</span>
-    </div>
-    <div class="toast-progress-track">
-      <div class="toast-progress-bar" style="animation: toastProgress ${_toastDuration}ms linear forwards;"></div>
-    </div>
-  `;
-
-  if (window.lucide) lucide.createIcons({ nodes: [t] });
-
-  // Force DOM reflow to restart CSS animation cleanly
-  const progressBar = t.querySelector('.toast-progress-bar');
-  if (progressBar) {
-    progressBar.style.animation = 'none';
-    void progressBar.offsetWidth; // trigger reflow
-    progressBar.style.animation = `toastProgress ${_toastDuration}ms linear forwards`;
-  }
-
-  t.classList.add('show');
-  _toastStartTime = Date.now();
-
-  const dismissToast = () => {
-    t.classList.remove('show');
-    if (_toastTimer) {
-      clearTimeout(_toastTimer);
-      _toastTimer = null;
+    if (typeof optionsOrMessage === 'object' && optionsOrMessage !== null) {
+      message = optionsOrMessage.message || optionsOrMessage.msg || optionsOrMessage.title || '';
+      toastType = optionsOrMessage.type || type || 'success';
+      toastDuration = optionsOrMessage.duration !== undefined ? optionsOrMessage.duration : duration;
+    } else {
+      message = String(optionsOrMessage || '');
     }
-  };
 
-  _toastTimer = setTimeout(dismissToast, _toastDuration);
+    if (!message) return null;
 
-  // Hover Interactions: pause countdown on mouseenter, resume on mouseleave
-  t.onmouseenter = () => {
-    if (_toastTimer) {
-      clearTimeout(_toastTimer);
-      _toastTimer = null;
-      _toastRemainingTime -= (Date.now() - _toastStartTime);
-      if (_toastRemainingTime < 200) _toastRemainingTime = 200;
-    }
-  };
+    const container = this._getContainer();
+    if (!container) return null;
 
-  t.onmouseleave = () => {
-    if (t.classList.contains('show') && !_toastTimer) {
-      _toastStartTime = Date.now();
-      _toastTimer = setTimeout(dismissToast, _toastRemainingTime);
-    }
-  };
+    const id = 'toast-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    toastDuration = Number(toastDuration) || 3500;
 
-  // Synced cleanup on animationend
-  if (progressBar) {
-    progressBar.onanimationend = () => {
-      if (!t.matches(':hover')) {
-        dismissToast();
+    const iconName = toastType === 'error' ? 'x' : toastType === 'warning' ? 'alert-triangle' : toastType === 'info' ? 'info' : 'check';
+    const typeClass = toastType === 'error' ? 'error' : toastType === 'warning' ? 'warning' : toastType === 'info' ? 'info' : 'success';
+
+    const toastEl = document.createElement('div');
+    toastEl.id = id;
+    toastEl.className = `toast toast-item ${typeClass}`;
+    toastEl.setAttribute('role', toastType === 'error' ? 'alert' : 'status');
+    toastEl.innerHTML = `
+      <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
+        <span data-icon="${iconName}" data-icon-size="16"></span>
+        <span class="leading-snug break-words">${message}</span>
+      </div>
+      <button type="button" class="toast-close-btn" aria-label="Dismiss notification" title="Dismiss">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="toast-progress-track">
+        <div class="toast-progress-bar" style="animation: toastProgress ${toastDuration}ms linear forwards;"></div>
+      </div>
+    `;
+
+    container.appendChild(toastEl);
+    if (window.lucide) lucide.createIcons({ nodes: [toastEl] });
+    if (typeof renderIcons === 'function') renderIcons(toastEl);
+
+    // Force reflow and reveal animation
+    requestAnimationFrame(() => {
+      toastEl.classList.add('show');
+    });
+
+    let remainingTime = toastDuration;
+    let startTime = Date.now();
+    let timer = null;
+
+    const remove = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
       }
+      toastEl.classList.add('removing');
+      toastEl.classList.remove('show');
+      setTimeout(() => {
+        if (toastEl.parentNode) {
+          toastEl.parentNode.removeChild(toastEl);
+        }
+        this.toasts = this.toasts.filter(t => t.id !== id);
+      }, 280);
     };
+
+    timer = setTimeout(remove, toastDuration);
+
+    const closeBtn = toastEl.querySelector('.toast-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        remove();
+      });
+    }
+
+    // Hover interactions: pause countdown on mouseenter, resume on mouseleave
+    toastEl.addEventListener('mouseenter', () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+        remainingTime -= (Date.now() - startTime);
+        if (remainingTime < 200) remainingTime = 200;
+      }
+      const progressBar = toastEl.querySelector('.toast-progress-bar');
+      if (progressBar) progressBar.style.animationPlayState = 'paused';
+    });
+
+    toastEl.addEventListener('mouseleave', () => {
+      if (!timer && toastEl.classList.contains('show') && !toastEl.classList.contains('removing')) {
+        startTime = Date.now();
+        timer = setTimeout(remove, remainingTime);
+        const progressBar = toastEl.querySelector('.toast-progress-bar');
+        if (progressBar) progressBar.style.animationPlayState = 'running';
+      }
+    });
+
+    const record = { id, el: toastEl, remove, message, type: toastType };
+    this.toasts.push(record);
+    return id;
+  }
+
+  removeToast(id) {
+    const item = this.toasts.find(t => t.id === id);
+    if (item) {
+      item.remove();
+    } else {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+  }
+
+  clearAll() {
+    this.toasts.forEach(t => {
+      if (t.el && t.el.parentNode) t.el.parentNode.removeChild(t.el);
+    });
+    this.toasts = [];
+    const container = document.getElementById('toast-container');
+    if (container) container.innerHTML = '';
   }
 }
 
+// Global Singleton Toast Store
+const _toastStoreInstance = new ToastManager();
+window.toastStore = _toastStoreInstance;
+
+/**
+ * Universal Global showToast function supporting both parameter formats:
+ *   showToast('Message', 'success', 3500)
+ *   showToast({ message: 'Message', type: 'error', duration: 4000 })
+ */
+function showToast(msgOrOpts, type = 'success', duration = 3500) {
+  return window.toastStore.showToast(msgOrOpts, type, duration);
+}
+window.showToast = showToast;
+
 // Expose programmatic toast dismissal
 window.toast = {
-  dismiss: () => {
-    const t = document.getElementById('globalToast');
-    if (t) {
-      t.classList.remove('show');
-      t.remove();
+  show: showToast,
+  dismiss: (id) => {
+    if (id) {
+      window.toastStore.removeToast(id);
+    } else {
+      window.toastStore.clearAll();
     }
-    if (_toastTimer) {
-      clearTimeout(_toastTimer);
-      _toastTimer = null;
-    }
-  }
+  },
+  clear: () => window.toastStore.clearAll()
 };
 
 /**
  * Hard removal of toast notifications and dynamic alerts before browser print
  */
 function executePrint() {
-  // 1. Immediately dismiss via library API if available
-  if (window.toast && typeof window.toast.dismiss === 'function') {
-    window.toast.dismiss();
+  if (window.toastStore) {
+    window.toastStore.clearAll();
   }
-
-  // 2. Fallback: Forcefully remove all toast and alert nodes from document.body
   const toastSelectors = [
     '.toast',
+    '.toast-item',
     '.toast-container',
     '[role="alert"]',
     '[role="status"]',
@@ -1609,23 +1773,21 @@ function executePrint() {
     '.chakra-portal',
     '.swal2-container'
   ];
-  
   document.querySelectorAll(toastSelectors.join(',')).forEach(el => el.remove());
 
-  // 3. Small microtask delay to let the layout recalculate before opening print dialog
   setTimeout(() => {
     window.print();
   }, 50);
 }
 window.executePrint = executePrint;
 
-// Auto-purge toasts before any print event as an additional global safeguard
 window.addEventListener('beforeprint', () => {
-  if (window.toast && typeof window.toast.dismiss === 'function') {
-    window.toast.dismiss();
+  if (window.toastStore) {
+    window.toastStore.clearAll();
   }
   const toastSelectors = [
     '.toast',
+    '.toast-item',
     '.toast-container',
     '[role="alert"]',
     '[role="status"]',
@@ -1644,10 +1806,6 @@ window.addEventListener('beforeprint', () => {
 // native window.alert() / window.confirm(), styled to match the rest of
 // the app instead of the browser's own popup. Built once, lazily, and
 // reused for every call (same pattern as showToast above).
-//   await bcAlert('message');
-//   await bcAlert('message', { title: 'Heads up', okLabel: 'Got it' });
-//   if (await bcConfirm('message')) { ... }
-//   if (await bcConfirm('Delete this?', { danger: true, okLabel: 'Delete' })) { ... }
 let _bcDialogEl = null;
 let _bcDialogResolve = null;
 
@@ -1663,8 +1821,8 @@ function _bcEnsureDialog() {
 
   el = document.createElement('div');
   el.id = 'bcDialogOverlay';
-  el.className = 'modal-overlay';
-  el.setAttribute('data-no-dismiss', ''); // clicking the backdrop shouldn't silently dismiss it
+  el.className = 'modal-overlay modal-backdrop-overlay confirm-dialog';
+  el.setAttribute('data-no-dismiss', '');
   el.innerHTML = `
     <div class="bc-dialog-box">
       <div class="bc-dialog-header">
@@ -1691,14 +1849,16 @@ function _bcDialogFinish(result) {
   if (_bcDialogEl) {
     _bcDialogEl.classList.remove('open');
   }
-  document.body.style.overflow = '';
+  const remainingOpen = document.querySelectorAll('.modal-overlay.open, .modal-backdrop-overlay.open');
+  if (!remainingOpen.length) {
+    document.body.style.overflow = '';
+  }
   const resolve = _bcDialogResolve;
   _bcDialogResolve = null;
   if (resolve) resolve(result);
 }
 
 function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger }) {
-  // If there was an unresolved dialog promise, unlock it immediately
   if (_bcDialogResolve) {
     const prevResolve = _bcDialogResolve;
     _bcDialogResolve = null;
@@ -1757,7 +1917,7 @@ function _bcEnsurePermDeleteDialog() {
 
   el = document.createElement('div');
   el.id = 'bcPermDeleteOverlay';
-  el.className = 'modal-overlay';
+  el.className = 'modal-overlay modal-backdrop-overlay confirm-dialog danger-modal';
   el.setAttribute('data-no-dismiss', '');
   el.innerHTML = `
     <div class="bc-dialog-box" style="max-width: 460px;">
@@ -1820,7 +1980,10 @@ function _bcPermDeleteFinish(result) {
   if (_bcPermDeleteEl) {
     _bcPermDeleteEl.classList.remove('open');
   }
-  document.body.style.overflow = '';
+  const remainingOpen = document.querySelectorAll('.modal-overlay.open, .modal-backdrop-overlay.open');
+  if (!remainingOpen.length) {
+    document.body.style.overflow = '';
+  }
   const resolve = _bcPermDeleteResolve;
   _bcPermDeleteResolve = null;
   if (resolve) resolve(result);
@@ -1833,7 +1996,6 @@ function _bcPermDeleteFinish(result) {
  * @returns {Promise<boolean>}
  */
 function bcConfirmPermanentDelete(message, opts = {}) {
-  // If there was an unresolved delete promise, unlock it immediately
   if (_bcPermDeleteResolve) {
     const prevResolve = _bcPermDeleteResolve;
     _bcPermDeleteResolve = null;
@@ -2186,7 +2348,7 @@ function _ensureExportFilterModal() {
   if (document.getElementById('bcExportFilterModal')) return;
   const el = document.createElement('div');
   el.innerHTML = `
-    <div class="modal-overlay" id="bcExportFilterModal">
+    <div class="modal-overlay modal-backdrop-overlay" id="bcExportFilterModal">
       <div class="modal-box" style="width:420px">
         <div class="flex items-center justify-between mb-5">
           <h2 class="font-display text-lg text-forest-800" id="bcExportFilterTitle">Export to Excel</h2>
@@ -2269,8 +2431,10 @@ const NOTIF_TYPE_CONFIG = {
   new_incident: { icon: 'warning', color: '#dc2626', badge: 'HIGH PRIORITY', bg: '#fef2f2' },
   heatmap_hotspot: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', bg: '#fffbeb' },
   predictive_risk: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
+  prediction_alert: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTION ALERT', bg: '#f5f3ff' },
   high_risk_zone: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
   trend_spike: { icon: 'trends', color: '#2563eb', badge: 'TREND SURGE', bg: '#eff6ff' },
+  trend_alert: { icon: 'trends', color: '#2563eb', badge: 'TREND ALERT', bg: '#eff6ff' },
   settlement_overdue: { icon: 'clock', color: '#d97706', badge: 'SETTLEMENT', bg: '#fffbeb' },
 };
 
@@ -2286,13 +2450,68 @@ function timeAgo(dateStr) {
   return `${days}d ago`;
 }
 
+const ANALYTICS_NOTIF_TYPES = [
+  'heatmap_alert',
+  'heatmap_hotspot',
+  'trend_alert',
+  'trend_spike',
+  'prediction_alert',
+  'predictive_risk',
+  'high_risk_zone',
+  'analytics',
+];
+
+function isCurrentUserEncoder() {
+  try {
+    const u = (typeof bcGetCachedUser === 'function' ? bcGetCachedUser() : null) ||
+              JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || localStorage.getItem('bc_cached_user') || '{}');
+    const roleName = (u?.role?.name || u?.role || '').toLowerCase();
+    return roleName.includes('encoder');
+  } catch (e) {
+    return false;
+  }
+}
+
+let _notifAlertsInitialized = false;
+const _seenNotifAlertIds = new Set();
+
 async function refreshNotifBadge() {
   const badge = document.getElementById('notifBadge');
-  if (!badge) return;
   try {
     const res = await BCApi.notifUnreadCount();
     const count = res?.count || 0;
-    badge.classList.toggle('hidden', count === 0);
+    if (badge) badge.classList.toggle('hidden', count === 0);
+
+    // Live alert dispatch for reactive prediction and trend anomalies
+    if (count > 0 && typeof BCApi.notifList === 'function') {
+      const recentNotifs = await BCApi.notifList(5);
+      if (Array.isArray(recentNotifs)) {
+        if (!_notifAlertsInitialized) {
+          // Seed seen alert IDs on initial fetch
+          recentNotifs.forEach(n => _seenNotifAlertIds.add(n.id));
+          _notifAlertsInitialized = true;
+        } else {
+          for (const n of recentNotifs) {
+            // Guard: Drop analytics notifications immediately for Data Encoders
+            if (isCurrentUserEncoder() && ANALYTICS_NOTIF_TYPES.includes(n.type)) {
+              continue;
+            }
+            if (!_seenNotifAlertIds.has(n.id) && !n.is_read) {
+              _seenNotifAlertIds.add(n.id);
+              if (n.type === 'prediction_alert' || n.type === 'trend_alert' || n.type === 'predictive_risk' || n.type === 'trend_spike') {
+                if (typeof showToast === 'function') {
+                  showToast({
+                    message: `${n.title}: ${n.body}`,
+                    type: n.severity === 'critical' ? 'error' : 'warning',
+                    duration: 6000
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   } catch (e) { /* not fatal — badge just stays as-is */ }
 }
 
@@ -2329,12 +2548,12 @@ function resolveNotifLink(n) {
   }
 
   if (link === '#' || !link) {
-    if (n.ref_table === 'incidents' || (n.type && n.type.includes('incident'))) link = 'incident.html';
+    if (n.type === 'prediction_alert' || n.type === 'predictive_risk' || (n.type && (n.type.includes('predict') || n.type.includes('risk')))) link = 'predictions.html';
+    else if (n.type === 'trend_alert' || n.type === 'trend_spike' || (n.type && n.type.includes('trend'))) link = 'trends.html';
+    else if (n.ref_table === 'incidents' || (n.type && n.type.includes('incident'))) link = 'incident.html';
     else if (n.ref_table === 'blotter' || (n.type && n.type.includes('blotter'))) link = 'blotter.html';
     else if (n.ref_table === 'settlements' || (n.type && n.type.includes('settlement'))) link = 'settlement.html';
     else if (n.type && n.type.includes('heatmap')) link = 'heatmap.html';
-    else if (n.type && (n.type.includes('predict') || n.type.includes('risk'))) link = 'predictions.html';
-    else if (n.type && n.type.includes('trend')) link = 'trends.html';
     else link = 'dashboard.html';
   }
 
@@ -2366,7 +2585,10 @@ async function toggleNotifPanel() {
   const list = document.getElementById('notifList');
   list.innerHTML = '<div class="px-4 py-6 text-center text-forest-400 text-sm">Loading notifications…</div>';
   try {
-    const items = await BCApi.notifList(25);
+    const rawItems = await BCApi.notifList(25);
+    const items = (isCurrentUserEncoder() && Array.isArray(rawItems))
+      ? rawItems.filter(n => !ANALYTICS_NOTIF_TYPES.includes(n.type))
+      : rawItems;
     if (!items || items.length === 0) {
       list.innerHTML = '<div class="px-4 py-8 text-center text-forest-400 text-sm">No notifications yet.</div>';
     } else {

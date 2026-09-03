@@ -43,18 +43,39 @@ const BCApi = {
       'Pragma': 'no-cache',
       ...(opts.headers || {}),
     };
-    const res = await fetch(finalUrl, { credentials: 'include', cache: 'no-store', ...opts, headers });
+
+    let res;
+    try {
+      res = await fetch(finalUrl, { credentials: 'include', cache: 'no-store', ...opts, headers });
+    } catch (networkErr) {
+      const msg = networkErr.message || 'Network connection failed. Please check your internet connection.';
+      if (!opts.silent && !opts.skipErrorToast && typeof window !== 'undefined' && typeof window.showToast === 'function') {
+        window.showToast({ message: msg, type: 'error', duration: 4000 });
+      }
+      throw networkErr;
+    }
+
     if (res.status === 401 && !url.includes('api/auth.php') && !window.location.pathname.endsWith('login.html')) {
       window.location.href = 'login.html';
       throw new Error('Not authenticated');
     }
+
     if (!res.ok) {
       let msg = 'Request failed';
       try {
         const errJson = await res.json();
-        msg = errJson.message || errJson.error || msg;
-      } catch (e) {}
-      throw new Error(msg);
+        msg = errJson.message || errJson.error || errJson.msg || errJson.detail || msg;
+      } catch (e) {
+        if (res.statusText) msg = `${res.status} ${res.statusText}`;
+      }
+      const apiErr = new Error(msg);
+      apiErr.status = res.status;
+
+      if (!opts.silent && !opts.skipErrorToast && typeof window !== 'undefined' && typeof window.showToast === 'function') {
+        apiErr.toastDispatched = true;
+        window.showToast({ message: msg, type: 'error', duration: 4000 });
+      }
+      throw apiErr;
     }
     const data = res.status === 204 ? null : await res.json();
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
@@ -458,3 +479,20 @@ const BCApi = {
 
 const ZONES = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5','Zone 6','Zone 7'];
 const CATEGORIES = ['Physical Assault','Theft','Domestic Dispute','Vandalism','Trespassing','Drug-Related Activity','Public Disturbance','Other'];
+
+// ── Global Fail-Safe Error Interceptors ───────────────────────
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    // If the rejection reason was already notified via toast in _fetch, avoid duplicate alert
+    if (event.reason && event.reason.toastDispatched) return;
+    
+    // Ignore benign navigation/abort aborts
+    if (event.reason && (event.reason.name === 'AbortError' || event.reason.message === 'Not authenticated')) return;
+
+    const errorMsg = (event.reason && (event.reason.message || event.reason.error || event.reason)) || 'An unexpected application error occurred.';
+    if (typeof window.showToast === 'function') {
+      window.showToast({ message: String(errorMsg), type: 'error', duration: 4000 });
+    }
+  });
+}
+

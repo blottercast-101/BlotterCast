@@ -44,6 +44,14 @@
   --shadow-sm: 0 1px 4px rgba(10, 36, 20, 0.08);
   --shadow-md: 0 4px 16px rgba(10, 36, 20, 0.14);
   --shadow-lg: 0 20px 60px rgba(10, 36, 20, 0.24);
+
+  /* Global Z-Index Hierarchy */
+  --z-dropdown: 1000;
+  --z-sticky-nav: 1020;
+  --z-drawer-sidebar: 1040;
+  --z-form-modal: 1050;        /* Regular entry modals / forms */
+  --z-confirm-modal: 1060;     /* Warnings, Delete confirms, Alerts */
+  --z-toast-notification: 9999;/* Must always be top-most layer */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -641,17 +649,27 @@ a.stat-card-grad:hover {
 .pw-toggle:hover { color: var(--forest-600); background: var(--forest-50); }
 input.pw-input { padding-right: 38px; }
 
-/* ---------------- Modal ---------------- */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(9, 41, 9, 0.45);
+/* ---------------- Modal & Stacking Context Hierarchy ---------------- */
+.modal-overlay,
+.modal-backdrop-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(9, 41, 9, 0.45) !important;
   backdrop-filter: blur(3px);
-  z-index: 50;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.2s;
+  -webkit-backdrop-filter: blur(3px);
+  z-index: var(--z-form-modal) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-overlay.open,
+.modal-backdrop-overlay.open {
+  opacity: 1 !important;
+  pointer-events: all !important;
+}
 .modal-box {
   background: #fff;
   border-radius: 1.25rem;
@@ -661,19 +679,41 @@ input.pw-input { padding-right: 38px; }
   max-height: 90vh;
   overflow-y: auto;
   transform: translateY(20px);
-  transition: transform 0.2s;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-lg);
 }
-.modal-overlay.open .modal-box { transform: translateY(0); }
+.modal-overlay.open .modal-box,
+.modal-backdrop-overlay.open .modal-box {
+  transform: translateY(0);
+}
 .modal-close-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 8px;
-  border: none; background: transparent; color: #9ca3af; cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 .modal-close-btn:hover { background: var(--forest-50); color: var(--forest-700); }
 
-/* ---------------- Custom alert/confirm dialog (replaces native alert()/confirm()) ---------------- */
+/* ---------------- Confirmation, Warning & Alert Dialogs (Elevated Stacking) ---------------- */
+#bcDialogOverlay,
+#bcPermDeleteOverlay,
+#elevateConfirmModal,
+.modal-overlay.confirm-dialog,
+.modal-backdrop-overlay.confirm-dialog,
+.confirm-modal,
+.warning-modal,
+.modal-overlay.danger-modal,
+.modal-backdrop-overlay.danger-modal {
+  z-index: var(--z-confirm-modal) !important;
+}
+
 .bc-dialog-box {
   background: #fff;
   border-radius: 1.25rem;
@@ -681,10 +721,13 @@ input.pw-input { padding-right: 38px; }
   width: 400px;
   max-width: 90vw;
   transform: translateY(20px);
-  transition: transform 0.2s;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-lg);
 }
-.modal-overlay.open .bc-dialog-box { transform: translateY(0); }
+.modal-overlay.open .bc-dialog-box,
+.modal-backdrop-overlay.open .bc-dialog-box {
+  transform: translateY(0);
+}
 .bc-dialog-header { display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem; }
 .bc-dialog-icon {
   display: inline-flex; align-items: center; justify-content: center;
@@ -774,7 +817,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* ---------------- Page header ---------------- */
 .page-header {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: var(--z-sticky-nav);
   background: white;
   border-bottom: 1px solid var(--forest-100);
   padding: 1rem 2rem;
@@ -782,56 +825,107 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   box-shadow: var(--shadow-sm);
 }
 
-/* ---------------- Toast Notification System ---------------- */
+/* ---------------- Centralized Toast Notification System ---------------- */
+.toast-container,
+#toast-portal,
+#toast-container {
+  position: fixed !important;
+  top: 1.25rem !important;
+  right: 1.25rem !important;
+  z-index: var(--z-toast-notification) !important;
+  pointer-events: none !important; /* Allow clicking through empty space */
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  max-width: 440px !important;
+  width: calc(100% - 2.5rem) !important;
+  align-items: flex-end !important;
+}
+
+.toast-item,
 .toast {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  position: relative !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
   background: var(--forest-800);
   color: #ffffff;
-  padding: 14px 22px 18px 20px;
+  padding: 13px 16px 17px 16px;
   border-radius: 14px;
   font-size: 0.875rem;
   font-weight: 500;
   box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.3), 0 6px 12px -2px rgba(0, 0, 0, 0.15);
-  transform: translateY(100px) scale(0.96);
+  transform: translateY(-12px) scale(0.96);
   opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  z-index: 99999;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, max-height 0.25s ease, margin 0.25s ease, padding 0.25s ease;
+  z-index: var(--z-toast-notification) !important;
   max-width: 440px;
   min-width: 280px;
+  width: auto;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
+.toast-item .bc-icon,
 .toast .bc-icon { flex-shrink: 0; }
+
+.toast-item.show,
 .toast.show {
-  transform: translateY(0) scale(1);
-  opacity: 1;
+  transform: translateY(0) scale(1) !important;
+  opacity: 1 !important;
+}
+
+.toast-item.removing,
+.toast.removing {
+  transform: translateX(110%) scale(0.9) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Toast Close Button */
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.toast-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Toast Type Themes */
+.toast-item.success,
 .toast.success {
   background: #123d22;
   border-color: rgba(74, 222, 128, 0.28);
 }
+.toast-item.error,
 .toast.error {
   background: #7f1d1d;
   border-color: rgba(248, 113, 113, 0.32);
 }
+.toast-item.warning,
 .toast.warning {
   background: #78350f;
   border-color: rgba(251, 191, 36, 0.32);
 }
+.toast-item.info,
 .toast.info {
   background: #1e3a8a;
   border-color: rgba(96, 165, 250, 0.32);
 }
 
 /* Pause progress bar animation on hover */
+.toast-item:hover .toast-progress-bar,
 .toast:hover .toast-progress-bar {
   animation-play-state: paused !important;
 }
@@ -854,21 +948,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   animation: toastProgress linear forwards;
 }
 
+.toast-item.success .toast-progress-bar,
 .toast.success .toast-progress-bar {
   background: linear-gradient(90deg, #34d399, #4ade80);
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
 }
 
+.toast-item.error .toast-progress-bar,
 .toast.error .toast-progress-bar {
   background: linear-gradient(90deg, #f87171, #ef4444);
   box-shadow: 0 0 10px rgba(248, 113, 113, 0.7);
 }
 
+.toast-item.warning .toast-progress-bar,
 .toast.warning .toast-progress-bar {
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
 }
 
+.toast-item.info .toast-progress-bar,
 .toast.info .toast-progress-bar {
   background: linear-gradient(90deg, #60a5fa, #3b82f6);
   box-shadow: 0 0 10px rgba(96, 165, 250, 0.7);
@@ -1972,7 +2070,7 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
 
 .bc-select-panel, .bc-datepicker-panel, .bc-timepicker-panel {
   position: absolute;
-  z-index: 1000;
+  z-index: var(--z-dropdown) !important;
   background: #fff;
   border: 1.5px solid var(--forest-100);
   border-radius: 12px;
