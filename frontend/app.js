@@ -2018,14 +2018,29 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   }
 
   const el = _bcEnsureDialog();
-  document.getElementById('bcDialogTitle').textContent = title;
+  const titleEl = document.getElementById('bcDialogTitle');
+  titleEl.textContent = title;
+  if (danger) {
+    titleEl.classList.add('danger');
+    titleEl.style.color = '#9f1239';
+  } else {
+    titleEl.classList.remove('danger');
+    titleEl.style.color = '#111827';
+  }
+
   document.getElementById('bcDialogMessage').textContent = message;
   const cancelBtn = document.getElementById('bcDialogCancelBtn');
   const okBtn = document.getElementById('bcDialogOkBtn');
   cancelBtn.style.display = isConfirm ? '' : 'none';
   cancelBtn.textContent = cancelLabel || 'Cancel';
+  cancelBtn.className = 'bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer';
+
   okBtn.textContent = okLabel || (isConfirm ? 'Confirm' : 'OK');
-  okBtn.className = danger ? 'btn-danger' : 'btn-primary';
+  if (danger) {
+    okBtn.className = 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm transition-all cursor-pointer border border-rose-700 px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2';
+  } else {
+    okBtn.className = 'bg-[#1b4332] hover:bg-[#143326] text-white px-6 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer';
+  }
 
   const icon = document.getElementById('bcDialogIcon');
   icon.dataset.icon = danger ? 'warning' : 'info';
@@ -2042,7 +2057,7 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
 
 /** Drop-in async replacement for window.alert(). Always resolves (no return value needed). */
 function bcAlert(message, opts = {}) {
-  return _bcOpenDialog({ title: opts.title || 'Notice', message, isConfirm: false, okLabel: opts.okLabel });
+  return _bcOpenDialog({ title: opts.title || 'Notice', message, isConfirm: false, okLabel: opts.okLabel, danger: opts.danger });
 }
 
 /** Drop-in async replacement for window.confirm() — resolves to true (OK/Confirm) or false (Cancel/Esc). */
@@ -2072,27 +2087,68 @@ function _bcEnsurePermDeleteDialog() {
   el.className = 'modal-overlay';
   el.setAttribute('data-no-dismiss', '');
   el.innerHTML = `
-    <div class="bc-dialog-box" style="max-width: 460px;">
-      <div class="bc-dialog-header">
-        <span class="bc-dialog-icon danger" data-icon="warning" data-icon-size="18"></span>
-        <h3 id="bcPermDeleteTitle" class="bc-dialog-title" style="color: #b91c1c;">Permanent Delete</h3>
-      </div>
-      <p id="bcPermDeleteMessage" class="bc-dialog-message" style="margin-bottom: 1rem;"></p>
-      
-      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8125rem; color: #991b1b; line-height: 1.4;">
-        <strong>Warning:</strong> This action cannot be undone. All data and linked logs for this record will be permanently purged from the database.
+    <div class="modal-box max-w-lg p-6 md:p-7 bg-white rounded-2xl shadow-2xl border border-rose-100" style="max-width: 520px; width: 92vw;">
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <h2 id="bcPermDeleteTitle" class="font-display text-xl font-bold text-[#9f1239] leading-tight" style="font-family: 'DM Serif Display', serif; color: #9f1239; font-size: 1.25rem; font-weight: 700; margin: 0;">Permanently Delete Record</h2>
+            <p id="bcPermDeleteSubtitle" class="text-xs text-rose-600 font-medium mt-0.5" style="font-size: 0.75rem; color: #e11d48; margin-top: 2px;">Destructive Record Removal</p>
+          </div>
+        </div>
+        <button id="bcPermDeleteCloseXBtn" type="button" class="modal-close-btn text-gray-400 hover:text-gray-700 p-1.5 rounded-lg transition-colors cursor-pointer" aria-label="Close modal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
 
-      <div style="margin-bottom: 1.25rem;">
-        <label for="bcPermDeleteInput" style="display: block; font-size: 0.8125rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">
-          Type <span style="font-family: monospace; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-weight: bold;">DELETE</span> to proceed:
+      <!-- Dynamic Target Description -->
+      <p id="bcPermDeleteMessage" class="text-sm text-forest-800 leading-relaxed" style="font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: #1e3a29; line-height: 1.6; margin-bottom: 0.75rem;"></p>
+
+      <!-- Red Warning Callout Box -->
+      <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 my-4" style="background-color: #fff1f2; border: 1px solid #fecdd3; border-radius: 0.75rem; padding: 1rem; margin: 1rem 0;">
+        <p class="text-xs text-rose-700 leading-relaxed" style="font-size: 0.75rem; color: #be123c; line-height: 1.5; margin: 0;">
+          <strong class="text-rose-800 font-bold" style="color: #9f1239; font-weight: 700;">Warning:</strong> This action cannot be undone. All personal data, activity records, and authentication credentials linked to this record will be permanently purged from the database.
+        </p>
+      </div>
+
+      <!-- Type-to-Confirm Input & Validation -->
+      <div class="space-y-1.5 mb-6" style="margin-bottom: 1.5rem;">
+        <label for="bcPermDeleteInput" class="block text-xs font-semibold text-forest-800" style="display: block; font-size: 0.75rem; font-weight: 600; color: #1e3a29; margin-bottom: 0.375rem;">
+          Type <span class="bg-rose-100 text-rose-700 font-mono font-bold text-xs px-2 py-0.5 rounded" style="background: #ffe4e6; color: #be123c; font-family: monospace; font-weight: 700; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">DELETE</span> to proceed:
         </label>
-        <input id="bcPermDeleteInput" type="text" class="form-input" style="width: 100%; font-family: monospace; text-transform: uppercase; letter-spacing: 1px;" placeholder="Type DELETE to confirm" autocomplete="off" />
+        <input
+          id="bcPermDeleteInput"
+          type="text"
+          class="w-full focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 border-2 border-emerald-600/70 rounded-xl px-4 py-2.5 font-mono text-sm tracking-wider uppercase bg-white text-forest-900 placeholder:text-gray-400 focus:outline-none transition-all"
+          style="width: 100%; border: 2px solid rgba(5, 150, 105, 0.7); border-radius: 0.75rem; padding: 0.625rem 1rem; font-family: monospace; font-size: 0.875rem; letter-spacing: 0.05em; text-transform: uppercase; background: #fff; color: #1e3a29; outline: none; box-sizing: border-box;"
+          placeholder="TYPE DELETE TO CONFIRM"
+          autocomplete="off"
+          spellcheck="false"
+        />
       </div>
 
-      <div class="bc-dialog-actions">
-        <button id="bcPermDeleteCancelBtn" type="button" class="btn-secondary">Cancel</button>
-        <button id="bcPermDeleteOkBtn" type="button" class="btn-danger" style="opacity: 0.45; cursor: not-allowed;" disabled>Permanent Delete</button>
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-end gap-3 pt-2" style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding-top: 0.5rem;">
+        <button
+          id="bcPermDeleteCancelBtn"
+          type="button"
+          class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer"
+          style="background: #eaf6ee; color: #064e3b; border: 1px solid #a7f3d0; padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-weight: 500; font-size: 0.875rem; cursor: pointer;"
+        >
+          Cancel
+        </button>
+        <button
+          id="bcPermDeleteOkBtn"
+          type="button"
+          disabled
+          class="bg-rose-50 text-rose-300 cursor-not-allowed opacity-70 border border-rose-200 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 select-none"
+          style="background: #fff1f2; color: #fda4af; border: 1px solid #fecdd3; padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; opacity: 0.7; cursor: not-allowed; transition: all 0.15s;"
+        >
+          Permanent Delete
+        </button>
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -2101,12 +2157,26 @@ function _bcEnsurePermDeleteDialog() {
   const input = document.getElementById('bcPermDeleteInput');
   const okBtn = document.getElementById('bcPermDeleteOkBtn');
   const cancelBtn = document.getElementById('bcPermDeleteCancelBtn');
+  const closeXBtn = document.getElementById('bcPermDeleteCloseXBtn');
 
   input.addEventListener('input', () => {
     const isMatch = input.value.trim().toUpperCase() === 'DELETE';
     okBtn.disabled = !isMatch;
-    okBtn.style.opacity = isMatch ? '1' : '0.45';
-    okBtn.style.cursor = isMatch ? 'pointer' : 'not-allowed';
+    if (isMatch) {
+      okBtn.className = "bg-rose-600 text-white hover:bg-rose-700 shadow-sm transition-all cursor-pointer border border-rose-700 px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2";
+      okBtn.style.background = '#e11d48';
+      okBtn.style.color = '#fff';
+      okBtn.style.borderColor = '#be123c';
+      okBtn.style.opacity = '1';
+      okBtn.style.cursor = 'pointer';
+    } else {
+      okBtn.className = "bg-rose-50 text-rose-300 cursor-not-allowed opacity-70 border border-rose-200 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 select-none";
+      okBtn.style.background = '#fff1f2';
+      okBtn.style.color = '#fda4af';
+      okBtn.style.borderColor = '#fecdd3';
+      okBtn.style.opacity = '0.7';
+      okBtn.style.cursor = 'not-allowed';
+    }
   });
 
   input.addEventListener('keydown', (e) => {
@@ -2120,6 +2190,7 @@ function _bcEnsurePermDeleteDialog() {
   });
 
   cancelBtn.addEventListener('click', () => _bcPermDeleteFinish(false));
+  if (closeXBtn) closeXBtn.addEventListener('click', () => _bcPermDeleteFinish(false));
 
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') _bcPermDeleteFinish(false);
@@ -2141,7 +2212,7 @@ function _bcPermDeleteFinish(result) {
 /**
  * Enterprise double-confirmation modal requiring typing "DELETE" to permanently purge a record.
  * @param {string} message - Descriptive warning text
- * @param {Object} opts - { title, recordName }
+ * @param {Object} opts - { title, recordName, subtitle }
  * @returns {Promise<boolean>}
  */
 function bcConfirmPermanentDelete(message, opts = {}) {
@@ -2154,16 +2225,35 @@ function bcConfirmPermanentDelete(message, opts = {}) {
 
   const el = _bcEnsurePermDeleteDialog();
   document.getElementById('bcPermDeleteTitle').textContent = opts.title || 'Permanently Delete Record';
-  document.getElementById('bcPermDeleteMessage').textContent = message || 'Are you sure you want to permanently delete this record?';
+  const subEl = document.getElementById('bcPermDeleteSubtitle');
+  if (subEl) {
+    subEl.textContent = opts.subtitle || 'Destructive Record Removal';
+  }
+
+  const msgEl = document.getElementById('bcPermDeleteMessage');
+  if (typeof message === 'string' && (message.includes('<') || message.includes('"'))) {
+    let formatted = message;
+    if (!formatted.includes('<span') && !formatted.includes('<strong')) {
+      formatted = formatted
+        .replace(/"([^"]+)"/g, '<strong class="font-bold text-forest-900" style="color: #0a2414; font-weight: 700;">"$1"</strong>')
+        .replace(/(\([^)]+\))/g, '<span class="font-mono font-semibold text-rose-700" style="color: #be123c; font-family: monospace; font-weight: 600;">$1</span>')
+        .replace(/\b(IRREVERSIBLE)\b/gi, '<strong class="text-rose-700 font-semibold" style="color: #be123c; font-weight: 600;">$1</strong>');
+    }
+    msgEl.innerHTML = formatted;
+  } else {
+    msgEl.textContent = message || 'Are you sure you want to permanently delete this record?';
+  }
 
   const input = document.getElementById('bcPermDeleteInput');
   const okBtn = document.getElementById('bcPermDeleteOkBtn');
   input.value = '';
   okBtn.disabled = true;
-  okBtn.style.opacity = '0.45';
+  okBtn.className = "bg-rose-50 text-rose-300 cursor-not-allowed opacity-70 border border-rose-200 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 select-none";
+  okBtn.style.background = '#fff1f2';
+  okBtn.style.color = '#fda4af';
+  okBtn.style.borderColor = '#fecdd3';
+  okBtn.style.opacity = '0.7';
   okBtn.style.cursor = 'not-allowed';
-
-  if (typeof renderIcons === 'function') renderIcons(el);
 
   el.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -2189,6 +2279,7 @@ class BcBatchManager {
     this.selectedIds = new Set();
     this._barEl = null;
     this._ensureToolbar();
+    this._initTouchLongPress();
   }
 
   _ensureToolbar() {
@@ -2200,6 +2291,53 @@ class BcBatchManager {
       document.body.appendChild(el);
     }
     this._barEl = el;
+  }
+
+  _initTouchLongPress() {
+    let touchTimer = null;
+    let startX = 0;
+    let startY = 0;
+    let targetRow = null;
+
+    document.addEventListener('touchstart', (e) => {
+      const tr = e.target.closest('tr[data-id]');
+      if (!tr || e.target.closest('button, a, input, select, textarea, .row-actions, .bc-batch-bar')) return;
+      
+      targetRow = tr;
+      startX = e.touches[0]?.clientX || 0;
+      startY = e.touches[0]?.clientY || 0;
+
+      touchTimer = setTimeout(() => {
+        const rowId = targetRow?.getAttribute('data-id');
+        if (rowId) {
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (_) {}
+          }
+          this.toggle(rowId, !this.has(rowId));
+        }
+        touchTimer = null;
+      }, 500);
+    }, { passive: true });
+
+    const clearTouch = () => {
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+      targetRow = null;
+    };
+
+    document.addEventListener('touchmove', (e) => {
+      if (!touchTimer) return;
+      const curX = e.touches[0]?.clientX || 0;
+      const curY = e.touches[0]?.clientY || 0;
+      if (Math.abs(curX - startX) > 10 || Math.abs(curY - startY) > 10) {
+        clearTouch();
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', clearTouch, { passive: true });
+    document.addEventListener('touchcancel', clearTouch, { passive: true });
   }
 
   has(id) {
@@ -2292,7 +2430,17 @@ class BcBatchManager {
     // Clean up any legacy top selection banners
     document.querySelectorAll('.bc-selection-banner-wrap').forEach(b => b.remove());
 
-    // 1. Sync header select all checkbox state (checked / indeterminate / unchecked)
+    // 1. Sync Selection Mode on Table Elements
+    const tables = document.querySelectorAll('table.data-table');
+    tables.forEach(tbl => {
+      if (totalSelected > 0) {
+        tbl.classList.add('selection-mode-active');
+      } else {
+        tbl.classList.remove('selection-mode-active');
+      }
+    });
+
+    // 2. Sync header select all checkbox state (checked / indeterminate / unchecked)
     const selectAllCb = document.getElementById(this.opts.selectAllId);
     if (selectAllCb) {
       if (pageCount > 0 && selectedOnPage === pageCount) {
@@ -2307,7 +2455,7 @@ class BcBatchManager {
       }
     }
 
-    // 2. Render Floating Bottom Action Pill / Toolbar
+    // 3. Render Floating Bottom Action Pill / Toolbar
     if (totalSelected === 0) {
       if (this._barEl) this._barEl.classList.remove('visible');
       return;
@@ -2370,6 +2518,285 @@ class BcBatchManager {
     }
 
     this._barEl.classList.add('visible');
+  }
+
+  getSelectedItems() {
+    const all = this.opts.getAllItems() || [];
+    return all.filter(item => this.selectedIds.has(Number(item.id)));
+  }
+
+  exportSelectedCsv() {
+    const items = this.getSelectedItems();
+    if (!items.length) {
+      showToast('No records selected for export.', 'error');
+      return;
+    }
+
+    let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    if (this.opts.apiType === 'census') {
+      const headers = ['Resident No', 'Last Name', 'First Name', 'Middle Name', 'Date of Birth', 'Age', 'Sex', 'Civil Status', 'Nationality', 'Zone', 'Address', 'Household No', 'Voter Status', 'Status'];
+      csvContent += headers.map(escapeCsv).join(',') + '\n';
+      items.forEach(r => {
+        csvContent += [
+          r.resNo || '', r.lastName || '', r.firstName || '', r.midName || '', r.dob || '', r.age ?? '',
+          r.sex || '', r.civil || '', r.nationality || '', r.zone || '', r.address || '', r.household || '',
+          r.voter || '', r.status || ''
+        ].map(escapeCsv).join(',') + '\n';
+      });
+    } else if (this.opts.apiType === 'incidents') {
+      const headers = ['Report No', 'Date Reported', 'Time Reported', 'Zone', 'Location', 'Category', 'Description', 'Reporter', 'Officer', 'Priority', 'Status'];
+      csvContent += headers.map(escapeCsv).join(',') + '\n';
+      items.forEach(r => {
+        csvContent += [
+          r.reportNo || '', r.dateReported || '', r.timeReported || '', r.zone || '', r.location || '',
+          r.category || '', r.description || '', r.reporter || '', r.officer || '', r.priority || '', r.status || ''
+        ].map(escapeCsv).join(',') + '\n';
+      });
+    } else if (this.opts.apiType === 'blotter') {
+      const headers = ['Docket No', 'Date Filed', 'Complainant', 'Complainant Address', 'Respondent', 'Respondent Address', 'Nature', 'Type', 'Status'];
+      csvContent += headers.map(escapeCsv).join(',') + '\n';
+      items.forEach(r => {
+        csvContent += [
+          r.docketNo || '', r.dateFiled || '', r.complainant || '', r.complainantAddr || '',
+          r.respondent || '', r.respondentAddr || '', r.nature || '', r.type || '', r.status || ''
+        ].map(escapeCsv).join(',') + '\n';
+      });
+    } else if (this.opts.apiType === 'settlements') {
+      const headers = ['Case No', 'Case Title', 'Complaint Nature', 'Date Filed', 'Action Taken / Schedule', 'Status'];
+      csvContent += headers.map(escapeCsv).join(',') + '\n';
+      items.forEach(r => {
+        csvContent += [
+          r.caseNo || '', r.caseTitle || '', r.nature || r.complaintTitle || '', r.dateFiled || '',
+          r.actionTaken || '', r.status || ''
+        ].map(escapeCsv).join(',') + '\n';
+      });
+    } else {
+      const keys = Object.keys(items[0] || {});
+      csvContent += keys.map(escapeCsv).join(',') + '\n';
+      items.forEach(item => {
+        csvContent += keys.map(k => escapeCsv(item[k])).join(',') + '\n';
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BlotterCast_${this.opts.entityPlural}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${items.length} ${this.opts.entityPlural} to CSV successfully.`);
+  }
+
+  batchPrintSelected() {
+    const items = this.getSelectedItems();
+    if (!items.length) {
+      showToast('No records selected for printing.', 'error');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      showToast('Please allow popups to print selected records.', 'error');
+      return;
+    }
+
+    let tableRowsHtml = '';
+    if (this.opts.apiType === 'census') {
+      tableRowsHtml = items.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.resNo || '—'}</td>
+          <td><strong>${r.lastName || ''}, ${r.firstName || ''}</strong></td>
+          <td>${r.dob || '—'}</td>
+          <td>${r.age ?? '—'}</td>
+          <td>${r.sex || '—'}</td>
+          <td>${r.civil || '—'}</td>
+          <td>${r.zone || '—'}</td>
+          <td>${r.address || '—'}</td>
+          <td>${r.status || '—'}</td>
+        </tr>
+      `).join('');
+    } else if (this.opts.apiType === 'incidents') {
+      tableRowsHtml = items.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${r.reportNo || '—'}</strong></td>
+          <td>${r.dateReported || '—'} ${r.timeReported || ''}</td>
+          <td>${r.zone || ''} ${r.location || ''}</td>
+          <td>${r.category || '—'}</td>
+          <td>${r.reporter || '—'}</td>
+          <td>${r.priority || '—'}</td>
+          <td>${r.status || '—'}</td>
+        </tr>
+      `).join('');
+    } else if (this.opts.apiType === 'blotter') {
+      tableRowsHtml = items.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${r.docketNo || '—'}</strong></td>
+          <td>${r.dateFiled || '—'}</td>
+          <td>${r.complainant || '—'}</td>
+          <td>${r.respondent || '—'}</td>
+          <td>${r.nature || '—'}</td>
+          <td>${r.type || '—'}</td>
+          <td>${r.status || '—'}</td>
+        </tr>
+      `).join('');
+    } else {
+      tableRowsHtml = items.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${r.caseNo || '—'}</strong></td>
+          <td>${r.caseTitle || r.title || '—'}</td>
+          <td>${r.nature || '—'}</td>
+          <td>${r.actionTaken || r.dateFiled || '—'}</td>
+          <td>${r.status || '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    const title = `Barangay Mapulang Lupa — Selected ${this.opts.entityPlural.toUpperCase()}`;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; }
+          .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
+          .header h2 { margin: 0 0 4px; font-size: 18px; color: #1b4332; text-transform: uppercase; }
+          .header p { margin: 0; font-size: 13px; color: #64748b; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+          th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
+          th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+          tr:nth-child(even) { background: #f8fafc; }
+          .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: right; }
+          @media print {
+            body { padding: 0; }
+            @page { margin: 1.5cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>Republic of the Philippines • City of Valenzuela</h2>
+          <p><strong>BARANGAY MAPULANG LUPA</strong> • BlotterCast Official Records System</p>
+          <p style="margin-top: 4px; font-weight: bold; color: #1b4332;">${title} (${items.length} records printed on ${new Date().toLocaleDateString()})</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Reference No.</th>
+              <th>Primary Party / Entity</th>
+              <th>Date / Schedule</th>
+              <th>Category / Details</th>
+              <th>Location / Address</th>
+              <th>Priority / Type</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+        <div class="footer">
+          Printed via BlotterCast System • ${new Date().toLocaleString()}
+        </div>
+        <script>
+          window.onload = function() { window.print(); };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+
+  async batchUpdateIncidentStatus() {
+    const items = this.getSelectedItems();
+    if (!items.length) return;
+
+    const newStatus = prompt(
+      `Update Status for ${items.length} selected incident(s):\nEnter one of: Ongoing, Under Investigation, Resolved, Closed, Elevated to Blotter`,
+      'Resolved'
+    );
+    if (!newStatus || !newStatus.trim()) return;
+
+    const targetStatus = newStatus.trim();
+    let updatedCount = 0;
+    for (const item of items) {
+      try {
+        await BCApi.update('incidents', item.id, { status: targetStatus });
+        updatedCount++;
+      } catch (err) {
+        console.warn(`Failed to update incident ${item.id}:`, err);
+      }
+    }
+
+    showToast(`Updated status to "${targetStatus}" for ${updatedCount} incident(s).`);
+    this.clearSelection();
+    await this.opts.onRefresh();
+  }
+
+  async batchUpdateBlotterStatus() {
+    const items = this.getSelectedItems();
+    if (!items.length) return;
+
+    const newStatus = prompt(
+      `Update Status for ${items.length} selected blotter record(s):\nEnter one of: Ongoing, Under Mediation, Hearing Scheduled, Resolved, Settled, Dismissed, CFA Issued`,
+      'Resolved'
+    );
+    if (!newStatus || !newStatus.trim()) return;
+
+    const targetStatus = newStatus.trim();
+    let updatedCount = 0;
+    for (const item of items) {
+      try {
+        await BCApi.update('blotter', item.id, { status: targetStatus });
+        updatedCount++;
+      } catch (err) {
+        console.warn(`Failed to update blotter ${item.id}:`, err);
+      }
+    }
+
+    showToast(`Updated status to "${targetStatus}" for ${updatedCount} blotter record(s).`);
+    this.clearSelection();
+    await this.opts.onRefresh();
+  }
+
+  async batchRescheduleSettlement() {
+    const items = this.getSelectedItems();
+    if (!items.length) return;
+
+    const newDate = prompt(
+      `Batch Reschedule Hearing for ${items.length} selected case(s):\nEnter new hearing date (YYYY-MM-DD) or schedule note:`,
+      new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+    );
+    if (!newDate || !newDate.trim()) return;
+
+    const scheduleVal = newDate.trim();
+    let updatedCount = 0;
+    for (const item of items) {
+      try {
+        await BCApi.update('settlements', item.id, { actionTaken: `Hearing scheduled for ${scheduleVal}` });
+        updatedCount++;
+      } catch (err) {
+        console.warn(`Failed to reschedule settlement ${item.id}:`, err);
+      }
+    }
+
+    showToast(`Rescheduled hearing for ${updatedCount} case(s).`);
+    this.clearSelection();
+    await this.opts.onRefresh();
   }
 
   async executeBatchArchive() {
@@ -3283,12 +3710,16 @@ function bcGetTableSkeletonHtml(options = {}) {
     ];
   } else if (tpl === 'census') {
     colDefs = [
+      { type: 'checkbox', width: '44px' },
+      { type: 'pill', width: 'w-24' },   // Resident No
       { type: 'pill', width: 'w-36' },   // Full Name
-      { type: 'pill', width: 'w-16' },   // Age / Sex
+      { type: 'pill', width: 'w-20' },   // DOB
+      { type: 'pill', width: 'w-16' },   // Age
+      { type: 'badge', width: 'w-16' },  // Sex
       { type: 'pill', width: 'w-20' },   // Civil Status
+      { type: 'pill', width: 'w-20' },   // Zone / Purok
       { type: 'pill', width: 'w-44' },   // Address
       { type: 'pill', width: 'w-20' },   // Household No
-      { type: 'pill', width: 'w-28' },   // Contact
       { type: 'badge', width: 'w-16' },  // Status
       { type: 'actions', count: 2 }      // Actions
     ];

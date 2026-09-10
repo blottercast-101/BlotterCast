@@ -221,8 +221,11 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 40px; text-align: center;">
-                <input type="checkbox" id="selectAllBlotter" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="bltBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+              <th class="bc-select-header-col" style="width: 44px; min-width: 44px; text-align: center;">
+                <div class="bc-select-slot relative flex items-center justify-center mx-auto">
+                  <span class="bc-header-index font-semibold text-forest-700 text-xs">#</span>
+                  <input type="checkbox" id="selectAllBlotter" class="bc-header-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="bltBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+                </div>
               </th>
               <th>Docket No.</th>
               <th>Date Filed</th>
@@ -781,15 +784,18 @@
         bcSetTableEmpty('blotterTableBody', 'No blotter records found matching your filters.', 'blotter', 11, 'Try adjusting your filters or search keywords.');
       }
     } else {
-      tbody.innerHTML = page.map(r => {
+      tbody.innerHTML = page.map((r, idx) => {
         const badgeClass = ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied'].includes(r.status)
           ? 'badge-resolved'
           : (r.status === 'Ongoing' || r.status === 'Under Mediation' || r.status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
 
         return `
-        <tr data-id="${r.id}" data-key="${r.docketNo}" data-docket-no="${r.docketNo}" class="${bltBatchManager.has(r.id) ? 'row-selected' : ''}">
-          <td style="width: 40px; text-align: center;">
-            <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${bltBatchManager.has(r.id) ? 'checked' : ''} onchange="bltBatchManager.toggle(${r.id}, this.checked)" />
+        <tr data-id="${r.id}" data-key="${r.docketNo}" data-docket-no="${r.docketNo}" class="bc-table-row ${bltBatchManager.has(r.id) ? 'row-selected' : ''}">
+          <td class="bc-row-select-cell" style="width: 44px; min-width: 44px; text-align: center;">
+            <div class="bc-select-slot relative flex items-center justify-center mx-auto">
+              <span class="bc-row-index text-xs font-mono font-medium text-forest-400 select-none">${start + idx + 1}</span>
+              <input type="checkbox" class="bc-row-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${bltBatchManager.has(r.id) ? 'checked' : ''} onchange="bltBatchManager.toggle(${r.id}, this.checked)" />
+            </div>
           </td>
           <td class="font-semibold text-forest-700">${r.docketNo}</td>
           <td>${r.dateFiled}</td>

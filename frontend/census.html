@@ -199,8 +199,11 @@
       <div class="overflow-x-auto">
         <table class="data-table">
           <thead><tr>
-            <th style="width: 40px; text-align: center;">
-              <input type="checkbox" id="selectAllCensus" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="resBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+            <th class="bc-select-header-col" style="width: 44px; min-width: 44px; text-align: center;">
+              <div class="bc-select-slot relative flex items-center justify-center mx-auto">
+                <span class="bc-header-index font-semibold text-forest-700 text-xs">#</span>
+                <input type="checkbox" id="selectAllCensus" class="bc-header-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="resBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+              </div>
             </th>
             <th>Resident No.</th><th>Full Name</th><th>Date of Birth</th><th class="text-center px-4" style="text-align:center;">Age</th>
             <th class="text-center px-4" style="text-align:center;">Sex</th><th>Civil Status</th><th>Zone / Purok</th>
@@ -506,10 +509,13 @@ function renderResidents(){
       bcSetTableEmpty('residentBody', 'No resident records found matching your filters.', 'census', 12, 'Try adjusting your filters or search keywords.');
     }
   } else {
-    tb.innerHTML = page.map(r => `
-      <tr data-id="${r.id}" data-key="${r.resNo || ''}" data-res-no="${r.resNo || ''}" class="${resBatchManager?.has(r.id) ? 'row-selected' : ''}">
-        <td style="width: 40px; text-align: center;">
-          <input type="checkbox" class="form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${resBatchManager?.has(r.id) ? 'checked' : ''} onchange="resBatchManager?.toggle(${r.id}, this.checked)" />
+    tb.innerHTML = page.map((r, idx) => `
+      <tr data-id="${r.id}" data-key="${r.resNo || ''}" data-res-no="${r.resNo || ''}" class="bc-table-row ${resBatchManager?.has(r.id) ? 'row-selected' : ''}">
+        <td class="bc-row-select-cell" style="width: 44px; min-width: 44px; text-align: center;">
+          <div class="bc-select-slot relative flex items-center justify-center mx-auto">
+            <span class="bc-row-index text-xs font-mono font-medium text-forest-400 select-none">${start + idx + 1}</span>
+            <input type="checkbox" class="bc-row-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" value="${r.id}" ${resBatchManager?.has(r.id) ? 'checked' : ''} onchange="resBatchManager?.toggle(${r.id}, this.checked)" />
+          </div>
         </td>
         <td class="font-semibold text-forest-700">${r.resNo || '—'}</td>
         <td class="font-semibold text-forest-800">${r.lastName || ''}, ${r.firstName || ''}</td>

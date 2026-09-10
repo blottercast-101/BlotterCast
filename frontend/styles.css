@@ -686,25 +686,27 @@ input.pw-input { padding-right: 38px; }
 /* ---------------- Custom alert/confirm dialog (replaces native alert()/confirm()) ---------------- */
 .bc-dialog-box {
   background: #fff;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   padding: 1.75rem;
-  width: 400px;
-  max-width: 90vw;
+  width: 480px;
+  max-width: 92vw;
   transform: translateY(20px);
   transition: transform 0.2s;
   box-shadow: var(--shadow-lg);
+  border: 1px solid var(--forest-100);
 }
 .modal-overlay.open .bc-dialog-box { transform: translateY(0); }
-.bc-dialog-header { display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem; }
+.bc-dialog-header { display: flex; align-items: center; gap: 12px; margin-bottom: 0.85rem; }
 .bc-dialog-icon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 999px; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 9999px; flex-shrink: 0;
   background: var(--forest-100); color: var(--forest-700);
 }
-.bc-dialog-icon.danger { background: var(--red-100); color: var(--red-600); }
-.bc-dialog-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: #111827; margin: 0; }
-.bc-dialog-message { font-size: 0.875rem; color: #4b5563; line-height: 1.5; margin: 0 0 1.4rem 0; white-space: pre-line; }
-.bc-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.bc-dialog-icon.danger { background: #ffe4e6; color: #e11d48; }
+.bc-dialog-title { font-family: 'DM Serif Display', serif; font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0; line-height: 1.2; }
+.bc-dialog-title.danger { color: #9f1239; }
+.bc-dialog-message { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: #1e3a29; line-height: 1.6; margin: 0 0 1.25rem 0; white-space: pre-line; }
+.bc-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; }
 
 /* ---------------- Forms ---------------- */
 .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
@@ -2375,7 +2377,119 @@ path.zone-pulse-active {
 
 
 
-/* ---------------- Floating Batch Management Toolbar ---------------- */
+/* ---------------- Selection Slot & Hover-to-Reveal ---------------- */
+.bc-select-slot {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.bc-row-index,
+.bc-header-index {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.bc-header-index {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  color: #1a5730;
+}
+
+.bc-row-cb,
+.bc-header-cb {
+  position: absolute !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: 17px !important;
+  height: 17px !important;
+  opacity: 0;
+  transform: scale(0.75);
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+/* Hover-to-reveal on desktop pointer devices */
+.bc-table-row:hover .bc-row-index,
+.data-table tbody tr:hover .bc-row-index {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.bc-table-row:hover .bc-row-cb,
+.data-table tbody tr:hover .bc-row-cb {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.bc-select-header-col:hover .bc-header-index,
+.data-table thead th:hover .bc-header-index {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.bc-select-header-col:hover .bc-header-cb,
+.data-table thead th:hover .bc-header-cb {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Active Selection Mode on Table or Selected Rows */
+.data-table.selection-mode-active .bc-row-index,
+.data-table.selection-mode-active .bc-header-index,
+tr.row-selected .bc-row-index {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.75) !important;
+}
+
+.data-table.selection-mode-active .bc-row-cb,
+.data-table.selection-mode-active .bc-header-cb,
+tr.row-selected .bc-row-cb {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: scale(1) !important;
+}
+
+/* Soft Light-Mint Hover Highlight */
+.bc-table-row:hover,
+.data-table tbody tr:not(.empty-state-row):not(.error-state-row):hover,
+.data-table tbody tr:not(.empty-state-row):not(.error-state-row):hover td {
+  background-color: #f2faf5 !important;
+}
+
+/* Emerald Selected Row Styling */
+.data-table tbody tr.row-selected,
+.data-table tbody tr.row-selected td {
+  background-color: #eaf6ee !important;
+}
+.data-table tbody tr.row-selected {
+  box-shadow: inset 4px 0 0 #1b4332 !important;
+}
+.data-table tbody tr.row-selected:hover,
+.data-table tbody tr.row-selected:hover td {
+  background-color: #def0e4 !important;
+}
+
 /* ---------------- Floating Batch Management Toolbar ---------------- */
 .bc-batch-bar {
   position: fixed;
@@ -2384,7 +2498,7 @@ path.zone-pulse-active {
   transform: translateX(-50%) translateY(120px);
   opacity: 0;
   pointer-events: none;
-  z-index: 999;
+  z-index: 9999;
   background: linear-gradient(135deg, #0a2414 0%, #123d22 55%, #1a5730 100%);
   color: #f0f9f2;
   border-radius: 9999px;
@@ -2398,6 +2512,7 @@ path.zone-pulse-active {
   font-family: 'DM Sans', sans-serif;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  max-width: calc(100vw - 2rem);
 }
 .bc-batch-bar.visible {
   transform: translateX(-50%) translateY(0);
@@ -2503,16 +2618,6 @@ path.zone-pulse-active {
   background: rgba(255, 255, 255, 0.16);
   border-color: rgba(184, 224, 192, 0.3);
   transform: translateY(-1px);
-}
-
-/* ---------------- Selected Row Highlight ---------------- */
-.data-table tbody tr.row-selected,
-.data-table tbody tr.row-selected td {
-  background-color: #f0fdf4 !important; /* light emerald/forest tint */
-}
-.data-table tbody tr.row-selected:hover,
-.data-table tbody tr.row-selected:hover td {
-  background-color: #dcfce7 !important;
 }
 
 /* ---------------- Table Selection Info Banner ---------------- */
