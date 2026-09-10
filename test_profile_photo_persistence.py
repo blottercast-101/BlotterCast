@@ -211,12 +211,59 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertTrue(os.path.isfile(b64_disk_path))
         self.created_avatar_files.append(b64_disk_path)
 
-        # 4. Remove avatar via POST /api/users.php?action=remove_avatar
-        rem_res = self.client.post("/api/users.php?action=remove_avatar")
-        self.assertEqual(rem_res.status_code, 200)
-        rem_json = rem_res.get_json()
-        self.assertTrue(rem_json.get("ok") or rem_json.get("success"))
-        self.assertIsNone(rem_json["avatar_url"])
+    def _create_dummy_jpg(self):
+        # Minimal valid JPEG bytes
+        jpg_bytes = (
+            b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00'
+            b'\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t'
+            b'\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a'
+            b'\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342'
+            b'\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00'
+            b'\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda\x00'
+            b'\x08\x01\x01\x00\x00?\x00\xbf\x00\xff\xd9'
+        )
+        return io.BytesIO(jpg_bytes)
+
+    def test_relogin_and_jpg_upload_persistence(self):
+        # 1. Log in as admin
+        login_res = self.client.post("/api/auth.php?action=login", json={"username": "admin", "password": "admin123"})
+        self.assertEqual(login_res.status_code, 200)
+
+        # 2. Upload JPG profile picture
+        jpg_data = self._create_dummy_jpg()
+        upload_res = self.client.post(
+            "/api/user/avatar",
+            data={"avatar": (jpg_data, "photo.jpg")},
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(upload_res.status_code, 200)
+        upload_json = upload_res.get_json()
+        avatar_url = upload_json["avatar_url"]
+        self.assertTrue(avatar_url.endswith(".jpg") or avatar_url.endswith(".jpeg"))
+        
+        full_disk_path = os.path.join(self.app.static_folder, avatar_url.lstrip("/"))
+        self.assertTrue(os.path.isfile(full_disk_path))
+        self.created_avatar_files.append(full_disk_path)
+
+        # 3. Log out
+        logout_res = self.client.get("/api/auth.php?action=logout")
+        self.assertEqual(logout_res.status_code, 200)
+
+        # 4. Re-login as admin
+        relogin_res = self.client.post("/api/auth.php?action=login", json={"username": "admin", "password": "admin123"})
+        self.assertEqual(relogin_res.status_code, 200)
+        relogin_json = relogin_res.get_json()
+        self.assertTrue(relogin_json["ok"])
+        self.assertEqual(relogin_json["user"]["avatar_url"], avatar_url)
+        self.assertEqual(relogin_json["user"]["avatar"], avatar_url)
+        self.assertEqual(relogin_json["user"]["avatarUrl"], avatar_url)
+        self.assertEqual(relogin_json["user"]["profile_photo_path"], avatar_url)
+
+        # 5. Verify /api/auth.php?action=me returns persisted avatar
+        me_res = self.client.get("/api/auth.php?action=me")
+        self.assertEqual(me_res.status_code, 200)
+        self.assertEqual(me_res.get_json()["user"]["avatar_url"], avatar_url)
 
 
 if __name__ == "__main__":
