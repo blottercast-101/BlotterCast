@@ -35,11 +35,11 @@
   --success-600: #16a34a;
   --success-100: #dcfce7;
 
-  /* Signature gradients for the dashboard's "vibe" cards */
-  --grad-plum:   linear-gradient(135deg, #1a5730 0%, #2f8a4c 100%);
-  --grad-sunset: linear-gradient(135deg, #2f8a4c 0%, #c9a84c 100%);
-  --grad-dark:   linear-gradient(135deg, #0a2414 0%, #1a5730 100%);
-  --grad-moss:   linear-gradient(135deg, #0e7c86 0%, #2f8a4c 100%);
+  /* Signature 4-step gradient sequence for metric cards */
+  --grad-plum:   linear-gradient(135deg, #1e5d38 0%, #2d7a4d 100%);
+  --grad-moss:   linear-gradient(135deg, #1b6b66 0%, #268982 100%);
+  --grad-sunset: linear-gradient(135deg, #4d6e32 0%, #6f8538 50%, #a38b3a 100%);
+  --grad-dark:   linear-gradient(135deg, #0c261a 0%, #143d2b 100%);
 
   --shadow-sm: 0 1px 4px rgba(10, 36, 20, 0.08);
   --shadow-md: 0 4px 16px rgba(10, 36, 20, 0.14);
@@ -59,6 +59,7 @@ input::-webkit-credentials-auto-fill-button {
 }
 
 body { font-family: 'DM Sans', sans-serif; }
+.font-display { font-family: 'DM Serif Display', serif; }
 
 /* ---------------- Icons ---------------- */
 /* Every icon renders through icons.js as inline SVG; this just
@@ -380,14 +381,14 @@ a.stat-card-grad:hover {
   box-shadow: var(--shadow-lg);
 }
 
-.stat-card-grad.plum   { background: var(--grad-plum); }
-.stat-card-grad.sunset { background: var(--grad-sunset); }
-.stat-card-grad.dark   { background: var(--grad-dark); }
-.stat-card-grad.moss   { background: var(--grad-moss); }
+.stat-card-grad.plum,   .stat-card-grad.seq-1 { background: var(--grad-plum); }
+.stat-card-grad.moss,   .stat-card-grad.seq-2 { background: var(--grad-moss); }
+.stat-card-grad.sunset, .stat-card-grad.seq-3 { background: var(--grad-sunset); }
+.stat-card-grad.dark,   .stat-card-grad.seq-4 { background: var(--grad-dark); }
 .stat-card-grad::after {
   content: ''; position: absolute; width: 120px; height: 120px;
   right: -30px; bottom: -40px; border-radius: 999px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.08); pointer-events: none;
 }
 .stat-card-grad .stat-icon-badge {
   background: rgba(255,255,255,0.18); color: #fff;
@@ -912,21 +913,53 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* ---------------- Filter bar ---------------- */
 .filter-bar {
-  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
   padding: 16px 20px;
-  background: #fdf6e3;
-  border-bottom: 1px solid var(--forest-100);
+  background: #eef7f2 !important;
+  border-bottom: 1px solid #d3eedb !important;
 }
 .filter-input {
-  padding: 8px 12px;
-  border: 1.5px solid var(--forest-100);
-  border-radius: 9px;
-  font-size: 0.82rem;
-  background: white;
-  color: #374151;
+  padding: 8.5px 14px;
+  border: 1px solid #c6e6d1;
+  border-radius: 0.75rem;
+  font-size: 0.84rem;
+  background: #ffffff;
+  color: #1b4332;
   font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
-.filter-input:focus { outline: none; border-color: var(--forest-500); }
+.filter-input:focus {
+  outline: none;
+  border-color: #1b4332;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.12);
+}
+.filter-bar input[type="text"].filter-input::placeholder {
+  color: #9ca3af;
+}
+.filter-bar .text-forest-400 {
+  color: #2d6a4f !important;
+}
+.filter-bar .bc-select-trigger {
+  border-radius: 0.75rem;
+  border: 1px solid #c6e6d1;
+  background: #ffffff;
+  padding: 8.5px 14px;
+  color: #1b4332;
+  font-size: 0.84rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.filter-bar .bc-select-trigger:focus,
+.filter-bar .bc-select-trigger-open {
+  border-color: #1b4332 !important;
+  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.12) !important;
+}
+.filter-bar .bc-select-chevron {
+  color: #1b4332;
+}
 
 /* ---------------- Toggle switches (Settings) ---------------- */
 .settings-section {
@@ -3140,14 +3173,10 @@ path.zone-pulse-active {
   text-align: right;
   transition: color 0.2s ease;
 }
-.strength-bar-segment.bg-red-500 {
-  background-color: #ef4444 !important;
-}
-.strength-bar-segment.bg-amber-500 {
-  background-color: #f59e0b !important;
-}
+.strength-bar-segment.bg-red-500,
+.strength-bar-segment.bg-amber-500,
 .strength-bar-segment.bg-emerald-600 {
-  background-color: #059669 !important;
+  background-color: #1b4332 !important;
 }
 .strength-bar-segment.bg-gray-200 {
   background-color: #e5e7eb !important;
@@ -3155,17 +3184,16 @@ path.zone-pulse-active {
 
 /* ── Password Requirements Checklist ── */
 .password-requirements-box {
-  background-color: rgba(240, 249, 242, 0.85);
-  border: 1px solid #d1fae5;
-  border-radius: 12px;
-  padding: 10px 14px;
+  background-color: #eaf6ee;
+  border: 1px solid rgba(27, 67, 50, 0.1);
+  border-radius: 16px;
+  padding: 24px;
 }
 .password-requirements-box .req-title {
-  font-size: 0.72rem;
+  color: #1b4332;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #065f46;
+  font-size: 0.75rem;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -3180,7 +3208,7 @@ path.zone-pulse-active {
   transition: color 0.2s ease, font-weight 0.2s ease;
 }
 .password-requirements-box .rule-item.valid {
-  color: #047857 !important;
+  color: #1b4332 !important;
   font-weight: 600;
 }
 .password-requirements-box .rule-item.invalid {
@@ -3198,7 +3226,7 @@ path.zone-pulse-active {
   transition: color 0.2s ease;
 }
 .password-requirements-box .rule-item.valid .rule-icon {
-  color: #059669 !important;
+  color: #1b4332 !important;
 }
 .password-requirements-box .rule-item.invalid .rule-icon {
   color: #dc2626 !important;

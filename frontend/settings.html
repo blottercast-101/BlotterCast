@@ -109,6 +109,29 @@
     <button class="settings-tab" onclick="switchTab('security',this)"><span data-icon="lock" data-icon-size="15"></span> Security</button>
     <button class="settings-tab" onclick="switchTab('backup',this)" data-perm="system_settings"><span data-icon="archive" data-icon-size="15"></span> Backup &amp; Recovery</button>
   </div>
+  <script>
+    (function _syncSettingsEarly(){
+      try {
+        const hash = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+        const params = new URLSearchParams(window.location.search);
+        const q = (params.get('tab') || params.get('view') || '').toLowerCase();
+        const stored = (sessionStorage.getItem('current_active_view_settings') || '').toLowerCase();
+        let target = hash || q || stored;
+        if (target === 'my-account' || target === 'account' || target === 'password') target = 'security';
+        if (['general', 'notifications', 'security', 'backup'].includes(target) && target !== 'general') {
+          const gen = document.getElementById('tab-general');
+          const pan = document.getElementById('tab-' + target);
+          if (gen && pan) {
+            gen.classList.add('hidden');
+            pan.classList.remove('hidden');
+          }
+          document.querySelectorAll('.settings-tab').forEach(b => {
+            b.classList.toggle('active', !!b.getAttribute('onclick')?.includes(`'${target}'`));
+          });
+        }
+      } catch (_) {}
+    })();
+  </script>
 
   <main class="flex-1 p-6 space-y-5">
 
@@ -185,13 +208,13 @@
     <!-- SECURITY -->
     <div id="tab-security" class="space-y-5 hidden">
       <div class="settings-section">
-        <h3>My Account</h3>
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start mt-4">
+        <h3 class="font-display text-2xl font-normal text-forest-900 mb-5">My Account</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           <!-- Left Column (Avatar & Photo Actions) -->
-          <div class="md:col-span-4 lg:col-span-3 flex flex-col items-center justify-center p-5 bg-[#f4fbf6] rounded-xl border border-forest-100/60 text-center">
-            <div id="acct_avatar_container" class="w-32 h-32 md:w-36 md:h-36 rounded-full border-4 border-[#1b4332] overflow-hidden bg-[#e8f5e9] flex items-center justify-center shadow-sm relative mb-4">
+          <div class="lg:col-span-4 flex flex-col items-center justify-center p-6 bg-[#f4faf6] rounded-2xl border border-forest-100/70 text-center shadow-xs">
+            <div id="acct_avatar_container" class="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-[#1b4332] overflow-hidden bg-[#e8f5e9] flex items-center justify-center shadow-sm relative mb-5">
               <!-- Generic vector silhouette fallback -->
-              <svg id="acct_avatar_default" class="w-20 h-20 md:w-24 md:h-24 text-[#2d6a4f]" fill="currentColor" viewBox="0 0 24 24">
+              <svg id="acct_avatar_default" class="w-20 h-20 sm:w-24 sm:h-24 text-[#2d6a4f]" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
               </svg>
               <!-- Uploaded user avatar image -->
@@ -200,128 +223,194 @@
 
             <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleAvatarFileSelect(this)" />
 
-            <button type="button" onclick="document.getElementById('acct_avatar_file').click()" class="bg-[#1b4332] hover:bg-[#143326] text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5 w-full max-w-[170px]">
+            <button type="button" onclick="document.getElementById('acct_avatar_file').click()" class="bg-[#1b4332] hover:bg-[#143326] text-white py-2.5 px-5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5 w-full max-w-[190px]">
               Upload New Photo
             </button>
-            <button type="button" id="acct_avatar_remove_btn" onclick="handleAvatarRemove()" class="mt-2 text-emerald-700 hover:text-emerald-900 hover:underline text-xs font-medium bg-transparent border-0 cursor-pointer hidden">
+            <button type="button" id="acct_avatar_remove_btn" onclick="handleAvatarRemove()" class="mt-2.5 text-emerald-700 hover:text-emerald-900 hover:underline text-xs font-medium bg-transparent border-0 cursor-pointer hidden">
               Remove
             </button>
           </div>
 
-          <!-- Right Column (Account Information Form) -->
-          <div class="md:col-span-8 lg:col-span-9 space-y-4">
+          <!-- Right Column (2x3 Account Information Grid) -->
+          <div class="lg:col-span-8 flex flex-col justify-between space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Row 1: Username -->
               <div>
-                <label class="form-label">Username</label>
-                <input type="text" id="acct_username" class="form-input bg-[#edf7f0] border-forest-200 cursor-not-allowed text-forest-700 rounded-lg font-medium" disabled />
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="user" data-icon-size="18"></span>
+                  </div>
+                  <input type="text" id="acct_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" />
+                </div>
               </div>
+
+              <!-- Row 1: Role -->
               <div>
-                <label class="form-label">Role</label>
-                <input type="text" id="acct_role" class="form-input bg-[#edf7f0] border-forest-200 cursor-not-allowed text-forest-700 rounded-lg font-medium" disabled />
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Role</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="shield" data-icon-size="18"></span>
+                  </div>
+                  <input type="text" id="acct_role" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label class="form-label">Full Name <span class="text-red-500 font-bold">*</span></label>
-              <input type="text" id="acct_fullName" class="form-input bg-[#edf7f0] border-forest-200 focus:bg-white rounded-lg" placeholder="e.g. Juan Dela Cruz" required />
-            </div>
+              <!-- Row 2: Full Name -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Full Name <span class="text-red-500 font-bold">*</span></label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="idCard" data-icon-size="18"></span>
+                  </div>
+                  <input type="text" id="acct_fullName" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all" placeholder="e.g. Juan Dela Cruz" required />
+                </div>
+              </div>
 
-            <div>
-              <label class="form-label">Contact Number <span class="text-red-500 font-bold">*</span></label>
-              <input type="text" id="acct_contact" class="form-input bg-[#edf7f0] border-forest-200 focus:bg-white rounded-lg" placeholder="09XXXXXXXXX" maxlength="11" data-digits-only required />
-            </div>
+              <!-- Row 2: Contact Number -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Contact Number <span class="text-red-500 font-bold">*</span></label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="phone" data-icon-size="18"></span>
+                  </div>
+                  <input type="text" id="acct_contact" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all" placeholder="09171234567" maxlength="11" data-digits-only required />
+                </div>
+              </div>
 
-            <div>
-              <label class="form-label">Email <span class="text-red-500 font-bold">*</span></label>
-              <input type="email" id="acct_email" class="form-input bg-[#edf7f0] border-forest-200 focus:bg-white rounded-lg" placeholder="you@example.com" required />
-            </div>
+              <!-- Row 3: Email Address -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Email Address <span class="text-red-500 font-bold">*</span></label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="mail" data-icon-size="18"></span>
+                  </div>
+                  <input type="email" id="acct_email" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all" placeholder="you@example.com" required />
+                </div>
+              </div>
 
-            <div class="flex justify-end pt-2">
-              <button type="button" onclick="saveMyAccount()" class="bg-[#1b4332] hover:bg-[#143326] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium text-sm transition-colors shadow-sm">
-                <span data-icon="save" data-icon-size="15"></span> Save Account Details
-              </button>
+              <!-- Row 3: Account Status -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Account Status</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="checkCircle" data-icon-size="18"></span>
+                  </div>
+                  <input type="text" id="acct_status" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" value="Active" />
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Full-Width Save Button directly beneath the two columns -->
+        <div class="pt-5 border-t border-forest-100/70 mt-6">
+          <button type="button" onclick="saveMyAccount()" class="w-full bg-[#1b4332] hover:bg-[#143326] text-white py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-colors shadow-sm cursor-pointer">
+            <span data-icon="save" data-icon-size="16"></span> Save Account Details
+          </button>
         </div>
       </div>
 
       <div class="settings-section">
-        <h3>Change Password</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4">
+        <h3 class="font-display text-2xl font-normal text-forest-900 mb-5">Change Password</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch mt-4">
           <!-- Left Column: Form inputs, strength bar, and submit action -->
-          <div class="space-y-4">
-            <div>
-              <label class="form-label">Current Password</label>
-              <div class="relative">
-                <input type="password" id="acct_currentPw" class="form-input pr-10 bg-[#f0fdf4] border-forest-200 focus:bg-white" placeholder="Enter current password" autocomplete="current-password"/>
-                <button type="button" id="toggleCurrentPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_currentPw', this)" title="Show password" aria-label="Show password">
-                  <span data-icon="view" data-icon-size="18"></span>
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label class="form-label">New Password</label>
-              <div class="relative">
-                <input type="password" id="acct_newPw" class="form-input pr-10 bg-[#f0fdf4] border-forest-200 focus:bg-white" placeholder="Enter new password" autocomplete="new-password" oninput="bcUpdatePasswordStrength(this.value, 'acct_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'acct_req_box');" onchange="bcUpdatePasswordStrength(this.value, 'acct_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'acct_req_box');"/>
-                <button type="button" id="toggleNewPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_newPw', this)" title="Show password" aria-label="Show password">
-                  <span data-icon="view" data-icon-size="18"></span>
-                </button>
-              </div>
-              <div class="password-strength-container mt-2.5" id="acct_strength_wrap">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="strength-bars flex-1 flex gap-1.5 h-1.5">
-                    <div class="strength-bar-segment strength-bar-1 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
-                    <div class="strength-bar-segment strength-bar-2 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
-                    <div class="strength-bar-segment strength-bar-3 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+          <div class="space-y-4 flex flex-col justify-between">
+            <div class="space-y-4">
+              <!-- Current Password -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Current Password</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="key" data-icon-size="18"></span>
                   </div>
-                  <span class="strength-label text-xs font-semibold min-w-[60px] text-right"></span>
+                  <div class="relative flex-1">
+                    <input type="password" id="acct_currentPw" class="w-full py-2.5 pl-3.5 pr-10 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="Enter current password" autocomplete="current-password"/>
+                    <button type="button" id="toggleCurrentPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-emerald-700/80 hover:text-emerald-900 focus:outline-none p-1" onclick="toggleFieldPassword('acct_currentPw', this)" title="Show password" aria-label="Show password">
+                      <span data-icon="view" data-icon-size="18"></span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label class="form-label">Confirm New Password</label>
-              <div class="relative">
-                <input type="password" id="acct_confirmPw" class="form-input pr-10 bg-[#f0fdf4] border-forest-200 focus:bg-white" placeholder="Confirm new password" autocomplete="new-password"/>
-                <button type="button" id="toggleConfirmPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-forest-400 hover:text-forest-600 focus:outline-none p-1" onclick="toggleFieldPassword('acct_confirmPw', this)" title="Show password" aria-label="Show password">
-                  <span data-icon="view" data-icon-size="18"></span>
-                </button>
+              <!-- New Password -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">New Password</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="lock" data-icon-size="18"></span>
+                  </div>
+                  <div class="relative flex-1">
+                    <input type="password" id="acct_newPw" class="w-full py-2.5 pl-3.5 pr-10 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="Enter new password" autocomplete="new-password" oninput="bcUpdatePasswordStrength(this.value, 'acct_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'acct_req_box');" onchange="bcUpdatePasswordStrength(this.value, 'acct_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'acct_req_box');"/>
+                    <button type="button" id="toggleNewPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-emerald-700/80 hover:text-emerald-900 focus:outline-none p-1" onclick="toggleFieldPassword('acct_newPw', this)" title="Show password" aria-label="Show password">
+                      <span data-icon="view" data-icon-size="18"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 3-Segment Strength Indicator Bars aligned with the input field -->
+                <div class="flex items-center gap-3 mt-2.5">
+                  <div class="w-11 flex-shrink-0"></div>
+                  <div class="flex-1 password-strength-container" id="acct_strength_wrap">
+                    <div class="strength-bars flex gap-2 h-1.5">
+                      <div class="strength-bar-segment strength-bar-1 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+                      <div class="strength-bar-segment strength-bar-2 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+                      <div class="strength-bar-segment strength-bar-3 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <!-- Confirm New Password -->
+              <div>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Confirm New Password</label>
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                    <span data-icon="checkCircle" data-icon-size="18"></span>
+                  </div>
+                  <div class="relative flex-1">
+                    <input type="password" id="acct_confirmPw" class="w-full py-2.5 pl-3.5 pr-10 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="Confirm new password" autocomplete="new-password"/>
+                    <button type="button" id="toggleConfirmPw" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-emerald-700/80 hover:text-emerald-900 focus:outline-none p-1" onclick="toggleFieldPassword('acct_confirmPw', this)" title="Show password" aria-label="Show password">
+                      <span data-icon="view" data-icon-size="18"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="acct_pw_error" class="text-xs text-red-600 font-semibold p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
             </div>
 
-            <div id="acct_pw_error" class="text-xs text-red-600 font-semibold p-2.5 rounded-lg bg-red-50 border border-red-200 hidden"></div>
-
-            <div class="pt-1">
-              <button id="btnChangePassword" type="button" onclick="saveMyPassword()" class="w-full btn-primary justify-center text-sm py-2.5 bg-[#1b4332] hover:bg-[#143326] text-white rounded-lg shadow-sm flex items-center gap-2 font-medium">
-                <span data-icon="lock" data-icon-size="15"></span> Change Password
+            <!-- Submit Action -->
+            <div class="pt-2">
+              <button id="btnChangePassword" type="button" onclick="saveMyPassword()" class="w-full bg-[#1b4332] hover:bg-[#143326] text-white py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium text-sm transition-colors shadow-sm cursor-pointer">
+                <span data-icon="lock" data-icon-size="16"></span> Change Password
               </button>
             </div>
           </div>
 
           <!-- Right Column: Password checklist card and Security Tip callout card -->
-          <div class="space-y-3">
+          <div class="flex flex-col justify-between space-y-4">
             <!-- Top Card: Password Requirements Checklist -->
-            <div class="password-requirements-box bg-[#eef7f0] border border-emerald-100/80 rounded-xl p-4 shadow-sm" id="acct_req_box">
-              <div class="req-title text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-1.5">
+            <div class="password-requirements-box bg-[#eaf6ee] rounded-2xl p-6 border border-forest-100/70 shadow-xs" id="acct_req_box">
+              <div class="req-title text-xs font-bold uppercase tracking-wider text-[#1b4332] mb-4 flex items-center gap-1.5">
                 <span>PASSWORD MUST CONTAIN:</span>
               </div>
-              <ul class="space-y-2">
-                <li class="rule-item flex items-center gap-2 text-xs text-forest-700" data-rule="len"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 6 characters long</span></li>
-                <li class="rule-item flex items-center gap-2 text-xs text-forest-700" data-rule="upper"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
-                <li class="rule-item flex items-center gap-2 text-xs text-forest-700" data-rule="lower"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
-                <li class="rule-item flex items-center gap-2 text-xs text-forest-700" data-rule="num"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 number (0-9)</span></li>
-                <li class="rule-item flex items-center gap-2 text-xs text-forest-700" data-rule="special"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
+              <ul class="space-y-3">
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="len"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 6 characters long</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="upper"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="lower"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="num"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 number (0-9)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="special"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
               </ul>
             </div>
 
             <!-- Bottom Card: Security Tip -->
-            <div class="bg-[#eef7f0] border border-emerald-100/80 rounded-xl p-4 shadow-sm">
-              <div class="text-xs font-semibold text-forest-800 mb-1 flex items-center gap-1.5">
-                <span data-icon="shield" data-icon-size="14" class="text-forest-600"></span>
+            <div class="bg-[#eaf6ee] rounded-2xl p-5 border border-forest-100/70 shadow-xs">
+              <div class="text-xs font-bold text-[#1b4332] mb-1.5 flex items-center gap-2">
+                <span data-icon="shield" data-icon-size="16" class="text-[#1b4332]"></span>
                 <span>Security Tip</span>
               </div>
-              <p class="text-[11px] font-bold tracking-wide uppercase text-forest-600/90 leading-relaxed">
+              <p class="text-[11px] font-bold tracking-wide uppercase text-[#1b4332]/90 leading-relaxed">
                 NEVER REUSE PASSWORDS ACROSS MULTIPLE SYSTEMS
               </p>
             </div>
@@ -345,14 +434,12 @@
         <!-- Security Settings Panel (Admin Master Control) -->
         <div class="settings-section space-y-6">
           <!-- Header with Aligned Badge -->
-          <div class="flex items-center gap-3 pb-3 border-b border-forest-100">
-            <h2 class="text-lg font-serif font-bold text-[#1b4332] m-0">
-              Security &amp; Authentication
-            </h2>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <h3>
+            <span>Security &amp; Authentication</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 font-body">
               Admin Master Control
             </span>
-          </div>
+          </h3>
 
           <div class="space-y-4">
             <!-- Master 2FA Toggle Card -->
@@ -405,7 +492,7 @@
           </div>
 
           <div class="pt-4 border-t border-forest-100/70">
-            <h3 class="text-sm font-semibold text-forest-800 mb-3">Policy Thresholds &amp; Password Rules</h3>
+            <h3 class="text-sm font-normal text-forest-800 mb-3">Policy Thresholds &amp; Password Rules</h3>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="form-label">Inactivity Timeout Duration (minutes)</label>
@@ -518,17 +605,40 @@
 <script src="custom-controls.js"></script>
 <script>
 function switchTab(name, btn) {
+  let targetTab = (name || 'general').trim().toLowerCase();
+  if (targetTab === 'my-account' || targetTab === 'account' || targetTab === 'password') {
+    targetTab = 'security';
+  }
+  const validTabs = ['general', 'notifications', 'security', 'backup'];
+  if (!validTabs.includes(targetTab)) {
+    targetTab = 'general';
+  }
+
   // Only target the four top-level tab panels — not child sections like
   // #tab-security-admin-only which share the same id prefix.
-  ['general', 'notifications', 'security', 'backup'].forEach(t => {
+  validTabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.add('hidden');
   });
   document.querySelectorAll('.settings-tab').forEach(el => el.classList.remove('active'));
-  const panel = document.getElementById('tab-' + name);
+  const panel = document.getElementById('tab-' + targetTab);
   if (panel) panel.classList.remove('hidden');
-  btn.classList.add('active');
+
+  const targetBtn = btn || document.querySelector(`.settings-tab[onclick*="'${targetTab}'"]`) || document.querySelectorAll('.settings-tab')[0];
+  if (targetBtn) targetBtn.classList.add('active');
+
+  try {
+    sessionStorage.setItem('current_active_view_settings', targetTab);
+    if (typeof bcSetActiveView === 'function') {
+      bcSetActiveView('settings', targetTab);
+    } else {
+      if (window.location.hash !== '#' + targetTab) {
+        history.replaceState(null, '', '#' + targetTab);
+      }
+    }
+  } catch (_) {}
 }
+window.switchTab = switchTab;
 
 function onTimeFormatSelectChange(val) {
   const normalized = (String(val || '12')).startsWith('24') ? '24' : '12';
@@ -710,6 +820,17 @@ function renderAccountAvatar(avatarUrl) {
   }
 }
 
+function formatActiveSinceDate(rawDate) {
+  if (!rawDate) return 'N/A';
+  try {
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return String(rawDate);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  } catch (_) {
+    return String(rawDate);
+  }
+}
+
 async function loadMyAccount() {
   try {
     const acct = await BCApi.myAccount();
@@ -718,6 +839,22 @@ async function loadMyAccount() {
     document.getElementById('acct_fullName').value = acct.fullName || acct.full_name || '';
     document.getElementById('acct_email').value = acct.email || '';
     document.getElementById('acct_contact').value = acct.contact || acct.contact_no || '';
+    
+    const statusVal = acct.status || 'Active';
+    const statusEl = document.getElementById('acct_status');
+    if (statusEl) {
+      if (statusEl.tagName === 'INPUT') {
+        statusEl.value = statusVal;
+      } else {
+        statusEl.textContent = statusVal;
+      }
+    }
+
+    const activeSinceEl = document.getElementById('acct_activeSince');
+    if (activeSinceEl) {
+      activeSinceEl.value = formatActiveSinceDate(acct.created_at || acct.createdAt);
+    }
+
     renderAccountAvatar(acct.avatar_url || acct.avatar || acct.profile_photo_path || null);
   } catch (err) {
     showToast('Could not load your account details: ' + err.message, 'error');
@@ -752,7 +889,7 @@ async function handleAvatarFileSelect(input) {
 
     let cachedUser = {};
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
     if (res?.user && typeof res.user === 'object') {
@@ -767,11 +904,37 @@ async function handleAvatarFileSelect(input) {
       sessionStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
       localStorage.setItem('currentUser', JSON.stringify(cachedUser));
       sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
 
     if (typeof bcHydrateCachedSession === 'function') {
       bcHydrateCachedSession();
     }
+    if (typeof hydrateGlobalState === 'function') {
+      hydrateGlobalState();
+    }
+
+    // Live update in-memory usersData if active/loaded
+    if (window.usersData && Array.isArray(window.usersData)) {
+      const currentId = cachedUser.id ? Number(cachedUser.id) : null;
+      const currentUsername = (cachedUser.username || '').toLowerCase();
+      window.usersData.forEach(u => {
+        if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
+          u.avatar_url = newAvatarUrl;
+          u.avatar = newAvatarUrl;
+          u.avatarUrl = newAvatarUrl;
+          u.profile_photo_path = newAvatarUrl;
+        }
+      });
+      if (typeof window.renderUsers === 'function') {
+        window.renderUsers();
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_updated', avatar_url: newAvatarUrl, user: cachedUser } }));
+    window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: newAvatarUrl, user: cachedUser } }));
     showToast('Profile photo updated successfully.', 'success');
   } catch (err) {
     console.error('[handleAvatarFileSelect] Upload failed:', err);
@@ -792,7 +955,7 @@ async function handleAvatarRemove() {
 
     let cachedUser = {};
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
     cachedUser.avatar_url = null;
@@ -804,11 +967,37 @@ async function handleAvatarRemove() {
       sessionStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
       localStorage.setItem('currentUser', JSON.stringify(cachedUser));
       sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
 
     if (typeof bcHydrateCachedSession === 'function') {
       bcHydrateCachedSession();
     }
+    if (typeof hydrateGlobalState === 'function') {
+      hydrateGlobalState();
+    }
+
+    // Live update in-memory usersData if active/loaded
+    if (window.usersData && Array.isArray(window.usersData)) {
+      const currentId = cachedUser.id ? Number(cachedUser.id) : null;
+      const currentUsername = (cachedUser.username || '').toLowerCase();
+      window.usersData.forEach(u => {
+        if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
+          u.avatar_url = null;
+          u.avatar = null;
+          u.avatarUrl = null;
+          u.profile_photo_path = null;
+        }
+      });
+      if (typeof window.renderUsers === 'function') {
+        window.renderUsers();
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_removed', avatar_url: null, user: cachedUser } }));
+    window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: null, user: cachedUser } }));
     showToast('Profile photo removed.', 'info');
   } catch (err) {
     console.error('[handleAvatarRemove] Remove failed:', err);
@@ -1039,9 +1228,31 @@ window.initSettings = async function () {
       };
     }
 
+    let targetTab = 'general';
+    const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('settings', 'general') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_settings') || 'general');
+    const cand = (activeView || '').trim().toLowerCase();
+    if (cand === 'my-account' || cand === 'account' || cand === 'password' || cand === 'security') {
+      targetTab = 'security';
+    } else if (cand === 'notifications' || cand === 'notification' || cand === 'alerts') {
+      targetTab = 'notifications';
+    } else if (cand === 'backup' || cand === 'backups' || cand === 'recovery') {
+      targetTab = 'backup';
+    } else if (cand === 'general') {
+      targetTab = 'general';
+    }
+
     if (!user || !roleCan(user.role, 'system_settings')) {
-      const securityTabBtn = document.querySelector('.settings-tab[onclick*="security"]');
-      if (securityTabBtn) switchTab('security', securityTabBtn);
+      targetTab = 'security';
+    }
+
+    const targetTabBtn = document.querySelector(`.settings-tab[onclick*="'${targetTab}'"]`);
+    if (targetTabBtn) {
+      switchTab(targetTab, targetTabBtn);
+    } else {
+      switchTab(targetTab);
+    }
+
+    if (!user || !roleCan(user.role, 'system_settings')) {
       return;
     }
 

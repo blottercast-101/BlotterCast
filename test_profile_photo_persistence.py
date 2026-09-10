@@ -107,6 +107,15 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         user_db = User.query.filter_by(username="kapitan").first()
         self.assertEqual(user_db.avatar_url, new_avatar_url)
 
+        # 6b. Verify GET /api/users serializes avatar_url and profile_photo_path for Users & Roles table
+        users_res = self.client.get("/api/users")
+        self.assertEqual(users_res.status_code, 200)
+        users_json = users_res.get_json()
+        kapitan_entry = next((u for u in users_json if u["username"] == "kapitan"), None)
+        self.assertIsNotNone(kapitan_entry)
+        self.assertEqual(kapitan_entry.get("avatar_url"), new_avatar_url)
+        self.assertEqual(kapitan_entry.get("profile_photo_path"), new_avatar_url)
+
         # 7. Update account details and verify avatar is retained
         update_res = self.client.post("/api/auth.php?action=update_my_account", json={
             "fullName": "Captain Jose Updated",

@@ -246,7 +246,7 @@ def auth_router():
             return _toggle_my_mfa()
         if action == "my_account" and request.method == "GET":
             return _my_account()
-        if action == "update_my_account" and request.method == "POST":
+        if action in ("update_my_account", "my_account", "update_profile") and request.method in ("POST", "PUT"):
             return _update_my_account()
 
         return json_error("Unknown action", 404)
@@ -816,6 +816,9 @@ def _me():
         "avatar_url": active_avatar,
         "avatarUrl": active_avatar,
         "profile_photo_path": active_avatar,
+        "status": (user_obj.status if user_obj and user_obj.status else "Active"),
+        "created_at": user_obj.created_at.isoformat() if user_obj and user_obj.created_at else None,
+        "createdAt": user_obj.created_at.isoformat() if user_obj and user_obj.created_at else None,
     }})
 
 
@@ -924,10 +927,13 @@ def _my_account():
         "email": user.email,
         "contact": user.contact_no,
         "role": user.role,
+        "status": user.status or "Active",
         "avatar": avatar_val,
         "avatar_url": avatar_val,
         "avatarUrl": avatar_val,
         "profile_photo_path": avatar_val,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "createdAt": user.created_at.isoformat() if user.created_at else None,
     })
 
 
@@ -1016,10 +1022,13 @@ def _update_my_account():
             "email": user.email,
             "contact": user.contact_no,
             "role": user.role,
+            "status": user.status or "Active",
             "avatar": avatar_val,
             "avatar_url": avatar_val,
             "avatarUrl": avatar_val,
             "profile_photo_path": avatar_val,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "createdAt": user.created_at.isoformat() if user.created_at else None,
         }
     })
 

@@ -320,6 +320,38 @@ function updateActiveSidebar(targetUrl) {
 }
 const _bcUpdateSidebarActiveLink = updateActiveSidebar;
 
+// ── Global Active View / Sub-Tab Session & URL Synchronizer ────────
+function bcGetActiveView(moduleName, defaultView = '') {
+  try {
+    const hashVal = (window.location.hash || '').replace(/^#/, '').trim();
+    if (hashVal) return hashVal;
+
+    const params = new URLSearchParams(window.location.search);
+    const queryView = (params.get('view') || params.get('tab') || params.get('sub') || '').trim();
+    if (queryView) return queryView;
+
+    const stored = (sessionStorage.getItem('current_active_view_' + moduleName) || '').trim();
+    if (stored) return stored;
+  } catch (_) {}
+  return defaultView;
+}
+
+function bcSetActiveView(moduleName, viewId, syncUrl = true) {
+  if (!moduleName || !viewId) return;
+  try {
+    sessionStorage.setItem('current_active_view_' + moduleName, String(viewId));
+    if (syncUrl && typeof history !== 'undefined' && history.replaceState) {
+      const currentHash = (window.location.hash || '').replace(/^#/, '').trim();
+      if (currentHash !== String(viewId)) {
+        history.replaceState(null, '', '#' + viewId);
+      }
+    }
+  } catch (_) {}
+}
+
+window.bcGetActiveView = bcGetActiveView;
+window.bcSetActiveView = bcSetActiveView;
+
 async function _bcLoadScriptOnce(src) {
   if (!src) return;
   if (_bcLoadedScriptSrcs.has(src) || document.querySelector(`script[src="${src}"]`)) {
@@ -2538,25 +2570,25 @@ function _ensureBlotterDetailsModal() {
   el.id = 'bcBlotterDetailsModal';
   el.style.zIndex = '1060';
   el.innerHTML = `
-    <div class="modal-box max-w-lg" style="max-height: 88vh; overflow-y: auto;">
-      <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0">
-            <span data-icon="blotter" data-icon-size="16"></span>
+    <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+            <span data-icon="blotter" data-icon-size="18"></span>
           </div>
           <div>
-            <h2 class="font-display text-lg text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
-            <p class="text-xs text-forest-500 font-medium" id="bcBlotterModalSubtitle">Official Barangay Docket Record</p>
+            <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
+            <p class="text-xs text-emerald-700 font-medium mt-0.5" id="bcBlotterModalSubtitle">Official Barangay Docket Record</p>
           </div>
         </div>
-        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="modal-close-btn" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
       </div>
-      <div id="bcBlotterDetailsContent" class="space-y-3 text-sm text-forest-700">
+      <div id="bcBlotterDetailsContent" class="space-y-3">
         <div class="py-8 text-center text-forest-400">Loading blotter details…</div>
       </div>
-      <div class="mt-6 pt-4 border-t border-forest-100 flex items-center justify-between">
-        <span class="text-[11px] text-forest-400 font-medium">Mapulang Lupa Blotter System</span>
-        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="btn-secondary text-xs px-4 py-1.5">Close</button>
+      <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
+        <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
+        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -2608,37 +2640,37 @@ async function openBlotterDetailsModal(docketNoOrIdOrCaseData) {
     const nature = r.nature || '—';
     const rawType = (r.case_type || r.type || 'CRIM').toUpperCase();
     const typeLabel = rawType === 'CRIM' ? 'Criminal' : (rawType === 'CIVIL' ? 'Civil' : rawType);
-    const typeBadge = rawType === 'CRIM' ? 'badge-criminal' : 'badge-civil';
+    const typeBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${_escapeHtml(typeLabel)}</span>`;
     const status = r.status || 'Ongoing';
     const statusBadge = (status === 'Resolved' || status === 'Settled' || status === 'Complied' || status === 'Closed')
-      ? 'badge-resolved'
-      : (status === 'Ongoing' || status === 'Under Mediation' || status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
+      ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${_escapeHtml(status)}</span>`
+      : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${_escapeHtml(status)}</span>`;
 
     if (subtitleEl) subtitleEl.textContent = `Docket: ${docketNo}`;
 
     const rows = [
-      ['Docket No.', `<span class="font-mono font-bold text-forest-900">${_escapeHtml(docketNo)}</span>`],
-      ['Date Filed', _escapeHtml(dateFiled)],
-      ['Case Type', `<span class="badge ${typeBadge} text-[10px] font-semibold">${_escapeHtml(typeLabel)}</span>`],
-      ['Nature of Case', `<strong class="text-forest-900">${_escapeHtml(nature)}</strong>`],
-      ['Status', `<span class="badge ${statusBadge} text-[10px] font-semibold">${_escapeHtml(status)}</span>`],
-      ['Complainant', `<div class="text-forest-800 font-medium">${_escapeHtml(complainant)}</div><div class="text-forest-500 text-xs mt-0.5">${_escapeHtml(complainantAddr)}</div>`],
-      ['Respondent', `<div class="text-rose-800 font-medium">${_escapeHtml(respondent)}</div><div class="text-forest-500 text-xs mt-0.5">${_escapeHtml(respondentAddr)}${r.zone || r.zone_id ? ` &bull; ${_escapeHtml(r.zone || r.zone_id)}` : ''}</div>`],
+      ['DOCKET NO.', `<span class="font-bold font-mono text-gray-900">${_escapeHtml(docketNo)}</span>`],
+      ['DATE FILED', `<span class="text-gray-900 font-semibold text-sm">${_escapeHtml(dateFiled)}</span>`],
+      ['CASE TYPE', typeBadge],
+      ['NATURE OF CASE', `<span class="text-gray-900 font-semibold text-sm">${_escapeHtml(nature)}</span>`],
+      ['STATUS', statusBadge],
+      ['COMPLAINANT', `<div class="text-gray-900 font-semibold text-sm">${_escapeHtml(complainant)}</div>${complainantAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${_escapeHtml(complainantAddr)}</div>` : ''}`],
+      ['RESPONDENT', `<div class="text-gray-900 font-semibold text-sm">${_escapeHtml(respondent)}</div>${respondentAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${_escapeHtml(respondentAddr)}${r.zone || r.zone_id ? ` &bull; ${_escapeHtml(r.zone || r.zone_id)}` : ''}</div>` : ''}`],
     ];
 
     if (r.settlement_status || r.settlementStatus) {
-      rows.push(['Settlement Status', `<span class="badge badge-ongoing text-[10px] font-semibold">${_escapeHtml(r.settlement_status || r.settlementStatus)}</span>`]);
+      rows.push(['SETTLEMENT STATUS', `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${_escapeHtml(r.settlement_status || r.settlementStatus)}</span>`]);
     }
     if (r.hold_reason) {
-      rows.push(['Hold Reason', `<span class="text-amber-800 text-xs font-medium">${_escapeHtml(r.hold_reason)}</span>`]);
+      rows.push(['HOLD REASON', `<span class="text-amber-800 text-xs font-medium">${_escapeHtml(r.hold_reason)}</span>`]);
     }
 
     contentEl.innerHTML = `
-      <div class="bg-forest-50/50 rounded-xl p-3.5 border border-forest-100 space-y-2">
+      <div class="bg-[#f4faf6] rounded-2xl border border-emerald-100/60 p-6 space-y-1 shadow-sm">
         ${rows.map(([k, v]) => `
-          <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 py-1 border-b border-forest-100/60 last:border-0">
-            <span class="w-40 text-forest-500 font-semibold text-[11px] uppercase tracking-wider flex-shrink-0">${k}</span>
-            <div class="text-forest-800 flex-1 text-xs sm:text-sm">${v}</div>
+          <div class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4 py-3.5 border-b border-emerald-100/70 last:border-0">
+            <span class="w-44 sm:w-48 text-xs font-bold tracking-wider text-emerald-800 uppercase flex-shrink-0 pt-0.5">${k}</span>
+            <div class="flex-1 text-sm">${v}</div>
           </div>
         `).join('')}
       </div>

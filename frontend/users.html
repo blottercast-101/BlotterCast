@@ -105,7 +105,7 @@
   <main class="flex-1 p-6 space-y-6">
 
     <!-- Role Permission Matrix -->
-    <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+    <div id="sec-permissions" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="key" data-icon-size="17"></div>
         <h2 class="font-display text-lg text-forest-800">Role Permission Matrix</h2>
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+    <div id="sec-users" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="users" data-icon-size="17"></div>
         <h2 class="font-display text-lg text-forest-800">System Users</h2>
@@ -162,7 +162,7 @@
     </div>
 
     <!-- Audit Log -->
-    <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+    <div id="sec-audit" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="database" data-icon-size="17"></div>
         <h2 class="font-display text-lg text-forest-800">Recent Audit Log</h2>
@@ -177,10 +177,10 @@
 
 <!-- Multi-Step "Add New User" Modal with Stepper Wizard -->
 <div class="modal-overlay" id="addUserWizardModal">
-  <div class="modal-box max-w-xl p-6 md:p-8 bg-white rounded-2xl shadow-2xl border border-forest-100">
+  <div class="modal-box max-w-2xl p-6 md:p-8 bg-white rounded-2xl shadow-2xl border border-forest-100">
     <div class="flex items-center justify-between mb-5">
       <h2 class="font-display text-2xl font-bold text-forest-900">Add New User</h2>
-      <button type="button" onclick="closeModal('addUserWizardModal')" class="modal-close-btn text-forest-400 hover:text-forest-700 p-1.5 rounded-lg transition-colors" aria-label="Close modal">
+      <button type="button" onclick="closeModal('addUserWizardModal')" class="modal-close-btn text-forest-400 hover:text-forest-700 p-1.5 rounded-lg transition-colors cursor-pointer" aria-label="Close modal">
         <span data-icon="x" data-icon-size="20"></span>
       </button>
     </div>
@@ -212,33 +212,58 @@
           <span>PERSONAL INFORMATION</span>
         </div>
 
-        <div>
-          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Full Name <span class="text-red-500 font-bold">*</span></label>
-          <input type="text" id="wiz_name" class="wizard-input" placeholder="Full name" data-no-numbers autocomplete="name" required />
-        </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Top-Left: Full Name -->
           <div>
-            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Email <span class="text-red-500 font-bold">*</span></label>
-            <input type="email" id="wiz_email" class="wizard-input" placeholder="email@barangay.gov" autocomplete="email" required />
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Full Name <span class="text-red-500 font-bold">*</span></label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="idCard" data-icon-size="18"></span>
+              </div>
+              <input type="text" id="wiz_name" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="Full name" data-no-numbers autocomplete="name" required />
+            </div>
           </div>
+
+          <!-- Top-Right: Username -->
           <div>
             <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username <span class="text-red-500 font-bold">*</span></label>
-            <input type="text" id="wiz_username" class="wizard-input" placeholder="username" autocomplete="username" required />
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="user" data-icon-size="18"></span>
+              </div>
+              <input type="text" id="wiz_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="username" autocomplete="username" required />
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Contact No. <span class="text-red-500 font-bold">*</span></label>
-          <div class="flex rounded-xl overflow-hidden border border-forest-200/80 bg-[#e3f4e9] focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600 transition-all">
-            <span class="inline-flex items-center px-3.5 bg-[#d2ebd9] text-forest-800 font-bold text-xs sm:text-sm border-r border-forest-200/80 whitespace-nowrap flex-shrink-0 select-none">+63</span>
-            <input type="text" id="wiz_contact" class="w-full py-2.5 px-3.5 bg-transparent text-forest-900 placeholder:text-forest-400 focus:outline-none text-sm font-medium" placeholder="9171234567" data-digits-only maxlength="11" autocomplete="tel" required />
+          <!-- Bottom-Left: Email -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Email <span class="text-red-500 font-bold">*</span></label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="mail" data-icon-size="18"></span>
+              </div>
+              <input type="email" id="wiz_email" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="email@barangay.gov" autocomplete="email" required />
+            </div>
+          </div>
+
+          <!-- Bottom-Right: Contact No. -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Contact No. <span class="text-red-500 font-bold">*</span></label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="phone" data-icon-size="18"></span>
+              </div>
+              <div class="flex items-center rounded-xl overflow-hidden border border-forest-200/80 bg-[#e2f3e8] focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600 transition-all flex-1">
+                <span class="inline-flex items-center pl-3.5 pr-2 text-forest-800 font-bold text-xs sm:text-sm select-none flex-shrink-0">+63</span>
+                <input type="text" id="wiz_contact" class="w-full py-2.5 pr-3.5 pl-1 bg-transparent text-forest-900 placeholder:text-forest-400 focus:outline-none text-sm font-medium" placeholder="9171234567" data-digits-only maxlength="11" autocomplete="tel" required />
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
-          <button type="button" onclick="closeModal('addUserWizardModal')" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">Cancel</button>
-          <button type="button" onclick="wizardGoToStep(2)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5">
+          <button type="button" onclick="closeModal('addUserWizardModal')" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer">Cancel</button>
+          <button type="button" onclick="wizardGoToStep(2)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
             Next <span data-icon="chevron-right" data-icon-size="14"></span>
           </button>
         </div>
@@ -256,7 +281,7 @@
             <div class="ml-3.5 flex-1">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-sm text-forest-900">Desk Officer</span>
-                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">DSK Prefix</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">STAFF</span>
               </div>
               <p class="text-xs text-forest-600 mt-1">Responsible for incident intake, blotter entries, amicable settlements, and barangay certificate issuance.</p>
             </div>
@@ -267,7 +292,7 @@
             <div class="ml-3.5 flex-1">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-sm text-forest-900">Data Encoder</span>
-                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">DTA Prefix</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">STAFF</span>
               </div>
               <p class="text-xs text-forest-600 mt-1">Responsible for census record encoding, demographics maintenance, and resident profile indexing.</p>
             </div>
@@ -275,10 +300,10 @@
         </div>
 
         <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
-          <button type="button" onclick="wizardGoToStep(1)" class="px-5 py-2.5 rounded-xl border border-forest-200 text-forest-700 hover:bg-forest-50 text-sm font-medium transition-colors flex items-center gap-1.5">
+          <button type="button" onclick="wizardGoToStep(1)" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
             <span data-icon="chevron-left" data-icon-size="14"></span> Back
           </button>
-          <button type="button" onclick="wizardGoToStep(3)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5">
+          <button type="button" onclick="wizardGoToStep(3)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
             Next <span data-icon="chevron-right" data-icon-size="14"></span>
           </button>
         </div>
@@ -300,27 +325,43 @@
         </div>
 
         <div>
-          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 flex items-center justify-between">
-            <span>Temporary Password</span>
-            <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
-          </label>
-          <div class="relative flex items-center">
-            <input
-              type="text"
-              id="wiz_password"
-              class="w-full py-2.5 pl-3.5 pr-12 font-mono font-bold text-forest-900 tracking-wider bg-[#e3f4e9] border border-forest-200/80 rounded-xl cursor-default select-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              readonly
-              tabindex="-1"
-            />
-            <button
-              type="button"
-              onclick="regenerateWizardTempPassword()"
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-forest-700 hover:bg-forest-200/70 active:scale-95 transition-all"
-              title="Regenerate Password"
-              aria-label="Regenerate Password"
-            >
-              <span data-icon="refresh" data-icon-size="16"></span>
-            </button>
+          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Temporary Password</label>
+          <div class="flex items-center gap-3">
+            <!-- Circular Leading Icon: Key icon inside circular outline -->
+            <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+              <span data-icon="key" data-icon-size="18"></span>
+            </div>
+
+            <!-- Password display input with Copy and Regenerate action buttons -->
+            <div class="relative flex-1 flex items-center">
+              <input
+                type="text"
+                id="wiz_password"
+                class="w-full py-2.5 pl-3.5 pr-20 font-mono font-bold text-forest-900 tracking-wider bg-[#e2f3e8] border border-forest-200/80 rounded-xl cursor-default select-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm"
+                readonly
+                tabindex="-1"
+              />
+              <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button
+                  type="button"
+                  onclick="copyWizardTempPassword()"
+                  class="p-1.5 rounded-lg text-emerald-800 hover:bg-emerald-200/60 active:scale-95 transition-all cursor-pointer"
+                  title="Copy to Clipboard"
+                  aria-label="Copy to Clipboard"
+                >
+                  <span data-icon="copy" data-icon-size="16"></span>
+                </button>
+                <button
+                  type="button"
+                  onclick="regenerateWizardTempPassword()"
+                  class="p-1.5 rounded-lg text-emerald-800 hover:bg-emerald-200/60 active:scale-95 transition-all cursor-pointer"
+                  title="Regenerate Password"
+                  aria-label="Regenerate Password"
+                >
+                  <span data-icon="refresh" data-icon-size="16"></span>
+                </button>
+              </div>
+            </div>
           </div>
           <p class="text-xs text-forest-600 mt-2 leading-relaxed">
             This temporary password will be emailed directly to the user. The recipient must update their credentials in Settings upon initial login.
@@ -328,10 +369,10 @@
         </div>
 
         <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
-          <button type="button" onclick="wizardGoToStep(2)" class="px-5 py-2.5 rounded-xl border border-forest-200 text-forest-700 hover:bg-forest-50 text-sm font-medium transition-colors flex items-center gap-1.5">
+          <button type="button" onclick="wizardGoToStep(2)" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
             <span data-icon="chevron-left" data-icon-size="14"></span> Back
           </button>
-          <button type="button" id="btnSaveWizardUser" onclick="saveWizardUser()" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-2">
+          <button type="button" id="btnSaveWizardUser" onclick="saveWizardUser()" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-2 cursor-pointer">
             <span data-icon="check" data-icon-size="15"></span> Save User
           </button>
         </div>
@@ -340,60 +381,182 @@
   </div>
 </div>
 
-<!-- Edit User Modal (Direct Form) -->
+<!-- Edit User Modal (2-Step Stepper Wizard) -->
 <div class="modal-overlay" id="userModal">
-  <div class="modal-box max-w-lg">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="font-display text-xl text-forest-800" id="userModalTitle">Edit User</h2>
-      <button onclick="closeModal('userModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box max-w-2xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-display text-2xl font-bold text-forest-900 tracking-tight" id="userModalTitle">Edit User</h2>
+      <button onclick="closeModal('userModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 p-1 rounded-lg transition-colors cursor-pointer" aria-label="Close">
+        <span data-icon="x" data-icon-size="18"></span>
+      </button>
     </div>
-    <form id="userForm" class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Full Name</label><input type="text" id="uf_name" class="form-input" placeholder="Full name" data-no-numbers/></div>
-        <div><label class="form-label">Username</label><input type="text" id="uf_username" class="form-input" placeholder="username"/></div>
+
+    <!-- 2-Step Chevron Stepper Ribbon -->
+    <div class="wizard-stepper-bar flex items-stretch w-full mb-6 select-none shadow-xs rounded-xl overflow-hidden">
+      <!-- Step 1 Ribbon: Personal -->
+      <div id="edit_wiz_step_indicator_1" class="wizard-chevron-step step-active cursor-pointer" onclick="editWizardGoToStep(1)">
+        <span class="wiz-step-check text-xs mr-1.5 font-bold">✓</span>
+        <span class="wiz-step-label">PERSONAL</span>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Email</label><input type="email" id="uf_email" class="form-input" placeholder="email@barangay.gov"/></div>
-        <div><label class="form-label">Contact No.</label><input type="text" id="uf_contact" class="form-input" placeholder="09171234567" data-digits-only maxlength="11"/></div>
+
+      <!-- Step 2 Ribbon: Roles -->
+      <div id="edit_wiz_step_indicator_2" class="wizard-chevron-step step-upcoming-1 cursor-pointer" onclick="editWizardGoToStep(2)">
+        <span class="wiz-step-check text-xs mr-1.5 font-bold hidden">✓</span>
+        <span class="wiz-step-label">ROLES</span>
       </div>
-      <div>
-        <label class="form-label">Role</label>
-        <select id="uf_role" class="form-input" onchange="onRoleChange(this.value)" required>
-          <option value="" disabled selected hidden>-Select-</option>
-          <option value="Desk Officer">Desk Officer</option>
-          <option value="Data Encoder">Data Encoder</option>
-        </select>
-      </div>
-      <div id="uf_password_wrap" class="hidden">
-        <label class="form-label flex items-center justify-between">
-          <span>Temporary Password</span>
-          <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
-        </label>
-        <div class="relative">
-          <input type="text" id="uf_password" class="form-input font-mono font-semibold pr-12 text-forest-800 tracking-wider bg-forest-50/50 cursor-pointer" onclick="copyTempPassword()" title="Click to copy" readonly/>
-          <button type="button" onclick="copyTempPassword()" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-forest-600 hover:bg-forest-100 hover:text-forest-800 transition-colors" title="Copy Temporary Password">
-            <span data-icon="copy" data-icon-size="16"></span>
+    </div>
+
+    <!-- Edit User Wizard Form -->
+    <form id="userForm" onsubmit="event.preventDefault();">
+      <input type="hidden" id="uf_password" value="" />
+
+      <!-- STEP 1: Personal Information -->
+      <div id="edit_wiz_view_step_1" class="space-y-4">
+        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
+          <span>PERSONAL INFORMATION</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Full Name -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Full Name <span class="text-red-500 font-bold">*</span></label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="user" data-icon-size="18"></span>
+              </div>
+              <input type="text" id="uf_name" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="Full name" data-no-numbers autocomplete="name" required />
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Email <span class="text-red-500 font-bold">*</span></label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="mail" data-icon-size="18"></span>
+              </div>
+              <input type="email" id="uf_email" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-forest-400/80" placeholder="email@barangay.gov" autocomplete="email" required />
+            </div>
+          </div>
+
+          <!-- Username (Readonly/Disabled) -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username</label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="idCard" data-icon-size="18"></span>
+              </div>
+              <input type="text" id="uf_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" placeholder="username" autocomplete="username" disabled />
+            </div>
+          </div>
+
+          <!-- Contact No. -->
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Contact No.</label>
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
+                <span data-icon="phone" data-icon-size="18"></span>
+              </div>
+              <div class="flex items-center rounded-xl overflow-hidden border border-forest-200/80 bg-[#e2f3e8] focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600 transition-all flex-1">
+                <span class="inline-flex items-center pl-3.5 pr-2 text-forest-800 font-bold text-xs sm:text-sm select-none flex-shrink-0">+63</span>
+                <input type="text" id="uf_contact" class="w-full py-2.5 pr-3.5 pl-1 bg-transparent text-forest-900 placeholder:text-forest-400 focus:outline-none text-sm font-medium" placeholder="9171234567" data-digits-only maxlength="11" autocomplete="tel" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
+          <button type="button" onclick="closeModal('userModal')" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer">Cancel</button>
+          <button type="button" onclick="editWizardGoToStep(2)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
+            Next <span data-icon="chevron-right" data-icon-size="14"></span>
           </button>
         </div>
       </div>
-      <div id="uf_sig_section" class="hidden border-t border-forest-100 pt-4">
-        <label class="form-label">E-Signature <span class="text-forest-400 font-normal">(used on printed Barangay Clearance &amp; Certificate of Indigency)</span></label>
-        <div class="flex items-center gap-4">
-          <div id="uf_sig_preview_wrap" class="hidden w-32 h-20 border border-forest-100 rounded-lg bg-forest-50 flex items-center justify-center overflow-hidden">
-            <img id="uf_sig_preview" class="max-w-full max-h-full object-contain" alt="Current signature"/>
-          </div>
-          <div id="uf_sig_empty" class="w-32 h-20 border border-dashed border-forest-200 rounded-lg bg-forest-50 flex items-center justify-center text-forest-400 text-xs text-center px-2">No signature uploaded</div>
-          <div class="flex-1">
-            <input type="file" id="uf_sig_file" accept="image/png,image/jpeg" class="hidden" onchange="handleSignatureFile(event)"/>
-            <button type="button" onclick="document.getElementById('uf_sig_file').click()" class="btn-secondary text-xs px-3 py-2">Upload Signature</button>
-            <button type="button" id="uf_sig_remove_btn" onclick="removeSignatureNow()" class="btn-danger text-xs px-3 py-2 hidden">Remove</button>
-            <p class="text-xs text-forest-400 mt-1">PNG with transparent background recommended, max 2MB.</p>
+
+      <!-- STEP 2: Roles -->
+      <div id="edit_wiz_view_step_2" class="space-y-4 hidden">
+        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
+          <span>ASSIGNED ROLES</span>
+        </div>
+
+        <input type="hidden" id="uf_role" value="Desk Officer" />
+
+        <div class="space-y-3">
+          <!-- Card 1: System Administrator -->
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="edit_role_radio" value="System Admin" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onEditRoleSelect('System Admin')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">System Administrator</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">ADMIN</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Full administrative control over system configuration, user accounts, audit trails, and security settings.</p>
+            </div>
+          </label>
+
+          <!-- Card 2: Barangay Captain -->
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="edit_role_radio" value="Barangay Captain" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onEditRoleSelect('Barangay Captain')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Barangay Captain</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">EXECUTIVE</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Executive oversight, official clearance approvals, executive blotter review, and final settlement endorsements.</p>
+            </div>
+          </label>
+
+          <!-- Card 3: Desk Officer -->
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="edit_role_radio" value="Desk Officer" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onEditRoleSelect('Desk Officer')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Desk Officer</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">STAFF</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Responsible for incident intake, blotter entries, amicable settlements, and barangay certificate issuance.</p>
+            </div>
+          </label>
+
+          <!-- Card 4: Data Encoder -->
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="edit_role_radio" value="Data Encoder" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onEditRoleSelect('Data Encoder')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Data Encoder</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">STAFF</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Responsible for census record encoding, demographics maintenance, and resident profile indexing.</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- E-Signature Section for Barangay Captain -->
+        <div id="uf_sig_section" class="hidden border-t border-forest-100/80 pt-4 mt-4">
+          <label class="form-label text-forest-800 font-semibold text-xs mb-2 block">E-Signature <span class="text-forest-400 font-normal">(used on printed Barangay Clearance &amp; Certificate of Indigency)</span></label>
+          <div class="flex items-center gap-4">
+            <div id="uf_sig_preview_wrap" class="hidden w-32 h-20 border border-forest-100 rounded-lg bg-forest-50 flex items-center justify-center overflow-hidden">
+              <img id="uf_sig_preview" class="max-w-full max-h-full object-contain" alt="Current signature"/>
+            </div>
+            <div id="uf_sig_empty" class="w-32 h-20 border border-dashed border-forest-200 rounded-lg bg-forest-50 flex items-center justify-center text-forest-400 text-xs text-center px-2">No signature uploaded</div>
+            <div class="flex-1">
+              <input type="file" id="uf_sig_file" accept="image/png,image/jpeg" class="hidden" onchange="handleSignatureFile(event)"/>
+              <button type="button" onclick="document.getElementById('uf_sig_file').click()" class="btn-secondary text-xs px-3 py-2 cursor-pointer">Upload Signature</button>
+              <button type="button" id="uf_sig_remove_btn" onclick="removeSignatureNow()" class="btn-danger text-xs px-3 py-2 hidden cursor-pointer">Remove</button>
+              <p class="text-xs text-forest-400 mt-1">PNG with transparent background recommended, max 2MB.</p>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button type="button" onclick="closeModal('userModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveUser()" class="btn-primary">Save Changes</button>
+
+        <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
+          <button type="button" onclick="editWizardGoToStep(1)" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
+            <span data-icon="chevron-left" data-icon-size="14"></span> Back
+          </button>
+          <button type="button" id="btnSaveEditUser" onclick="saveUser()" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-2 cursor-pointer">
+            <span data-icon="check" data-icon-size="15"></span> Save Changes
+          </button>
+        </div>
       </div>
     </form>
   </div>
@@ -433,13 +596,20 @@ document.getElementById('permMatrix').innerHTML = permissions.map(p=>`
   </tr>`).join('');
 
 var usersData = []; var usersPage = 1; var USERS_ROWS = 8;
-let editUserId = null;function mapUser(u) {
+let editUserId = null;
+
+function mapUser(u) {
   const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
+  const avatar = u.avatar_url || u.avatar || u.avatarUrl || u.profile_photo_path || null;
   return {
     id: Number(u.id), name: u.full_name, username: u.username, email: u.email || '',
     contact: u.contact_no || '', role: u.role, status: u.status,
     is_online: !!u.is_online,
     is_protected: isProtected, signaturePath: u.signature_path || null,
+    avatar_url: avatar,
+    avatar: avatar,
+    avatarUrl: avatar,
+    profile_photo_path: avatar,
     last_login_raw: u.last_login,
     get lastLogin() { return bcFormatTimestamp(this.last_login_raw); },
   };
@@ -451,6 +621,7 @@ async function loadUsers(silent = false) {
   try {
     const raw = await BCApi.users();
     usersData = Array.isArray(raw) ? raw.map(mapUser) : [];
+    window.usersData = usersData;
     renderUsers();
     bcCheckUrlHighlight({
       items: usersData,
@@ -461,6 +632,7 @@ async function loadUsers(silent = false) {
   } catch (err) {
     console.error('loadUsers error:', err);
     usersData = [];
+    window.usersData = usersData;
     if (!silent) {
       bcSetTableError('usersTableBody', 'Could not load users from server.', 'loadUsers()', 6);
       showToast('Could not load users: ' + err.message, 'error');
@@ -495,6 +667,10 @@ function renderUsers() {
   const s = document.getElementById('userSearch').value.toLowerCase();
   const r = document.getElementById('roleFilter').value;
   const st = document.getElementById('statusFilter2').value;
+  try {
+    sessionStorage.setItem('bc_users_roleFilter', r || '');
+    sessionStorage.setItem('bc_users_statusFilter2', st || '');
+  } catch (_) {}
   const filtered = usersData.filter(u =>
     (!s || u.name.toLowerCase().includes(s) || u.username.toLowerCase().includes(s)) &&
     (!r || u.role === r) && (!st || u.status === st)
@@ -504,7 +680,7 @@ function renderUsers() {
   usersPage = Math.min(Math.max(1, usersPage), totalPages);
   const start = (usersPage - 1) * USERS_ROWS;
   const pageRows = filtered.slice(start, start + USERS_ROWS);
-  const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const initials = n => (n || '').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const tbody = document.getElementById('usersTableBody');
   if (pageRows.length === 0) {
     if (usersData.length === 0) {
@@ -521,11 +697,19 @@ function renderUsers() {
         ? `<span class="badge badge-not-complied text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>Suspended</span>`
         : `<span class="badge badge-closed badge-inactive text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>Inactive</span>`;
 
+      const avatarSrc = u.avatar_url || u.avatar || u.avatarUrl || u.profile_photo_path || '';
+      const avatarHtml = avatarSrc
+        ? `<div class="relative w-9 h-9 flex-shrink-0">
+             <img src="${avatarSrc}" alt="${u.name || 'User'}" class="w-9 h-9 rounded-full object-cover border border-emerald-600/30 flex-shrink-0" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');" />
+             <div class="hidden w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initials(u.name)}</div>
+           </div>`
+        : `<div class="w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initials(u.name)}</div>`;
+
       return `
     <tr data-id="${u.id}" data-key="${u.username}">
       <td>
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs">${initials(u.name)}</div>
+          ${avatarHtml}
           <div>
             <div class="font-semibold text-forest-800 text-sm">${u.name}</div>
           </div>
@@ -551,6 +735,27 @@ function renderUsers() {
   document.getElementById('usersPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`;
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }
+
+window.usersData = usersData;
+window.renderUsers = renderUsers;
+window.addEventListener('userAvatarUpdated', (e) => {
+  const updatedUser = e.detail?.user;
+  const avatarUrl = e.detail?.avatar_url;
+  if (usersData && usersData.length > 0) {
+    let changed = false;
+    usersData.forEach(u => {
+      if ((updatedUser && (u.id === Number(updatedUser.id) || (u.username && u.username.toLowerCase() === (updatedUser.username || '').toLowerCase()))) ||
+          (window.currentUser && (u.id === Number(window.currentUser.id) || u.username === window.currentUser.username))) {
+        u.avatar_url = avatarUrl;
+        u.avatar = avatarUrl;
+        u.avatarUrl = avatarUrl;
+        u.profile_photo_path = avatarUrl;
+        changed = true;
+      }
+    });
+    if (changed) renderUsers();
+  }
+});
 
 function generateTempPasswordForRole(role) {
   const r = (role || '').toLowerCase();
@@ -669,6 +874,10 @@ function updateWizardStepperUI(step) {
   if (v1) v1.classList.toggle('hidden', step !== 1);
   if (v2) v2.classList.toggle('hidden', step !== 2);
   if (v3) v3.classList.toggle('hidden', step !== 3);
+
+  if (typeof renderIcons === 'function') {
+    renderIcons(document.getElementById('addUserWizardModal'));
+  }
 }
 
 async function validateWizardStep1() {
@@ -820,6 +1029,9 @@ function openAddUser() {
 
   updateWizardStepperUI(1);
   openModal('addUserWizardModal');
+  if (typeof renderIcons === 'function') {
+    renderIcons(document.getElementById('addUserWizardModal'));
+  }
 }
 
 async function saveWizardUser() {
@@ -868,38 +1080,160 @@ async function saveWizardUser() {
   }
 }
 
+// ── 2-Step Edit User Wizard ──────────────────────────────────
+let currentEditWizardStep = 1;
+let selectedEditRole = 'Desk Officer';
+
+function getEditNormalizedContact() {
+  const input = document.getElementById('uf_contact');
+  const raw = (input ? input.value : '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('0')) return raw;
+  if (raw.startsWith('63')) return '0' + raw.slice(2);
+  if (raw.length === 10 && raw.startsWith('9')) return '0' + raw;
+  return raw;
+}
+
+function onEditRoleSelect(role) {
+  selectedEditRole = role;
+  const hiddenInput = document.getElementById('uf_role');
+  if (hiddenInput) hiddenInput.value = role;
+  updateSignatureSectionVisibility(role);
+}
+
+function updateEditWizardStepperUI(step) {
+  currentEditWizardStep = step;
+  const s1 = document.getElementById('edit_wiz_step_indicator_1');
+  const s2 = document.getElementById('edit_wiz_step_indicator_2');
+  
+  if (!s1 || !s2) return;
+
+  [s1, s2].forEach(el => {
+    el.classList.remove('step-active', 'step-completed', 'step-upcoming-1', 'step-upcoming-2');
+  });
+
+  const check1 = s1.querySelector('.wiz-step-check');
+  const check2 = s2.querySelector('.wiz-step-check');
+
+  if (step === 1) {
+    s1.classList.add('step-active');
+    s2.classList.add('step-upcoming-1');
+    if (check1) check1.classList.remove('hidden');
+    if (check2) check2.classList.add('hidden');
+  } else if (step === 2) {
+    s1.classList.add('step-completed');
+    s2.classList.add('step-active');
+    if (check1) check1.classList.remove('hidden');
+    if (check2) check2.classList.remove('hidden');
+  }
+
+  const v1 = document.getElementById('edit_wiz_view_step_1');
+  const v2 = document.getElementById('edit_wiz_view_step_2');
+
+  if (v1) v1.classList.toggle('hidden', step !== 1);
+  if (v2) v2.classList.toggle('hidden', step !== 2);
+
+  if (typeof renderIcons === 'function') {
+    renderIcons(document.getElementById('userModal'));
+  }
+}
+
+async function validateEditWizardStep1() {
+  const nameEl = document.getElementById('uf_name');
+  const emailEl = document.getElementById('uf_email');
+  const name = nameEl ? nameEl.value.trim() : '';
+  const email = emailEl ? emailEl.value.trim() : '';
+  const contact = getEditNormalizedContact();
+
+  if (!name) {
+    await bcAlert('Please enter the user\'s Full Name.');
+    if (nameEl) nameEl.focus();
+    return false;
+  }
+  if (!bcIsValidName(name)) {
+    await bcAlert('Full Name should only contain letters (no numbers).');
+    if (nameEl) nameEl.focus();
+    return false;
+  }
+  if (!email) {
+    await bcAlert('Please enter an Email address.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (!bcIsValidEmail(email)) {
+    await bcAlert('Please enter a valid email address.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (usersData.some(u => u.id !== editUserId && u.email && u.email.toLowerCase() === email.toLowerCase())) {
+    await bcAlert('That email address is already in use by another account.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (contact && !bcIsValidContact(contact)) {
+    await bcAlert('Contact No. should be a valid PH mobile number (e.g. 9171234567 or 09171234567).');
+    const contactEl = document.getElementById('uf_contact');
+    if (contactEl) contactEl.focus();
+    return false;
+  }
+  return true;
+}
+
+async function editWizardGoToStep(targetStep) {
+  if (targetStep > currentEditWizardStep) {
+    if (currentEditWizardStep === 1) {
+      const valid = await validateEditWizardStep1();
+      if (!valid) return;
+    }
+  }
+  updateEditWizardStepperUI(targetStep);
+}
+
 function editUser(id) {
   const u = usersData.find(x => x.id === id);
   if (!u) return;
   editUserId = id;
   document.getElementById('userModalTitle').textContent = 'Edit User';
-  document.getElementById('uf_name').value = u.name;
-  document.getElementById('uf_username').value = u.username;
-  document.getElementById('uf_username').disabled = true;
-  document.getElementById('uf_email').value = u.email;
-  document.getElementById('uf_contact').value = u.contact || '';
-  
-  let roleOpts = `<option value="" disabled hidden>-Select-</option>`;
-  if (u.role === 'System Admin' || u.role === 'Barangay Captain') {
-    roleOpts += `<option value="${u.role}">${u.role}</option>`;
+  document.getElementById('uf_name').value = u.name || '';
+  if (document.getElementById('uf_username')) {
+    document.getElementById('uf_username').value = u.username || '';
+    document.getElementById('uf_username').disabled = true;
   }
-  roleOpts += `
-    <option value="Desk Officer">Desk Officer</option>
-    <option value="Data Encoder">Data Encoder</option>
-  `;
-  document.getElementById('uf_role').innerHTML = roleOpts;
-  document.getElementById('uf_role').value = u.role;
-
-  // Password cannot be edited by admin; users change their own password
-  document.getElementById('uf_password_wrap').classList.add('hidden');
+  document.getElementById('uf_email').value = u.email || '';
   
-  updateSignatureSectionVisibility(u.role);
+  let contactDigits = (u.contact || '').trim();
+  if (contactDigits.startsWith('0')) contactDigits = contactDigits.slice(1);
+  else if (contactDigits.startsWith('63')) contactDigits = contactDigits.slice(2);
+  if (document.getElementById('uf_contact')) {
+    document.getElementById('uf_contact').value = contactDigits;
+  }
+  
+  // Pre-select user's active role in the role cards
+  let currentRole = u.role || 'Desk Officer';
+  if (currentRole === 'System Administrator') currentRole = 'System Admin';
+  selectedEditRole = currentRole;
+
+  const hiddenInput = document.getElementById('uf_role');
+  if (hiddenInput) hiddenInput.value = currentRole;
+
+  const radios = document.getElementsByName('edit_role_radio');
+  radios.forEach(r => {
+    r.checked = (r.value === currentRole);
+  });
+
+  updateSignatureSectionVisibility(currentRole);
   renderSignaturePreview(u.signaturePath);
+  
+  updateEditWizardStepperUI(1);
   openModal('userModal');
+  if (typeof renderIcons === 'function') {
+    renderIcons(document.getElementById('userModal'));
+  }
 }
 
 function updateSignatureSectionVisibility(role) {
   const section = document.getElementById('uf_sig_section');
+  if (!section) return;
   if (editUserId && role === 'Barangay Captain') section.classList.remove('hidden');
   else section.classList.add('hidden');
 }
@@ -909,15 +1243,16 @@ function renderSignaturePreview(signaturePath) {
   const empty = document.getElementById('uf_sig_empty');
   const img = document.getElementById('uf_sig_preview');
   const removeBtn = document.getElementById('uf_sig_remove_btn');
+  if (!wrap || !empty || !img) return;
   if (signaturePath) {
     img.src = signaturePath + '?t=' + Date.now(); // cache-bust after re-upload
     wrap.classList.remove('hidden');
     empty.classList.add('hidden');
-    removeBtn.classList.remove('hidden');
+    if (removeBtn) removeBtn.classList.remove('hidden');
   } else {
     wrap.classList.add('hidden');
     empty.classList.remove('hidden');
-    removeBtn.classList.add('hidden');
+    if (removeBtn) removeBtn.classList.add('hidden');
   }
 }
 
@@ -952,15 +1287,29 @@ async function removeSignatureNow() {
 }
 
 async function saveUser() {
-  const roleVal = document.getElementById('uf_role').value;
+  let roleVal = selectedEditRole;
+  const checkedRadio = document.querySelector('input[name="edit_role_radio"]:checked');
+  if (checkedRadio) roleVal = checkedRadio.value;
+  if (!roleVal) roleVal = document.getElementById('uf_role')?.value || 'Desk Officer';
+
+  const name = (document.getElementById('uf_name')?.value || '').trim();
+  const username = (document.getElementById('uf_username')?.value || '').trim();
+  const email = (document.getElementById('uf_email')?.value || '').trim();
+  const contact = getEditNormalizedContact();
+  
   const vals = {
-    name: document.getElementById('uf_name').value.trim(),
-    username: document.getElementById('uf_username').value.trim(),
-    email: document.getElementById('uf_email').value.trim(),
-    contact: document.getElementById('uf_contact').value.trim(),
+    name,
+    username,
+    email,
+    contact,
     role: roleVal,
-    password: document.getElementById('uf_password').value.trim(),
   };
+
+  const pwEl = document.getElementById('uf_password');
+  if (pwEl && pwEl.value.trim()) {
+    vals.password = pwEl.value.trim();
+  }
+
   if (editUserId && !vals.password) delete vals.password;
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
   if (!vals.role) { await bcAlert('Please select a valid role.'); return; }
@@ -973,10 +1322,14 @@ async function saveUser() {
     await bcAlert('That email address is already in use by another account.'); return;
   }
   if (vals.contact && !bcIsValidContact(vals.contact)) { await bcAlert('Contact No. should be a valid PH mobile number (e.g. 09171234567).'); return; }
+
+  const btn = document.getElementById('btnSaveEditUser');
+  if (btn) btn.disabled = true;
+
   try {
     if (editUserId) {
       const updateRes = await BCApi.updateUser(editUserId, vals);
-      showToast('User updated!');
+      showToast('User updated successfully!');
 
       // Synchronize persistent browser auth storage and refresh reactive sidebar pill/badge
       try {
@@ -1022,6 +1375,8 @@ async function saveUser() {
     }
   } catch (err) {
     showToast(err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1156,9 +1511,23 @@ window.addEventListener('bc-time-format-changed', () => {
 window.initUsers = async function () {
   try {
     await requireAuth();
+    // Restore saved filters
+    try {
+      const savedRole = sessionStorage.getItem('bc_users_roleFilter');
+      const savedStatus = sessionStorage.getItem('bc_users_statusFilter2');
+      if (savedRole && document.getElementById('roleFilter')) document.getElementById('roleFilter').value = savedRole;
+      if (savedStatus && document.getElementById('statusFilter2')) document.getElementById('statusFilter2').value = savedStatus;
+    } catch (_) {}
     try {
       await Promise.all([loadUsers(), loadAuditLog()]);
       initPresenceSync();
+      // Restore section focus if hash exists
+      const hash = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+      if (hash) {
+        const targetId = hash === 'permissions' || hash === 'matrix' ? 'sec-permissions' : hash === 'users' ? 'sec-users' : hash === 'audit' || hash === 'audit-log' ? 'sec-audit' : hash;
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } catch (err) {
       showToast('Could not load users: ' + (err.message || err), 'error');
     }

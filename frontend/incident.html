@@ -122,33 +122,49 @@
   <main class="flex-1 p-6">
     <!-- Priority Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="stat-card-grad plum">
-        <div class="flex items-center justify-between mb-3">
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
+        <div class="flex items-center justify-between">
           <span class="text-white/80 text-sm font-medium">Total Reports</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="incident" data-icon-size="18"></div>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="incident" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="countTotal">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="countTotal">0</div>
+          <div class="text-xs text-white/70 mt-1" id="countTotalSub">incident logs on record</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad moss">
-        <div class="flex items-center justify-between mb-3">
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
+        <div class="flex items-center justify-between">
           <span class="text-white/80 text-sm font-medium">High Priority</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="warning" data-icon-size="18"></div>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="warning" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="countHigh">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="countHigh">0</div>
+          <div class="text-xs text-white/70 mt-1" id="countHighSub">urgent attention required</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad sunset">
-        <div class="flex items-center justify-between mb-3">
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
+        <div class="flex items-center justify-between">
           <span class="text-white/80 text-sm font-medium">Under Investigation</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="search" data-icon-size="18"></div>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="search" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="countInvestigating">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="countInvestigating">0</div>
+          <div class="text-xs text-white/70 mt-1" id="countInvestigatingSub">in progress by officers</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad dark">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium">Referred</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="forward" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Referred</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="folder" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="countReferred">0</div>
+        <div>
+          <div class="font-display text-3xl text-white mt-3" id="countReferred">0</div>
+          <div class="text-xs text-white/70 mt-1" id="countReferredSub">referred to blotter &amp; lupon</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
     </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
@@ -161,6 +177,21 @@
           <span data-icon="archive" data-icon-size="14"></span> View Archived
         </button>
       </div>
+      <script>
+        (function _syncIncidentViewEarly(){
+          try {
+            const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+            const q = new URLSearchParams(window.location.search).get('view') || '';
+            const s = sessionStorage.getItem('current_active_view_incident') || '';
+            if (h === 'archived' || q === 'archived' || s === 'archived') {
+              const t = document.getElementById('incTitle');
+              if (t) t.textContent = 'Archived Incident Reports';
+              const b = document.getElementById('archiveToggleBtn');
+              if (b) b.innerHTML = '<span data-icon="incident" data-icon-size="14"></span> Back to Active';
+            }
+          } catch(_) {}
+        })();
+      </script>
 
       <!-- Filter Bar -->
       <div class="filter-bar">
@@ -517,21 +548,32 @@
 
 <!-- View Modal -->
 <div class="modal-overlay" id="incViewModal">
-  <div class="modal-box">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-display text-xl text-forest-800">Incident Report Details</h2>
-      <button onclick="closeModal('incViewModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+          <span data-icon="incident" data-icon-size="18"></span>
+        </div>
+        <div>
+          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Incident Report Details</h2>
+          <p class="text-xs text-emerald-700 font-medium mt-0.5" id="incModalSubtitle">Case No: INC-2026-001</p>
+        </div>
+      </div>
+      <button onclick="closeModal('incViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
-    <div id="incViewContent" class="space-y-2 text-sm"></div>
-    <div class="mt-6 flex items-center justify-end gap-3" id="incViewModalFooter">
-      <button id="viewInHeatmapBtn" type="button" onclick="openIncidentInHeatmap()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition shadow-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        View in Heatmap
-      </button>
-      <button onclick="closeModal('incViewModal')" class="btn-secondary">Close</button>
+    <div id="incViewContent" class="space-y-3"></div>
+    <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between" id="incViewModalFooter">
+      <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
+      <div class="flex items-center gap-2.5">
+        <button id="viewInHeatmapBtn" type="button" onclick="openIncidentInHeatmap()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition shadow-sm">
+          <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          View in Heatmap
+        </button>
+        <button type="button" onclick="closeModal('incViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -632,8 +674,12 @@
     }
   }
 
-  async function toggleArchivedView() {
-    viewingArchived = !viewingArchived;
+  async function toggleArchivedView(explicitState = null) {
+    if (explicitState !== null) {
+      viewingArchived = !!explicitState;
+    } else {
+      viewingArchived = !viewingArchived;
+    }
     incPage = 1;
     incBatchManager.clearSelection();
     const titleEl = document.getElementById('incTitle');
@@ -645,6 +691,14 @@
         : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
       if (typeof renderIcons === 'function') renderIcons();
     }
+    try {
+      sessionStorage.setItem('current_active_view_incident', viewingArchived ? 'archived' : 'active');
+      if (typeof bcSetActiveView === 'function') {
+        bcSetActiveView('incident', viewingArchived ? 'archived' : 'active');
+      } else {
+        history.replaceState(null, '', viewingArchived ? '#archived' : window.location.pathname.split('/').pop());
+      }
+    } catch (_) {}
     try {
       await loadIncidents();
     } catch (err) {
@@ -2236,45 +2290,72 @@
     if (!r) return;
     currentViewingIncident = r;
 
+    const esc = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+
     const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
     const isVerifiedResident = Boolean(r.reporterResidentId || r.reporter_resident_id) && !r.isNonResident && !r.is_non_resident;
     const reporterBadge = isVerifiedResident
-      ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2">Census Resident</span>'
-      : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 ml-2">Non-Resident</span>';
+      ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 ml-2">Census Resident</span>'
+      : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200 ml-2">Non-Resident</span>';
+
+    const subtitleEl = document.getElementById('incModalSubtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = `Case No: ${r.reportNo || ('INC-' + r.id)}`;
+    }
 
     const lockBanner = isElevated
       ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">
           <span class="text-base flex-shrink-0">🔒</span>
-          <span>This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Case'}). Please edit this case directly in the Blotter Records module.</span>
+          <span>This incident is locked because it has been elevated to Blotter Records (${esc(r.blotter_docket_no || 'Official Case')}). Please edit this case directly in the Blotter Records module.</span>
         </div>`
       : '';
 
+    // Status badge
+    let statusPill = '';
+    if (isElevated) {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">ELEVATED TO BLOTTER</span>`;
+    } else if (r.status === 'Resolved' || r.status === 'Settled' || r.status === 'Closed') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(r.status)}</span>`;
+    } else {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${esc(r.status || 'Under Investigation')}</span>`;
+    }
+
+    // Incident type / Category badge
+    const typeBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${esc(r.category || 'Incident')}</span>`;
+
+    // Date & Time formatted
+    const dateVal = r.dateReported || r.date || '—';
+    const timeVal = r.timeReported ? (typeof bcFormatTime === 'function' ? bcFormatTime(r.timeReported) : r.timeReported) : '';
+    const dateTimeDisplay = timeVal ? `${esc(dateVal)} &bull; ${esc(timeVal)}` : esc(dateVal);
+
+    // Location formatted
+    const placeVal = (typeof bcFormatIncidentLocation === 'function') ? bcFormatIncidentLocation(r.zone, r.location) : (r.location || '—');
+
     const rows = [
-      ['Report No.', r.reportNo || '—'],
-      ['Date', r.dateReported || r.date || '—'],
-      ['Time', r.timeReported ? (typeof bcFormatTime === 'function' ? bcFormatTime(r.timeReported) : r.timeReported) : '—'],
-      ['Zone', r.zone || '—'],
-      ['Location', (typeof bcFormatIncidentLocation === 'function') ? bcFormatIncidentLocation(r.zone, r.location) : (r.location || '—')],
-      ['Category', r.category || '—'],
-      ['Priority', `<span class="badge ${typeof priorityClass === 'function' ? priorityClass(r.priority) : ''}">${r.priority || 'Medium'}</span>`],
-      ['Description', r.description || '<span class="text-gray-400 italic">None provided</span>'],
-      ['Reporter', `${r.reporter || '—'} ${reporterBadge}`],
-      ['Reporter Address', r.reporterAddress || '<span class="text-gray-400 italic">Not specified</span>'],
-      ...(r.guardian_name ? [['Parent / Guardian', r.guardian_name + (r.guardian_address ? ` (${r.guardian_address})` : '')]] : []),
-      ...(r.complainant ? [['Complainant', r.complainant]] : []),
-      ...(r.involved_parties ? [['Involved Parties', r.involved_parties]] : []),
-      ['Officer', r.officer || '<span class="text-gray-400 italic">Unassigned</span>'],
-      ['Status', `<span class="badge ${typeof statusClass === 'function' ? statusClass(r.status) : ''}">${isElevated ? 'ELEVATED' : (r.status || 'Under Investigation')}</span>`],
+      ['INCIDENT NO.', `<span class="font-bold font-mono text-gray-900">${esc(r.reportNo || '—')}</span>`],
+      ['DATE REPORTED', `<span class="text-gray-900 font-semibold text-sm">${dateTimeDisplay}</span>`],
+      ['INCIDENT TYPE', typeBadge],
+      ['PLACE OF INCIDENT', `<span class="text-gray-900 font-semibold text-sm">${esc(placeVal)}</span>`],
+      ['STATUS', statusPill],
+      ['REPORTING PERSON', `<div class="text-gray-900 font-semibold text-sm flex items-center flex-wrap">${esc(r.reporter || '—')} ${reporterBadge}</div>${r.reporterAddress ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.reporterAddress)}</div>` : ''}${r.guardian_name ? `<div class="text-gray-500 text-xs mt-0.5">Parent / Guardian: ${esc(r.guardian_name)}${r.guardian_address ? ` (${esc(r.guardian_address)})` : ''}</div>` : ''}`],
+      ['INVOLVED PARTIES', `<span class="text-gray-900 font-semibold text-sm">${esc(r.involved_parties || r.complainant || 'None specified')}</span>`],
+      ['SUMMARY', `<span class="text-gray-900 font-normal text-sm leading-relaxed">${esc(r.description || 'None provided')}</span>`],
     ];
 
     const contentEl = document.getElementById('incViewContent');
     if (contentEl) {
-      contentEl.innerHTML = lockBanner + rows.map(([k,v]) => `
-        <div class="flex gap-4 py-2.5 border-b border-forest-50 last:border-0 items-start">
-          <span class="w-40 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0 pt-0.5">${k}</span>
-          <span class="text-forest-800 text-sm flex-1 leading-relaxed">${v}</span>
-        </div>`).join('');
+      contentEl.innerHTML = lockBanner + `
+        <div class="bg-[#f4faf6] rounded-2xl border border-emerald-100/60 p-6 space-y-1 shadow-sm">
+          ${rows.map(([k, v]) => `
+            <div class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4 py-3.5 border-b border-emerald-100/70 last:border-0">
+              <span class="w-44 sm:w-48 text-xs font-bold tracking-wider text-emerald-800 uppercase flex-shrink-0 pt-0.5">${k}</span>
+              <div class="flex-1 text-sm">${v}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
     }
+    if (window.renderIcons) window.renderIcons(document.getElementById('incViewModal'));
     openModal('incViewModal');
   }
 
@@ -2315,6 +2396,18 @@
   window.initIncidents = async function () {
     try {
       await requireAuth();
+      // Restore active view (active vs archived)
+      const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('incident', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_incident') || 'active');
+      if (activeView === 'archived') {
+        viewingArchived = true;
+        const titleEl = document.getElementById('incTitle');
+        if (titleEl) titleEl.textContent = 'Archived Incident Reports';
+        const toggleBtn = document.getElementById('archiveToggleBtn');
+        if (toggleBtn) {
+          toggleBtn.innerHTML = '<span data-icon="incident" data-icon-size="14"></span> Back to Active';
+          if (typeof renderIcons === 'function') renderIcons();
+        }
+      }
       try {
         await Promise.all([
           loadIncidents(),

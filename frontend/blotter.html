@@ -129,33 +129,49 @@
   <main class="flex-1 p-6">
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="stat-card-grad plum">
-        <div class="flex items-center justify-between mb-3">
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
+        <div class="flex items-center justify-between">
           <span class="text-white/80 text-sm font-medium">Total Blotters</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="blotter" data-icon-size="18"></div>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="blotter" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="blTotalCount">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="blTotalCount">0</div>
+          <div class="text-xs text-white/70 mt-1" id="blTotalSub">blotter entries on file</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad moss">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Ongoing</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="play" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Incident Reports</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="incident" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="blOngoingCount">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="blOngoingCount">0</div>
+          <div class="text-xs text-white/70 mt-1" id="blOngoingSub">↑ 3 this week</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad sunset">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Pending</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Pending Settlement</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="blPendingCount">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="blPendingCount">0</div>
+          <div class="text-xs text-white/70 mt-1" id="blPendingSub">awaiting settlement</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad dark">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium">Resolved</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Resolved Cases</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="blResolvedCount">0</div>
+        <div>
+          <div class="font-display text-3xl text-white mt-3" id="blResolvedCount">0</div>
+          <div class="text-xs text-white/70 mt-1" id="blResolvedRateSub">0% resolution rate</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
     </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
@@ -168,6 +184,21 @@
           <span data-icon="archive" data-icon-size="14"></span> View Archived
         </button>
       </div>
+      <script>
+        (function _syncBlotterViewEarly(){
+          try {
+            const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+            const q = new URLSearchParams(window.location.search).get('view') || '';
+            const s = sessionStorage.getItem('current_active_view_blotter') || '';
+            if (h === 'archived' || q === 'archived' || s === 'archived') {
+              const t = document.getElementById('blTitle');
+              if (t) t.textContent = 'Archived Blotter Records';
+              const b = document.getElementById('archiveToggleBtn');
+              if (b) b.innerHTML = '<span data-icon="blotter" data-icon-size="14"></span> Back to Active';
+            }
+          } catch(_) {}
+        })();
+      </script>
 
       <!-- Filter Bar -->
       <div class="filter-bar">
@@ -400,23 +431,23 @@
 
 <!-- View Modal -->
 <div class="modal-overlay" id="viewModal">
-  <div class="modal-box max-w-lg" style="max-height: 88vh; overflow-y: auto;">
-    <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0">
-          <span data-icon="blotter" data-icon-size="16"></span>
+  <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+          <span data-icon="blotter" data-icon-size="18"></span>
         </div>
         <div>
-          <h2 class="font-display text-lg text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
-          <p class="text-xs text-forest-500 font-medium" id="blotterModalSubtitle">Official Barangay Docket Record</p>
+          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
+          <p class="text-xs text-emerald-700 font-medium mt-0.5" id="blotterModalSubtitle">Official Barangay Docket Record</p>
         </div>
       </div>
-      <button onclick="closeModal('viewModal')" class="modal-close-btn" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      <button onclick="closeModal('viewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
-    <div id="viewContent" class="space-y-3 text-sm text-forest-700"></div>
-    <div class="mt-6 pt-4 border-t border-forest-100 flex items-center justify-between">
-      <span class="text-[11px] text-forest-400 font-medium">Mapulang Lupa Blotter System</span>
-      <button onclick="closeModal('viewModal')" class="btn-secondary text-xs px-4 py-1.5">Close</button>
+    <div id="viewContent" class="space-y-3"></div>
+    <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
+      <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
+      <button onclick="closeModal('viewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
     </div>
   </div>
 </div>
@@ -503,8 +534,12 @@
   // Records are archived, never permanently deleted — this just switches
   // the table between the active view and the read-only archive so the
   // two stay clearly distinguished.
-  async function toggleArchivedView() {
-    viewingArchived = !viewingArchived;
+  async function toggleArchivedView(explicitState = null) {
+    if (explicitState !== null) {
+      viewingArchived = !!explicitState;
+    } else {
+      viewingArchived = !viewingArchived;
+    }
     currentPage = 1;
     bltBatchManager.clearSelection();
     const titleEl = document.getElementById('blTitle');
@@ -517,6 +552,14 @@
       if (typeof renderIcons === 'function') renderIcons();
     }
     try {
+      sessionStorage.setItem('current_active_view_blotter', viewingArchived ? 'archived' : 'active');
+      if (typeof bcSetActiveView === 'function') {
+        bcSetActiveView('blotter', viewingArchived ? 'archived' : 'active');
+      } else {
+        history.replaceState(null, '', viewingArchived ? '#archived' : window.location.pathname.split('/').pop());
+      }
+    } catch (_) {}
+    try {
       await loadBlotter();
     } catch (err) {
       showToast('Could not load records: ' + err.message, 'error');
@@ -528,6 +571,7 @@
     const ongoingEl = document.getElementById('blOngoingCount') || document.getElementById('statOngoing');
     const pendingEl = document.getElementById('blPendingCount') || document.getElementById('statPending');
     const resolvedEl = document.getElementById('blResolvedCount') || document.getElementById('statSettled');
+    const resolvedRateSubEl = document.getElementById('blResolvedRateSub');
     if (!totalEl && !ongoingEl && !pendingEl && !resolvedEl) return;
     
     const total = blotterData.length;
@@ -539,6 +583,11 @@
     if (ongoingEl) ongoingEl.textContent = ongoing;
     if (pendingEl) pendingEl.textContent = pending;
     if (resolvedEl) resolvedEl.textContent = resolved;
+
+    if (resolvedRateSubEl) {
+      const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+      resolvedRateSubEl.textContent = `${rate}% resolution rate`;
+    }
   }
 
   let censusResidentsForBlotter = []; // shared options list for both complainant and respondent pickers
@@ -1035,35 +1084,45 @@
     }
     if (!r) return;
 
+    const escapeStr = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+
+    const docketNo = r.docketNo || r.docket_no || '—';
     const subtitleEl = document.getElementById('blotterModalSubtitle');
-    if (subtitleEl) subtitleEl.textContent = `Docket: ${r.docketNo || r.docket_no || '—'}`;
+    if (subtitleEl) subtitleEl.textContent = `Docket: ${docketNo}`;
 
     const rawType = (r.type || r.case_type || 'CRIM').toUpperCase();
     const typeLabel = rawType === 'CRIM' ? 'Criminal' : (rawType === 'CIVIL' ? 'Civil' : rawType);
-    const typeBadge = rawType === 'CRIM' ? 'badge-criminal' : 'badge-civil';
     const status = r.status || 'Pending';
-    const statusBadge = ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied', 'Closed'].includes(status)
-      ? 'badge-resolved'
-      : (status === 'Ongoing' || status === 'Under Mediation' || status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
 
-    const escapeStr = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+    let statusPill = '';
+    if (status === 'Resolved' || status === 'Settled' || status === 'Complied' || status === 'Closed') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${escapeStr(status)}</span>`;
+    } else {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${escapeStr(status)}</span>`;
+    }
+
+    const typeBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${escapeStr(typeLabel)}</span>`;
 
     const rows = [
-      ['Docket No.', `<span class="font-mono font-bold text-forest-900">${escapeStr(r.docketNo || r.docket_no || '—')}</span>`],
-      ['Date Filed', escapeStr(r.dateFiled || r.date_filed || r.date || '—')],
-      ['Case Type', `<span class="badge ${typeBadge} text-[10px] font-semibold">${escapeStr(typeLabel)}</span>`],
-      ['Nature of Case', `<strong class="text-forest-900">${escapeStr(r.nature || '—')}</strong>`],
-      ['Status', `<span class="badge ${statusBadge} text-[10px] font-semibold">${escapeStr(status)}</span>`],
-      ['Complainant', `<div class="text-forest-800 font-medium">${escapeStr(r.complainant || '—')}</div><div class="text-forest-500 text-xs mt-0.5">${escapeStr(r.complainantAddr || r.complainant_addr || '—')}</div>`],
-      ['Respondent', `<div class="text-rose-800 font-medium">${escapeStr(r.respondent || '—')}</div><div class="text-forest-500 text-xs mt-0.5">${escapeStr(r.respondentAddr || r.respondent_addr || '—')}${r.zone ? ` &bull; ${escapeStr(r.zone)}` : ''}</div>`],
+      ['DOCKET NO.', `<span class="font-bold font-mono text-gray-900">${escapeStr(docketNo)}</span>`],
+      ['DATE FILED', `<span class="text-gray-900 font-semibold text-sm">${escapeStr(r.dateFiled || r.date_filed || r.date || '—')}</span>`],
+      ['CASE TYPE', typeBadge],
+      ['NATURE OF CASE', `<span class="text-gray-900 font-semibold text-sm">${escapeStr(r.nature || '—')}</span>`],
+      ['STATUS', statusPill],
+      ['COMPLAINANT', `<div class="text-gray-900 font-semibold text-sm">${escapeStr(r.complainant || '—')}</div>${r.complainantAddr || r.complainant_addr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${escapeStr(r.complainantAddr || r.complainant_addr)}</div>` : ''}`],
+      ['RESPONDENT', `<div class="text-gray-900 font-semibold text-sm">${escapeStr(r.respondent || '—')}</div>${r.respondentAddr || r.respondent_addr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${escapeStr(r.respondentAddr || r.respondent_addr)}${r.zone ? ` &bull; ${escapeStr(r.zone)}` : ''}</div>` : ''}`],
     ];
 
+    if (r.settlement_status || r.settlementStatus) {
+      rows.push(['SETTLEMENT STATUS', `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${escapeStr(r.settlement_status || r.settlementStatus)}</span>`]);
+    }
+
     document.getElementById('viewContent').innerHTML = `
-      <div class="bg-forest-50/50 rounded-xl p-3.5 border border-forest-100 space-y-2">
+      <div class="bg-[#f4faf6] rounded-2xl border border-emerald-100/60 p-6 space-y-1 shadow-sm">
         ${rows.map(([k, v]) => `
-          <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 py-1.5 border-b border-forest-100/60 last:border-0">
-            <span class="w-40 text-forest-500 font-semibold text-[11px] uppercase tracking-wider flex-shrink-0">${k}</span>
-            <div class="text-forest-800 flex-1 text-xs sm:text-sm">${v}</div>
+          <div class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4 py-3.5 border-b border-emerald-100/70 last:border-0">
+            <span class="w-44 sm:w-48 text-xs font-bold tracking-wider text-emerald-800 uppercase flex-shrink-0 pt-0.5">${k}</span>
+            <div class="flex-1 text-sm">${v}</div>
           </div>
         `).join('')}
       </div>
@@ -1509,6 +1568,18 @@
   window.initBlotter = async function () {
     try {
       await requireAuth();
+      // Restore active view (active vs archived)
+      const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('blotter', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_blotter') || 'active');
+      if (activeView === 'archived') {
+        viewingArchived = true;
+        const titleEl = document.getElementById('blTitle');
+        if (titleEl) titleEl.textContent = 'Archived Blotter Records';
+        const toggleBtn = document.getElementById('archiveToggleBtn');
+        if (toggleBtn) {
+          toggleBtn.innerHTML = '<span data-icon="blotter" data-icon-size="14"></span> Back to Active';
+          if (typeof renderIcons === 'function') renderIcons();
+        }
+      }
       try { initBlotterDragAndDrop(); } catch (err) {}
       try { await loadCensusResidentsForBlotterPickers(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
       try { await loadBlotter(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }

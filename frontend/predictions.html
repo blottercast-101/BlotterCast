@@ -538,6 +538,10 @@
 
       // Risk level filter for forecast chart
       const riskFilter = (document.getElementById('zoneRiskChartFilter')?.value || 'HIGH').toUpperCase();
+      try {
+        sessionStorage.setItem('bc_pred_horizon', String(horizon));
+        sessionStorage.setItem('bc_pred_riskFilter', riskFilter);
+      } catch (_) {}
       let chartZones = [];
       let filterLabel = 'High Risk Zones';
 
@@ -687,12 +691,21 @@
       if (sel.options.length) return; // keep the user's current selection across re-renders
       const ranked = [...RESULT.zoneRisk].sort((a, b) => b.meanDailyProb - a.meanDailyProb);
       sel.innerHTML = ranked.map(z => `<option value="${z.zone}">${zoneDisplay(z.zone)}</option>`).join('');
+      try {
+        const savedCatZone = sessionStorage.getItem('bc_pred_catZone');
+        if (savedCatZone && ranked.some(z => z.zone === savedCatZone)) {
+          sel.value = savedCatZone;
+        }
+      } catch (_) {}
     }
 
     function renderCategoryChart() {
       if (!RESULT || !RESULT.zoneRisk) return;
       const horizon = Number(document.getElementById('horizonSel')?.value || 7);
       const sel = document.getElementById('categoryZoneSel');
+      if (sel?.value) {
+        try { sessionStorage.setItem('bc_pred_catZone', sel.value); } catch (_) {}
+      }
       const zone = RESULT.zoneRisk.find(z => z.zone === sel?.value) || RESULT.zoneRisk[0];
       if (!zone || !zone.categorySeries) return;
 
@@ -872,6 +885,14 @@
         if (altBtn && altBtn !== document.getElementById('retrainBtn')) {
           altBtn.addEventListener('click', retrain);
         }
+
+        // Restore persisted prediction filter states
+        try {
+          const savedHorizon = sessionStorage.getItem('bc_pred_horizon');
+          const savedRiskFilter = sessionStorage.getItem('bc_pred_riskFilter');
+          if (savedHorizon && document.getElementById('horizonSel')) document.getElementById('horizonSel').value = savedHorizon;
+          if (savedRiskFilter && document.getElementById('zoneRiskChartFilter')) document.getElementById('zoneRiskChartFilter').value = savedRiskFilter;
+        } catch (_) {}
 
         await loadZoneLabels();
         renderModelCards();

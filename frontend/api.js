@@ -210,6 +210,12 @@ const BCApi = {
 
     const data = await res.json();
     this.invalidateCache('users');
+    try {
+      window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_updated', data } }));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('bc_data_updated', Date.now().toString());
+      }
+    } catch (_) {}
     return data;
   },
 
@@ -249,6 +255,12 @@ const BCApi = {
 
     const data = await res.json();
     this.invalidateCache('users');
+    try {
+      window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_removed', data } }));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('bc_data_updated', Date.now().toString());
+      }
+    } catch (_) {}
     return data;
   },
   forgotPassword(username) {

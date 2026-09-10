@@ -52,11 +52,11 @@ def users_router():
         if not role_can(session.get("role", ""), "manage_users"):
             return json_error("You do not have permission to perform this action.", 403)
 
-        if action == "list" and method == "GET":
+        if action in ("list", "") and method == "GET":
             return _list()
-        if action == "create" and method == "POST":
+        if action in ("create", "") and method == "POST":
             return _create()
-        if action == "update" and method == "PUT":
+        if action in ("update", "") and method == "PUT":
             return _update()
         if action == "toggle_status" and method == "POST":
             return _toggle_status()
@@ -167,6 +167,7 @@ def _list():
             "email": u.email,
             "role": u.role,
             "status": computed_status,
+            "is_online": computed_status == "Active",
             "last_login": u.last_login.strftime("%Y-%m-%d %H:%M:%S") if u.last_login else None,
             "contact": u.contact_no,
             "contact_no": u.contact_no,

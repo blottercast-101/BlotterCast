@@ -122,33 +122,49 @@
   <main class="flex-1 p-6">
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="stat-card-grad plum">
-        <div class="flex items-center justify-between mb-3">
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
+        <div class="flex items-center justify-between">
           <span class="text-white/80 text-sm font-medium">Total Cases</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="settlement" data-icon-size="18"></div>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="settlement" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="stlTotal">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="stlTotal">0</div>
+          <div class="text-xs text-white/70 mt-1" id="stlTotalSub">scheduled hearings &amp; cases</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad dark">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium">Complied</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Ongoing Mediation</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl text-white" id="stlComplied">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="stlPending">0</div>
+          <div class="text-xs text-white/70 mt-1" id="stlPendingSub">under active conciliation</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad moss">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Not Complied</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="x" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Amicably Settled</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="stlNotComplied">0</div>
+        <div>
+          <div class="font-display text-3xl mt-3" id="stlComplied">0</div>
+          <div class="text-xs text-white/70 mt-1" id="stlCompliedSub">compliance fulfilled</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="stat-card-grad sunset">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium">Pending</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
+      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
+        <div class="flex items-center justify-between">
+          <span class="text-white/80 text-sm font-medium">Repudiated / Elevated</span>
+          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="x" data-icon-size="18"></div>
         </div>
-        <div class="font-display text-3xl" id="stlPending">0</div>
+        <div>
+          <div class="font-display text-3xl text-white mt-3" id="stlNotComplied">0</div>
+          <div class="text-xs text-white/70 mt-1" id="stlNotCompliedSub">non-compliance / CFA issued</div>
+        </div>
+        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
     </div>
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
@@ -161,6 +177,21 @@
           <span data-icon="archive" data-icon-size="14"></span> View Archived
         </button>
       </div>
+      <script>
+        (function _syncSettlementViewEarly(){
+          try {
+            const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+            const q = new URLSearchParams(window.location.search).get('view') || '';
+            const s = sessionStorage.getItem('current_active_view_settlement') || '';
+            if (h === 'archived' || q === 'archived' || s === 'archived') {
+              const t = document.getElementById('stlTitle');
+              if (t) t.textContent = 'Archived Settlement Records';
+              const b = document.getElementById('archiveToggleBtn');
+              if (b) b.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
+            }
+          } catch(_) {}
+        })();
+      </script>
 
       <!-- Filter Bar -->
       <div class="filter-bar">
@@ -301,13 +332,24 @@
 
 <!-- View Modal -->
 <div class="modal-overlay" id="stlViewModal">
-  <div class="modal-box">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-display text-xl text-forest-800">Settlement Record Details</h2>
-      <button onclick="closeModal('stlViewModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+          <span data-icon="settlement" data-icon-size="18"></span>
+        </div>
+        <div>
+          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Settlement Hearing Details</h2>
+          <p class="text-xs text-emerald-700 font-medium mt-0.5" id="stlModalSubtitle">Docket: SET-2026-004</p>
+        </div>
+      </div>
+      <button onclick="closeModal('stlViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
-    <div id="stlViewContent" class="space-y-2 text-sm"></div>
-    <div class="mt-6 flex justify-end"><button onclick="closeModal('stlViewModal')" class="btn-secondary">Close</button></div>
+    <div id="stlViewContent" class="space-y-3"></div>
+    <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
+      <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
+      <button type="button" onclick="closeModal('stlViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
+    </div>
   </div>
 </div>
 
@@ -364,8 +406,12 @@
     }
   }
 
-  async function toggleArchivedView() {
-    viewingArchived = !viewingArchived;
+  async function toggleArchivedView(explicitState = null) {
+    if (explicitState !== null) {
+      viewingArchived = !!explicitState;
+    } else {
+      viewingArchived = !viewingArchived;
+    }
     stlPage = 1;
     stlBatchManager.clearSelection();
     const titleEl = document.getElementById('stlTitle');
@@ -377,6 +423,14 @@
         : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
       if (typeof renderIcons === 'function') renderIcons();
     }
+    try {
+      sessionStorage.setItem('current_active_view_settlement', viewingArchived ? 'archived' : 'active');
+      if (typeof bcSetActiveView === 'function') {
+        bcSetActiveView('settlement', viewingArchived ? 'archived' : 'active');
+      } else {
+        history.replaceState(null, '', viewingArchived ? '#archived' : window.location.pathname.split('/').pop());
+      }
+    } catch (_) {}
     try {
       await loadSettlements();
     } catch (err) {
@@ -818,28 +872,64 @@
   }
 
   function viewSettlement(id) {
-    const r = settlementData.find(x => x.id === id);
+    const r = settlementData.find(x => x.id === id || Number(x.id) === Number(id));
+    if (!r) return;
+
+    const esc = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+
+    const docketNo = r.caseNo || r.blotterDocketNo || ('SET-' + r.id);
+    const subtitleEl = document.getElementById('stlModalSubtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = `Docket: ${docketNo}`;
+    }
+
+    // Status badge
+    const statusVal = r.status || 'Ongoing';
+    let statusPill = '';
+    if (statusVal === 'Resolved' || statusVal === 'Settled' || statusVal === 'Complied' || statusVal === 'Closed') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(statusVal)}</span>`;
+    } else {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${esc(statusVal)}</span>`;
+    }
+
+    // Hearing Date & Time
+    const hearingDate = r.dateConfrontation || r.dateSettlement || r.dateFiled || '—';
+    const hearingStage = r.actionTaken || '1st Conciliation';
+    const natureVal = r.nature || r.caseTitle || r.complaintTitle || 'General Dispute';
+    const officerVal = r.officer || 'Barangay Captain / Lupon Tagapamayapa';
+
     const rows = [
-      ['Linked Blotter Case', r.blotterDocketNo || '—'],
-      ['Case No.', r.caseNo],
-      ['Case Title', r.caseTitle || '—'],
-      ['Complaint Title', r.complaintTitle || '—'],
-      ['Nature', r.nature],
-      ['Date Filed', r.dateFiled || '—'],
-      ['Date of Confrontation', r.dateConfrontation || '—'],
-      ['Action Taken', r.actionTaken || '—'],
-      ['Date of Settlement', r.dateSettlement || '—'],
-      ['Date of Execution', r.dateExecution || '—'],
-      ['Officer-in-Charge', r.officer || '—'],
-      ['Main Point of Agreement', r.mainPoint || '—'],
-      ['Status of Compliance', r.status || 'Pending'],
-      ['Remarks', r.remarks || '—'],
+      ['DOCKET NO.', `<span class="font-bold font-mono text-gray-900">${esc(docketNo)}</span>${r.blotterDocketNo && r.blotterDocketNo !== docketNo ? `<span class="text-xs text-emerald-700 ml-2 font-medium">(Blotter: ${esc(r.blotterDocketNo)})</span>` : ''}`],
+      ['HEARING DATE & TIME', `<span class="text-gray-900 font-semibold text-sm">${esc(hearingDate)}</span>`],
+      ['HEARING STAGE', `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${esc(hearingStage)}</span>`],
+      ['NATURE OF DISPUTE', `<span class="text-gray-900 font-semibold text-sm">${esc(natureVal)}</span>`],
+      ['STATUS', statusPill],
+      ['COMPLAINANT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.complainant || '—')}</div>${r.complainantAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.complainantAddr)}</div>` : ''}`],
+      ['RESPONDENT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.respondent || '—')}</div>${r.respondentAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.respondentAddr)}</div>` : ''}`],
+      ['OFFICER-IN-CHARGE', `<span class="text-gray-900 font-semibold text-sm">${esc(officerVal)}</span>`],
     ];
-    document.getElementById('stlViewContent').innerHTML = rows.map(([k, v]) => `
-      <div class="flex gap-4 py-2 border-b border-forest-50">
-        <span class="w-52 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
-        <span class="text-forest-800">${v}</span>
-      </div>`).join('');
+
+    if (r.mainPoint) {
+      rows.push(['MAIN AGREEMENT', `<span class="text-gray-900 font-normal text-sm leading-relaxed">${esc(r.mainPoint)}</span>`]);
+    }
+    if (r.remarks) {
+      rows.push(['REMARKS', `<span class="text-gray-700 text-xs leading-relaxed italic">${esc(r.remarks)}</span>`]);
+    }
+
+    const contentEl = document.getElementById('stlViewContent');
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div class="bg-[#f4faf6] rounded-2xl border border-emerald-100/60 p-6 space-y-1 shadow-sm">
+          ${rows.map(([k, v]) => `
+            <div class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4 py-3.5 border-b border-emerald-100/70 last:border-0">
+              <span class="w-44 sm:w-48 text-xs font-bold tracking-wider text-emerald-800 uppercase flex-shrink-0 pt-0.5">${k}</span>
+              <div class="flex-1 text-sm">${v}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    if (window.renderIcons) window.renderIcons(document.getElementById('stlViewModal'));
     openModal('stlViewModal');
   }
 
@@ -854,6 +944,18 @@
   window.initSettlement = async function () {
     try {
       await requireAuth();
+      // Restore active view (active vs archived)
+      const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('settlement', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_settlement') || 'active');
+      if (activeView === 'archived') {
+        viewingArchived = true;
+        const titleEl = document.getElementById('stlTitle');
+        if (titleEl) titleEl.textContent = 'Archived Settlement Records';
+        const toggleBtn = document.getElementById('archiveToggleBtn');
+        if (toggleBtn) {
+          toggleBtn.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
+          if (typeof renderIcons === 'function') renderIcons();
+        }
+      }
       try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
     } catch (initErr) {
       console.error('initSettlement error:', initErr);
