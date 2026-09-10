@@ -13,6 +13,8 @@ ADDITIVE_COLUMNS = [
     ("users", "auth_provider", "VARCHAR(30)", "'local'", True),
     ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
     ("users", "signature_path", "VARCHAR(255)", "NULL", False),
+    ("users", "avatar_url", "VARCHAR(255)", "NULL", False),
+    ("users", "profile_photo_path", "VARCHAR(255)", "NULL", False),
     ("users", "last_login", "TIMESTAMP", "NULL", False),
     ("users", "last_seen", "TIMESTAMP", "NULL", False),
     ("users", "failed_attempts", "INTEGER", "0", True),

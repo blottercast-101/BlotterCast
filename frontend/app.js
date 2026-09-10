@@ -174,6 +174,7 @@ function hydrateGlobalState() {
 
   const fullName = user.full_name || user.fullName || user.name || '';
   const role = user.role || '';
+  const avatarUrl = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
 
   document.querySelectorAll('[data-user-name]').forEach(el => {
     if (fullName) el.textContent = fullName;
@@ -182,7 +183,11 @@ function hydrateGlobalState() {
     if (role) el.textContent = role;
   });
   document.querySelectorAll('[data-user-avatar]').forEach(el => {
-    if (fullName) el.textContent = bcInitials(fullName);
+    if (avatarUrl) {
+      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onerror="this.remove(); this.parentElement.textContent='${bcInitials(fullName)}';"/>`;
+    } else if (fullName) {
+      el.textContent = bcInitials(fullName);
+    }
   });
   document.querySelectorAll('[data-user-greeting]').forEach(el => {
     if (fullName) {
@@ -533,11 +538,11 @@ async function navigateTo(url, pushState = true) {
     });
 
     // Remove obsolete page-level modals from previous view, preserving global system dialogs
-    document.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal)').forEach(m => {
+    document.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal):not(#bcBlotterDetailsModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal):not(#bcBlotterDetailsModal)').forEach(m => {
       m.remove();
     });
 
-    const newModals = doc.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal)');
+    const newModals = doc.querySelectorAll('body > .modal-overlay:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal):not(#bcBlotterDetailsModal), body > [id$="Modal"]:not(#bcDialogOverlay):not(#bcPermDeleteOverlay):not(#bcExportFilterModal):not(#bcBlotterDetailsModal)');
     newModals.forEach(m => {
       document.body.appendChild(m);
     });
@@ -1269,6 +1274,199 @@ function bcIsFutureDateTime(dateStr, timeStr) {
   return dt.getTime() > Date.now();
 }
 
+// ── Real-Time Password Strength & Policy Validation ──────────
+const PASSWORD_POLICY_ERROR_MSG = "Password does not meet the required security criteria. Please follow the instructions below.";
+
+function bcValidatePasswordPolicy(password) {
+  const p = password || '';
+  const len = p.length >= 6 && p.length <= 128;
+  const upper = /[A-Z]/.test(p);
+  const lower = /[a-z]/.test(p);
+  const num = /[0-9]/.test(p);
+  const rawSpecial = /[^A-Za-z0-9]/.test(p);
+  // High-entropy / password manager generated rule (12+ chars with upper, lower, numbers)
+  const isHighEntropy = p.length >= 12 && upper && lower && num;
+  const special = rawSpecial || isHighEntropy;
+  const isValid = len && upper && lower && num && special;
+  return { len, upper, lower, num, special, rawSpecial, isHighEntropy, isValid };
+}
+
+function bcUpdatePasswordChecklist(password, boxElOrId, isSubmittedAttempt = false) {
+  const box = typeof boxElOrId === 'string' ? document.getElementById(boxElOrId) : boxElOrId;
+  if (!box) return false;
+
+  const res = bcValidatePasswordPolicy(password);
+  const rules = [
+    { key: 'len', passed: res.len },
+    { key: 'upper', passed: res.upper },
+    { key: 'lower', passed: res.lower },
+    { key: 'num', passed: res.num },
+    { key: 'special', passed: res.special }
+  ];
+
+  rules.forEach(({ key, passed }) => {
+    const item = box.querySelector(`[data-rule="${key}"]`);
+    if (!item) return;
+    const icon = item.querySelector('.rule-icon');
+
+    item.classList.remove('valid', 'invalid');
+
+    if (passed) {
+      item.classList.add('valid');
+      if (icon) icon.textContent = '✓';
+    } else {
+      if (isSubmittedAttempt && password.length > 0) {
+        item.classList.add('invalid');
+        if (icon) icon.textContent = '✕';
+      } else {
+        if (icon) icon.textContent = '✓';
+      }
+    }
+  });
+
+  return res.isValid;
+}
+
+function bcCalculatePasswordStrength(password) {
+  if (!password || password.length === 0) {
+    return { score: 0, label: '', barClass: 'bg-gray-200', textClass: 'text-gray-400' };
+  }
+  const policy = bcValidatePasswordPolicy(password);
+
+  // Level 3: Strong — High-entropy / 12+ chars with upper, lower, number, OR full policy criteria met
+  if ((password.length >= 12 && policy.upper && policy.lower && policy.num) || policy.isValid) {
+    return {
+      score: 3,
+      label: 'Strong',
+      barClass: 'bg-emerald-600',
+      textClass: 'text-emerald-600'
+    };
+  }
+
+  const typesCount = (policy.upper ? 1 : 0) + (policy.lower ? 1 : 0) + (policy.num ? 1 : 0) + (policy.rawSpecial ? 1 : 0);
+
+  // Level 2: Weak — at least 6 characters and 2+ character types
+  if (password.length >= 6 && typesCount >= 2) {
+    return {
+      score: 2,
+      label: 'Weak',
+      barClass: 'bg-amber-500',
+      textClass: 'text-amber-500'
+    };
+  }
+
+  // Level 1: Too Weak — <6 chars or single character type
+  return {
+    score: 1,
+    label: 'Too Weak',
+    barClass: 'bg-red-500',
+    textClass: 'text-red-500'
+  };
+}
+
+function bcUpdatePasswordStrength(password, containerElOrId) {
+  const container = typeof containerElOrId === 'string'
+    ? document.getElementById(containerElOrId)
+    : containerElOrId;
+  if (!container) return;
+
+  const bar1 = container.querySelector('.strength-bar-1');
+  const bar2 = container.querySelector('.strength-bar-2');
+  const bar3 = container.querySelector('.strength-bar-3');
+  const label = container.querySelector('.strength-label');
+
+  const strength = bcCalculatePasswordStrength(password);
+
+  const colorClasses = ['bg-red-500', 'bg-amber-500', 'bg-emerald-600', 'bg-gray-200'];
+  const textClasses = ['text-red-500', 'text-amber-500', 'text-emerald-600', 'text-gray-400'];
+
+  [bar1, bar2, bar3].forEach(b => {
+    if (b) b.classList.remove(...colorClasses);
+  });
+  if (label) {
+    label.classList.remove(...textClasses);
+  }
+
+  if (strength.score === 0) {
+    if (bar1) bar1.classList.add('bg-gray-200');
+    if (bar2) bar2.classList.add('bg-gray-200');
+    if (bar3) bar3.classList.add('bg-gray-200');
+    if (label) {
+      label.textContent = '';
+      label.classList.add('text-gray-400');
+    }
+  } else if (strength.score === 1) {
+    if (bar1) bar1.classList.add('bg-red-500');
+    if (bar2) bar2.classList.add('bg-gray-200');
+    if (bar3) bar3.classList.add('bg-gray-200');
+    if (label) {
+      label.textContent = 'Too Weak';
+      label.classList.add('text-red-500');
+    }
+  } else if (strength.score === 2) {
+    if (bar1) bar1.classList.add('bg-amber-500');
+    if (bar2) bar2.classList.add('bg-amber-500');
+    if (bar3) bar3.classList.add('bg-gray-200');
+    if (label) {
+      label.textContent = 'Weak';
+      label.classList.add('text-amber-500');
+    }
+  } else if (strength.score === 3) {
+    if (bar1) bar1.classList.add('bg-emerald-600');
+    if (bar2) bar2.classList.add('bg-emerald-600');
+    if (bar3) bar3.classList.add('bg-emerald-600');
+    if (label) {
+      label.textContent = 'Strong';
+      label.classList.add('text-emerald-600');
+    }
+  }
+}
+
+function bcWatchPasswordInput(inputElOrId, strengthWrapId, reqBoxId) {
+  const el = typeof inputElOrId === 'string' ? document.getElementById(inputElOrId) : inputElOrId;
+  if (!el) return null;
+  if (el._bcPwWatcherAttached) return el._bcPwWatcherAttached;
+
+  let lastVal = el.value;
+
+  const update = () => {
+    const currentVal = el.value;
+    if (currentVal !== lastVal) {
+      lastVal = currentVal;
+      if (typeof bcUpdatePasswordStrength === 'function') {
+        bcUpdatePasswordStrength(currentVal, strengthWrapId);
+      }
+      if (typeof bcUpdatePasswordChecklist === 'function') {
+        bcUpdatePasswordChecklist(currentVal, reqBoxId);
+      }
+    }
+  };
+
+  ['input', 'change', 'keyup', 'paste', 'blur', 'focus', 'propertychange', 'animationstart'].forEach(evt => {
+    el.addEventListener(evt, update);
+  });
+
+  // Polling watcher for programmatic autofill from browser password managers
+  const pollInterval = setInterval(() => {
+    if (!document.body.contains(el)) {
+      clearInterval(pollInterval);
+      return;
+    }
+    update();
+  }, 100);
+
+  el._bcPwWatcherAttached = { update, pollInterval };
+  update();
+  return el._bcPwWatcherAttached;
+}
+
+window.bcValidatePasswordPolicy = bcValidatePasswordPolicy;
+window.bcUpdatePasswordChecklist = bcUpdatePasswordChecklist;
+window.bcCalculatePasswordStrength = bcCalculatePasswordStrength;
+window.bcUpdatePasswordStrength = bcUpdatePasswordStrength;
+window.bcWatchPasswordInput = bcWatchPasswordInput;
+window.PASSWORD_POLICY_ERROR_MSG = PASSWORD_POLICY_ERROR_MSG;
+
 // ── Forced password change (Security > Password Expiry (days)) ─────
 // Built and injected on demand rather than living in every page's HTML,
 // since it only needs to exist for the rare case a login comes back
@@ -1288,7 +1486,32 @@ function bcShowForcedPasswordChange() {
       <p class="text-sm text-forest-500 mb-4">Your password has expired per this system's Security policy. Please set a new one to continue.</p>
       <div class="space-y-3">
         <div><label class="form-label">Current Password</label><input type="password" id="bcPw_current" class="form-input" autocomplete="current-password"/></div>
-        <div><label class="form-label">New Password</label><input type="password" id="bcPw_new" class="form-input" autocomplete="new-password"/></div>
+        <div>
+          <label class="form-label">New Password</label>
+          <input type="password" id="bcPw_new" class="form-input" autocomplete="new-password" oninput="bcUpdatePasswordStrength(this.value, 'bcPw_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'bcPw_req_box');" onchange="bcUpdatePasswordStrength(this.value, 'bcPw_strength_wrap'); bcUpdatePasswordChecklist(this.value, 'bcPw_req_box');"/>
+          <div class="password-strength-container mt-2" id="bcPw_strength_wrap">
+            <div class="flex items-center justify-between gap-3">
+              <div class="strength-bars flex-1 flex gap-1.5 h-1.5">
+                <div class="strength-bar-segment strength-bar-1 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+                <div class="strength-bar-segment strength-bar-2 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+                <div class="strength-bar-segment strength-bar-3 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+              </div>
+              <span class="strength-label text-xs font-semibold min-w-[60px] text-right"></span>
+            </div>
+          </div>
+          <div class="password-requirements-box mt-2" id="bcPw_req_box">
+            <div class="req-title">
+              <span>Password must contain:</span>
+            </div>
+            <ul class="space-y-1">
+              <li class="rule-item" data-rule="len"><span class="rule-icon">•</span><span class="rule-text">At least 6 characters long</span></li>
+              <li class="rule-item" data-rule="upper"><span class="rule-icon">•</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
+              <li class="rule-item" data-rule="lower"><span class="rule-icon">•</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
+              <li class="rule-item" data-rule="num"><span class="rule-icon">•</span><span class="rule-text">At least 1 number (0-9)</span></li>
+              <li class="rule-item" data-rule="special"><span class="rule-icon">•</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
+            </ul>
+          </div>
+        </div>
         <div><label class="form-label">Confirm New Password</label><input type="password" id="bcPw_confirm" class="form-input" autocomplete="new-password"/></div>
         <div id="bcPw_error" class="text-red-600 text-xs hidden"></div>
         <div class="flex justify-end pt-2">
@@ -1299,6 +1522,8 @@ function bcShowForcedPasswordChange() {
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
 
+  bcWatchPasswordInput('bcPw_new', 'bcPw_strength_wrap', 'bcPw_req_box');
+
   document.getElementById('bcPw_submit').onclick = async () => {
     const errEl = document.getElementById('bcPw_error');
     errEl.classList.add('hidden');
@@ -1307,6 +1532,14 @@ function bcShowForcedPasswordChange() {
     const confirm = document.getElementById('bcPw_confirm').value;
     if (!current || !next || !confirm) {
       errEl.textContent = 'Please fill in all three fields.'; errEl.classList.remove('hidden'); return;
+    }
+    const policy = bcValidatePasswordPolicy(next);
+    if (!policy.isValid) {
+      errEl.textContent = PASSWORD_POLICY_ERROR_MSG;
+      errEl.classList.remove('hidden');
+      bcUpdatePasswordChecklist(next, 'bcPw_req_box', true);
+      document.getElementById('bcPw_new').focus();
+      return;
     }
     if (next !== confirm) {
       errEl.textContent = 'New password and confirmation do not match.'; errEl.classList.remove('hidden'); return;
@@ -1321,6 +1554,8 @@ function bcShowForcedPasswordChange() {
       errEl.classList.remove('hidden');
       document.getElementById('bcPw_new').value = '';
       document.getElementById('bcPw_confirm').value = '';
+      bcUpdatePasswordStrength('', 'bcPw_strength_wrap');
+      bcUpdatePasswordChecklist('', 'bcPw_req_box');
       document.getElementById('bcPw_new').focus();
     }
   };
@@ -1353,6 +1588,15 @@ window.saveMyPassword = async function saveMyPassword() {
     return;
   }
 
+  const policy = bcValidatePasswordPolicy(next);
+  if (!policy.isValid) {
+    if (errEl) { errEl.textContent = PASSWORD_POLICY_ERROR_MSG; errEl.classList.remove('hidden'); }
+    if (nextEl) { nextEl.classList.add('border-red-500'); nextEl.focus(); }
+    bcUpdatePasswordChecklist(next, 'acct_req_box', true);
+    showToast(PASSWORD_POLICY_ERROR_MSG, 'error');
+    return;
+  }
+
   if (next !== confirm) {
     const msg = 'New passwords do not match.';
     if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
@@ -1382,6 +1626,8 @@ window.saveMyPassword = async function saveMyPassword() {
     if (currentEl) currentEl.value = '';
     if (nextEl) nextEl.value = '';
     if (confirmEl) confirmEl.value = '';
+    bcUpdatePasswordStrength('', 'acct_strength_wrap');
+    bcUpdatePasswordChecklist('', 'acct_req_box');
     if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
     showToast(res?.message || 'Password changed successfully.', 'success');
   } catch (err) {
@@ -1456,7 +1702,12 @@ function openModal(id) {
 }
 function closeModal(id) {
   const el = document.getElementById(id);
-  if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
+  if (el) {
+    el.classList.remove('open');
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.style.overflow = '';
+    }
+  }
 }
 
 /**
@@ -1481,7 +1732,9 @@ function resetFormDropdowns(target) {
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay') && !e.target.hasAttribute('data-no-dismiss')) {
     e.target.classList.remove('open');
-    document.body.style.overflow = '';
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.style.overflow = '';
+    }
   }
 });
 
@@ -2260,6 +2513,182 @@ function _confirmExportFilter() {
   closeModal('bcExportFilterModal');
 }
 
+// ── Shared Blotter Details Modal (used in Certificate Issuance, Blotter, Settlements) ──
+let _cachedBlotterRecords = null;
+let _cachedBlotterTimestamp = 0;
+
+function _escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function _ensureBlotterDetailsModal() {
+  let modal = document.getElementById('bcBlotterDetailsModal');
+  if (modal) {
+    if (!document.body.contains(modal)) document.body.appendChild(modal);
+    return modal;
+  }
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.id = 'bcBlotterDetailsModal';
+  el.style.zIndex = '1060';
+  el.innerHTML = `
+    <div class="modal-box max-w-lg" style="max-height: 88vh; overflow-y: auto;">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0">
+            <span data-icon="blotter" data-icon-size="16"></span>
+          </div>
+          <div>
+            <h2 class="font-display text-lg text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
+            <p class="text-xs text-forest-500 font-medium" id="bcBlotterModalSubtitle">Official Barangay Docket Record</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="modal-close-btn" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      </div>
+      <div id="bcBlotterDetailsContent" class="space-y-3 text-sm text-forest-700">
+        <div class="py-8 text-center text-forest-400">Loading blotter details…</div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-forest-100 flex items-center justify-between">
+        <span class="text-[11px] text-forest-400 font-medium">Mapulang Lupa Blotter System</span>
+        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="btn-secondary text-xs px-4 py-1.5">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  if (window.renderIcons) window.renderIcons(el);
+  return el;
+}
+
+async function openBlotterDetailsModal(docketNoOrIdOrCaseData) {
+  const modal = _ensureBlotterDetailsModal();
+  const contentEl = document.getElementById('bcBlotterDetailsContent');
+  const subtitleEl = document.getElementById('bcBlotterModalSubtitle');
+  if (!docketNoOrIdOrCaseData) return;
+
+  let targetDocket = '';
+  let targetId = null;
+  let initialData = null;
+
+  if (typeof docketNoOrIdOrCaseData === 'object' && docketNoOrIdOrCaseData !== null) {
+    initialData = { ...docketNoOrIdOrCaseData };
+    targetDocket = initialData.docket_no || initialData.docketNo || '';
+    targetId = initialData.id || initialData.blotter_id || initialData.blotterId || null;
+  } else {
+    const rawVal = String(docketNoOrIdOrCaseData).trim();
+    try {
+      targetDocket = decodeURIComponent(rawVal);
+    } catch (_) {
+      targetDocket = rawVal;
+    }
+    if (/^\d+$/.test(targetDocket)) {
+      targetId = Number(targetDocket);
+    }
+  }
+
+  function renderDetails(r) {
+    if (!r) {
+      contentEl.innerHTML = `
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+          <strong>Record Not Found:</strong> Could not retrieve full details for blotter entry <em>${_escapeHtml(targetDocket || String(targetId || ''))}</em>.
+        </div>`;
+      return;
+    }
+
+    const docketNo = r.docket_no || r.docketNo || targetDocket || '—';
+    const dateFiled = r.date_filed || r.dateFiled || r.date || '—';
+    const complainant = r.complainant || '—';
+    const complainantAddr = r.complainant_addr || r.complainantAddr || '—';
+    const respondent = r.respondent || '—';
+    const respondentAddr = r.respondent_addr || r.respondentAddr || '—';
+    const nature = r.nature || '—';
+    const rawType = (r.case_type || r.type || 'CRIM').toUpperCase();
+    const typeLabel = rawType === 'CRIM' ? 'Criminal' : (rawType === 'CIVIL' ? 'Civil' : rawType);
+    const typeBadge = rawType === 'CRIM' ? 'badge-criminal' : 'badge-civil';
+    const status = r.status || 'Ongoing';
+    const statusBadge = (status === 'Resolved' || status === 'Settled' || status === 'Complied' || status === 'Closed')
+      ? 'badge-resolved'
+      : (status === 'Ongoing' || status === 'Under Mediation' || status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
+
+    if (subtitleEl) subtitleEl.textContent = `Docket: ${docketNo}`;
+
+    const rows = [
+      ['Docket No.', `<span class="font-mono font-bold text-forest-900">${_escapeHtml(docketNo)}</span>`],
+      ['Date Filed', _escapeHtml(dateFiled)],
+      ['Case Type', `<span class="badge ${typeBadge} text-[10px] font-semibold">${_escapeHtml(typeLabel)}</span>`],
+      ['Nature of Case', `<strong class="text-forest-900">${_escapeHtml(nature)}</strong>`],
+      ['Status', `<span class="badge ${statusBadge} text-[10px] font-semibold">${_escapeHtml(status)}</span>`],
+      ['Complainant', `<div class="text-forest-800 font-medium">${_escapeHtml(complainant)}</div><div class="text-forest-500 text-xs mt-0.5">${_escapeHtml(complainantAddr)}</div>`],
+      ['Respondent', `<div class="text-rose-800 font-medium">${_escapeHtml(respondent)}</div><div class="text-forest-500 text-xs mt-0.5">${_escapeHtml(respondentAddr)}${r.zone || r.zone_id ? ` &bull; ${_escapeHtml(r.zone || r.zone_id)}` : ''}</div>`],
+    ];
+
+    if (r.settlement_status || r.settlementStatus) {
+      rows.push(['Settlement Status', `<span class="badge badge-ongoing text-[10px] font-semibold">${_escapeHtml(r.settlement_status || r.settlementStatus)}</span>`]);
+    }
+    if (r.hold_reason) {
+      rows.push(['Hold Reason', `<span class="text-amber-800 text-xs font-medium">${_escapeHtml(r.hold_reason)}</span>`]);
+    }
+
+    contentEl.innerHTML = `
+      <div class="bg-forest-50/50 rounded-xl p-3.5 border border-forest-100 space-y-2">
+        ${rows.map(([k, v]) => `
+          <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 py-1 border-b border-forest-100/60 last:border-0">
+            <span class="w-40 text-forest-500 font-semibold text-[11px] uppercase tracking-wider flex-shrink-0">${k}</span>
+            <div class="text-forest-800 flex-1 text-xs sm:text-sm">${v}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    if (window.renderIcons) window.renderIcons(contentEl);
+  }
+
+  if (initialData && (initialData.complainant || initialData.respondent)) {
+    renderDetails(initialData);
+  } else {
+    contentEl.innerHTML = `<div class="py-8 text-center text-forest-500 text-xs"><span class="inline-block animate-spin mr-2">⏳</span> Loading blotter case details…</div>`;
+  }
+
+  openModal('bcBlotterDetailsModal');
+
+  try {
+    const now = Date.now();
+    let records = _cachedBlotterRecords;
+    if (!records || (now - _cachedBlotterTimestamp > 60000)) {
+      records = await BCApi.list('blotter');
+      if (Array.isArray(records)) {
+        _cachedBlotterRecords = records;
+        _cachedBlotterTimestamp = now;
+      }
+    }
+
+    if (Array.isArray(records)) {
+      const match = records.find(x =>
+        (targetId && Number(x.id) === Number(targetId)) ||
+        (targetDocket && String(x.docket_no || x.docketNo || '').toLowerCase() === targetDocket.toLowerCase())
+      );
+      if (match) {
+        renderDetails({ ...(initialData || {}), ...match });
+      } else if (!initialData) {
+        renderDetails(null);
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching full blotter record:', err);
+    if (!initialData) {
+      renderDetails(null);
+    }
+  }
+}
+
+window.openBlotterDetailsModal = openBlotterDetailsModal;
+window.handleOpenBlotterDetails = openBlotterDetailsModal;
+window.openBlotterModal = openBlotterDetailsModal;
+window.showBlotterDetailsModal = openBlotterDetailsModal;
+
 // ── Notification bell (real, system-generated alerts) ──────
 // Only does anything on pages that actually have #notifPanel in the DOM
 // (currently the Dashboard); harmless no-op calls elsewhere.
@@ -2485,7 +2914,7 @@ document.addEventListener('click', (e) => {
 
 /**
  * Universal table row deep-link highlighter.
- * Searches for 'highlight' or 'id' in URL search params.
+ * Searches for 'docket', 'openCase', 'highlight', or 'id' in URL search params.
  * If found, locates the target record in the dataset, switches pagination to the matching page,
  * smoothly scrolls to the row, triggers the pulsing emerald highlight animation, and cleans up the URL.
  * 
@@ -2499,7 +2928,7 @@ document.addEventListener('click', (e) => {
  */
 function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSelector } = {}) {
   const urlParams = new URLSearchParams(window.location.search);
-  const target = (urlParams.get('highlight') || urlParams.get('id') || urlParams.get('search') || '').trim();
+  const target = (urlParams.get('docket') || urlParams.get('openCase') || urlParams.get('case') || urlParams.get('highlight') || urlParams.get('id') || urlParams.get('search') || '').trim();
   if (!target || !items || !items.length) return false;
 
   const targetLower = target.toLowerCase();
@@ -2557,6 +2986,9 @@ function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSel
 
       // Clean up URL query parameters without reloading
       const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('docket');
+      newUrl.searchParams.delete('openCase');
+      newUrl.searchParams.delete('case');
       newUrl.searchParams.delete('highlight');
       newUrl.searchParams.delete('id');
       newUrl.searchParams.delete('search');

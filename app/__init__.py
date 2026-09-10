@@ -34,6 +34,18 @@ def create_app(config_class=Config):
     db.init_app(app)
     _auto_migrate_schema(app)
 
+    try:
+        from flask_cors import CORS
+        CORS(
+            app,
+            supports_credentials=True,
+            resources={r"/*": {"origins": "*"}},
+            allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Cache-Control", "Pragma"],
+            methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        )
+    except Exception as e:
+        app.logger.warning(f"CORS initialization notice: {e}")
+
     from .blueprints.auth import bp as auth_bp
     from .blueprints.records import bp as records_bp
     from .blueprints.documents import bp as documents_bp
@@ -58,6 +70,19 @@ def create_app(config_class=Config):
     app.register_blueprint(ml_proxy_bp)
     app.register_blueprint(blotter_import_bp)
 
+    @app.before_request
+    def handle_options_preflight():
+        from flask import make_response, request
+        if request.method == "OPTIONS":
+            response = make_response("", 204)
+            origin = request.headers.get("Origin")
+            if origin:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Cache-Control, Pragma"
+            return response
+
     @app.teardown_request
     def check_teardown(exception=None):
         if exception:
@@ -71,6 +96,12 @@ def create_app(config_class=Config):
         """Disable caching on API endpoints and HTML pages to ensure sensitive
         authenticated views are never served stale from browser disk/memory cache."""
         from flask import request
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Cache-Control, Pragma"
         path = (request.path or '').lower()
         if path.startswith("/api/") or path.endswith(".html") or path.endswith(".js") or path.endswith(".css") or path.endswith(".json") or path in ("/", ""):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"

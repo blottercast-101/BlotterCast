@@ -400,13 +400,24 @@
 
 <!-- View Modal -->
 <div class="modal-overlay" id="viewModal">
-  <div class="modal-box">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-display text-xl text-forest-800">Blotter Entry Details</h2>
-      <button onclick="closeModal('viewModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box max-w-lg" style="max-height: 88vh; overflow-y: auto;">
+    <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0">
+          <span data-icon="blotter" data-icon-size="16"></span>
+        </div>
+        <div>
+          <h2 class="font-display text-lg text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
+          <p class="text-xs text-forest-500 font-medium" id="blotterModalSubtitle">Official Barangay Docket Record</p>
+        </div>
+      </div>
+      <button onclick="closeModal('viewModal')" class="modal-close-btn" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div id="viewContent" class="space-y-3 text-sm text-forest-700"></div>
-    <div class="mt-6 flex justify-end"><button onclick="closeModal('viewModal')" class="btn-secondary">Close</button></div>
+    <div class="mt-6 pt-4 border-t border-forest-100 flex items-center justify-between">
+      <span class="text-[11px] text-forest-400 font-medium">Mapulang Lupa Blotter System</span>
+      <button onclick="closeModal('viewModal')" class="btn-secondary text-xs px-4 py-1.5">Close</button>
+    </div>
   </div>
 </div>
 
@@ -463,6 +474,20 @@
         setPage: (p) => { currentPage = p; },
         render: renderTable
       });
+
+      // Check for auto-open requested via URL params: ?docket=..., ?openCase=..., ?case=..., ?highlight=..., ?id=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoDocket = (urlParams.get('docket') || urlParams.get('openCase') || urlParams.get('case') || urlParams.get('highlight') || urlParams.get('id') || '').trim();
+      if (autoDocket && blotterData.length) {
+        const targetRecord = blotterData.find(x =>
+          (x.id != null && String(x.id) === autoDocket) ||
+          (x.docketNo && x.docketNo.toLowerCase() === autoDocket.toLowerCase()) ||
+          (x.docket_no && x.docket_no.toLowerCase() === autoDocket.toLowerCase())
+        );
+        if (targetRecord) {
+          viewRecord(targetRecord);
+        }
+      }
     } catch (err) {
       if (!document.getElementById('blotterTableBody')) return;
       console.error('loadBlotter error:', err);
@@ -1001,19 +1026,49 @@
     }
   }
 
-  function viewRecord(id) {
-    const r = blotterData.find(x => x.id === id);
+  function viewRecord(idOrRecord) {
+    let r = null;
+    if (typeof idOrRecord === 'object' && idOrRecord !== null) {
+      r = idOrRecord;
+    } else {
+      r = blotterData.find(x => x.id === Number(idOrRecord) || String(x.docketNo || x.docket_no || '').toLowerCase() === String(idOrRecord).toLowerCase());
+    }
+    if (!r) return;
+
+    const subtitleEl = document.getElementById('blotterModalSubtitle');
+    if (subtitleEl) subtitleEl.textContent = `Docket: ${r.docketNo || r.docket_no || '—'}`;
+
+    const rawType = (r.type || r.case_type || 'CRIM').toUpperCase();
+    const typeLabel = rawType === 'CRIM' ? 'Criminal' : (rawType === 'CIVIL' ? 'Civil' : rawType);
+    const typeBadge = rawType === 'CRIM' ? 'badge-criminal' : 'badge-civil';
+    const status = r.status || 'Pending';
+    const statusBadge = ['Resolved', 'Settled', 'Dismissed', 'CFA Issued', 'Repudiated', 'Complied', 'Closed'].includes(status)
+      ? 'badge-resolved'
+      : (status === 'Ongoing' || status === 'Under Mediation' || status === 'Hearing Scheduled' ? 'badge-ongoing' : 'badge-pending');
+
+    const escapeStr = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+
     const rows = [
-      ['Docket No.', r.docketNo], ['Date Filed', r.dateFiled],
-      ['Complainant', r.complainant], ['Complainant Address', r.complainantAddr],
-      ['Respondent', r.respondent], ['Respondent Address', r.respondentAddr],
-      ['Nature of Case', r.nature], ['Type', r.type], ['Status', r.status],
+      ['Docket No.', `<span class="font-mono font-bold text-forest-900">${escapeStr(r.docketNo || r.docket_no || '—')}</span>`],
+      ['Date Filed', escapeStr(r.dateFiled || r.date_filed || r.date || '—')],
+      ['Case Type', `<span class="badge ${typeBadge} text-[10px] font-semibold">${escapeStr(typeLabel)}</span>`],
+      ['Nature of Case', `<strong class="text-forest-900">${escapeStr(r.nature || '—')}</strong>`],
+      ['Status', `<span class="badge ${statusBadge} text-[10px] font-semibold">${escapeStr(status)}</span>`],
+      ['Complainant', `<div class="text-forest-800 font-medium">${escapeStr(r.complainant || '—')}</div><div class="text-forest-500 text-xs mt-0.5">${escapeStr(r.complainantAddr || r.complainant_addr || '—')}</div>`],
+      ['Respondent', `<div class="text-rose-800 font-medium">${escapeStr(r.respondent || '—')}</div><div class="text-forest-500 text-xs mt-0.5">${escapeStr(r.respondentAddr || r.respondent_addr || '—')}${r.zone ? ` &bull; ${escapeStr(r.zone)}` : ''}</div>`],
     ];
-    document.getElementById('viewContent').innerHTML = rows.map(([k,v]) => `
-      <div class="flex gap-4 py-2 border-b border-forest-50">
-        <span class="w-44 text-forest-500 font-semibold text-xs uppercase tracking-wide flex-shrink-0">${k}</span>
-        <span class="text-forest-800">${v}</span>
-      </div>`).join('');
+
+    document.getElementById('viewContent').innerHTML = `
+      <div class="bg-forest-50/50 rounded-xl p-3.5 border border-forest-100 space-y-2">
+        ${rows.map(([k, v]) => `
+          <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 py-1.5 border-b border-forest-100/60 last:border-0">
+            <span class="w-40 text-forest-500 font-semibold text-[11px] uppercase tracking-wider flex-shrink-0">${k}</span>
+            <div class="text-forest-800 flex-1 text-xs sm:text-sm">${v}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    if (window.renderIcons) window.renderIcons(document.getElementById('viewModal'));
     openModal('viewModal');
   }
 

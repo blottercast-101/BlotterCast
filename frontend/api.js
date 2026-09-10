@@ -156,6 +156,101 @@ const BCApi = {
       body: JSON.stringify({ fullName, email, contact }),
     });
   },
+  async uploadMyAvatar(fileOrFormData) {
+    let fd;
+    if (fileOrFormData instanceof FormData) {
+      fd = fileOrFormData;
+      if (!fd.has('avatar') && fd.has('photo')) fd.append('avatar', fd.get('photo'));
+      if (!fd.has('photo') && fd.has('avatar')) fd.append('photo', fd.get('avatar'));
+      if (!fd.has('signature') && fd.has('avatar')) fd.append('signature', fd.get('avatar'));
+      if (!fd.has('file') && fd.has('avatar')) fd.append('file', fd.get('avatar'));
+    } else {
+      fd = new FormData();
+      fd.append('avatar', fileOrFormData);
+      fd.append('photo', fileOrFormData);
+      fd.append('signature', fileOrFormData);
+      fd.append('file', fileOrFormData);
+    }
+
+    let res;
+    // 1. Try users.php upload_avatar (replicates uploadSignature structure)
+    try {
+      res = await fetch(`${BC_API}/api/users.php?action=upload_avatar`, {
+        method: 'POST', credentials: 'include', body: fd,
+      });
+      if (!res.ok && res.status !== 401) throw new Error('users.php avatar upload failed');
+    } catch (_) {
+      // 2. Try auth.php upload_avatar
+      try {
+        res = await fetch(`${BC_API}/api/auth.php?action=upload_avatar`, {
+          method: 'POST', credentials: 'include', body: fd,
+        });
+        if (!res.ok && res.status !== 401) throw new Error('auth.php avatar upload failed');
+      } catch (__) {
+        // 3. Try direct REST endpoint
+        res = await fetch(`${BC_API}/api/user/avatar`, {
+          method: 'POST', credentials: 'include', body: fd,
+        });
+      }
+    }
+
+    if (res.status === 401 && !window.location.pathname.endsWith('login.html')) {
+      window.location.href = 'login.html';
+      throw new Error('Not authenticated');
+    }
+
+    if (!res.ok) {
+      let msg = 'Profile photo upload failed';
+      try {
+        const errJson = await res.json();
+        msg = errJson.message || errJson.error || msg;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    this.invalidateCache('users');
+    return data;
+  },
+
+  async removeMyAvatar() {
+    let res;
+    try {
+      res = await fetch(`${BC_API}/api/users.php?action=remove_avatar`, {
+        method: 'POST', credentials: 'include',
+      });
+      if (!res.ok && res.status !== 401) throw new Error('users.php remove avatar failed');
+    } catch (_) {
+      try {
+        res = await fetch(`${BC_API}/api/auth.php?action=remove_avatar`, {
+          method: 'POST', credentials: 'include',
+        });
+        if (!res.ok && res.status !== 401) throw new Error('auth.php remove avatar failed');
+      } catch (__) {
+        res = await fetch(`${BC_API}/api/user/avatar`, {
+          method: 'DELETE', credentials: 'include',
+        });
+      }
+    }
+
+    if (res.status === 401 && !window.location.pathname.endsWith('login.html')) {
+      window.location.href = 'login.html';
+      throw new Error('Not authenticated');
+    }
+
+    if (!res.ok) {
+      let msg = 'Failed to remove profile photo';
+      try {
+        const errJson = await res.json();
+        msg = errJson.message || errJson.error || msg;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    this.invalidateCache('users');
+    return data;
+  },
   forgotPassword(username) {
     return this._fetch(`${BC_API}/api/auth.php?action=forgot_password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -242,6 +337,15 @@ const BCApi = {
   heatmap(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return this._fetch(`${BC_API}/api/analytics.php?action=heatmap&${qs}`);
+  },
+  trendsYears() {
+    return this._fetch(`${BC_API}/api/analytics/trends/years`).catch(() => {
+      return this._fetch(`${BC_API}/api/analytics.php?action=trends_years`);
+    }).then(res => {
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray(res.years)) return res.years;
+      return [];
+    }).catch(() => []);
   },
   trends(year) {
     const qs = year ? `?year=${year}` : '';

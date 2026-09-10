@@ -231,11 +231,18 @@ async function onNonResidencyResidentSelected(resident, options = {}) {
                 </div>
                 <div class="text-forest-700"><strong>${c.complainant}</strong> vs <strong>${c.respondent}</strong></div>
                 <div class="text-forest-500 text-[11px] mt-0.5">${c.nature} &middot; Status: <span class="text-rose-600 font-semibold">${c.status}</span></div>
+                <div class="pt-2 mt-2 border-t border-rose-100 flex items-center justify-between">
+                  <span class="text-rose-800 font-medium text-[11px] truncate max-w-[230px]">Active Blotter Case (${c.docket_no || c.docketNo})</span>
+                  <a href="blotter.html?docket=${encodeURIComponent(c.docket_no || c.docketNo)}" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
+                    <span data-icon="view" data-icon-size="13"></span> View Blotter Case
+                  </a>
+                </div>
               </div>
             `).join('')}
           </div>
         `;
         alertContainer.classList.remove('hidden');
+        if (window.renderIcons) renderIcons(alertContainer);
       }
 
       if (typeof showToast === 'function') {

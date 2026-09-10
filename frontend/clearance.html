@@ -368,8 +368,8 @@ async function onResidentPicked(r) {
             <div class="text-forest-500 text-[11px] mb-2">${b.nature} &bull; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &bull; Status: <span class="font-semibold text-amber-700">${b.status}</span></div>
             <div class="pt-2 border-t border-amber-100 flex items-center justify-between">
               <span class="text-amber-800 font-medium text-[11px] truncate max-w-[230px]">${b.hold_reason || `Active Blotter Case (${b.docket_no})`}</span>
-              <a href="blotter.html?highlight=${encodeURIComponent(b.docket_no)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
-                <span data-icon="view" data-icon-size="13"></span> View Blotter Case &rarr;
+              <a href="blotter.html?docket=${encodeURIComponent(b.docket_no)}" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
+                <span data-icon="view" data-icon-size="13"></span> View Blotter Case
               </a>
             </div>
           </div>`).join('');
@@ -441,8 +441,7 @@ function renderLog(){
       <td class="text-xs">${r.or}</td>
       <td>
         <div class="flex gap-1">
-          <button onclick="previewLog(${r.id})" class="icon-btn" title="Preview"><span data-icon="view" data-icon-size="16"></span></button>
-          <button onclick="executePrint()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
+          <button onclick="printLog(${r.id})" class="btn-primary text-xs px-2 py-1" title="Print Certificate"><span data-icon="printer" data-icon-size="14"></span></button>
         </div>
       </td>
     </tr>`).join('');
@@ -453,6 +452,7 @@ function renderLog(){
 
 function previewLog(id){
   const r=logData.find(x=>x.id===id);
+  if (!r) return;
   const d = new Date(r.dateRaw + 'T00:00:00');
   document.getElementById('c_name').textContent=r.name;
   document.getElementById('c_applicant_name').textContent=r.name;
@@ -465,6 +465,14 @@ function previewLog(id){
   document.getElementById('c_year').textContent=d.getFullYear();
   renderVoterCheckbox(r.voter);
   document.getElementById('c_or').innerHTML=`Control No.: ${r.ctrl} &nbsp;|&nbsp; O.R. No.: ${r.or} &nbsp;|&nbsp; Amount Paid: ₱${r.fee.toFixed(2)}`;
+  if (typeof bindCertificateCaptainName === 'function') {
+    bindCertificateCaptainName(r);
+  }
+}
+
+function printLog(id){
+  previewLog(id);
+  executePrint();
 }
 
 async function openClearanceForm(){

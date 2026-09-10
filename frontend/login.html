@@ -385,6 +385,65 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ── Password Strength Indicator ── */
+    .password-strength-container { width: 100%; }
+    .password-strength-container .strength-bars { display: flex; gap: 6px; height: 6px; flex: 1; }
+    .password-strength-container .strength-bar-segment { flex: 1; height: 6px; border-radius: 9999px; background-color: #e5e7eb; transition: background-color 0.2s ease; }
+    .password-strength-container .strength-label { font-size: 0.75rem; font-weight: 600; min-width: 60px; text-align: right; transition: color 0.2s ease; }
+    .strength-bar-segment.bg-red-500 { background-color: #ef4444 !important; }
+    .strength-bar-segment.bg-amber-500 { background-color: #f59e0b !important; }
+    .strength-bar-segment.bg-emerald-600 { background-color: #059669 !important; }
+    /* ── Password Requirements Checklist ── */
+    .password-requirements-box {
+      background-color: rgba(240, 249, 242, 0.85);
+      border: 1px solid #d1fae5;
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .password-requirements-box .req-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #065f46;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .password-requirements-box .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #4b5563;
+      transition: color 0.2s ease, font-weight 0.2s ease;
+    }
+    .password-requirements-box .rule-item.valid {
+      color: #047857 !important;
+      font-weight: 600;
+    }
+    .password-requirements-box .rule-item.invalid {
+      color: #dc2626 !important;
+      font-weight: 600;
+    }
+    .password-requirements-box .rule-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      font-weight: bold;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      transition: color 0.2s ease;
+    }
+    .password-requirements-box .rule-item.valid .rule-icon {
+      color: #059669 !important;
+    }
+    .password-requirements-box .rule-item.invalid .rule-icon {
+      color: #dc2626 !important;
+    }
+
     .animate-in { animation: fade-up 0.5s ease both; }
     .delay-1 { animation-delay: 0.1s; }
     .delay-2 { animation-delay: 0.2s; }
@@ -656,8 +715,30 @@
       <label class="input-label">New password</label>
       <div class="input-wrap">
         <span class="input-icon" data-icon="lock" data-icon-size="16"></span>
-        <input type="password" id="resetNewPassword" class="form-input" placeholder="Enter a new password" autocomplete="new-password"/>
+        <input type="password" id="resetNewPassword" class="form-input" placeholder="Enter a new password" autocomplete="new-password" oninput="updateResetPwStrength(this.value); updateResetPwChecklist(this.value);" onchange="updateResetPwStrength(this.value); updateResetPwChecklist(this.value);"/>
         <button type="button" class="toggle-pw" id="toggleResetNewPw" onclick="toggleFieldPassword('resetNewPassword','toggleResetNewPw')"><span data-icon="view" data-icon-size="18"></span></button>
+      </div>
+      <div class="password-strength-container mt-2" id="reset_strength_wrap">
+        <div class="flex items-center justify-between gap-3">
+          <div class="strength-bars flex-1 flex gap-1.5 h-1.5">
+            <div class="strength-bar-segment strength-bar-1 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+            <div class="strength-bar-segment strength-bar-2 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+            <div class="strength-bar-segment strength-bar-3 flex-1 rounded-full bg-gray-200 transition-colors duration-200"></div>
+          </div>
+          <span class="strength-label text-xs font-semibold min-w-[60px] text-right"></span>
+        </div>
+      </div>
+      <div class="password-requirements-box mt-2" id="reset_req_box">
+        <div class="req-title">
+          <span>Password must contain:</span>
+        </div>
+        <ul class="space-y-1">
+          <li class="rule-item" data-rule="len"><span class="rule-icon">•</span><span class="rule-text">At least 6 characters long</span></li>
+          <li class="rule-item" data-rule="upper"><span class="rule-icon">•</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
+          <li class="rule-item" data-rule="lower"><span class="rule-icon">•</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
+          <li class="rule-item" data-rule="num"><span class="rule-icon">•</span><span class="rule-text">At least 1 number (0-9)</span></li>
+          <li class="rule-item" data-rule="special"><span class="rule-icon">•</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
+        </ul>
       </div>
     </div>
 
@@ -962,13 +1043,144 @@
     }
   }
 
+  function validatePwPolicy(password) {
+    const p = password || '';
+    const len = p.length >= 6 && p.length <= 128;
+    const upper = /[A-Z]/.test(p);
+    const lower = /[a-z]/.test(p);
+    const num = /[0-9]/.test(p);
+    const rawSpecial = /[^A-Za-z0-9]/.test(p);
+    const isHighEntropy = p.length >= 12 && upper && lower && num;
+    const special = rawSpecial || isHighEntropy;
+    const isValid = len && upper && lower && num && special;
+    return { len, upper, lower, num, special, rawSpecial, isHighEntropy, isValid };
+  }
+
+  function updateResetPwChecklist(password, isSubmittedAttempt = false) {
+    const box = document.getElementById('reset_req_box');
+    if (!box) return false;
+
+    const res = validatePwPolicy(password);
+    const rules = [
+      { key: 'len', passed: res.len },
+      { key: 'upper', passed: res.upper },
+      { key: 'lower', passed: res.lower },
+      { key: 'num', passed: res.num },
+      { key: 'special', passed: res.special }
+    ];
+
+    rules.forEach(({ key, passed }) => {
+      const item = box.querySelector(`[data-rule="${key}"]`);
+      if (!item) return;
+      const icon = item.querySelector('.rule-icon');
+
+      item.classList.remove('valid', 'invalid');
+
+      if (passed) {
+        item.classList.add('valid');
+        if (icon) icon.textContent = '✓';
+      } else {
+        if (isSubmittedAttempt && password.length > 0) {
+          item.classList.add('invalid');
+          if (icon) icon.textContent = '✕';
+        } else {
+          if (icon) icon.textContent = '✓';
+        }
+      }
+    });
+
+    return res.isValid;
+  }
+
+  function calcPwStrength(password) {
+    if (!password || password.length === 0) {
+      return { score: 0, label: '', barClass: 'bg-gray-200', textClass: 'text-gray-400' };
+    }
+    const policy = validatePwPolicy(password);
+
+    // Level 3: Strong — 12+ characters high entropy OR full policy criteria met
+    if ((password.length >= 12 && policy.upper && policy.lower && policy.num) || policy.isValid) {
+      return { score: 3, label: 'Strong', barClass: 'bg-emerald-600', textClass: 'text-emerald-600' };
+    }
+    const typesCount = (policy.upper ? 1 : 0) + (policy.lower ? 1 : 0) + (policy.num ? 1 : 0) + (policy.rawSpecial ? 1 : 0);
+    // Level 2: Weak — 6+ characters and 2+ types
+    if (password.length >= 6 && typesCount >= 2) {
+      return { score: 2, label: 'Weak', barClass: 'bg-amber-500', textClass: 'text-amber-500' };
+    }
+    // Level 1: Too Weak — <6 chars or single character type
+    return { score: 1, label: 'Too Weak', barClass: 'bg-red-500', textClass: 'text-red-500' };
+  }
+
+  function updateResetPwStrength(password) {
+    const container = document.getElementById('reset_strength_wrap');
+    if (!container) return;
+    const bar1 = container.querySelector('.strength-bar-1');
+    const bar2 = container.querySelector('.strength-bar-2');
+    const bar3 = container.querySelector('.strength-bar-3');
+    const label = container.querySelector('.strength-label');
+
+    const strength = calcPwStrength(password);
+    const colorClasses = ['bg-red-500', 'bg-amber-500', 'bg-emerald-600', 'bg-gray-200'];
+    const textClasses = ['text-red-500', 'text-amber-500', 'text-emerald-600', 'text-gray-400'];
+
+    [bar1, bar2, bar3].forEach(b => { if (b) b.classList.remove(...colorClasses); });
+    if (label) label.classList.remove(...textClasses);
+
+    if (strength.score === 0) {
+      if (bar1) bar1.classList.add('bg-gray-200');
+      if (bar2) bar2.classList.add('bg-gray-200');
+      if (bar3) bar3.classList.add('bg-gray-200');
+      if (label) { label.textContent = ''; label.classList.add('text-gray-400'); }
+    } else if (strength.score === 1) {
+      if (bar1) bar1.classList.add('bg-red-500');
+      if (bar2) bar2.classList.add('bg-gray-200');
+      if (bar3) bar3.classList.add('bg-gray-200');
+      if (label) { label.textContent = 'Too Weak'; label.classList.add('text-red-500'); }
+    } else if (strength.score === 2) {
+      if (bar1) bar1.classList.add('bg-amber-500');
+      if (bar2) bar2.classList.add('bg-amber-500');
+      if (bar3) bar3.classList.add('bg-gray-200');
+      if (label) { label.textContent = 'Weak'; label.classList.add('text-amber-500'); }
+    } else if (strength.score === 3) {
+      if (bar1) bar1.classList.add('bg-emerald-600');
+      if (bar2) bar2.classList.add('bg-emerald-600');
+      if (bar3) bar3.classList.add('bg-emerald-600');
+      if (label) { label.textContent = 'Strong'; label.classList.add('text-emerald-600'); }
+    }
+  }
+
   function showNewPasswordStep() {
     document.getElementById('resetForm').style.display = 'none';
     document.getElementById('newPasswordForm').style.display = '';
     document.getElementById('newPasswordAlert').classList.remove('show');
     document.getElementById('resetNewPassword').value = '';
     document.getElementById('resetConfirmPassword').value = '';
+    updateResetPwStrength('');
+    updateResetPwChecklist('');
     document.getElementById('resetConfirmError').classList.remove('show');
+
+    const npInput = document.getElementById('resetNewPassword');
+    if (npInput && !npInput._bcWatcherAttached) {
+      let lastVal = npInput.value;
+      const syncValues = () => {
+        const currentVal = npInput.value;
+        if (currentVal !== lastVal) {
+          lastVal = currentVal;
+          updateResetPwStrength(currentVal);
+          updateResetPwChecklist(currentVal);
+        }
+      };
+      ['input', 'change', 'keyup', 'paste', 'blur', 'focus', 'propertychange', 'animationstart'].forEach(evt => {
+        npInput.addEventListener(evt, syncValues);
+      });
+      setInterval(() => {
+        if (document.getElementById('newPasswordForm').style.display !== 'none') {
+          syncValues();
+        }
+      }, 100);
+      npInput._bcWatcherAttached = true;
+    }
+
     document.getElementById('resetNewPassword').focus();
   }
 
@@ -982,12 +1194,23 @@
     const alertEl = document.getElementById('newPasswordAlert');
     const alertMsg = document.getElementById('newPasswordAlertMsg');
     const btn = document.getElementById('newPasswordBtn');
-    alertEl.classList.remove('show'); cpErr.classList.remove('show'); cpEl.classList.remove('error');
+    alertEl.classList.remove('show'); cpErr.classList.remove('show'); cpEl.classList.remove('error'); npEl.classList.remove('error');
 
     const newPassword = npEl.value;
     const confirmPassword = cpEl.value;
 
     if (!newPassword) { alertMsg.textContent = 'Enter a new password.'; alertEl.classList.add('show'); return; }
+
+    const policy = validatePwPolicy(newPassword);
+    if (!policy.isValid) {
+      alertMsg.textContent = 'Password does not meet the required security criteria. Please follow the instructions below.';
+      alertEl.classList.add('show');
+      npEl.classList.add('error');
+      updateResetPwChecklist(newPassword, true);
+      npEl.focus();
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       cpEl.classList.add('error'); cpErr.classList.add('show'); return;
     }
@@ -1003,6 +1226,8 @@
         document.getElementById('loginForm').style.display = '';
         document.getElementById('password').value = '';
         document.getElementById('username').value = document.getElementById('forgotUsername').value || '';
+        updateResetPwStrength('');
+        updateResetPwChecklist('');
       }, 1500);
     } catch (err) {
       btn.classList.remove('loading');
@@ -1010,6 +1235,8 @@
       alertEl.classList.add('show');
       npEl.value = '';
       cpEl.value = '';
+      updateResetPwStrength('');
+      updateResetPwChecklist('');
       npEl.focus();
     }
   }

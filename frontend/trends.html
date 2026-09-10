@@ -260,26 +260,55 @@ Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a7a64';
 
 let lineChart, doughnutChart, barDayChart, hBarChart;
-let cachedYears = [];
+
+function syncYearDropdown(yearsList, selectedYear) {
+  const sel = document.getElementById('trendYear');
+  if (!sel) return;
+  const currentVal = selectedYear != null ? String(selectedYear) : sel.value;
+  const currentYear = new Date().getFullYear();
+
+  const numList = (Array.isArray(yearsList) ? yearsList : []).map(Number).filter(y => !isNaN(y) && y > 0);
+  if (!numList.includes(currentYear)) {
+    numList.push(currentYear);
+  }
+  if (currentVal && !numList.includes(Number(currentVal))) {
+    numList.push(Number(currentVal));
+  }
+  const uniqueSorted = Array.from(new Set(numList)).sort((a, b) => b - a);
+
+  const existingOptions = Array.from(sel.options).map(o => o.value);
+  if (JSON.stringify(existingOptions) !== JSON.stringify(uniqueSorted.map(String))) {
+    sel.innerHTML = uniqueSorted.map(y => `<option value="${y}">${y}</option>`).join('');
+  }
+  sel.value = currentVal || (uniqueSorted.includes(currentYear) ? String(currentYear) : String(uniqueSorted[0]));
+}
 
 async function initYears() {
-  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiElevationRate', 'kpiSettlementRate'], true);
+  bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiPeakMonth', 'kpiSettlementRate'], true);
   bcRenderTableSkeleton('zonalMatrixBody', { cols: 6, rows: 7 });
 
-  let cachedYears = [new Date().getFullYear()];
+  const currentYear = new Date().getFullYear();
+  let availableYears = [currentYear];
+
   try {
-    cachedYears = await BCApi.trendsYears();
-    if (!cachedYears.length) cachedYears = [new Date().getFullYear()];
+    const fetched = await BCApi.trendsYears();
+    if (Array.isArray(fetched) && fetched.length > 0) {
+      availableYears = fetched;
+    }
   } catch (e) {
-    cachedYears = [new Date().getFullYear()];
+    console.warn('Could not fetch trends years list:', e);
   }
 
+  syncYearDropdown(availableYears, currentYear);
+
   const sel = document.getElementById('trendYear');
-  sel.innerHTML = cachedYears.map(y => `<option value="${y}">${y}</option>`).join('');
-  
+  const targetYear = sel ? sel.value : currentYear;
+
   try {
-    const data = await BCApi.trends(cachedYears[0]);
-    sel.value = data?.year || cachedYears[0];
+    const data = await BCApi.trends(targetYear);
+    if (data?.years && Array.isArray(data.years)) {
+      syncYearDropdown(data.years, data.year || targetYear);
+    }
     renderFromData(data || {});
   } catch (err) {
     console.error('initYears trends error:', err);
@@ -292,9 +321,13 @@ async function initYears() {
 async function updateCharts() {
   bcSetStatsLoading(['kpiTotal', 'kpiElevated', 'kpiPeakMonth', 'kpiSettlementRate'], true);
   bcRenderTableSkeleton('zonalMatrixBody', { cols: 6, rows: 7 });
-  const year = document.getElementById('trendYear').value;
+  const sel = document.getElementById('trendYear');
+  const year = sel ? sel.value : new Date().getFullYear();
   try {
     const data = await BCApi.trends(year);
+    if (data?.years && Array.isArray(data.years)) {
+      syncYearDropdown(data.years, data.year || year);
+    }
     renderFromData(data || {});
   } catch (err) {
     console.error('updateCharts trends error:', err);

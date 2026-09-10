@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import os
 import re
 import secrets
 from datetime import datetime, timedelta
@@ -8,6 +9,7 @@ import bcrypt
 from flask import Blueprint, current_app, jsonify, request, session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func
+from werkzeug.utils import secure_filename
 
 from ..email import send_otp_email
 from ..extensions import db
@@ -49,13 +51,35 @@ def _hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-# ---------------------------------------------------------------
-# Password History & Reuse Prevention
-# ---------------------------------------------------------------
 PASSWORD_HISTORY_LIMIT = 5
 PASSWORD_REUSE_ERROR = (
     "You cannot reuse your current or previously used password. Please choose a new, different password."
 )
+PASSWORD_POLICY_ERROR = (
+    "Password does not meet the required security criteria. Please follow the instructions below."
+)
+
+
+def is_password_valid(password: str) -> bool:
+    if not password or not isinstance(password, str):
+        return False
+    if len(password) < 6 or len(password) > 128:
+        return False
+    has_upper = bool(re.search(r"[A-Z]", password))
+    has_lower = bool(re.search(r"[a-z]", password))
+    has_num = bool(re.search(r"[0-9]", password))
+    has_special = bool(re.search(r"[^A-Za-z0-9]", password))
+
+    # Standard rule: length >= 6 and all 4 character types (upper, lower, num, special)
+    if has_upper and has_lower and has_num and has_special:
+        return True
+
+    # High-entropy / password manager generated rule: length >= 12 with upper, lower, and number
+    if len(password) >= 12 and has_upper and has_lower and has_num:
+        return True
+
+    return False
+
 
 
 def _check_password_reuse(user_id: int, current_hash: str, candidate_password: str) -> bool:
@@ -167,10 +191,28 @@ def auth_logout_direct():
 
 
 # Same URL contract the frontend already calls: /api/auth.php?action=...
-@bp.route("/api/auth.php", methods=["GET", "POST"])
+@bp.route("/api/auth.php", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/auth", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 def auth_router():
+    if request.method == "OPTIONS":
+        return "", 204
     try:
-        action = request.args.get("action", "")
+        action = (
+            request.args.get("action")
+            or request.form.get("action")
+            or (request.get_json(silent=True) or {}).get("action")
+            or ""
+        ).strip().lower()
+
+        # Handle file upload automatically if files are sent or upload action requested
+        if request.method in ("POST", "PUT") and (
+            action in ("upload_avatar", "upload_profile_photo", "avatar", "profile_photo")
+            or bool(request.files.get("avatar") or request.files.get("photo") or request.files.get("profile_photo") or request.files.get("image") or request.files.get("file"))
+        ):
+            return _upload_my_avatar()
+
+        if action in ("remove_avatar", "remove_profile_photo", "delete_avatar", "delete", "remove") and request.method in ("POST", "DELETE", "PUT"):
+            return _remove_my_avatar()
 
         if action == "auth_config" and request.method == "GET":
             return _auth_config()
@@ -371,8 +413,15 @@ def _complete_login(user, audit_note):
             "id": user.id,
             "username": user.username,
             "full_name": user.full_name,
+            "fullName": user.full_name,
             "role": user.role,
+            "email": user.email,
+            "contact": user.contact_no,
             "mustChangePassword": must_change_password,
+            "avatar": user.avatar_url if user.avatar_url else None,
+            "avatar_url": user.avatar_url if user.avatar_url else None,
+            "avatarUrl": user.avatar_url if user.avatar_url else None,
+            "profile_photo_path": user.avatar_url if user.avatar_url else None,
         }
     })
 
@@ -672,8 +721,8 @@ def _reset_password():
 
     data = request.get_json(silent=True) or {}
     new_password = data.get("newPassword") or ""
-    if not new_password:
-        return json_error("Enter a new password")
+    if not is_password_valid(new_password):
+        return json_error(PASSWORD_POLICY_ERROR, 422)
 
     settings = get_security_settings()
     if len(new_password) < settings["min_password_length"]:
@@ -752,13 +801,21 @@ def _me():
 
     active_full_name = (user_obj.full_name if user_obj else None) or session.get("full_name") or "User"
     active_role = (user_obj.role if user_obj else None) or session.get("role") or "Desk Officer"
+    active_avatar = (user_obj.avatar_url if user_obj and user_obj.avatar_url else None)
 
     return jsonify({"authenticated": True, "user": {
+        "id": user_obj.id if user_obj else session.get("user_id"),
         "full_name": active_full_name,
         "fullName": active_full_name,
         "role": active_role,
         "username": session.get("username"),
+        "email": user_obj.email if user_obj else None,
+        "contact": user_obj.contact_no if user_obj else None,
         "mustChangePassword": bool(session.get("must_change_password")),
+        "avatar": active_avatar,
+        "avatar_url": active_avatar,
+        "avatarUrl": active_avatar,
+        "profile_photo_path": active_avatar,
     }})
 
 
@@ -781,6 +838,9 @@ def _change_password_impl():
 
     if current_password == new_password or _check_password(new_password, user.password):
         return json_error("New password cannot be the same as your current password.", 400)
+
+    if not is_password_valid(new_password):
+        return json_error(PASSWORD_POLICY_ERROR, 422)
 
     settings = get_security_settings()
     if len(new_password) < settings["min_password_length"]:
@@ -856,9 +916,18 @@ def _my_account():
     user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
+    avatar_val = user.avatar_url if user.avatar_url else None
     return jsonify({
-        "username": user.username, "fullName": user.full_name,
-        "email": user.email, "contact": user.contact_no, "role": user.role,
+        "username": user.username,
+        "fullName": user.full_name,
+        "full_name": user.full_name,
+        "email": user.email,
+        "contact": user.contact_no,
+        "role": user.role,
+        "avatar": avatar_val,
+        "avatar_url": avatar_val,
+        "avatarUrl": avatar_val,
+        "profile_photo_path": avatar_val,
     })
 
 
@@ -874,8 +943,8 @@ def _update_my_account():
         return json_error("Not authenticated", 401)
 
     data = request.get_json(silent=True) or {}
-    full_name = (data.get("fullName") or "").strip()
-    contact = (data.get("contact") or "").strip()
+    full_name = (data.get("fullName") or data.get("full_name") or "").strip()
+    contact = (data.get("contact") or data.get("contact_no") or "").strip()
     email = (data.get("email") or "").strip()
 
     if not full_name:
@@ -896,6 +965,29 @@ def _update_my_account():
     user.contact_no = contact
     session["full_name"] = full_name
 
+    avatar_payload = data.get("avatar") or data.get("avatar_url") or data.get("profile_photo") or data.get("profile_photo_path")
+    if avatar_payload is not None:
+        if isinstance(avatar_payload, str) and avatar_payload.startswith("data:image/"):
+            import base64
+            try:
+                header, encoded = avatar_payload.split(",", 1)
+                mime = header.split(";")[0].split(":")[1] if ":" in header else "image/png"
+                ext = "png" if "png" in mime else ("webp" if "webp" in mime else "jpg")
+                img_data = base64.b64decode(encoded)
+                if len(img_data) <= 5 * 1024 * 1024:
+                    av_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
+                    os.makedirs(av_dir, exist_ok=True)
+                    av_filename = f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{ext}"
+                    with open(os.path.join(av_dir, av_filename), "wb") as f:
+                        f.write(img_data)
+                    user.avatar_url = f"/uploads/avatars/{av_filename}"
+            except Exception as e:
+                current_app.logger.warning(f"Failed to decode base64 avatar: {e}")
+        elif isinstance(avatar_payload, str) and avatar_payload.strip():
+            user.avatar_url = avatar_payload.strip()
+        elif avatar_payload is None or avatar_payload == "":
+            user.avatar_url = None
+
     if user.role == "Barangay Captain":
         from ..models import SystemSetting
         for skey in ["barangay_captain", "captain_name", "punong_barangay"]:
@@ -908,7 +1000,194 @@ def _update_my_account():
     db.session.commit()
     log_audit(user.username, "Updated", "System", "Updated their own account details")
 
-    return jsonify({"ok": True, "user": {
-        "username": user.username, "fullName": user.full_name, "full_name": user.full_name,
-        "email": user.email, "contact": user.contact_no, "role": user.role,
-    }})
+    avatar_val = user.avatar_url if user.avatar_url else None
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "avatar_url": avatar_val,
+        "avatarUrl": avatar_val,
+        "avatar": avatar_val,
+        "profile_photo_path": avatar_val,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "full_name": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "role": user.role,
+            "avatar": avatar_val,
+            "avatar_url": avatar_val,
+            "avatarUrl": avatar_val,
+            "profile_photo_path": avatar_val,
+        }
+    })
+
+
+def _upload_my_avatar():
+    """Uploads and saves a permanent user profile picture."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+
+    file = (
+        request.files.get("avatar")
+        or request.files.get("photo")
+        or request.files.get("profile_photo")
+        or request.files.get("image")
+        or request.files.get("file")
+    )
+    if not file or not file.filename:
+        return json_error("No photo file uploaded, or upload failed", 400)
+
+    # Allowed extensions
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ("png", "jpg", "jpeg", "webp") and file.mimetype not in ("image/png", "image/jpeg", "image/webp"):
+        return json_error("Profile photo must be a PNG, JPG, JPEG, or WEBP image", 400)
+
+    # Validate file size (5MB max)
+    file.stream.seek(0, os.SEEK_END)
+    size = file.stream.tell()
+    file.stream.seek(0)
+    if size > 5 * 1024 * 1024:
+        return json_error("Profile photo image must be smaller than 5MB", 400)
+
+    avatar_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
+    os.makedirs(avatar_dir, exist_ok=True)
+    os.makedirs(os.path.join(current_app.static_folder, "assets", "avatars"), exist_ok=True)
+
+    # Clean up previous custom avatar file if present
+    if user.avatar_url:
+        old_rel = user.avatar_url.lstrip("/")
+        old_full = os.path.join(current_app.static_folder, old_rel)
+        if os.path.isfile(old_full):
+            try:
+                os.remove(old_full)
+            except Exception as e:
+                current_app.logger.warning(f"Could not remove old avatar file {old_full}: {e}")
+
+    safe_ext = ext if ext in ("png", "jpg", "jpeg", "webp") else ("png" if file.mimetype == "image/png" else "jpg")
+    timestamp = int(datetime.utcnow().timestamp())
+    rand_token = secrets.token_hex(4)
+    filename = secure_filename(f"avatar_{user.id}_{timestamp}_{rand_token}.{safe_ext}")
+    dest_path = os.path.join(avatar_dir, filename)
+    file.save(dest_path)
+
+    relative_path = f"/uploads/avatars/{filename}"
+    user.avatar_url = relative_path
+    db.session.commit()
+
+    log_audit(user.username, "Updated", "System", "Profile photo uploaded")
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "avatar_url": relative_path,
+        "avatarUrl": relative_path,
+        "avatar": relative_path,
+        "profile_photo_path": relative_path,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "full_name": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "role": user.role,
+            "avatar": relative_path,
+            "avatar_url": relative_path,
+            "avatarUrl": relative_path,
+            "profile_photo_path": relative_path,
+        }
+    }), 200
+
+
+def _remove_my_avatar():
+    """Removes the user's uploaded profile picture and resets avatar_url to None."""
+    if not session.get("user_id"):
+        return json_error("Not authenticated", 401)
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        return json_error("Not authenticated", 401)
+
+    if user.avatar_url:
+        old_rel = user.avatar_url.lstrip("/")
+        old_full = os.path.join(current_app.static_folder, old_rel)
+        if os.path.isfile(old_full):
+            try:
+                os.remove(old_full)
+            except Exception as e:
+                current_app.logger.warning(f"Could not remove avatar file {old_full}: {e}")
+
+    user.avatar_url = None
+    db.session.commit()
+
+    log_audit(user.username, "Updated", "System", "Profile photo removed")
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "avatar_url": None,
+        "avatarUrl": None,
+        "avatar": None,
+        "profile_photo_path": None,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "full_name": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "role": user.role,
+            "avatar": None,
+            "avatar_url": None,
+            "avatarUrl": None,
+            "profile_photo_path": None,
+        }
+    }), 200
+
+
+@bp.route("/api/user/avatar", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/user/profile-photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/user/profile_photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/settings/profile-photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/settings/avatar", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/users/avatar", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/users/profile-photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/auth/profile-photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/auth/avatar", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/user/profile/photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/profile-photo", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/avatar", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+def api_user_avatar_endpoint():
+    if request.method == "OPTIONS":
+        return "", 204
+    if request.method == "DELETE":
+        return _remove_my_avatar()
+    if request.method in ("POST", "PUT"):
+        action = (
+            request.args.get("action")
+            or request.form.get("action")
+            or (request.get_json(silent=True) or {}).get("action")
+            or ""
+        ).strip().lower()
+        if action in ("remove_avatar", "remove_profile_photo", "delete_avatar", "delete", "remove"):
+            return _remove_my_avatar()
+        return _upload_my_avatar()
+    if request.method == "GET":
+        return _my_account()
+    return json_error("Method not allowed", 405)
+
+
+@bp.route("/api/user/profile", methods=["GET", "PUT", "POST", "OPTIONS"])
+def api_user_profile_endpoint():
+    if request.method == "OPTIONS":
+        return "", 204
+    if request.method == "GET":
+        return _my_account()
+    if request.files.get("avatar") or request.files.get("photo") or request.files.get("profile_photo") or request.files.get("image") or request.files.get("file"):
+        return _upload_my_avatar()
+    return _update_my_account()
+

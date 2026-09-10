@@ -39,6 +39,8 @@ def analytics_router():
             return _heatmap()
         if "zones" in path or action == "zones":
             return _zones()
+        if action in ("trends_years", "trends-years", "years") or "trends/years" in path or "trends_years" in path:
+            return _trends_years()
         if "trends" in path or action == "trends":
             return _trends()
         if "zone-density" in path or "zone_density" in path or action in ("zone-density", "zone_density"):
@@ -381,6 +383,75 @@ def _zone_density():
         return json_error(f"Failed to compute zone density analytics: {str(e)}", 500)
 
 
+def _get_distinct_trends_years():
+    current_year = datetime.utcnow().year
+    years_set = {current_year}
+
+    try:
+        # Extract from incidents
+        inc_years = (
+            db.session.query(extract("year", Incident.incident_date))
+            .filter((Incident.archived == False) | (Incident.archived == None))
+            .filter(Incident.incident_date.isnot(None))
+            .distinct()
+            .all()
+        )
+        for r in inc_years:
+            if r[0] is not None:
+                try:
+                    y = int(r[0])
+                    if 1900 <= y <= 2100:
+                        years_set.add(y)
+                except (ValueError, TypeError):
+                    pass
+    except Exception:
+        pass
+
+    try:
+        # Extract from blotter records
+        blt_years = (
+            db.session.query(extract("year", BlotterRecord.date_filed))
+            .filter((BlotterRecord.archived == False) | (BlotterRecord.archived == None))
+            .filter(BlotterRecord.date_filed.isnot(None))
+            .distinct()
+            .all()
+        )
+        for r in blt_years:
+            if r[0] is not None:
+                try:
+                    y = int(r[0])
+                    if 1900 <= y <= 2100:
+                        years_set.add(y)
+                except (ValueError, TypeError):
+                    pass
+    except Exception:
+        pass
+
+    return sorted(list(years_set), reverse=True)
+
+
+@bp.route("/api/analytics/trends/years", methods=["GET"])
+@bp.route("/api/analytics/trends_years", methods=["GET"])
+@bp.route("/api/analytics/years", methods=["GET"])
+@login_required
+@permission_required("view_analytics")
+def trends_years_direct():
+    return _trends_years()
+
+
+@permission_required("view_analytics")
+def _trends_years():
+    try:
+        years = _get_distinct_trends_years()
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "years": years
+        })
+    except Exception as e:
+        return json_error(f"Failed to fetch trends years: {str(e)}", 500)
+
+
 @bp.route("/api/analytics/trends", methods=["GET"])
 @bp.route("/api/trends.php", methods=["GET"])
 @login_required
@@ -395,19 +466,20 @@ def _trends_impl():
     try:
         MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         
-        # 1. Available years
-        years = [
-            r[0] for r in
-            db.session.query(extract("year", Incident.incident_date))
-            .filter((Incident.archived == False) | (Incident.archived == None))
-            .distinct()
-            .order_by(extract("year", Incident.incident_date).desc()).all()
-        ]
-        years = [int(y) for y in years if y is not None]
+        # 1. Available years (dynamically merged across incident and blotter records)
+        years = _get_distinct_trends_years()
         current_year = datetime.utcnow().year
-        if not years:
-            years = [current_year]
-        year = int(request.args.get("year") or years[0])
+        default_year = current_year if current_year in years else (years[0] if years else current_year)
+        
+        req_year = request.args.get("year")
+        if req_year:
+            try:
+                year = int(req_year)
+            except (ValueError, TypeError):
+                year = default_year
+        else:
+            year = default_year
+
 
         # 2. KPI Summary Aggregation
         total_incidents = Incident.query.filter(

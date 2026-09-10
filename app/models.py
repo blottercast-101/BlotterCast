@@ -41,6 +41,7 @@ class User(db.Model):
     google_id = db.Column(db.String(100))
     auth_provider = db.Column(db.String(30), nullable=False, default="local")
     signature_path = db.Column(db.String(255))
+    avatar_url = db.Column(db.String(255))
     last_login = db.Column(db.DateTime)
     last_seen = db.Column(db.DateTime)
     failed_attempts = db.Column(db.Integer, nullable=False, default=0)
@@ -69,6 +70,7 @@ class User(db.Model):
         google_id=None,
         auth_provider="local",
         signature_path=None,
+        avatar_url=None,
         last_login=None,
         last_seen=None,
         failed_attempts=0,
@@ -96,6 +98,8 @@ class User(db.Model):
         self.auth_provider = auth_provider
         if signature_path is not None:
             self.signature_path = signature_path
+        if avatar_url is not None:
+            self.avatar_url = avatar_url
         if last_login is not None:
             self.last_login = last_login
         if last_seen is not None:

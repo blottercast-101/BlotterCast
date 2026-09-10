@@ -20,12 +20,26 @@ def _hash_password(raw: str) -> str:
     return bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-@bp.route("/api/users.php", methods=["GET", "POST", "PUT", "DELETE"])
+@bp.route("/api/users.php", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@bp.route("/api/users", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 @login_required
 def users_router():
+    if request.method == "OPTIONS":
+        return "", 204
     try:
-        action = request.args.get("action", "")
+        action = (
+            request.args.get("action")
+            or request.form.get("action")
+            or (request.get_json(silent=True) or {}).get("action")
+            or ""
+        ).strip().lower()
         method = request.method
+
+        # Avatar actions accessible to any signed-in user
+        if (action in ("upload_avatar", "upload_profile_photo", "avatar", "profile_photo") or bool(request.files.get("avatar") or request.files.get("photo") or request.files.get("profile_photo") or request.files.get("image") or request.files.get("file"))) and method in ("POST", "PUT"):
+            return _upload_avatar_user()
+        if action in ("remove_avatar", "remove_profile_photo", "delete_avatar", "delete_photo", "delete", "remove") and method in ("POST", "DELETE", "PUT") and (request.args.get("type") == "avatar" or action != "delete"):
+            return _remove_avatar_user()
 
         # Readable by any signed-in user (certificates need the captain's name/signature
         # regardless of role; presence checks needed for real-time status sync)
@@ -156,7 +170,10 @@ def _list():
             "last_login": u.last_login.strftime("%Y-%m-%d %H:%M:%S") if u.last_login else None,
             "contact": u.contact_no,
             "contact_no": u.contact_no,
-            "avatar": None,
+            "avatar": u.avatar_url or None,
+            "avatar_url": u.avatar_url or None,
+            "avatarUrl": u.avatar_url or None,
+            "profile_photo_path": u.avatar_url or None,
             "signaturePath": sig_url,
             "is_protected": is_prot,
         })
@@ -239,6 +256,20 @@ def _create():
     db.session.add(user)
     db.session.commit()
     log_audit(session.get("username"), "Created", "Users", f"Account created: {full_name} ({role})")
+
+    # Automated Credential Email Delivery with Mandatory First-Login Password Change Reminder
+    try:
+        from ..email import send_credential_email
+        send_credential_email(
+            to_email=email,
+            username=username,
+            temp_password=password,
+            full_name=full_name,
+            role=role,
+        )
+    except Exception as e:
+        current_app.logger.warning(f"Failed to dispatch credential email to {email}: {e}")
+
     return jsonify({"ok": True, "id": user.id, "temp_password": password}), 201
 
 
@@ -274,6 +305,9 @@ def _update():
     # Only update password if explicitly provided and not empty
     password = (d.get("password") or "").strip()
     if password:
+        from .auth import PASSWORD_POLICY_ERROR, is_password_valid
+        if not is_password_valid(password):
+            return json_error(PASSWORD_POLICY_ERROR, 422)
         min_len = get_security_settings()["min_password_length"]
         if len(password) < min_len:
             return json_error(f"Password must be at least {min_len} characters long", 400)
@@ -284,6 +318,30 @@ def _update():
     req_role = d.get("role")
     if req_role and user.role not in PROTECTED_ROLES:
         user.role = req_role
+
+    # Avatar update support (URL, null, or Data URL base64)
+    avatar_payload = d.get("avatar") or d.get("avatar_url") or d.get("profile_photo") or d.get("profile_photo_path")
+    if avatar_payload is not None:
+        if isinstance(avatar_payload, str) and avatar_payload.startswith("data:image/"):
+            import base64
+            try:
+                header, encoded = avatar_payload.split(",", 1)
+                mime = header.split(";")[0].split(":")[1] if ":" in header else "image/png"
+                ext = "png" if "png" in mime else ("webp" if "webp" in mime else "jpg")
+                img_data = base64.b64decode(encoded)
+                if len(img_data) <= 5 * 1024 * 1024:
+                    av_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
+                    os.makedirs(av_dir, exist_ok=True)
+                    av_filename = f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{ext}"
+                    with open(os.path.join(av_dir, av_filename), "wb") as f:
+                        f.write(img_data)
+                    user.avatar_url = f"/uploads/avatars/{av_filename}"
+            except Exception as e:
+                current_app.logger.warning(f"Failed to decode base64 avatar: {e}")
+        elif isinstance(avatar_payload, str) and avatar_payload.strip():
+            user.avatar_url = avatar_payload.strip()
+        elif avatar_payload is None or avatar_payload == "":
+            user.avatar_url = None
 
     # If updating Barangay Captain, synchronize official settings keys
     if user.role == "Barangay Captain":
@@ -303,8 +361,13 @@ def _update():
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"Account updated: {full_name}")
 
+    avatar_val = user.avatar_url or None
     return jsonify({
         "ok": True,
+        "avatar_url": avatar_val,
+        "avatarUrl": avatar_val,
+        "avatar": avatar_val,
+        "profile_photo_path": avatar_val,
         "user": {
             "id": user.id,
             "username": user.username,
@@ -315,6 +378,10 @@ def _update():
             "contact": user.contact_no,
             "contact_no": user.contact_no,
             "role": user.role,
+            "avatar": avatar_val,
+            "avatar_url": avatar_val,
+            "avatarUrl": avatar_val,
+            "profile_photo_path": avatar_val,
             "is_protected": user.role in PROTECTED_ROLES,
         }
     })
@@ -359,14 +426,22 @@ def _delete():
         
         username = user.username
 
-        # 1. Clean up user's signature file if one exists
+        # 1. Clean up user's signature & avatar files if they exist
         if user.signature_path:
             try:
-                sig_file = os.path.join(current_app.static_folder, user.signature_path)
+                sig_file = os.path.join(current_app.static_folder, user.signature_path.lstrip("/"))
                 if os.path.isfile(sig_file):
                     os.remove(sig_file)
             except Exception as e:
                 current_app.logger.warning(f"Failed to remove signature file on user delete: {e}")
+
+        if user.avatar_url and user.avatar_url.startswith("/assets/avatars/"):
+            try:
+                av_file = os.path.join(current_app.static_folder, user.avatar_url.lstrip("/"))
+                if os.path.isfile(av_file):
+                    os.remove(av_file)
+            except Exception as e:
+                current_app.logger.warning(f"Failed to remove avatar file on user delete: {e}")
 
         # 2. Safely remove child foreign key dependencies within the transaction
         OtpCode.query.filter_by(user_id=uid).delete()
@@ -442,6 +517,124 @@ def _remove_signature():
     db.session.commit()
     log_audit(session.get("username"), "Updated", "Users", f"Signature removed for {user.username}")
     return jsonify({"ok": True})
+
+
+def _upload_avatar_user():
+    uid = _get_target_user_id() or session.get("user_id")
+    if not uid:
+        return json_error("id required", 400)
+    user = db.session.get(User, uid)
+    if not user:
+        return json_error("User not found", 404)
+
+    file = (
+        request.files.get("avatar")
+        or request.files.get("photo")
+        or request.files.get("signature")
+        or request.files.get("profile_photo")
+        or request.files.get("image")
+        or request.files.get("file")
+    )
+    if not file or not file.filename:
+        return json_error("No photo file uploaded, or upload failed", 400)
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ("png", "jpg", "jpeg", "webp") and file.mimetype not in ("image/png", "image/jpeg", "image/webp"):
+        return json_error("Profile photo must be a PNG, JPG, JPEG, or WEBP image", 400)
+
+    file.stream.seek(0, os.SEEK_END)
+    size = file.stream.tell()
+    file.stream.seek(0)
+    if size > 5 * 1024 * 1024:
+        return json_error("Profile photo image must be smaller than 5MB", 400)
+
+    avatar_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
+    os.makedirs(avatar_dir, exist_ok=True)
+
+    if user.avatar_url:
+        old_rel = user.avatar_url.lstrip("/")
+        old_full = os.path.join(current_app.static_folder, old_rel)
+        if os.path.isfile(old_full):
+            try:
+                os.remove(old_full)
+            except Exception as e:
+                current_app.logger.warning(f"Could not remove old avatar file: {e}")
+
+    safe_ext = ext if ext in ("png", "jpg", "jpeg", "webp") else ("png" if file.mimetype == "image/png" else "jpg")
+    filename = secure_filename(f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{safe_ext}")
+    dest_path = os.path.join(avatar_dir, filename)
+    file.save(dest_path)
+
+    relative_path = f"/uploads/avatars/{filename}"
+    user.avatar_url = relative_path
+    db.session.commit()
+    log_audit(session.get("username"), "Updated", "Users", f"Profile photo uploaded for {user.username}")
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "avatar_url": relative_path,
+        "avatarUrl": relative_path,
+        "avatar": relative_path,
+        "profile_photo_path": relative_path,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "full_name": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "role": user.role,
+            "avatar": relative_path,
+            "avatar_url": relative_path,
+            "avatarUrl": relative_path,
+            "profile_photo_path": relative_path,
+        }
+    }), 200
+
+
+def _remove_avatar_user():
+    uid = _get_target_user_id() or session.get("user_id")
+    if not uid:
+        return json_error("id required", 400)
+    user = db.session.get(User, uid)
+    if not user:
+        return json_error("User not found", 404)
+
+    if user.avatar_url:
+        old_rel = user.avatar_url.lstrip("/")
+        old_full = os.path.join(current_app.static_folder, old_rel)
+        if os.path.isfile(old_full):
+            try:
+                os.remove(old_full)
+            except Exception as e:
+                current_app.logger.warning(f"Could not remove avatar file: {e}")
+
+    user.avatar_url = None
+    db.session.commit()
+    log_audit(session.get("username"), "Updated", "Users", f"Profile photo removed for {user.username}")
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "avatar_url": None,
+        "avatarUrl": None,
+        "avatar": None,
+        "profile_photo_path": None,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "fullName": user.full_name,
+            "full_name": user.full_name,
+            "email": user.email,
+            "contact": user.contact_no,
+            "role": user.role,
+            "avatar": None,
+            "avatar_url": None,
+            "avatarUrl": None,
+            "profile_photo_path": None,
+        }
+    }), 200
 
 
 def _audit():

@@ -175,11 +175,176 @@
   </main>
 </div>
 
-<!-- Add/Edit User Modal -->
+<!-- Multi-Step "Add New User" Modal with Stepper Wizard -->
+<div class="modal-overlay" id="addUserWizardModal">
+  <div class="modal-box max-w-xl p-6 md:p-8 bg-white rounded-2xl shadow-2xl border border-forest-100">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-display text-2xl font-bold text-forest-900">Add New User</h2>
+      <button type="button" onclick="closeModal('addUserWizardModal')" class="modal-close-btn text-forest-400 hover:text-forest-700 p-1.5 rounded-lg transition-colors" aria-label="Close modal">
+        <span data-icon="x" data-icon-size="20"></span>
+      </button>
+    </div>
+
+    <!-- Chevron / Arrow Stepper Progress Bar -->
+    <div class="wizard-stepper-ribbon mb-6" id="wiz_stepper_bar">
+      <!-- Step 1 Ribbon: Personal -->
+      <div id="wiz_step_indicator_1" class="wizard-chevron-step step-active">
+        <span class="wiz-step-check text-xs mr-1 font-bold">✓</span>
+        <span class="wiz-step-label">PERSONAL</span>
+      </div>
+      <!-- Step 2 Ribbon: Roles -->
+      <div id="wiz_step_indicator_2" class="wizard-chevron-step step-upcoming-1">
+        <span class="wiz-step-check text-xs mr-1 font-bold hidden">✓</span>
+        <span class="wiz-step-label">ROLES</span>
+      </div>
+      <!-- Step 3 Ribbon: Security -->
+      <div id="wiz_step_indicator_3" class="wizard-chevron-step step-upcoming-2">
+        <span class="wiz-step-check text-xs mr-1 font-bold hidden">✓</span>
+        <span class="wiz-step-label">SECURITY</span>
+      </div>
+    </div>
+
+    <!-- Wizard Forms Container -->
+    <form id="addUserWizardForm" onsubmit="event.preventDefault();">
+      <!-- STEP 1: Personal Information -->
+      <div id="wiz_view_step_1" class="space-y-4">
+        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
+          <span>PERSONAL INFORMATION</span>
+        </div>
+
+        <div>
+          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Full Name <span class="text-red-500 font-bold">*</span></label>
+          <input type="text" id="wiz_name" class="wizard-input" placeholder="Full name" data-no-numbers autocomplete="name" required />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Email <span class="text-red-500 font-bold">*</span></label>
+            <input type="email" id="wiz_email" class="wizard-input" placeholder="email@barangay.gov" autocomplete="email" required />
+          </div>
+          <div>
+            <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username <span class="text-red-500 font-bold">*</span></label>
+            <input type="text" id="wiz_username" class="wizard-input" placeholder="username" autocomplete="username" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Contact No. <span class="text-red-500 font-bold">*</span></label>
+          <div class="flex rounded-xl overflow-hidden border border-forest-200/80 bg-[#e3f4e9] focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600 transition-all">
+            <span class="inline-flex items-center px-3.5 bg-[#d2ebd9] text-forest-800 font-bold text-xs sm:text-sm border-r border-forest-200/80 whitespace-nowrap flex-shrink-0 select-none">+63</span>
+            <input type="text" id="wiz_contact" class="w-full py-2.5 px-3.5 bg-transparent text-forest-900 placeholder:text-forest-400 focus:outline-none text-sm font-medium" placeholder="9171234567" data-digits-only maxlength="11" autocomplete="tel" required />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
+          <button type="button" onclick="closeModal('addUserWizardModal')" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors">Cancel</button>
+          <button type="button" onclick="wizardGoToStep(2)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5">
+            Next <span data-icon="chevron-right" data-icon-size="14"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Roles -->
+      <div id="wiz_view_step_2" class="space-y-4 hidden">
+        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
+          <span>ASSIGN USER ROLE</span>
+        </div>
+
+        <div class="space-y-3">
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="wiz_role_radio" value="Desk Officer" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" checked onchange="onWizardRoleSelect('Desk Officer')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Desk Officer</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">DSK Prefix</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Responsible for incident intake, blotter entries, amicable settlements, and barangay certificate issuance.</p>
+            </div>
+          </label>
+
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="wiz_role_radio" value="Data Encoder" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onWizardRoleSelect('Data Encoder')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Data Encoder</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">DTA Prefix</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Responsible for census record encoding, demographics maintenance, and resident profile indexing.</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
+          <button type="button" onclick="wizardGoToStep(1)" class="px-5 py-2.5 rounded-xl border border-forest-200 text-forest-700 hover:bg-forest-50 text-sm font-medium transition-colors flex items-center gap-1.5">
+            <span data-icon="chevron-left" data-icon-size="14"></span> Back
+          </button>
+          <button type="button" onclick="wizardGoToStep(3)" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-1.5">
+            Next <span data-icon="chevron-right" data-icon-size="14"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Security -->
+      <div id="wiz_view_step_3" class="space-y-4 hidden">
+        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
+          <span>SECURITY &amp; CREDENTIALS</span>
+        </div>
+
+        <!-- Account Summary Callout -->
+        <div class="p-4 bg-[#edf7f0] border border-emerald-200/70 rounded-xl space-y-1.5 text-xs">
+          <div class="flex justify-between items-center"><span class="text-forest-600 font-medium">Full Name:</span> <span id="wiz_summary_name" class="font-bold text-forest-900"></span></div>
+          <div class="flex justify-between items-center"><span class="text-forest-600 font-medium">Username:</span> <span id="wiz_summary_username" class="font-mono font-semibold text-forest-800"></span></div>
+          <div class="flex justify-between items-center"><span class="text-forest-600 font-medium">Assigned Role:</span> <span id="wiz_summary_role" class="font-bold text-emerald-800"></span></div>
+          <div class="flex justify-between items-center"><span class="text-forest-600 font-medium">MFA Email:</span> <span id="wiz_summary_email" class="text-forest-800"></span></div>
+          <div class="flex justify-between items-center"><span class="text-forest-600 font-medium">Contact:</span> <span id="wiz_summary_contact" class="text-forest-800"></span></div>
+        </div>
+
+        <div>
+          <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 flex items-center justify-between">
+            <span>Temporary Password</span>
+            <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
+          </label>
+          <div class="relative flex items-center">
+            <input
+              type="text"
+              id="wiz_password"
+              class="w-full py-2.5 pl-3.5 pr-12 font-mono font-bold text-forest-900 tracking-wider bg-[#e3f4e9] border border-forest-200/80 rounded-xl cursor-default select-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              readonly
+              tabindex="-1"
+            />
+            <button
+              type="button"
+              onclick="regenerateWizardTempPassword()"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-forest-700 hover:bg-forest-200/70 active:scale-95 transition-all"
+              title="Regenerate Password"
+              aria-label="Regenerate Password"
+            >
+              <span data-icon="refresh" data-icon-size="16"></span>
+            </button>
+          </div>
+          <p class="text-xs text-forest-600 mt-2 leading-relaxed">
+            This temporary password will be emailed directly to the user. The recipient must update their credentials in Settings upon initial login.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-forest-100/80 mt-6">
+          <button type="button" onclick="wizardGoToStep(2)" class="px-5 py-2.5 rounded-xl border border-forest-200 text-forest-700 hover:bg-forest-50 text-sm font-medium transition-colors flex items-center gap-1.5">
+            <span data-icon="chevron-left" data-icon-size="14"></span> Back
+          </button>
+          <button type="button" id="btnSaveWizardUser" onclick="saveWizardUser()" class="bg-[#1b4332] hover:bg-[#143326] text-white px-7 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center gap-2">
+            <span data-icon="check" data-icon-size="15"></span> Save User
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit User Modal (Direct Form) -->
 <div class="modal-overlay" id="userModal">
   <div class="modal-box max-w-lg">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="font-display text-xl text-forest-800" id="userModalTitle">Add New User</h2>
+      <h2 class="font-display text-xl text-forest-800" id="userModalTitle">Edit User</h2>
       <button onclick="closeModal('userModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form id="userForm" class="space-y-4">
@@ -199,7 +364,7 @@
           <option value="Data Encoder">Data Encoder</option>
         </select>
       </div>
-      <div id="uf_password_wrap">
+      <div id="uf_password_wrap" class="hidden">
         <label class="form-label flex items-center justify-between">
           <span>Temporary Password</span>
           <span class="text-xs text-forest-500 font-normal">Auto-generated for initial sign-in</span>
@@ -210,9 +375,6 @@
             <span data-icon="copy" data-icon-size="16"></span>
           </button>
         </div>
-        <p class="text-xs text-forest-400 mt-1">
-          Auto-generated prefix: <strong class="text-forest-600 font-semibold">DSK</strong> (Desk Officer), <strong class="text-forest-600 font-semibold">DTA</strong> (Data Encoder). The user can change their password in Settings after logging in.
-        </p>
       </div>
       <div id="uf_sig_section" class="hidden border-t border-forest-100 pt-4">
         <label class="form-label">E-Signature <span class="text-forest-400 font-normal">(used on printed Barangay Clearance &amp; Certificate of Indigency)</span></label>
@@ -231,7 +393,7 @@
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" onclick="closeModal('userModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveUser()" class="btn-primary">Save User</button>
+        <button type="button" onclick="saveUser()" class="btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
@@ -445,21 +607,265 @@ function onRoleChange(role) {
   }
 }
 
+// ── Multi-Step Add User Wizard ─────────────────────────────
+let currentWizardStep = 1;
+let selectedWizardRole = 'Desk Officer';
+
+function getWizardNormalizedContact() {
+  const input = document.getElementById('wiz_contact');
+  const raw = (input ? input.value : '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('0')) return raw;
+  if (raw.startsWith('63')) return '0' + raw.slice(2);
+  if (raw.length === 10 && raw.startsWith('9')) return '0' + raw;
+  return raw;
+}
+
+function updateWizardStepperUI(step) {
+  currentWizardStep = step;
+  const s1 = document.getElementById('wiz_step_indicator_1');
+  const s2 = document.getElementById('wiz_step_indicator_2');
+  const s3 = document.getElementById('wiz_step_indicator_3');
+  
+  if (!s1 || !s2 || !s3) return;
+
+  // Reset indicator classes
+  [s1, s2, s3].forEach(el => {
+    el.classList.remove('step-active', 'step-completed', 'step-upcoming-1', 'step-upcoming-2');
+  });
+
+  const check1 = s1.querySelector('.wiz-step-check');
+  const check2 = s2.querySelector('.wiz-step-check');
+  const check3 = s3.querySelector('.wiz-step-check');
+
+  if (step === 1) {
+    s1.classList.add('step-active');
+    s2.classList.add('step-upcoming-1');
+    s3.classList.add('step-upcoming-2');
+    if (check1) check1.classList.remove('hidden');
+    if (check2) check2.classList.add('hidden');
+    if (check3) check3.classList.add('hidden');
+  } else if (step === 2) {
+    s1.classList.add('step-completed');
+    s2.classList.add('step-active');
+    s3.classList.add('step-upcoming-1');
+    if (check1) check1.classList.remove('hidden');
+    if (check2) check2.classList.remove('hidden');
+    if (check3) check3.classList.add('hidden');
+  } else if (step === 3) {
+    s1.classList.add('step-completed');
+    s2.classList.add('step-completed');
+    s3.classList.add('step-active');
+    if (check1) check1.classList.remove('hidden');
+    if (check2) check2.classList.remove('hidden');
+    if (check3) check3.classList.remove('hidden');
+  }
+
+  // Show/Hide views
+  const v1 = document.getElementById('wiz_view_step_1');
+  const v2 = document.getElementById('wiz_view_step_2');
+  const v3 = document.getElementById('wiz_view_step_3');
+
+  if (v1) v1.classList.toggle('hidden', step !== 1);
+  if (v2) v2.classList.toggle('hidden', step !== 2);
+  if (v3) v3.classList.toggle('hidden', step !== 3);
+}
+
+async function validateWizardStep1() {
+  const nameEl = document.getElementById('wiz_name');
+  const usernameEl = document.getElementById('wiz_username');
+  const emailEl = document.getElementById('wiz_email');
+  const contactEl = document.getElementById('wiz_contact');
+
+  const name = nameEl ? nameEl.value.trim() : '';
+  const username = usernameEl ? usernameEl.value.trim() : '';
+  const email = emailEl ? emailEl.value.trim() : '';
+  const contact = getWizardNormalizedContact();
+
+  if (!name) {
+    await bcAlert('Please enter the user\'s Full Name.');
+    if (nameEl) nameEl.focus();
+    return false;
+  }
+  if (!bcIsValidName(name)) {
+    await bcAlert('Full Name should only contain letters (no numbers).');
+    if (nameEl) nameEl.focus();
+    return false;
+  }
+  if (!email) {
+    await bcAlert('Please enter an Email address.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (!bcIsValidEmail(email)) {
+    await bcAlert('Please enter a valid email address.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (usersData.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+    await bcAlert('That email address is already in use by another account.');
+    if (emailEl) emailEl.focus();
+    return false;
+  }
+  if (!username) {
+    await bcAlert('Please enter a Username.');
+    if (usernameEl) usernameEl.focus();
+    return false;
+  }
+  if (usersData.some(u => u.username && u.username.toLowerCase() === username.toLowerCase())) {
+    await bcAlert('That username is already taken. Please choose another.');
+    if (usernameEl) usernameEl.focus();
+    return false;
+  }
+  if (!contact) {
+    await bcAlert('Please enter a Contact Number.');
+    if (contactEl) contactEl.focus();
+    return false;
+  }
+  if (!bcIsValidContact(contact)) {
+    await bcAlert('Contact No. should be a valid PH mobile number (e.g. 9171234567 or 09171234567).');
+    if (contactEl) contactEl.focus();
+    return false;
+  }
+  return true;
+}
+
+async function wizardGoToStep(targetStep) {
+  if (targetStep > currentWizardStep) {
+    if (currentWizardStep === 1) {
+      const valid = await validateWizardStep1();
+      if (!valid) return;
+    }
+  }
+
+  if (targetStep === 3) {
+    // Populate summary badge and ensure temporary password matches selected role
+    const name = (document.getElementById('wiz_name')?.value || '').trim();
+    const username = (document.getElementById('wiz_username')?.value || '').trim();
+    const email = (document.getElementById('wiz_email')?.value || '').trim();
+    const contact = getWizardNormalizedContact();
+    
+    const sumName = document.getElementById('wiz_summary_name');
+    const sumUsername = document.getElementById('wiz_summary_username');
+    const sumRole = document.getElementById('wiz_summary_role');
+    const sumEmail = document.getElementById('wiz_summary_email');
+    const sumContact = document.getElementById('wiz_summary_contact');
+
+    if (sumName) sumName.textContent = name;
+    if (sumUsername) sumUsername.textContent = username;
+    if (sumRole) sumRole.textContent = selectedWizardRole;
+    if (sumEmail) sumEmail.textContent = email;
+    if (sumContact) sumContact.textContent = contact;
+
+    // Generate or maintain password for this role
+    const pwInput = document.getElementById('wiz_password');
+    if (pwInput) {
+      const expectedPrefix = selectedWizardRole.includes('Desk') ? 'DSK' : 'DTA';
+      if (!pwInput.value || !pwInput.value.startsWith(expectedPrefix)) {
+        pwInput.value = generateTempPasswordForRole(selectedWizardRole);
+      }
+    }
+  }
+
+  updateWizardStepperUI(targetStep);
+}
+
+function onWizardRoleSelect(role) {
+  selectedWizardRole = role;
+  const pwInput = document.getElementById('wiz_password');
+  if (pwInput && pwInput.value) {
+    pwInput.value = generateTempPasswordForRole(role);
+  }
+}
+
+function regenerateWizardTempPassword() {
+  const role = selectedWizardRole || 'Desk Officer';
+  const newPw = generateTempPasswordForRole(role);
+  const pwInput = document.getElementById('wiz_password');
+  if (pwInput) {
+    pwInput.value = newPw;
+  }
+  showToast(`New ${role.includes('Desk') ? 'Desk Officer (DSK)' : 'Data Encoder (DTA)'} temporary password generated!`);
+}
+
+function copyWizardTempPassword() {
+  const input = document.getElementById('wiz_password');
+  if (!input || !input.value) return;
+  const pw = input.value;
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(pw).then(() => {
+      showToast('Temporary password copied to clipboard!');
+    }).catch(() => {
+      fallbackCopy(input);
+    });
+  } else {
+    fallbackCopy(input);
+  }
+}
+
 function openAddUser() {
   editUserId = null;
-  document.getElementById('userModalTitle').textContent = 'Add New User';
-  document.getElementById('userForm').reset();
-  resetFormDropdowns('userForm');
-  document.getElementById('uf_role').innerHTML = `
-    <option value="" disabled selected hidden>-Select-</option>
-    <option value="Desk Officer">Desk Officer</option>
-    <option value="Data Encoder">Data Encoder</option>
-  `;
-  document.getElementById('uf_username').disabled = false;
-  document.getElementById('uf_password_wrap').classList.remove('hidden');
-  document.getElementById('uf_password').value = '';
-  document.getElementById('uf_sig_section').classList.add('hidden');
-  openModal('userModal');
+  const form = document.getElementById('addUserWizardForm');
+  if (form) form.reset();
+  
+  selectedWizardRole = 'Desk Officer';
+  const radios = document.getElementsByName('wiz_role_radio');
+  radios.forEach(r => {
+    r.checked = (r.value === 'Desk Officer');
+  });
+
+  const pwInput = document.getElementById('wiz_password');
+  if (pwInput) pwInput.value = generateTempPasswordForRole('Desk Officer');
+
+  updateWizardStepperUI(1);
+  openModal('addUserWizardModal');
+}
+
+async function saveWizardUser() {
+  const name = (document.getElementById('wiz_name')?.value || '').trim();
+  const username = (document.getElementById('wiz_username')?.value || '').trim();
+  const email = (document.getElementById('wiz_email')?.value || '').trim();
+  const contact = getWizardNormalizedContact();
+  const role = selectedWizardRole || 'Desk Officer';
+  const password = (document.getElementById('wiz_password')?.value || '').trim();
+
+  if (!name || !username || !email || !contact || !password) {
+    await bcAlert('Please complete all required fields.');
+    return;
+  }
+
+  if (role !== 'Desk Officer' && role !== 'Data Encoder') {
+    await bcAlert('Only Desk Officer and Data Encoder accounts can be created.');
+    return;
+  }
+
+  const payload = {
+    name,
+    username,
+    email,
+    contact,
+    role,
+    password
+  };
+
+  const btn = document.getElementById('btnSaveWizardUser');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await BCApi.createUser(payload);
+    closeModal('addUserWizardModal');
+    await loadUsers();
+    await loadAuditLog();
+    await bcAlert(
+      `Account created successfully!\n\nUsername: ${payload.username}\nRole: ${payload.role}\nTemporary Password: ${payload.password}\n\nAn automated credential email has been dispatched to ${payload.email}.\nThe user must change their password immediately upon their first login in Settings.`,
+      { title: 'User Account Created', okLabel: 'Done' }
+    );
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function editUser(id) {

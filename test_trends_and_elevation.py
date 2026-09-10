@@ -242,7 +242,87 @@ class TestTrendsAndElevation(unittest.TestCase):
             self.assertEqual(inc_synced.category, "Theft")
             self.assertEqual(inc_synced.zone_id, "Zone 2")
 
+    def test_dynamic_trends_years_and_historical_filtering(self):
+        self.login_as_admin()
+
+        # Seed records for historical years (2024, 2025) and active year (2026)
+        inc_2024 = Incident(
+            report_no="INC-2024-001",
+            incident_date=date(2024, 5, 10),
+            time_reported=time(10, 0),
+            hour=10,
+            zone_id="Zone 1",
+            location="Historical Loc 2024",
+            category="Theft",
+            priority="Low",
+            description="2024 theft",
+            status="Resolved"
+        )
+        inc_2025 = Incident(
+            report_no="INC-2025-001",
+            incident_date=date(2025, 7, 15),
+            time_reported=time(11, 0),
+            hour=11,
+            zone_id="Zone 3",
+            location="Historical Loc 2025",
+            category="Noise Complaint",
+            priority="Medium",
+            description="2025 noise",
+            status="Under Investigation"
+        )
+        blt_2024 = BlotterRecord(
+            docket_no="BLT-2024-001",
+            date_filed=date(2024, 6, 1),
+            complainant="Old Complainant",
+            respondent="Old Respondent",
+            nature="Property Dispute",
+            status="Resolved",
+            zone_id="Zone 1"
+        )
+        db.session.add_all([inc_2024, inc_2025, blt_2024])
+        db.session.commit()
+
+        # 1. Test dedicated years endpoint
+        res_years = self.client.get('/api/analytics/trends/years')
+        self.assertEqual(res_years.status_code, 200)
+        years_data = res_years.get_json()
+        self.assertTrue(years_data.get("ok"))
+        years_list = years_data.get("years")
+        self.assertIn(2024, years_list)
+        self.assertIn(2025, years_list)
+        self.assertIn(2026, years_list)
+        # Verify descending order
+        self.assertEqual(years_list, sorted(years_list, reverse=True))
+
+        # 2. Test legacy query params action=trends_years
+        res_legacy = self.client.get('/api/analytics.php?action=trends_years')
+        self.assertEqual(res_legacy.status_code, 200)
+        self.assertEqual(res_legacy.get_json().get("years"), years_list)
+
+        # 3. Test historical filtering for 2024
+        res_2024 = self.client.get('/api/analytics/trends?year=2024')
+        self.assertEqual(res_2024.status_code, 200)
+        data_2024 = res_2024.get_json()
+        self.assertEqual(data_2024.get("year"), 2024)
+        self.assertEqual(data_2024["summary"]["total_incidents"], 1)
+        self.assertEqual(data_2024["summary"]["total_blotter_cases"], 1)
+        # Check timeline month 5 (May) has count 1
+        may_2024 = [m for m in data_2024["timeline"] if m["m"] == 5][0]
+        self.assertEqual(may_2024["total_incidents"], 1)
+
+        # 4. Test historical filtering for 2025
+        res_2025 = self.client.get('/api/analytics.php?action=trends&year=2025')
+        self.assertEqual(res_2025.status_code, 200)
+        data_2025 = res_2025.get_json()
+        self.assertEqual(data_2025.get("year"), 2025)
+        self.assertEqual(data_2025["summary"]["total_incidents"], 1)
+        self.assertEqual(data_2025["summary"]["total_blotter_cases"], 0)
+        # Check category is Noise Complaint
+        cat_names = [c["category"] for c in data_2025["categories"]]
+        self.assertIn("Noise Complaint", cat_names)
+
 
 if __name__ == '__main__':
     unittest.main()
+
 

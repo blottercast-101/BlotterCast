@@ -344,8 +344,8 @@ async function onNrResidentPicked(r) {
           <div class="text-forest-500 text-[11px] mb-2">${b.nature} &bull; ${b.case_type === 'CRIM' ? 'Criminal' : 'Civil'} &bull; Status: <span class="font-semibold text-amber-700">${b.status}</span></div>
           <div class="pt-2 border-t border-amber-100 flex items-center justify-between">
             <span class="text-amber-800 font-medium text-[11px] truncate max-w-[230px]">Active Blotter Case (${b.docket_no})</span>
-            <a href="blotter.html?highlight=${encodeURIComponent(b.docket_no)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
-              <span data-icon="view" data-icon-size="13"></span> View Blotter Case &rarr;
+            <a href="blotter.html?docket=${encodeURIComponent(b.docket_no)}" class="inline-flex items-center gap-1 text-xs font-semibold text-forest-700 hover:text-forest-900 bg-forest-50 hover:bg-forest-100 px-2.5 py-1 rounded-lg border border-forest-200 transition">
+              <span data-icon="view" data-icon-size="13"></span> View Blotter Case
             </a>
           </div>
         </div>`).join('');
@@ -415,8 +415,7 @@ function renderNrLog(){
       <td class="text-xs">${r.or}</td>
       <td>
         <div class="flex gap-1">
-          <button onclick="previewNrLog(${r.id})" class="icon-btn" title="Preview"><span data-icon="view" data-icon-size="16"></span></button>
-          <button onclick="executePrint()" class="btn-primary text-xs px-2 py-1"><span data-icon="printer" data-icon-size="14"></span></button>
+          <button onclick="printNrLog(${r.id})" class="btn-primary text-xs px-2 py-1" title="Print Certificate"><span data-icon="printer" data-icon-size="14"></span></button>
         </div>
       </td>
     </tr>`).join('');
@@ -432,6 +431,7 @@ function setNrVoterCheckmarks(voterStatus) {
 
 function previewNrLog(id){
   const r=nrLogData.find(x=>x.id===id);
+  if (!r) return;
   const d = new Date(r.dateRaw + 'T00:00:00');
   document.getElementById('nr_name').textContent=r.name;
   document.getElementById('nr_prev_addr').textContent=r.previousAddress || '_____________________';
@@ -443,8 +443,13 @@ function previewNrLog(id){
   document.getElementById('nr_applicant_name').textContent=r.name.toUpperCase();
   setNrVoterCheckmarks(r.voterStatus);
   if (typeof bindCertificateCaptainName === 'function') {
-    bindCertificateCaptainName();
+    bindCertificateCaptainName(r);
   }
+}
+
+function printNrLog(id){
+  previewNrLog(id);
+  executePrint();
 }
 
 async function openNonResidencyForm(){
