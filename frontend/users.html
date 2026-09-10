@@ -697,13 +697,15 @@ function renderUsers() {
         ? `<span class="badge badge-not-complied text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>Suspended</span>`
         : `<span class="badge badge-closed badge-inactive text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>Inactive</span>`;
 
-      const avatarSrc = u.avatar_url || u.avatar || u.avatarUrl || u.profile_photo_path || '';
+      const rawAvatar = u.avatar_url || u.avatar || u.avatarUrl || u.profile_photo_path || '';
+      const avatarSrc = (typeof rawAvatar === 'string' && !rawAvatar.startsWith('blob:')) ? rawAvatar.trim() : '';
+      const initialsText = initials(u.name) || 'U';
       const avatarHtml = avatarSrc
         ? `<div class="relative w-9 h-9 flex-shrink-0">
-             <img src="${avatarSrc}" alt="${u.name || 'User'}" class="w-9 h-9 rounded-full object-cover border border-emerald-600/30 flex-shrink-0" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');" />
-             <div class="hidden w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initials(u.name)}</div>
+             <img src="${avatarSrc}" alt="${u.name || 'User'}" class="w-9 h-9 rounded-full object-cover border border-emerald-600/30 flex-shrink-0" onload="this.style.display='block'; if(this.nextElementSibling) this.nextElementSibling.classList.add('hidden');" onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');" />
+             <div class="hidden w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initialsText}</div>
            </div>`
-        : `<div class="w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initials(u.name)}</div>`;
+        : `<div class="w-9 h-9 rounded-full bg-forest-${u.role==='System Admin'?'700':u.role==='Barangay Captain'?'600':'500'} flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">${initialsText}</div>`;
 
       return `
     <tr data-id="${u.id}" data-key="${u.username}">

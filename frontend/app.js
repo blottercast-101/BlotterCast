@@ -174,7 +174,10 @@ function hydrateGlobalState() {
 
   const fullName = user.full_name || user.fullName || user.name || '';
   const role = user.role || '';
-  const avatarUrl = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
+  let avatarUrl = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
+  if (typeof avatarUrl === 'string' && (avatarUrl.startsWith('blob:') || !avatarUrl.trim())) {
+    avatarUrl = '';
+  }
 
   document.querySelectorAll('[data-user-name]').forEach(el => {
     if (fullName) el.textContent = fullName;
@@ -182,22 +185,30 @@ function hydrateGlobalState() {
   document.querySelectorAll('[data-user-role]').forEach(el => {
     if (role) el.textContent = role;
   });
+
+  const initials = typeof bcInitials === 'function' ? bcInitials(fullName) : ((fullName || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U');
+
   document.querySelectorAll('[data-user-avatar]').forEach(el => {
     if (avatarUrl) {
-      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onerror="this.remove(); this.parentElement.textContent='${bcInitials(fullName)}';"/>`;
-    } else if (fullName) {
-      el.textContent = bcInitials(fullName);
+      const existingImg = el.querySelector('img');
+      if (existingImg && existingImg.getAttribute('src') === avatarUrl) {
+        return;
+      }
+      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onload="this.style.display='block';" onerror="this.onerror=null; const p=this.parentElement; if(p){ p.innerHTML=''; p.textContent='${initials}'; }"/>`;
+    } else {
+      el.innerHTML = '';
+      el.textContent = initials;
     }
   });
   document.querySelectorAll('[data-user-greeting]').forEach(el => {
     if (fullName) {
-      const firstName = bcFirstName(fullName);
+      const firstName = typeof bcFirstName === 'function' ? bcFirstName(fullName) : fullName.split(' ')[0];
       el.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
     }
   });
   const greetingEl = document.getElementById('dashboardGreeting');
   if (greetingEl && fullName) {
-    const firstName = bcFirstName(fullName);
+    const firstName = typeof bcFirstName === 'function' ? bcFirstName(fullName) : fullName.split(' ')[0];
     greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
   }
   if (role && typeof applyNavPermissions === 'function') {
@@ -816,15 +827,29 @@ async function requireAuth() {
         return null;
       }
 
+      // Clean/sanitize user payload and ensure permanent avatar URL format
+      const userPayload = Object.assign({}, status.user);
+      if (userPayload.avatar_url && typeof userPayload.avatar_url === 'string' && userPayload.avatar_url.startsWith('blob:')) {
+        userPayload.avatar_url = null;
+      }
+      if (!userPayload.avatar_url && userPayload.avatar && typeof userPayload.avatar === 'string' && !userPayload.avatar.startsWith('blob:')) {
+        userPayload.avatar_url = userPayload.avatar;
+      }
+      userPayload.avatar = userPayload.avatar_url;
+      userPayload.avatarUrl = userPayload.avatar_url;
+      userPayload.profile_photo_path = userPayload.avatar_url;
+
       // Persist verified user session across all keys
       try {
-        localStorage.setItem('bc_cached_user', JSON.stringify(status.user));
-        sessionStorage.setItem('bc_cached_user', JSON.stringify(status.user));
-        localStorage.setItem('currentUser', JSON.stringify(status.user));
-        sessionStorage.setItem('currentUser', JSON.stringify(status.user));
+        localStorage.setItem('bc_cached_user', JSON.stringify(userPayload));
+        sessionStorage.setItem('bc_cached_user', JSON.stringify(userPayload));
+        localStorage.setItem('currentUser', JSON.stringify(userPayload));
+        sessionStorage.setItem('currentUser', JSON.stringify(userPayload));
+        localStorage.setItem('bc_user', JSON.stringify(userPayload));
+        sessionStorage.setItem('bc_user', JSON.stringify(userPayload));
       } catch (e) {}
 
-      const role = status.user.role;
+      const role = userPayload.role;
       if (typeof enforcePageAccess === 'function' && !enforcePageAccess(role)) {
         return null; // enforcePageAccess already redirected away
       }
@@ -833,10 +858,10 @@ async function requireAuth() {
       if (typeof applyElementPermissionsLive === 'function') applyElementPermissionsLive(role);
 
       hydrateGlobalState();
-      if (status.user.mustChangePassword) bcShowForcedPasswordChange();
+      if (userPayload.mustChangePassword) bcShowForcedPasswordChange();
       bcSyncTimeFormatFromServer().catch(() => {});
       _bcStartIdleTracker();
-      return status.user;
+      return userPayload;
     } catch (e) {
       if (e.message && e.message.includes('Not authenticated')) {
         try {

@@ -221,7 +221,7 @@
               <img id="acct_avatar_img" alt="" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('acct_avatar_default')?.classList.remove('hidden');" />
             </div>
 
-            <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleAvatarFileSelect(this)" />
+            <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg, image/webp, .webp" class="hidden" onchange="handleAvatarFileSelect(this)" />
 
             <button type="button" onclick="document.getElementById('acct_avatar_file').click()" class="bg-[#1b4332] hover:bg-[#143326] text-white py-2.5 px-5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5 w-full max-w-[190px]">
               Upload New Photo
@@ -803,9 +803,22 @@ function renderAccountAvatar(avatarUrl) {
   const imgEl = document.getElementById('acct_avatar_img');
   const defaultSvg = document.getElementById('acct_avatar_default');
   const removeBtn = document.getElementById('acct_avatar_remove_btn');
-  if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim()) {
+  const cleanUrl = (avatarUrl && typeof avatarUrl === 'string' && !avatarUrl.startsWith('blob:') && avatarUrl.trim()) 
+    ? avatarUrl.trim() 
+    : (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.startsWith('blob:') ? avatarUrl : null);
+
+  if (cleanUrl) {
     if (imgEl) {
-      imgEl.src = avatarUrl;
+      imgEl.onload = () => {
+        imgEl.classList.remove('hidden');
+        if (defaultSvg) defaultSvg.classList.add('hidden');
+      };
+      imgEl.onerror = () => {
+        imgEl.removeAttribute('src');
+        imgEl.classList.add('hidden');
+        if (defaultSvg) defaultSvg.classList.remove('hidden');
+      };
+      imgEl.src = cleanUrl;
       imgEl.classList.remove('hidden');
     }
     if (defaultSvg) defaultSvg.classList.add('hidden');
@@ -855,7 +868,30 @@ async function loadMyAccount() {
       activeSinceEl.value = formatActiveSinceDate(acct.created_at || acct.createdAt);
     }
 
-    renderAccountAvatar(acct.avatar_url || acct.avatar || acct.profile_photo_path || null);
+    const avatarPath = acct.avatar_url || acct.avatar || acct.avatarUrl || acct.profile_photo_path || null;
+    renderAccountAvatar(avatarPath);
+
+    // Sync session cache with confirmed avatar from server
+    let cachedUser = {};
+    try {
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
+      cachedUser = raw ? JSON.parse(raw) : {};
+    } catch (_) {}
+    cachedUser.avatar_url = avatarPath;
+    cachedUser.avatar = avatarPath;
+    cachedUser.avatarUrl = avatarPath;
+    cachedUser.profile_photo_path = avatarPath;
+    try {
+      localStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
+      localStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+    } catch (_) {}
+    if (typeof hydrateGlobalState === 'function') {
+      hydrateGlobalState();
+    }
   } catch (err) {
     showToast('Could not load your account details: ' + err.message, 'error');
   }
@@ -865,9 +901,13 @@ async function handleAvatarFileSelect(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
 
-  const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-  if (!allowed.includes(file.type)) {
-    showToast('Please select a valid image file (PNG, JPG, or WEBP).', 'error');
+  const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+  const allowedMime = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg', 'image/webp'];
+  const allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
+  const isTypeAllowed = (file.type && allowedMime.includes(file.type.toLowerCase())) || allowedExt.includes(ext);
+
+  if (!isTypeAllowed) {
+    showToast('Please select a valid image file (JPG, PNG, or WEBP).', 'error');
     input.value = '';
     return;
   }
@@ -884,7 +924,11 @@ async function handleAvatarFileSelect(input) {
 
   try {
     const res = await BCApi.uploadMyAvatar(file);
-    const newAvatarUrl = res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar || previewUrl;
+    const newAvatarUrl = res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar;
+    if (!newAvatarUrl || typeof newAvatarUrl !== 'string' || newAvatarUrl.startsWith('blob:')) {
+      throw new Error('Server did not return a permanent profile photo path.');
+    }
+    try { URL.revokeObjectURL(previewUrl); } catch (_) {}
     renderAccountAvatar(newAvatarUrl);
 
     let cachedUser = {};
@@ -938,7 +982,8 @@ async function handleAvatarFileSelect(input) {
     showToast('Profile photo updated successfully.', 'success');
   } catch (err) {
     console.error('[handleAvatarFileSelect] Upload failed:', err);
-    renderAccountAvatar(prevSrc || null);
+    try { URL.revokeObjectURL(previewUrl); } catch (_) {}
+    renderAccountAvatar(prevSrc && !prevSrc.startsWith('blob:') ? prevSrc : null);
     const errorMsg = err?.message || err?.error || 'Failed to upload profile photo.';
     showToast(errorMsg, 'error');
   } finally {

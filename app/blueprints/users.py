@@ -540,7 +540,8 @@ def _upload_avatar_user():
         return json_error("No photo file uploaded, or upload failed", 400)
 
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-    if ext not in ("png", "jpg", "jpeg", "webp") and file.mimetype not in ("image/png", "image/jpeg", "image/webp"):
+    allowed_mimes = ("image/png", "image/jpeg", "image/jpg", "image/pjpeg", "image/webp")
+    if ext not in ("png", "jpg", "jpeg", "webp") and (file.mimetype or "").lower() not in allowed_mimes:
         return json_error("Profile photo must be a PNG, JPG, JPEG, or WEBP image", 400)
 
     file.stream.seek(0, os.SEEK_END)

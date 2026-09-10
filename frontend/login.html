@@ -783,13 +783,26 @@
 
     if (typeof userOrName === 'object' && userOrName !== null) {
       try {
-        localStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
-        sessionStorage.setItem('bc_cached_user', JSON.stringify(userOrName));
-        localStorage.setItem('currentUser', JSON.stringify(userOrName));
-        sessionStorage.setItem('currentUser', JSON.stringify(userOrName));
+        const uPayload = Object.assign({}, userOrName);
+        if (uPayload.avatar_url && typeof uPayload.avatar_url === 'string' && uPayload.avatar_url.startsWith('blob:')) {
+          uPayload.avatar_url = null;
+        }
+        if (!uPayload.avatar_url && uPayload.avatar && typeof uPayload.avatar === 'string' && !uPayload.avatar.startsWith('blob:')) {
+          uPayload.avatar_url = uPayload.avatar;
+        }
+        uPayload.avatar = uPayload.avatar_url;
+        uPayload.avatarUrl = uPayload.avatar_url;
+        uPayload.profile_photo_path = uPayload.avatar_url;
+
+        localStorage.setItem('bc_cached_user', JSON.stringify(uPayload));
+        sessionStorage.setItem('bc_cached_user', JSON.stringify(uPayload));
+        localStorage.setItem('currentUser', JSON.stringify(uPayload));
+        sessionStorage.setItem('currentUser', JSON.stringify(uPayload));
+        localStorage.setItem('bc_user', JSON.stringify(uPayload));
+        sessionStorage.setItem('bc_user', JSON.stringify(uPayload));
 
         // Real-time Presence Broadcast
-        const uid = userOrName.id;
+        const uid = uPayload.id;
         if (uid) {
           const payload = { type: 'USER_STATUS_CHANGED', userId: Number(uid), status: 'Active', timestamp: Date.now() };
           if (typeof BroadcastChannel !== 'undefined') {
