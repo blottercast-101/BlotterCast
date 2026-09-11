@@ -74,12 +74,14 @@ function iconSvg(name, size = 20) {
 
 function renderIcons(root = document) {
   root.querySelectorAll('[data-icon]').forEach(el => {
+    if (el.dataset.iconRendered || el.firstElementChild) {
+      el.dataset.iconRendered = '1';
+      return;
+    }
     const name = el.getAttribute('data-icon');
     const size = el.getAttribute('data-icon-size') || 20;
-    if (!el.dataset.iconRendered) {
-      el.innerHTML = iconSvg(name, size);
-      el.dataset.iconRendered = '1';
-    }
+    el.innerHTML = iconSvg(name, size);
+    el.dataset.iconRendered = '1';
   });
 }
 
