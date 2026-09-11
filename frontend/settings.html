@@ -116,39 +116,11 @@
     <button class="settings-tab" onclick="switchTab('security',this)"><span data-icon="lock" data-icon-size="15"></span> Security</button>
     <button class="settings-tab" onclick="switchTab('backup',this)" data-perm="system_settings"><span data-icon="archive" data-icon-size="15"></span> Backup &amp; Recovery</button>
   </div>
-  <script>
-    (function _syncSettingsEarly(){
-      try {
-        const rawHash = (window.location.hash || '').replace(/^#+/, '').trim().toLowerCase();
-        const params = new URLSearchParams(window.location.search);
-        const q = (params.get('tab') || params.get('view') || '').trim().toLowerCase();
-        const stored = (sessionStorage.getItem('current_active_view_settings') || '').trim().toLowerCase();
-        let target = rawHash || q || stored;
-        if (target === 'my-account' || target === 'account' || target === 'password') target = 'security';
-        if (target === 'notification' || target === 'alerts') target = 'notifications';
-        if (target === 'backups' || target === 'recovery') target = 'backup';
-
-        const validTabs = ['general', 'notifications', 'security', 'backup'];
-        if (validTabs.includes(target)) {
-          validTabs.forEach(t => {
-            const p = document.getElementById('tab-' + t);
-            if (p) p.classList.add('hidden');
-          });
-          const targetPan = document.getElementById('tab-' + target);
-          if (targetPan) targetPan.classList.remove('hidden');
-
-          document.querySelectorAll('.settings-tab').forEach(b => {
-            b.classList.toggle('active', !!b.getAttribute('onclick')?.includes(`'${target}'`));
-          });
-        }
-      } catch (_) {}
-    })();
-  </script>
 
   <main class="flex-1 p-6 space-y-5">
 
     <!-- GENERAL -->
-    <div id="tab-general" class="space-y-5">
+    <div id="tab-general" class="space-y-5 hidden">
       <div class="settings-section">
         <h3>Barangay Information</h3>
         <div class="grid grid-cols-2 gap-4">
@@ -230,7 +202,7 @@
                 <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
               </svg>
               <!-- Uploaded user avatar image -->
-              <img id="acct_avatar_img" alt="" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('acct_avatar_default')?.classList.remove('hidden');" />
+              <img id="acct_avatar_img" alt="" class="w-full h-full object-cover hidden" onerror="this.onerror=null; this.src=''; this.classList.add('hidden'); document.getElementById('acct_avatar_default')?.classList.remove('hidden');" />
             </div>
 
             <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/jpg, image/webp, image/gif, image/*" class="hidden" onchange="handleAvatarFileSelect(this)" />
@@ -610,6 +582,34 @@
     </main>
 </div>
 
+  <script>
+    (function _syncSettingsEarly(){
+      try {
+        const rawHash = (window.location.hash || '').replace(/^#+/, '').trim().toLowerCase();
+        const params = new URLSearchParams(window.location.search);
+        const q = (params.get('tab') || params.get('view') || '').trim().toLowerCase();
+        const stored = (sessionStorage.getItem('current_active_view_settings') || '').trim().toLowerCase();
+        let target = rawHash || q || stored || 'general';
+        if (target === 'my-account' || target === 'account' || target === 'password') target = 'security';
+        if (target === 'notification' || target === 'alerts') target = 'notifications';
+        if (target === 'backups' || target === 'recovery') target = 'backup';
+
+        const validTabs = ['general', 'notifications', 'security', 'backup'];
+        if (!validTabs.includes(target)) target = 'general';
+
+        validTabs.forEach(t => {
+          const p = document.getElementById('tab-' + t);
+          if (p) p.classList.toggle('hidden', t !== target);
+        });
+
+        document.querySelectorAll('.settings-tab').forEach(b => {
+          const onclickAttr = b.getAttribute('onclick') || '';
+          b.classList.toggle('active', onclickAttr.includes(`'${target}'`));
+        });
+      } catch (_) {}
+    })();
+  </script>
+
 <script src="api.js"></script>
 <script src="permissions.js"></script>
 <script src="app.js"></script>
@@ -833,9 +833,26 @@ function renderAccountAvatar(avatarUrl) {
   const imgEl = document.getElementById('acct_avatar_img');
   const defaultSvg = document.getElementById('acct_avatar_default');
   const removeBtn = document.getElementById('acct_avatar_remove_btn');
-  const cleanUrl = (avatarUrl && typeof avatarUrl === 'string' && !avatarUrl.startsWith('blob:') && avatarUrl.trim()) 
-    ? avatarUrl.trim() 
-    : (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.startsWith('blob:') ? avatarUrl : null);
+  
+  let cleanUrl = null;
+  if (avatarUrl && typeof avatarUrl === 'string') {
+    const trimmed = avatarUrl.trim();
+    if (
+      trimmed &&
+      trimmed !== 'null' &&
+      trimmed !== 'undefined' &&
+      !trimmed.startsWith('blob:') &&
+      !trimmed.startsWith('uploads/avatars/') &&
+      !trimmed.startsWith('/uploads/avatars/') &&
+      !trimmed.startsWith('uploads/') &&
+      !trimmed.startsWith('/uploads/') &&
+      !trimmed.includes('default.png') &&
+      !trimmed.includes('default_avatar') &&
+      !trimmed.includes('avatar-placeholder')
+    ) {
+      cleanUrl = trimmed;
+    }
+  }
 
   if (cleanUrl) {
     if (imgEl) {
@@ -844,7 +861,8 @@ function renderAccountAvatar(avatarUrl) {
         if (defaultSvg) defaultSvg.classList.add('hidden');
       };
       imgEl.onerror = () => {
-        imgEl.removeAttribute('src');
+        imgEl.onerror = null;
+        imgEl.src = '';
         imgEl.classList.add('hidden');
         if (defaultSvg) defaultSvg.classList.remove('hidden');
       };
@@ -855,7 +873,8 @@ function renderAccountAvatar(avatarUrl) {
     if (removeBtn) removeBtn.classList.remove('hidden');
   } else {
     if (imgEl) {
-      imgEl.removeAttribute('src');
+      imgEl.onerror = null;
+      imgEl.src = '';
       imgEl.classList.add('hidden');
     }
     if (defaultSvg) defaultSvg.classList.remove('hidden');

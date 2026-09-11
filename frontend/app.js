@@ -310,9 +310,25 @@ function hydrateGlobalState() {
 
   const fullName = user.full_name || user.fullName || user.name || '';
   const role = user.role || '';
-  let avatarUrl = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
-  if (typeof avatarUrl === 'string' && (avatarUrl.startsWith('blob:') || !avatarUrl.trim())) {
-    avatarUrl = '';
+  const rawAvatar = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
+  let avatarUrl = '';
+  if (typeof rawAvatar === 'string') {
+    const trimmed = rawAvatar.trim();
+    if (
+      trimmed &&
+      trimmed !== 'null' &&
+      trimmed !== 'undefined' &&
+      !trimmed.startsWith('blob:') &&
+      !trimmed.startsWith('uploads/avatars/') &&
+      !trimmed.startsWith('/uploads/avatars/') &&
+      !trimmed.startsWith('uploads/') &&
+      !trimmed.startsWith('/uploads/') &&
+      !trimmed.includes('default.png') &&
+      !trimmed.includes('default_avatar') &&
+      !trimmed.includes('avatar-placeholder')
+    ) {
+      avatarUrl = trimmed;
+    }
   }
 
   document.querySelectorAll('[data-user-name]').forEach(el => {
@@ -330,7 +346,7 @@ function hydrateGlobalState() {
       if (existingImg && existingImg.getAttribute('src') === avatarUrl) {
         return;
       }
-      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onload="this.style.display='block';" onerror="this.onerror=null; const p=this.parentElement; if(p){ p.innerHTML=''; p.textContent='${initials}'; }"/>`;
+      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onload="this.style.display='block';" onerror="this.onerror=null; this.src=''; this.classList.add('hidden'); const p=this.parentElement; if(p){ p.innerHTML=''; p.textContent='${initials}'; }"/>`;
     } else {
       el.innerHTML = '';
       el.textContent = initials;
@@ -965,15 +981,30 @@ async function requireAuth() {
 
       // Clean/sanitize user payload and ensure permanent avatar URL format
       const userPayload = Object.assign({}, status.user);
-      if (userPayload.avatar_url && typeof userPayload.avatar_url === 'string' && userPayload.avatar_url.startsWith('blob:')) {
-        userPayload.avatar_url = null;
+      const rawUserAvatar = userPayload.avatar_url || userPayload.avatar || userPayload.avatarUrl || userPayload.profile_photo_path || '';
+      let cleanUserAvatar = null;
+      if (typeof rawUserAvatar === 'string') {
+        const trimmed = rawUserAvatar.trim();
+        if (
+          trimmed &&
+          trimmed !== 'null' &&
+          trimmed !== 'undefined' &&
+          !trimmed.startsWith('blob:') &&
+          !trimmed.startsWith('uploads/avatars/') &&
+          !trimmed.startsWith('/uploads/avatars/') &&
+          !trimmed.startsWith('uploads/') &&
+          !trimmed.startsWith('/uploads/') &&
+          !trimmed.includes('default.png') &&
+          !trimmed.includes('default_avatar') &&
+          !trimmed.includes('avatar-placeholder')
+        ) {
+          cleanUserAvatar = trimmed;
+        }
       }
-      if (!userPayload.avatar_url && userPayload.avatar && typeof userPayload.avatar === 'string' && !userPayload.avatar.startsWith('blob:')) {
-        userPayload.avatar_url = userPayload.avatar;
-      }
-      userPayload.avatar = userPayload.avatar_url;
-      userPayload.avatarUrl = userPayload.avatar_url;
-      userPayload.profile_photo_path = userPayload.avatar_url;
+      userPayload.avatar_url = cleanUserAvatar;
+      userPayload.avatar = cleanUserAvatar;
+      userPayload.avatarUrl = cleanUserAvatar;
+      userPayload.profile_photo_path = cleanUserAvatar;
 
       // Persist verified user session across all keys
       try {

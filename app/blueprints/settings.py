@@ -155,6 +155,9 @@ def settings_router():
     if action == "letterhead" and method == "GET":
         return _letterhead()
 
+    if action == "list" and method == "GET":
+        return _list()
+
     if action == "time_format" and method == "GET":
         row = SystemSetting.query.get("time_format")
         return jsonify({"time_format": row.setting_value if row else "12"})
@@ -170,12 +173,10 @@ def settings_router():
         db.session.commit()
         return jsonify({"ok": True, "time_format": tf})
 
-    # Everything else requires full system_settings access.
+    # Modifying settings and accessing database backup files requires full system_settings access.
     if not role_can(session.get("role", ""), "system_settings"):
         return json_error("You do not have permission to perform this action.", 403)
 
-    if action == "list" and method == "GET":
-        return _list()
     if action == "save" and method == "POST":
         return _save()
     if action == "backup" and method == "POST":

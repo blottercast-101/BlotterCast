@@ -9,6 +9,7 @@ const BC_API = '.'; // same-origin, relative to current folder: http://localhost
 
 const BCApi = {
   _memoryCache: new Map(),
+  _inFlight: new Map(),
 
   async _cachedFetch(cacheKey, fetchFn, ttlMs = 300000) {
     const now = Date.now();
@@ -24,40 +25,92 @@ const BCApi = {
   invalidateCache(pattern = null) {
     if (!pattern) {
       this._memoryCache.clear();
+      this._inFlight.clear();
     } else {
       for (const k of this._memoryCache.keys()) {
         if (k.includes(pattern)) this._memoryCache.delete(k);
+      }
+      for (const k of this._inFlight.keys()) {
+        if (k.includes(pattern)) this._inFlight.delete(k);
       }
     }
   },
 
   async _fetch(url, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
-    let finalUrl = url;
+    
+    // In-flight request deduplication guard for concurrent GET requests during bootstrap
+    const dedupeKey = `${method}:${url.replace(/[?&]_t=\d+/, '')}`;
+    if (method === 'GET' && this._inFlight.has(dedupeKey)) {
+      return this._inFlight.get(dedupeKey);
+    }
+
+    const execPromise = (async () => {
+      let finalUrl = url;
+      if (method === 'GET') {
+        const sep = finalUrl.includes('?') ? '&' : '?';
+        finalUrl = `${finalUrl}${sep}_t=${Date.now()}`;
+      }
+      const headers = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(opts.headers || {}),
+      };
+      const res = await fetch(finalUrl, { credentials: 'include', cache: 'no-store', ...opts, headers });
+      if (res.status === 401 && !url.includes('api/auth.php') && !window.location.pathname.endsWith('login.html')) {
+        window.location.href = 'login.html';
+        throw new Error('Not authenticated');
+      }
+      if (!res.ok) {
+        let msg = 'Request failed';
+        try {
+          const errJson = await res.json();
+          msg = errJson.message || errJson.error || msg;
+        } catch (e) {}
+        throw new Error(msg);
+      }
+      const data = res.status === 204 ? null : await res.json();
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        if (url.includes('census') || url.includes('type=census')) {
+          this.invalidateCache('census');
+        }
+        if (url.includes('users') || url.includes('captain_signature')) {
+          this.invalidateCache('captain');
+          this.invalidateCache('users');
+        }
+        if (url.includes('incidents') || url.includes('blotter') || url.includes('settlements')) {
+          this.invalidateCache('blotter');
+          this.invalidateCache('settlements');
+          this.invalidateCache('incidents');
+          this.invalidateCache('trends');
+          this.invalidateCache('dashboard');
+          this.invalidateCache('heatmap');
+          this.invalidateCache('analytics');
+        }
+
+        const isSystemPing = url.includes('action=heartbeat') || url.includes('action=check_session') || url.includes('action=unread_count');
+        if (!isSystemPing && !opts.skipBroadcast) {
+          try {
+            window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { url, method, data } }));
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('bc_data_updated', Date.now().toString());
+            }
+          } catch (_) {}
+        }
+      }
+      return data;
+    })();
+
     if (method === 'GET') {
-      const sep = finalUrl.includes('?') ? '&' : '?';
-      finalUrl = `${finalUrl}${sep}_t=${Date.now()}`;
+      this._inFlight.set(dedupeKey, execPromise);
+      execPromise.finally(() => {
+        this._inFlight.delete(dedupeKey);
+      });
     }
-    const headers = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      ...(opts.headers || {}),
-    };
-    const res = await fetch(finalUrl, { credentials: 'include', cache: 'no-store', ...opts, headers });
-    if (res.status === 401 && !url.includes('api/auth.php') && !window.location.pathname.endsWith('login.html')) {
-      window.location.href = 'login.html';
-      throw new Error('Not authenticated');
-    }
-    if (!res.ok) {
-      let msg = 'Request failed';
-      try {
-        const errJson = await res.json();
-        msg = errJson.message || errJson.error || msg;
-      } catch (e) {}
-      throw new Error(msg);
-    }
-    const data = res.status === 204 ? null : await res.json();
-    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+
+    return execPromise;
+  },
       if (url.includes('census') || url.includes('type=census')) {
         this.invalidateCache('census');
       }
