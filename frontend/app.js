@@ -2,6 +2,56 @@
 window.BC_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 window.BC_SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+// ── View Transition Error Guard & AbortError Suppression ──
+window.addEventListener('unhandledrejection', function (event) {
+  if (event && event.reason) {
+    var err = event.reason;
+    if (
+      err.name === 'AbortError' ||
+      (typeof err.message === 'string' && err.message.includes('Transition was skipped')) ||
+      (typeof err === 'string' && err.includes('Transition was skipped'))
+    ) {
+      event.preventDefault(); // Suppresses the unhandled promise rejection in DevTools
+    }
+  }
+});
+
+function safeStartViewTransition(updateCallback) {
+  if (document.startViewTransition && typeof document.startViewTransition === 'function') {
+    try {
+      const transition = document.startViewTransition(() => {
+        if (typeof updateCallback === 'function') {
+          return updateCallback();
+        }
+      });
+
+      if (transition) {
+        if (transition.ready && typeof transition.ready.catch === 'function') {
+          transition.ready.catch(() => {});
+        }
+        if (transition.updateCallbackDone && typeof transition.updateCallbackDone.catch === 'function') {
+          transition.updateCallbackDone.catch(() => {});
+        }
+        if (transition.finished && typeof transition.finished.catch === 'function') {
+          transition.finished.catch((err) => {
+            if (err && err.name !== 'AbortError' && !String(err).includes('Transition was skipped')) {
+              console.error(err);
+            }
+          });
+        }
+      }
+      return transition;
+    } catch (err) {
+      if (typeof updateCallback === 'function') updateCallback();
+      return null;
+    }
+  } else {
+    if (typeof updateCallback === 'function') updateCallback();
+    return null;
+  }
+}
+window.safeStartViewTransition = safeStartViewTransition;
+
 // Local "YYYY-MM-DD" for today — deliberately NOT `new Date().toISOString()`,
 // since that gives the UTC date. In timezones ahead of UTC (e.g. the
 // Philippines, UTC+8), during early-morning local hours the UTC date is
@@ -1254,6 +1304,10 @@ function bcBroadcastUserPresence(status = 'Active', userId = null) {
 
 async function doLogout() {
   if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
+  return handleLogout();
+}
+
+async function handleLogout() {
   _bcStopIdleTracker();
 
   try {
@@ -1261,17 +1315,31 @@ async function doLogout() {
   } catch (_) {}
 
   try {
-    localStorage.removeItem('bc_last_active_timestamp');
-    localStorage.removeItem('bc_cached_user');
-    sessionStorage.removeItem('bc_cached_user');
-    localStorage.removeItem('currentUser');
-    sessionStorage.removeItem('currentUser');
-    localStorage.removeItem('bc_user');
-    sessionStorage.removeItem('bc_user');
-  } catch (e) {}
-  try { await BCApi.logout(); } catch (e) {}
-  window.location.replace('login.html');
+    if (window.BCApi?.logout) {
+      await window.BCApi.logout();
+    }
+  } catch (e) {
+    console.warn('Logout API error:', e);
+  } finally {
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('bc_last_active_timestamp');
+      localStorage.removeItem('bc_cached_user');
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('bc_user');
+      sessionStorage.removeItem('bc_cached_user');
+      sessionStorage.removeItem('currentUser');
+      sessionStorage.removeItem('bc_user');
+      sessionStorage.clear();
+    } catch (e) {}
+
+    // Direct hard redirect to bypass conflicting in-flight animations
+    window.location.replace('login.html');
+  }
 }
+window.doLogout = doLogout;
+window.handleLogout = handleLogout;
 
 // ── Real-Time Presence Heartbeat ────────────────────────────
 // Keeps active user presence marked "Active" in real-time.
