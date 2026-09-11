@@ -789,6 +789,9 @@
 <script src="icons.js"></script>
 <script>
   function showSuccessRedirect(userOrName, customSubtitle) {
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      try { window.google.accounts.id.cancel(); } catch (_) {}
+    }
     const roleEl = document.getElementById('redirectRole');
     const subtitleEl = document.getElementById('redirectSubtitle');
     const overlay = document.getElementById('successOverlay');
@@ -1329,10 +1332,11 @@
   }
 
   // ---- Google Identity Services (GSI) OAuth Flow ----
-  let isGsiInitialized = false;
+  let isGsiInitializing = false;
 
   async function initGoogleSignIn() {
-    if (isGsiInitialized) return;
+    if (window.gsiInitialized || isGsiInitializing) return;
+    isGsiInitializing = true;
     try {
       const config = await BCApi.getAuthConfig();
       if (!config || !config.google_client_id) {
@@ -1340,20 +1344,28 @@
         const container = document.getElementById('g_id_signin_container');
         if (divider) divider.style.display = 'none';
         if (container) container.style.display = 'none';
+        isGsiInitializing = false;
         return;
       }
       if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+        isGsiInitializing = false;
         setTimeout(initGoogleSignIn, 300);
         return;
       }
 
-      window.google.accounts.id.initialize({
-        client_id: config.google_client_id,
-        callback: handleGoogleCredentialResponse,
-      });
+      if (!window.gsiInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: config.google_client_id,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        window.gsiInitialized = true;
+      }
 
       const container = document.getElementById('g_id_signin_container');
-      if (container) {
+      if (container && !window.gsiButtonRendered) {
+        container.innerHTML = '';
         window.google.accounts.id.renderButton(container, {
           theme: 'outline',
           size: 'large',
@@ -1361,10 +1373,12 @@
           text: 'continue_with',
           shape: 'rectangular',
         });
+        window.gsiButtonRendered = true;
       }
-      isGsiInitialized = true;
     } catch (e) {
       console.warn('Google Sign-In initialization skipped:', e);
+    } finally {
+      isGsiInitializing = false;
     }
   }
 
@@ -1384,6 +1398,9 @@
         showOtpStep(result);
       } else {
         if (resendTimer) clearInterval(resendTimer);
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          try { window.google.accounts.id.cancel(); } catch (_) {}
+        }
         showSuccessRedirect(result.user);
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }

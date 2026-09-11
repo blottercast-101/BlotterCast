@@ -178,6 +178,16 @@ class GoogleAuthTestCase(unittest.TestCase):
         me_res = self.client.get("/api/auth.php?action=me")
         self.assertTrue(me_res.get_json().get("authenticated"))
 
+    def test_coop_header_present(self):
+        res = self.client.get("/api/auth.php?action=config")
+        self.assertEqual(res.headers.get("Cross-Origin-Opener-Policy"), "same-origin-allow-popups")
+
+        res_login_page = self.client.get("/login.html")
+        self.assertEqual(res_login_page.headers.get("Cross-Origin-Opener-Policy"), "same-origin-allow-popups")
+
+        res_options = self.client.options("/api/auth.php?action=google_login")
+        self.assertEqual(res_options.headers.get("Cross-Origin-Opener-Policy"), "same-origin-allow-popups")
+
 
 if __name__ == "__main__":
     unittest.main()

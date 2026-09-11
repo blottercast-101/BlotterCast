@@ -75,6 +75,7 @@ def create_app(config_class=Config):
         from flask import make_response, request
         if request.method == "OPTIONS":
             response = make_response("", 204)
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
             origin = request.headers.get("Origin")
             if origin:
                 response.headers["Access-Control-Allow-Origin"] = origin
@@ -96,6 +97,7 @@ def create_app(config_class=Config):
         """Disable caching on API endpoints and HTML pages to ensure sensitive
         authenticated views are never served stale from browser disk/memory cache."""
         from flask import request
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
         origin = request.headers.get("Origin")
         if origin:
             response.headers["Access-Control-Allow-Origin"] = origin
