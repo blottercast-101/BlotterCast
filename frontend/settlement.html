@@ -369,9 +369,9 @@
 <script src="icons.js?v=2.2.0"></script>
 <script src="custom-controls.js?v=2.2.0"></script>
 <script>
-  const STL_ROWS = 5;
-  let stlPage = 1, stlEditId = null;
-  let settlementData = [];
+  var STL_ROWS = 5;
+  var stlPage = 1, stlEditId = null;
+  var settlementData = [];
 
   function mapSettlement(r) {
     return {
@@ -385,7 +385,7 @@
     };
   }
 
-  let viewingArchived = false;
+  var viewingArchived = false;
 
   async function loadSettlements(silent = false) {
     if (!document.getElementById('settlementTableBody')) return;
@@ -448,7 +448,7 @@
     }
   }
 
-  let blotterOptions = []; // cases available to attach a new settlement to
+  var blotterOptions = []; // cases available to attach a new settlement to
 
   async function loadBlotterOptionsForPicker() {
     try {
@@ -595,7 +595,7 @@
     );
   }
 
-  const stlBatchManager = new BcBatchManager({
+  var stlBatchManager = new BcBatchManager({
     entityName: 'settlement record',
     entityPlural: 'settlement records',
     apiType: 'settlements',

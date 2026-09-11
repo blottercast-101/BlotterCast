@@ -675,7 +675,7 @@ document.getElementById('permMatrix').innerHTML = permissions.map(p=>`
   </tr>`).join('');
 
 var usersData = []; var usersPage = 1; var USERS_ROWS = 8;
-let editUserId = null;
+var editUserId = null;
 
 function mapUser(u) {
   const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
@@ -899,8 +899,8 @@ function onRoleChange(role) {
 }
 
 // ── Multi-Step Add User Wizard ─────────────────────────────
-let currentWizardStep = 1;
-let selectedWizardRole = 'Desk Officer';
+var currentWizardStep = 1;
+var selectedWizardRole = 'Desk Officer';
 
 function getWizardNormalizedContact() {
   const input = document.getElementById('wiz_contact');
@@ -1167,8 +1167,8 @@ async function saveWizardUser() {
 }
 
 // ── 2-Step Edit User Wizard ──────────────────────────────────
-let currentEditWizardStep = 1;
-let selectedEditRole = 'Desk Officer';
+var currentEditWizardStep = 1;
+var selectedEditRole = 'Desk Officer';
 
 function getEditNormalizedContact() {
   const input = document.getElementById('uf_contact');
@@ -1482,7 +1482,7 @@ async function toggleStatus(id) {
   }
 }
 
-let pendingDeleteUserId = null;
+var pendingDeleteUserId = null;
 
 function openDeleteUserModal(user) {
   if (!user) return;
@@ -1581,7 +1581,7 @@ async function confirmDeleteUser() {
 }
 
 // ── Real-Time Presence Synchronization ────────────────────────
-let userPresenceTimer = null;
+var userPresenceTimer = null;
 
 function applyUserPresenceUpdate(userId, newStatus, lastSeen = null, lastLogin = null) {
   const uid = Number(userId);

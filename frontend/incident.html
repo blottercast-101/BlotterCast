@@ -615,9 +615,9 @@
 <script src="icons.js?v=2.2.0"></script>
 <script src="custom-controls.js?v=2.2.0"></script>
 <script>
-  const INC_ROWS = 6;
-  let incPage = 1, incEditId = null;
-  let incidentData = [];
+  var INC_ROWS = 6;
+  var incPage = 1, incEditId = null;
+  var incidentData = [];
 
   function normalizeIncidentStatus(s) {
     if (!s) return 'Under Investigation';
@@ -653,7 +653,7 @@
     };
   }
 
-  let viewingArchived = false;
+  var viewingArchived = false;
 
   async function loadIncidents(silent = false) {
     if (!document.getElementById('incidentTableBody')) return;
@@ -754,7 +754,7 @@
     );
   }
 
-  const incBatchManager = new BcBatchManager({
+  var incBatchManager = new BcBatchManager({
     entityName: 'incident report',
     entityPlural: 'incident reports',
     apiType: 'incidents',
@@ -860,7 +860,7 @@
   }
 
   // Pre-loaded Mapulang Lupa boundary polygon vertices [lat, lng]
-  const MAPULANG_LUPA_BOUNDARY = [
+  var MAPULANG_LUPA_BOUNDARY = [
     [14.881000, 120.955500],
     [14.883500, 120.956200],
     [14.886000, 120.957500],
@@ -905,16 +905,16 @@
     return inside;
   }
 
-  let pickerMap = null;
-  let pickerMarker = null;
-  let pickerBoundaryLayer = null;
-  let pickerBoundaryGeojson = null;
-  let pickerZonesLayer = null;
-  let pickerZonesGeojson = null;
-  let activeZoneLayerGroup = null;
-  let boundaryLoadingPromise = null;
-  let isLocationVerifiedInBoundary = false;
-  let isGeocoded = false;
+  var pickerMap = null;
+  var pickerMarker = null;
+  var pickerBoundaryLayer = null;
+  var pickerBoundaryGeojson = null;
+  var pickerZonesLayer = null;
+  var pickerZonesGeojson = null;
+  var activeZoneLayerGroup = null;
+  var boundaryLoadingPromise = null;
+  var isLocationVerifiedInBoundary = false;
+  var isGeocoded = false;
 
   async function ensurePickerBoundaryLoaded() {
     if (pickerBoundaryGeojson && pickerZonesGeojson) return;
@@ -1186,7 +1186,7 @@
     return false;
   }
 
-  let isMapExpanded = false;
+  var isMapExpanded = false;
 
   function updatePickerStatusBadge(lat, lng) {
     const badge = document.getElementById('if_geoBadge');
@@ -1276,8 +1276,8 @@
   }
 
   // Store the container's original DOM parent so we can restore it on collapse
-  let _wideViewOriginalParent = null;
-  let _wideViewOriginalNextSibling = null;
+  var _wideViewOriginalParent = null;
+  var _wideViewOriginalNextSibling = null;
 
   function toggleExpandPickerMap(forceState) {
     isMapExpanded = typeof forceState === 'boolean' ? forceState : !isMapExpanded;
@@ -1511,7 +1511,7 @@
     }
   }
 
-  const ZONE_MATCH_RULES = [
+  var ZONE_MATCH_RULES = [
     {
       zone: 'Zone 1',
       landmark: 'Residence 3 (Barangay Hall)',
@@ -1549,7 +1549,7 @@
     },
   ];
 
-  let currentZoneConflict = null;
+  var currentZoneConflict = null;
 
   function checkZoneLocationConflict() {
     const selectedZone = document.getElementById('if_zone').value;
@@ -1630,7 +1630,7 @@
     }
   }
 
-  let censusResidentsForIncident = [];
+  var censusResidentsForIncident = [];
 
   async function loadCensusResidentsForIncidentPicker() {
     try {
@@ -1980,7 +1980,7 @@
     openModal('incidentModal');
   }
 
-  let pendingElevateIncident = null;
+  var pendingElevateIncident = null;
 
   function openElevateConfirmFromModal() {
     if (!incEditId) return;
@@ -2276,7 +2276,7 @@
     }
   }
 
-  let currentViewingIncident = null;
+  var currentViewingIncident = null;
 
   function openIncidentInHeatmap() {
     if (!currentViewingIncident) return;

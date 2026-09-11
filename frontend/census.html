@@ -329,10 +329,10 @@
 <script src="icons.js?v=2.2.0"></script>
 <script src="custom-controls.js?v=2.2.0"></script>
 <script>
-let censusData = [];
-const ROWS = 8;
-let curPage = 1, editId = null, currentRole = null;
-let viewingArchived = false;
+var censusData = [];
+var ROWS = 8;
+var curPage = 1, editId = null, currentRole = null;
+var viewingArchived = false;
 
 function mapResident(r) {
   const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
@@ -345,7 +345,7 @@ function mapResident(r) {
   };
 }
 
-const resBatchManager = new BcBatchManager({
+var resBatchManager = new BcBatchManager({
   entityName: 'resident',
   entityPlural: 'residents',
   apiType: 'census',
@@ -426,7 +426,7 @@ async function toggleArchivedView(explicitState = null) {
 // automatic consequence, Voter Status). Every other field in the form is
 // locked read-only for them so the modal can only be used to change a
 // resident's status.
-const RF_LOCKABLE_FIELDS = ['rf_last','rf_first','rf_mid','rf_dob','rf_sex','rf_civil','rf_nat','rf_zone','rf_addr','rf_hh','rf_contact','rf_voter','rf_occ'];
+var RF_LOCKABLE_FIELDS = ['rf_last','rf_first','rf_mid','rf_dob','rf_sex','rf_civil','rf_nat','rf_zone','rf_addr','rf_hh','rf_contact','rf_voter','rf_occ'];
 function setResidentFormLock(locked){
   RF_LOCKABLE_FIELDS.forEach(id => {
     const el = document.getElementById(id);
@@ -824,7 +824,7 @@ function parseCsvLine(line, delimiter) {
   return result;
 }
 
-const CENSUS_HEADER_SYNONYMS = {
+var CENSUS_HEADER_SYNONYMS = {
   // Last Name
   'lastname': 'lastName', 'last': 'lastName', 'surname': 'lastName', 'familyname': 'lastName', 'apelyido': 'lastName',
   // First Name

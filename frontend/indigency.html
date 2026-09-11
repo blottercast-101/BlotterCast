@@ -289,7 +289,7 @@
 <script src="custom-controls.js"></script>
 <script>
 var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
-let indData=[]; let indPage=1; const IND_ROWS=8;
+var indData=[]; var indPage=1; var IND_ROWS=8;
 
 function mapIndigency(r) {
   const d = new Date(r.date_issued + 'T00:00:00');
@@ -301,7 +301,7 @@ function mapIndigency(r) {
   };
 }
 
-let indResidentOptions = []; // census residents available to pick for a new certificate
+var indResidentOptions = []; // census residents available to pick for a new certificate
 
 async function loadIndResidentOptionsForPicker() {
   const raw = await BCApi.docList('census');
@@ -325,7 +325,7 @@ function validateIndigencyEligibility(r) {
   return null;
 }
 
-let ifRespondentBlocked = false;
+var ifRespondentBlocked = false;
 
 async function onIndResidentPicked(r) {
   const blockBox = document.getElementById('if_blotter_block');

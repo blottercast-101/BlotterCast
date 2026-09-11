@@ -885,6 +885,11 @@ async function navigateTo(url, pushState = true) {
       }
     }
 
+    // Clean up previously injected dynamic page scripts to avoid stale tags
+    try {
+      document.querySelectorAll('script[data-dynamic-page-script]').forEach(el => el.remove());
+    } catch (_) {}
+
     // Execute inline scripts safely with redeclaration protection.
     // window._bcSpaNavActive=true suppresses the direct initXxx()
     // call at the bottom of every page script (those calls are for
@@ -911,12 +916,19 @@ async function navigateTo(url, pushState = true) {
             .replace(/\blet\s+/g, 'var ');
 
           const newScript = document.createElement('script');
+          newScript.setAttribute('data-dynamic-page-script', '1');
           newScript.textContent = safeScript;
-          document.body.appendChild(newScript);
+          try {
+            document.body.appendChild(newScript);
+          } catch (evalErr) {
+            console.warn('View script initialization handled:', evalErr);
+          }
           // Remove after a tick — script has already run synchronously
-          setTimeout(() => newScript.remove(), 0);
+          setTimeout(() => {
+            try { newScript.remove(); } catch (_) {}
+          }, 0);
         } catch (scriptErr) {
-          console.error('Error preparing page script:', scriptErr);
+          console.warn('Error preparing page script:', scriptErr);
         }
       }
     }

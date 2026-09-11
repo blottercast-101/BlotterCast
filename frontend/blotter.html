@@ -468,11 +468,11 @@
 <script src="icons.js?v=2.2.0"></script>
 <script src="custom-controls.js?v=2.2.0"></script>
 <script>
-  const ROWS_PER_PAGE = 6;
-  let currentPage = 1;
-  let viewingArchived = false;
-  let editingId = null;
-  let blotterData = [];
+  var ROWS_PER_PAGE = 6;
+  var currentPage = 1;
+  var viewingArchived = false;
+  var editingId = null;
+  var blotterData = [];
 
   function mapRow(r) {
     if (!r) return {};
@@ -539,7 +539,7 @@
     }
   }
 
-  const loadBlotters = loadBlotter;
+  var loadBlotters = loadBlotter;
 
   // Records are archived, never permanently deleted — this just switches
   // the table between the active view and the read-only archive so the
@@ -600,7 +600,7 @@
     }
   }
 
-  let censusResidentsForBlotter = []; // shared options list for both complainant and respondent pickers
+  var censusResidentsForBlotter = []; // shared options list for both complainant and respondent pickers
 
   async function loadCensusResidentsForBlotterPickers() {
     try {
@@ -628,7 +628,7 @@
     }
   }
 
-  const MIN_BLOTTER_PARTY_AGE = 15;
+  var MIN_BLOTTER_PARTY_AGE = 15;
 
   function validateComplainantParty(r) {
     if (r.status === 'Deceased') {
@@ -751,7 +751,7 @@
     });
   }
 
-  const bltBatchManager = new BcBatchManager({
+  var bltBatchManager = new BcBatchManager({
     entityName: 'blotter record',
     entityPlural: 'blotter records',
     apiType: 'blotter',
@@ -839,7 +839,7 @@
     bltBatchManager.updateUI();
   }
 
-  let elevateSourceIncidentId = null;
+  var elevateSourceIncidentId = null;
 
   function resetBlotterFormFields() {
     editingId = null;
@@ -1170,7 +1170,7 @@
     URL.revokeObjectURL(url);
   }
 
-  let stagedBlotterFile = null;
+  var stagedBlotterFile = null;
 
   function handleDropzoneClick(e) {
     if (e.target.closest('#btnReplaceFile') || e.target.closest('#btnRemoveFile')) return;

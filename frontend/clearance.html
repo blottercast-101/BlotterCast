@@ -287,8 +287,8 @@
 <script src="custom-controls.js"></script>
 <script>
 var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
-let logData=[]; let clPage=1; const CL_ROWS=8;
-let clRespondentBlocked = false;
+var logData=[]; var clPage=1; var CL_ROWS=8;
+var clRespondentBlocked = false;
 
 function mapClearance(r) {
   const d = new Date(r.date_issued + 'T00:00:00');
@@ -304,7 +304,7 @@ function renderVoterCheckbox(voterStatus) {
   document.getElementById('c_nonvoter').textContent = voterStatus === 'Not Registered' ? '✓' : '';
 }
 
-let residentOptions = []; // census residents available to pick for a new clearance
+var residentOptions = []; // census residents available to pick for a new clearance
 
 async function loadResidentOptionsForPicker() {
   const raw = await BCApi.docList('census');

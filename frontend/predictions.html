@@ -346,15 +346,15 @@
     //   type:       Gradient Boosting Classifier (Macro F1-Score evaluation)
     //   hotspot:    Gradient Boosting Classifier (Hotspot Risk Accuracy)
     // ============================================================
-    const TASKS = {
+    var TASKS = {
       occurrence: { label: 'Incident Occurrence', models: ['random_forest'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
       type: { label: 'Incident Type', models: ['gradient_boosting'], metricKey: 'incident_type_f1', metricLabel: 'F1 Score' },
       hotspot: { label: 'Hotspot Risk', models: ['gradient_boosting'], metricKey: 'accuracy', metricLabel: 'Accuracy' },
     };
-    const MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
-    let RESULT = null;
+    var MODEL_LABELS = { random_forest: 'Random Forest', gradient_boosting: 'Gradient Boosting' };
+    var RESULT = null;
 
-    let ZONE_LABELS = {};
+    var ZONE_LABELS = {};
     function zoneDisplay(zoneId) {
       const label = ZONE_LABELS[zoneId];
       if (!label) return zoneId;
@@ -369,11 +369,11 @@
       } catch (err) { /* fallback to bare zone ids */ }
     }
 
-    const ACTIVE = { occurrence: 'random_forest', type: 'gradient_boosting', hotspot: 'gradient_boosting' };
-    let CAN_RETRAIN = false;
-    let forecastChart = null;
-    let categoryChart = null;
-    const CATEGORY_COLORS = {
+    var ACTIVE = { occurrence: 'random_forest', type: 'gradient_boosting', hotspot: 'gradient_boosting' };
+    var CAN_RETRAIN = false;
+    var forecastChart = null;
+    var categoryChart = null;
+    var CATEGORY_COLORS = {
       'Physical Assault': '#1a5730', 'Theft': '#c9a84c', 'Domestic Dispute': '#0e7c86',
       'Vandalism': '#4fa868', 'Trespassing': '#8a6a2e', 'Drug-Related Activity': '#23703c',
       'Public Disturbance': '#86c895', 'Other': '#94a3b8',
@@ -382,7 +382,7 @@
     Chart.defaults.font.family = "'DM Sans', sans-serif";
     Chart.defaults.color = '#5a7a64';
 
-    const pct = v => {
+    var pct = v => {
       if (v === null || v === undefined || v === '' || isNaN(v)) return '—';
       const num = Number(v);
       const val = num > 1.0 ? num : num * 100;
@@ -743,7 +743,7 @@
       });
     }
 
-    let activeAbortController = null;
+    var activeAbortController = null;
 
     function cancelPendingMLRequests() {
       if (activeAbortController) {

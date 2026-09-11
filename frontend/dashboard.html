@@ -336,9 +336,9 @@
   <script>
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-    let dashRecentBlotter = [];
-    let dashAllBlotter = [];
-    let dashAllIncidents = [];
+    var dashRecentBlotter = [];
+    var dashAllBlotter = [];
+    var dashAllIncidents = [];
 
     function renderDashboardBlotterTable(records) {
       const tbody = document.getElementById('dashboardBlotterTable');

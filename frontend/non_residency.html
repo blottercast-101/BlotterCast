@@ -270,7 +270,7 @@
 <script src="custom-controls.js"></script>
 <script>
 var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
-let nrLogData=[]; let nrPage=1; const NR_ROWS=8;
+var nrLogData=[]; var nrPage=1; var NR_ROWS=8;
 
 function mapNonResidency(r) {
   const d = new Date(r.date_issued + 'T00:00:00');
@@ -282,7 +282,7 @@ function mapNonResidency(r) {
   };
 }
 
-let nrResidentOptions = []; // Census records available to pick for a new certificate
+var nrResidentOptions = []; // Census records available to pick for a new certificate
 
 async function loadNrResidentOptionsForPicker() {
   const raw = await BCApi.docList('census');
