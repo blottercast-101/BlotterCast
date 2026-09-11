@@ -4,15 +4,25 @@ window.BC_SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep',
 
 // ── View Transition Error Guard & AbortError Suppression ──
 window.addEventListener('unhandledrejection', function (event) {
-  if (event && event.reason) {
-    var err = event.reason;
-    if (
-      err.name === 'AbortError' ||
-      (typeof err.message === 'string' && err.message.includes('Transition was skipped')) ||
-      (typeof err === 'string' && err.includes('Transition was skipped'))
-    ) {
-      event.preventDefault(); // Suppresses the unhandled promise rejection in DevTools
-    }
+  const reason = event.reason;
+  const message = reason?.message || String(reason || '');
+  if (
+    reason?.name === 'AbortError' ||
+    message.includes('Transition was skipped') ||
+    message.includes('Cross-Origin-Opener-Policy') ||
+    message.includes('postMessage')
+  ) {
+    event.preventDefault(); // Suppresses the unhandled promise rejection in DevTools
+  }
+});
+window.addEventListener('error', function (event) {
+  const message = event?.message || String(event || '');
+  if (
+    message.includes('Cross-Origin-Opener-Policy') ||
+    message.includes('postMessage') ||
+    message.includes('Transition was skipped')
+  ) {
+    event.preventDefault();
   }
 });
 
