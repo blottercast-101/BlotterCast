@@ -111,35 +111,6 @@ const BCApi = {
 
     return execPromise;
   },
-      if (url.includes('census') || url.includes('type=census')) {
-        this.invalidateCache('census');
-      }
-      if (url.includes('users') || url.includes('captain_signature')) {
-        this.invalidateCache('captain');
-        this.invalidateCache('users');
-      }
-      if (url.includes('incidents') || url.includes('blotter') || url.includes('settlements')) {
-        this.invalidateCache('blotter');
-        this.invalidateCache('settlements');
-        this.invalidateCache('incidents');
-        this.invalidateCache('trends');
-        this.invalidateCache('dashboard');
-        this.invalidateCache('heatmap');
-        this.invalidateCache('analytics');
-      }
-
-      const isSystemPing = url.includes('action=heartbeat') || url.includes('action=check_session') || url.includes('action=unread_count');
-      if (!isSystemPing && !opts.skipBroadcast) {
-        try {
-          window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { url, method, data } }));
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('bc_data_updated', Date.now().toString());
-          }
-        } catch (_) {}
-      }
-    }
-    return data;
-  },
 
   // ---- auth ----
   getAuthConfig() {
@@ -651,3 +622,7 @@ const BCApi = {
 
 const ZONES = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5','Zone 6','Zone 7'];
 const CATEGORIES = ['Physical Assault','Theft','Domestic Dispute','Vandalism','Trespassing','Drug-Related Activity','Public Disturbance','Other'];
+
+window.BCApi = BCApi;
+window.ZONES = ZONES;
+window.CATEGORIES = CATEGORIES;
