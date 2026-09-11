@@ -6,6 +6,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign In — BlotterCast</title>
+  <link rel="preload" as="image" href="assets/barangay-hall.webp" fetchpriority="high"/>
   <script>
     // Suppress harmless AbortError when a cross-document view transition is skipped on redirect
     window.addEventListener('unhandledrejection', function(event) {
@@ -55,14 +56,15 @@
     /* ── LEFT PANEL ── */
     .left-panel {
       flex: 1; position: relative;
-      background:
+      background-color: #0d2818;
+      background-image:
         linear-gradient(
           160deg,
           rgba(8, 30, 16, 0.86) 0%,
           rgba(5, 18, 10, 0.92) 60%,
           rgba(7, 25, 14, 0.86) 100%
         ),
-        url('assets/barangay-hall.png');
+        url('assets/barangay-hall.webp');
       background-size: cover;
       background-position: center;
       display: flex; flex-direction: column;

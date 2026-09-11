@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BlotterCast — Barangay Incident & Blotter Intelligence System</title>
   <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preload" as="image" href="assets/barangay-hall.webp" fetchpriority="high"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="icons.js"></script>
   <script src="api.js"></script>
@@ -90,14 +91,15 @@
       display: flex; align-items: center;
       padding: 0 4rem;
       position: relative; overflow: hidden;
-      background:
+      background-color: #0d2818;
+      background-image:
         linear-gradient(
           160deg,
           rgba(8, 30, 16, 0.86) 0%,
           rgba(5, 18, 10, 0.92) 60%,
           rgba(7, 25, 14, 0.86) 100%
         ),
-        url('assets/barangay-hall.png');
+        url('assets/barangay-hall.webp');
       background-size: cover;
       background-position: center;
     }
