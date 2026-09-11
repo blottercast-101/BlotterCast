@@ -793,10 +793,6 @@
             trimmed !== 'null' &&
             trimmed !== 'undefined' &&
             !trimmed.startsWith('blob:') &&
-            !trimmed.startsWith('uploads/avatars/') &&
-            !trimmed.startsWith('/uploads/avatars/') &&
-            !trimmed.startsWith('uploads/') &&
-            !trimmed.startsWith('/uploads/') &&
             !trimmed.includes('default.png') &&
             !trimmed.includes('default_avatar') &&
             !trimmed.includes('avatar-placeholder')
@@ -815,6 +811,8 @@
         sessionStorage.setItem('currentUser', JSON.stringify(uPayload));
         localStorage.setItem('bc_user', JSON.stringify(uPayload));
         sessionStorage.setItem('bc_user', JSON.stringify(uPayload));
+        localStorage.setItem('user', JSON.stringify(uPayload));
+        sessionStorage.setItem('user', JSON.stringify(uPayload));
 
         // Real-time Presence Broadcast
         const uid = uPayload.id;

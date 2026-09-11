@@ -842,10 +842,6 @@ function renderAccountAvatar(avatarUrl) {
       trimmed !== 'null' &&
       trimmed !== 'undefined' &&
       !trimmed.startsWith('blob:') &&
-      !trimmed.startsWith('uploads/avatars/') &&
-      !trimmed.startsWith('/uploads/avatars/') &&
-      !trimmed.startsWith('uploads/') &&
-      !trimmed.startsWith('/uploads/') &&
       !trimmed.includes('default.png') &&
       !trimmed.includes('default_avatar') &&
       !trimmed.includes('avatar-placeholder')
@@ -865,6 +861,7 @@ function renderAccountAvatar(avatarUrl) {
         imgEl.src = '';
         imgEl.classList.add('hidden');
         if (defaultSvg) defaultSvg.classList.remove('hidden');
+        if (removeBtn) removeBtn.classList.add('hidden');
       };
       imgEl.src = cleanUrl;
       imgEl.classList.remove('hidden');
@@ -923,7 +920,7 @@ async function loadMyAccount() {
     // Sync session cache with confirmed avatar from server
     let cachedUser = {};
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser') || localStorage.getItem('user');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
     cachedUser.avatar_url = avatarPath;
@@ -937,6 +934,8 @@ async function loadMyAccount() {
       sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
       localStorage.setItem('bc_user', JSON.stringify(cachedUser));
       sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      localStorage.setItem('user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('user', JSON.stringify(cachedUser));
     } catch (_) {}
     if (typeof hydrateGlobalState === 'function') {
       hydrateGlobalState();
@@ -1017,11 +1016,16 @@ async function handleAvatarFileSelect(input) {
     // 1. Client-Side Image Compression & Downscaling (Prevents Memory & Payload Crashing)
     const resizedDataUrl = await resizeImage(file, 400);
     previewUrl = resizedDataUrl;
+
+    // Immediate Optimistic UI update for both My Account preview and Sidebar badge
     renderAccountAvatar(previewUrl);
+    document.querySelectorAll('[data-user-avatar]').forEach(el => {
+      el.innerHTML = `<img src="${previewUrl}" class="w-full h-full object-cover rounded-full" />`;
+    });
 
     // 2. Upload the normalized image
     const res = await BCApi.uploadMyAvatar(resizedDataUrl);
-    const newAvatarUrl = res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar;
+    const newAvatarUrl = res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar || previewUrl;
     if (!newAvatarUrl || typeof newAvatarUrl !== 'string' || newAvatarUrl.startsWith('blob:')) {
       throw new Error('Server did not return a permanent profile photo path.');
     }
@@ -1030,7 +1034,7 @@ async function handleAvatarFileSelect(input) {
 
     let cachedUser = {};
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser') || localStorage.getItem('user');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
     if (res?.user && typeof res.user === 'object') {
@@ -1047,6 +1051,8 @@ async function handleAvatarFileSelect(input) {
       sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
       localStorage.setItem('bc_user', JSON.stringify(cachedUser));
       sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      localStorage.setItem('user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('user', JSON.stringify(cachedUser));
       localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
 

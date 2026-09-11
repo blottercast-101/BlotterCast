@@ -319,10 +319,6 @@ function hydrateGlobalState() {
       trimmed !== 'null' &&
       trimmed !== 'undefined' &&
       !trimmed.startsWith('blob:') &&
-      !trimmed.startsWith('uploads/avatars/') &&
-      !trimmed.startsWith('/uploads/avatars/') &&
-      !trimmed.startsWith('uploads/') &&
-      !trimmed.startsWith('/uploads/') &&
       !trimmed.includes('default.png') &&
       !trimmed.includes('default_avatar') &&
       !trimmed.includes('avatar-placeholder')
@@ -990,10 +986,6 @@ async function requireAuth() {
           trimmed !== 'null' &&
           trimmed !== 'undefined' &&
           !trimmed.startsWith('blob:') &&
-          !trimmed.startsWith('uploads/avatars/') &&
-          !trimmed.startsWith('/uploads/avatars/') &&
-          !trimmed.startsWith('uploads/') &&
-          !trimmed.startsWith('/uploads/') &&
           !trimmed.includes('default.png') &&
           !trimmed.includes('default_avatar') &&
           !trimmed.includes('avatar-placeholder')
@@ -1014,6 +1006,8 @@ async function requireAuth() {
         sessionStorage.setItem('currentUser', JSON.stringify(userPayload));
         localStorage.setItem('bc_user', JSON.stringify(userPayload));
         sessionStorage.setItem('bc_user', JSON.stringify(userPayload));
+        localStorage.setItem('user', JSON.stringify(userPayload));
+        sessionStorage.setItem('user', JSON.stringify(userPayload));
       } catch (e) {}
 
       const role = userPayload.role;
