@@ -291,6 +291,27 @@ function bcPrewarmMLService() {
 }
 
 // ── Centralized Global State & User Profile Hydration ─────────
+function resolveAvatar(url) {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (
+    !trimmed ||
+    trimmed === 'null' ||
+    trimmed === 'undefined' ||
+    trimmed.startsWith('blob:') ||
+    trimmed.includes('uploads/avatars/') ||
+    trimmed.startsWith('uploads/') ||
+    trimmed.startsWith('/uploads/') ||
+    trimmed.includes('default.png') ||
+    trimmed.includes('default_avatar') ||
+    trimmed.includes('avatar-placeholder')
+  ) {
+    return null; // Reject legacy broken ephemeral disk paths that trigger 404s
+  }
+  return trimmed; // Valid Base64 or external CDN link
+}
+window.resolveAvatar = resolveAvatar;
+
 function hydrateGlobalState() {
   let user = null;
   if (typeof bcGetCachedUser === 'function') {
@@ -311,21 +332,7 @@ function hydrateGlobalState() {
   const fullName = user.full_name || user.fullName || user.name || '';
   const role = user.role || '';
   const rawAvatar = user.avatar_url || user.avatarUrl || user.avatar || user.profile_photo_path || '';
-  let avatarUrl = '';
-  if (typeof rawAvatar === 'string') {
-    const trimmed = rawAvatar.trim();
-    if (
-      trimmed &&
-      trimmed !== 'null' &&
-      trimmed !== 'undefined' &&
-      !trimmed.startsWith('blob:') &&
-      !trimmed.includes('default.png') &&
-      !trimmed.includes('default_avatar') &&
-      !trimmed.includes('avatar-placeholder')
-    ) {
-      avatarUrl = trimmed;
-    }
-  }
+  const avatarUrl = resolveAvatar(rawAvatar);
 
   document.querySelectorAll('[data-user-name]').forEach(el => {
     if (fullName) el.textContent = fullName;
@@ -342,7 +349,7 @@ function hydrateGlobalState() {
       if (existingImg && existingImg.getAttribute('src') === avatarUrl) {
         return;
       }
-      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onload="this.style.display='block';" onerror="this.onerror=null; this.src=''; this.classList.add('hidden'); const p=this.parentElement; if(p){ p.innerHTML=''; p.textContent='${initials}'; }"/>`;
+      el.innerHTML = `<img src="${avatarUrl}" alt="${fullName || 'User'}" class="w-full h-full object-cover rounded-full" onload="this.style.display='block';" onerror="this.onerror=null; this.removeAttribute('src'); this.classList.add('hidden'); const p=this.parentElement; if(p){ p.innerHTML=''; p.textContent='${initials}'; }"/>`;
     } else {
       el.innerHTML = '';
       el.textContent = initials;

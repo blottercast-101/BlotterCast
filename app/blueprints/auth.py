@@ -974,25 +974,14 @@ def _update_my_account():
     avatar_payload = data.get("avatar") or data.get("avatar_url") or data.get("profile_photo") or data.get("profile_photo_path")
     if avatar_payload is not None:
         if isinstance(avatar_payload, str) and avatar_payload.startswith("data:image/"):
-            import base64
-            try:
-                header, encoded = avatar_payload.split(",", 1)
-                mime = header.split(";")[0].split(":")[1].lower() if ":" in header else "image/jpeg"
-                ext = "png" if "png" in mime else ("webp" if "webp" in mime else ("gif" if "gif" in mime else ("bmp" if "bmp" in mime else "jpg")))
-                img_data = base64.b64decode(encoded)
-                if len(img_data) <= 16 * 1024 * 1024:
-                    av_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
-                    os.makedirs(av_dir, exist_ok=True)
-                    av_filename = f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{ext}"
-                    with open(os.path.join(av_dir, av_filename), "wb") as f:
-                        f.write(img_data)
-                    user.avatar_url = f"/uploads/avatars/{av_filename}"
-            except Exception as e:
-                current_app.logger.warning(f"Failed to decode base64 avatar: {e}")
+            user.avatar_url = avatar_payload
+            user.profile_photo_path = avatar_payload
         elif isinstance(avatar_payload, str) and avatar_payload.strip():
             user.avatar_url = avatar_payload.strip()
+            user.profile_photo_path = avatar_payload.strip()
         elif avatar_payload is None or avatar_payload == "":
             user.avatar_url = None
+            user.profile_photo_path = None
 
     if user.role == "Barangay Captain":
         from ..models import SystemSetting
@@ -1034,87 +1023,58 @@ def _update_my_account():
 
 
 def _upload_my_avatar():
-    """Uploads and saves a permanent user profile picture."""
+    """Uploads and saves a permanent user profile picture directly into the database as Base64 Data URL."""
     if not session.get("user_id"):
         return json_error("Not authenticated", 401)
     user = db.session.get(User, session["user_id"])
     if not user:
         return json_error("Not authenticated", 401)
 
-    avatar_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
-    os.makedirs(avatar_dir, exist_ok=True)
-    os.makedirs(os.path.join(current_app.static_folder, "assets", "avatars"), exist_ok=True)
-
     # 1. Check if Base64 Data URL payload was sent via JSON or form data
     data = request.get_json(silent=True) or {}
     avatar_payload = (
         data.get("avatar")
+        or data.get("avatar_data")
         or data.get("photo")
         or data.get("image")
         or data.get("profile_photo")
         or data.get("avatar_url")
         or data.get("profile_photo_path")
         or request.form.get("avatar")
+        or request.form.get("avatar_data")
         or request.form.get("photo")
+        or request.form.get("avatar_url")
     )
     if avatar_payload and isinstance(avatar_payload, str) and avatar_payload.startswith("data:image/"):
-        import base64
-        try:
-            header, encoded = avatar_payload.split(",", 1)
-            mime = header.split(";")[0].split(":")[1].lower() if ":" in header else "image/jpeg"
-            ext = "png" if "png" in mime else ("webp" if "webp" in mime else ("gif" if "gif" in mime else ("bmp" if "bmp" in mime else "jpg")))
-            img_data = base64.b64decode(encoded)
-            if len(img_data) > 16 * 1024 * 1024:
-                return json_error("Profile photo image must be smaller than 16MB", 400)
+        user.avatar_url = avatar_payload
+        user.profile_photo_path = avatar_payload
+        db.session.commit()
+        log_audit(user.username, "Updated", "System", "Profile photo uploaded")
 
-            if user.avatar_url:
-                old_rel = user.avatar_url.lstrip("/")
-                old_full = os.path.join(current_app.static_folder, old_rel)
-                if os.path.isfile(old_full):
-                    try:
-                        os.remove(old_full)
-                    except Exception as e:
-                        current_app.logger.warning(f"Could not remove old avatar file {old_full}: {e}")
-
-            timestamp = int(datetime.utcnow().timestamp())
-            rand_token = secrets.token_hex(4)
-            filename = secure_filename(f"avatar_{user.id}_{timestamp}_{rand_token}.{ext}")
-            dest_path = os.path.join(avatar_dir, filename)
-            with open(dest_path, "wb") as f:
-                f.write(img_data)
-
-            relative_path = f"/uploads/avatars/{filename}"
-            user.avatar_url = relative_path
-            db.session.commit()
-            log_audit(user.username, "Updated", "System", "Profile photo uploaded")
-
-            return jsonify({
-                "ok": True,
-                "success": True,
-                "avatar_url": relative_path,
-                "avatarUrl": relative_path,
-                "avatar": relative_path,
-                "profile_photo_path": relative_path,
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "fullName": user.full_name,
-                    "full_name": user.full_name,
-                    "email": user.email,
-                    "contact": user.contact_no,
-                    "role": user.role,
-                    "status": user.status or "Active",
-                    "avatar": relative_path,
-                    "avatar_url": relative_path,
-                    "avatarUrl": relative_path,
-                    "profile_photo_path": relative_path,
-                    "created_at": user.created_at.isoformat() if user.created_at else None,
-                    "createdAt": user.created_at.isoformat() if user.created_at else None,
-                }
-            })
-        except Exception as e:
-            current_app.logger.warning(f"Failed to decode base64 avatar: {e}")
-            return json_error("Failed to process base64 image data", 400)
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "avatar_url": avatar_payload,
+            "avatarUrl": avatar_payload,
+            "avatar": avatar_payload,
+            "profile_photo_path": avatar_payload,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "fullName": user.full_name,
+                "full_name": user.full_name,
+                "email": user.email,
+                "contact": user.contact_no,
+                "role": user.role,
+                "status": user.status or "Active",
+                "avatar": avatar_payload,
+                "avatar_url": avatar_payload,
+                "avatarUrl": avatar_payload,
+                "profile_photo_path": avatar_payload,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "createdAt": user.created_at.isoformat() if user.created_at else None,
+            }
+        }), 200
 
     # 2. Check multipart file upload
     file = (
@@ -1137,32 +1097,20 @@ def _upload_my_avatar():
     if not is_image_mime and not is_image_ext:
         return json_error("Profile photo must be an image file (JPG, PNG, WEBP, GIF, BMP)", 400)
 
-    # Validate file size (16MB max)
+    # Read raw bytes and encode as Base64 Data URL (ephemeral-disk safe)
+    import base64
     file.stream.seek(0, os.SEEK_END)
     size = file.stream.tell()
     file.stream.seek(0)
     if size > 16 * 1024 * 1024:
         return json_error("Profile photo image must be smaller than 16MB", 400)
 
-    # Clean up previous custom avatar file if present
-    if user.avatar_url:
-        old_rel = user.avatar_url.lstrip("/")
-        old_full = os.path.join(current_app.static_folder, old_rel)
-        if os.path.isfile(old_full):
-            try:
-                os.remove(old_full)
-            except Exception as e:
-                current_app.logger.warning(f"Could not remove old avatar file {old_full}: {e}")
+    raw_bytes = file.read()
+    mime_final = mimetype if is_image_mime else f"image/{'jpeg' if ext in ('jpg', 'jpeg', 'jfif') else ext}"
+    data_url = f"data:{mime_final};base64,{base64.b64encode(raw_bytes).decode('ascii')}"
 
-    safe_ext = ext if ext in allowed_exts else ("png" if "png" in mimetype else ("webp" if "webp" in mimetype else ("gif" if "gif" in mimetype else "jpg")))
-    timestamp = int(datetime.utcnow().timestamp())
-    rand_token = secrets.token_hex(4)
-    filename = secure_filename(f"avatar_{user.id}_{timestamp}_{rand_token}.{safe_ext}")
-    dest_path = os.path.join(avatar_dir, filename)
-    file.save(dest_path)
-
-    relative_path = f"/uploads/avatars/{filename}"
-    user.avatar_url = relative_path
+    user.avatar_url = data_url
+    user.profile_photo_path = data_url
     db.session.commit()
 
     log_audit(user.username, "Updated", "System", "Profile photo uploaded")
@@ -1170,10 +1118,10 @@ def _upload_my_avatar():
     return jsonify({
         "ok": True,
         "success": True,
-        "avatar_url": relative_path,
-        "avatarUrl": relative_path,
-        "avatar": relative_path,
-        "profile_photo_path": relative_path,
+        "avatar_url": data_url,
+        "avatarUrl": data_url,
+        "avatar": data_url,
+        "profile_photo_path": data_url,
         "user": {
             "id": user.id,
             "username": user.username,
@@ -1182,10 +1130,13 @@ def _upload_my_avatar():
             "email": user.email,
             "contact": user.contact_no,
             "role": user.role,
-            "avatar": relative_path,
-            "avatar_url": relative_path,
-            "avatarUrl": relative_path,
-            "profile_photo_path": relative_path,
+            "status": user.status or "Active",
+            "avatar": data_url,
+            "avatar_url": data_url,
+            "avatarUrl": data_url,
+            "profile_photo_path": data_url,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "createdAt": user.created_at.isoformat() if user.created_at else None,
         }
     }), 200
 
@@ -1198,16 +1149,8 @@ def _remove_my_avatar():
     if not user:
         return json_error("Not authenticated", 401)
 
-    if user.avatar_url:
-        old_rel = user.avatar_url.lstrip("/")
-        old_full = os.path.join(current_app.static_folder, old_rel)
-        if os.path.isfile(old_full):
-            try:
-                os.remove(old_full)
-            except Exception as e:
-                current_app.logger.warning(f"Could not remove avatar file {old_full}: {e}")
-
     user.avatar_url = None
+    user.profile_photo_path = None
     db.session.commit()
 
     log_audit(user.username, "Updated", "System", "Profile photo removed")
@@ -1227,10 +1170,13 @@ def _remove_my_avatar():
             "email": user.email,
             "contact": user.contact_no,
             "role": user.role,
+            "status": user.status or "Active",
             "avatar": None,
             "avatar_url": None,
             "avatarUrl": None,
             "profile_photo_path": None,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "createdAt": user.created_at.isoformat() if user.created_at else None,
         }
     }), 200
 

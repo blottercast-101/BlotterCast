@@ -13,8 +13,8 @@ ADDITIVE_COLUMNS = [
     ("users", "auth_provider", "VARCHAR(30)", "'local'", True),
     ("users", "mfa_enabled", "BOOLEAN", "TRUE", True),
     ("users", "signature_path", "VARCHAR(255)", "NULL", False),
-    ("users", "avatar_url", "VARCHAR(255)", "NULL", False),
-    ("users", "profile_photo_path", "VARCHAR(255)", "NULL", False),
+    ("users", "avatar_url", "TEXT", "NULL", False),
+    ("users", "profile_photo_path", "TEXT", "NULL", False),
     ("users", "last_login", "TIMESTAMP", "NULL", False),
     ("users", "last_seen", "TIMESTAMP", "NULL", False),
     ("users", "failed_attempts", "INTEGER", "0", True),
@@ -75,11 +75,15 @@ def ensure_columns(db):
                 """))
                 try:
                     conn.execute(text("ALTER TABLE audit_logs ALTER COLUMN details TYPE TEXT;"))
+                    conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
+                    conn.execute(text("ALTER TABLE users ALTER COLUMN profile_photo_path TYPE TEXT;"))
                 except Exception:
                     pass
             elif "mysql" in backend:
                 try:
                     conn.execute(text("ALTER TABLE audit_logs MODIFY COLUMN details TEXT;"))
+                    conn.execute(text("ALTER TABLE users MODIFY COLUMN avatar_url LONGTEXT;"))
+                    conn.execute(text("ALTER TABLE users MODIFY COLUMN profile_photo_path LONGTEXT;"))
                 except Exception:
                     pass
     except Exception as e:

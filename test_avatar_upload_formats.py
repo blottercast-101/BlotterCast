@@ -72,9 +72,7 @@ class TestAvatarUploadFormats(unittest.TestCase):
         data = res.get_json()
         self.assertTrue(data.get("ok"))
         avatar_url = data.get("avatar_url")
-        self.assertTrue(avatar_url.startswith("/uploads/avatars/"))
-        full_path = os.path.join(self.app.static_folder, avatar_url.lstrip("/"))
-        self.created_avatar_files.append(full_path)
+        self.assertTrue(avatar_url.startswith("data:image/"))
 
         # 2. Test WebP format
         dummy_webp = io.BytesIO(b"RIFF\x24\x00\x00\x00WEBPVP8 \x18\x00\x00\x00")
@@ -86,8 +84,7 @@ class TestAvatarUploadFormats(unittest.TestCase):
         self.assertEqual(res_webp.status_code, 200)
         data_webp = res_webp.get_json()
         self.assertTrue(data_webp.get("ok"))
-        full_path_webp = os.path.join(self.app.static_folder, data_webp["avatar_url"].lstrip("/"))
-        self.created_avatar_files.append(full_path_webp)
+        self.assertTrue(data_webp["avatar_url"].startswith("data:image/"))
 
     def test_base64_data_url_upload(self):
         self._login()
@@ -102,9 +99,7 @@ class TestAvatarUploadFormats(unittest.TestCase):
         self.assertEqual(res.status_code, 200, res.data.decode("utf-8"))
         data = res.get_json()
         self.assertTrue(data.get("ok"))
-        self.assertTrue(data.get("avatar_url").startswith("/uploads/avatars/"))
-        full_path = os.path.join(self.app.static_folder, data["avatar_url"].lstrip("/"))
-        self.created_avatar_files.append(full_path)
+        self.assertEqual(data.get("avatar_url"), tiny_jpeg_b64)
 
     def test_update_my_account_with_base64_and_format(self):
         self._login()
@@ -122,9 +117,7 @@ class TestAvatarUploadFormats(unittest.TestCase):
         self.assertEqual(res.status_code, 200, res.data.decode("utf-8"))
         data = res.get_json()
         self.assertTrue(data.get("ok"))
-        self.assertTrue(data.get("avatar_url").startswith("/uploads/avatars/"))
-        full_path = os.path.join(self.app.static_folder, data["avatar_url"].lstrip("/"))
-        self.created_avatar_files.append(full_path)
+        self.assertEqual(data.get("avatar_url"), tiny_png_b64)
 
     def test_non_image_rejection(self):
         self._login()

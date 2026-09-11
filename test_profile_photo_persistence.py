@@ -66,12 +66,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertTrue(upload_json["ok"])
         self.assertTrue(upload_json["success"])
         avatar_url = upload_json["avatar_url"]
-        self.assertTrue(avatar_url.startswith("/uploads/avatars/avatar_"))
-
-        # Verify physical file existence
-        full_disk_path = os.path.join(self.app.static_folder, avatar_url.lstrip("/"))
-        self.assertTrue(os.path.isfile(full_disk_path))
-        self.created_avatar_files.append(full_disk_path)
+        self.assertTrue(avatar_url.startswith("data:image/"))
 
         # 3. Check /api/auth.php?action=me returns avatar
         me_res = self.client.get("/api/auth.php?action=me")
@@ -95,12 +90,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertEqual(rest_upload_res.status_code, 200)
         rest_json = rest_upload_res.get_json()
         new_avatar_url = rest_json["avatar_url"]
-        new_disk_path = os.path.join(self.app.static_folder, new_avatar_url.lstrip("/"))
-        self.assertTrue(os.path.isfile(new_disk_path))
-        self.created_avatar_files.append(new_disk_path)
-
-        # Old avatar file should have been cleaned up
-        self.assertFalse(os.path.isfile(full_disk_path))
+        self.assertTrue(new_avatar_url.startswith("data:image/"))
 
         # 6. Verify seeder does not overwrite avatar_url on restart/seed_data
         seed_data(self.app, force_reset=False)
@@ -133,7 +123,6 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertTrue(remove_json["ok"])
         self.assertTrue(remove_json["success"])
         self.assertIsNone(remove_json["avatar_url"])
-        self.assertFalse(os.path.isfile(new_disk_path))
 
         # Check /api/auth.php?action=me after remove
         me_after_remove = self.client.get("/api/auth.php?action=me").get_json()
@@ -165,8 +154,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertNotEqual(post_res.status_code, 405)
         self.assertEqual(post_res.status_code, 200)
         avatar_url = post_res.get_json()["avatar_url"]
-        full_disk_path = os.path.join(self.app.static_folder, avatar_url.lstrip("/"))
-        self.created_avatar_files.append(full_disk_path)
+        self.assertTrue(avatar_url.startswith("data:image/"))
 
         # 4. Test DELETE /api/user/avatar works cleanly
         del_res = self.client.delete("/api/user/avatar")
@@ -188,10 +176,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         res_json = res.get_json()
         self.assertTrue(res_json.get("ok") or res_json.get("success"))
         avatar_path = res_json["avatar_url"]
-        self.assertTrue(avatar_path.startswith("/uploads/avatars/"))
-        full_disk_path = os.path.join(self.app.static_folder, avatar_path.lstrip("/"))
-        self.assertTrue(os.path.isfile(full_disk_path))
-        self.created_avatar_files.append(full_disk_path)
+        self.assertTrue(avatar_path.startswith("data:image/"))
 
         # 3. Test Base64 Data URL avatar update via update_my_account
         data_url = (
@@ -206,10 +191,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertEqual(up_res.status_code, 200)
         up_json = up_res.get_json()
         b64_avatar_path = up_json["avatar_url"]
-        self.assertTrue(b64_avatar_path.startswith("/uploads/avatars/"))
-        b64_disk_path = os.path.join(self.app.static_folder, b64_avatar_path.lstrip("/"))
-        self.assertTrue(os.path.isfile(b64_disk_path))
-        self.created_avatar_files.append(b64_disk_path)
+        self.assertEqual(b64_avatar_path, data_url)
 
     def _create_dummy_jpg(self):
         # Minimal valid JPEG bytes
@@ -240,11 +222,7 @@ class TestProfilePhotoPersistence(unittest.TestCase):
         self.assertEqual(upload_res.status_code, 200)
         upload_json = upload_res.get_json()
         avatar_url = upload_json["avatar_url"]
-        self.assertTrue(avatar_url.endswith(".jpg") or avatar_url.endswith(".jpeg"))
-        
-        full_disk_path = os.path.join(self.app.static_folder, avatar_url.lstrip("/"))
-        self.assertTrue(os.path.isfile(full_disk_path))
-        self.created_avatar_files.append(full_disk_path)
+        self.assertTrue(avatar_url.startswith("data:image/jpeg;base64,"))
 
         # 3. Log out
         logout_res = self.client.get("/api/auth.php?action=logout")

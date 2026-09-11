@@ -793,6 +793,9 @@
             trimmed !== 'null' &&
             trimmed !== 'undefined' &&
             !trimmed.startsWith('blob:') &&
+            !trimmed.includes('uploads/avatars/') &&
+            !trimmed.startsWith('uploads/') &&
+            !trimmed.startsWith('/uploads/') &&
             !trimmed.includes('default.png') &&
             !trimmed.includes('default_avatar') &&
             !trimmed.includes('avatar-placeholder')
