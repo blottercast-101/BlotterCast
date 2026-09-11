@@ -989,6 +989,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .settings-tab.active { background: var(--forest-600); color: white; }
 
+/* Attribute-driven zero-flicker settings tab styles */
+.settings-tab-panel {
+  display: none !important;
+}
+[data-active-tab="general"] #tab-general,
+[data-active-tab="notifications"] #tab-notifications,
+[data-active-tab="security"] #tab-security,
+[data-active-tab="backup"] #tab-backup {
+  display: block !important;
+}
+
+[data-active-tab="general"] .settings-tab[data-tab="general"],
+[data-active-tab="notifications"] .settings-tab[data-tab="notifications"],
+[data-active-tab="security"] .settings-tab[data-tab="security"],
+[data-active-tab="backup"] .settings-tab[data-tab="backup"] {
+  background: var(--forest-600) !important;
+  color: white !important;
+}
+
 /* ---------------- Risk / mini bars (Predictions, Heatmap) ---------------- */
 .risk-bar { height: 8px; border-radius: 999px; background: var(--forest-50); overflow: hidden; }
 .risk-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s; }
