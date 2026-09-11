@@ -1,6 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Intercept synchronous console errors emitted by cross-origin security engines during navigation
+    (function() {
+      const originalError = console.error;
+      const originalWarn = console.warn;
+
+      console.error = function(...args) {
+        const msg = args.map(a => (typeof a === 'object' && a !== null ? (a.message || a.stack || String(a)) : String(a || ''))).join(' ');
+        if (
+          msg.includes('Cross-Origin-Opener-Policy') ||
+          msg.includes('postMessage') ||
+          msg.includes('Transition was skipped') ||
+          msg.includes('AbortError')
+        ) {
+          return;
+        }
+        originalError.apply(console, args);
+      };
+
+      console.warn = function(...args) {
+        const msg = args.map(a => (typeof a === 'object' && a !== null ? (a.message || a.stack || String(a)) : String(a || ''))).join(' ');
+        if (
+          msg.includes('google.accounts.id.initialize') ||
+          msg.includes('GSI_LOGGER') ||
+          msg.includes('Cross-Origin-Opener-Policy') ||
+          msg.includes('postMessage') ||
+          msg.includes('Transition was skipped')
+        ) {
+          return;
+        }
+        originalWarn.apply(console, args);
+      };
+
+      window.addEventListener('unhandledrejection', function(event) {
+        const reason = event.reason;
+        const message = reason?.message || String(reason || '');
+        if (
+          reason?.name === 'AbortError' ||
+          message.includes('Transition was skipped') ||
+          message.includes('Cross-Origin-Opener-Policy') ||
+          message.includes('postMessage')
+        ) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('error', function(event) {
+        const message = event?.message || String(event || '');
+        if (
+          message.includes('Cross-Origin-Opener-Policy') ||
+          message.includes('postMessage') ||
+          message.includes('Transition was skipped')
+        ) {
+          event.preventDefault();
+        }
+      });
+    })();
+  </script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BlotterCast — Barangay Incident & Blotter Intelligence System</title>

@@ -1,37 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // Intercept synchronous console errors emitted by cross-origin security engines during navigation
+    (function() {
+      const originalError = console.error;
+      const originalWarn = console.warn;
+
+      console.error = function(...args) {
+        const msg = args.map(a => (typeof a === 'object' && a !== null ? (a.message || a.stack || String(a)) : String(a || ''))).join(' ');
+        if (
+          msg.includes('Cross-Origin-Opener-Policy') ||
+          msg.includes('postMessage') ||
+          msg.includes('Transition was skipped') ||
+          msg.includes('AbortError')
+        ) {
+          return; // Suppress from console
+        }
+        originalError.apply(console, args);
+      };
+
+      console.warn = function(...args) {
+        const msg = args.map(a => (typeof a === 'object' && a !== null ? (a.message || a.stack || String(a)) : String(a || ''))).join(' ');
+        if (
+          msg.includes('google.accounts.id.initialize') ||
+          msg.includes('GSI_LOGGER') ||
+          msg.includes('Cross-Origin-Opener-Policy') ||
+          msg.includes('postMessage') ||
+          msg.includes('Transition was skipped')
+        ) {
+          return; // Suppress duplicate logger warning
+        }
+        originalWarn.apply(console, args);
+      };
+
+      // Suppress harmless ephemeral teardown/redirect errors (COOP postMessage, AbortError, skipped transitions)
+      window.addEventListener('unhandledrejection', function(event) {
+        const reason = event.reason;
+        const message = reason?.message || String(reason || '');
+        if (
+          reason?.name === 'AbortError' ||
+          message.includes('Transition was skipped') ||
+          message.includes('Cross-Origin-Opener-Policy') ||
+          message.includes('postMessage')
+        ) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener('error', function(event) {
+        const message = event?.message || String(event || '');
+        if (
+          message.includes('Cross-Origin-Opener-Policy') ||
+          message.includes('postMessage') ||
+          message.includes('Transition was skipped')
+        ) {
+          event.preventDefault();
+        }
+      });
+    })();
+  </script>
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign In — BlotterCast</title>
   <link rel="preload" as="image" href="assets/barangay-hall.webp" fetchpriority="high"/>
-  <script>
-    // Suppress harmless ephemeral teardown/redirect errors (COOP postMessage, AbortError, skipped transitions)
-    window.addEventListener('unhandledrejection', function(event) {
-      const reason = event.reason;
-      const message = reason?.message || String(reason || '');
-      if (
-        reason?.name === 'AbortError' ||
-        message.includes('Transition was skipped') ||
-        message.includes('Cross-Origin-Opener-Policy') ||
-        message.includes('postMessage')
-      ) {
-        event.preventDefault();
-      }
-    });
-    window.addEventListener('error', function(event) {
-      const message = event?.message || String(event || '');
-      if (
-        message.includes('Cross-Origin-Opener-Policy') ||
-        message.includes('postMessage') ||
-        message.includes('Transition was skipped')
-      ) {
-        event.preventDefault();
-      }
-    });
-  </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -802,7 +835,10 @@
 <script>
   function showSuccessRedirect(userOrName, customSubtitle) {
     if (window.google && window.google.accounts && window.google.accounts.id) {
-      try { window.google.accounts.id.cancel(); } catch (_) {}
+      try {
+        window.google.accounts.id.cancel();
+        window.google.accounts.id.disableAutoSelect();
+      } catch (_) {}
     }
     const roleEl = document.getElementById('redirectRole');
     const subtitleEl = document.getElementById('redirectSubtitle');
@@ -1411,7 +1447,10 @@
       } else {
         if (resendTimer) clearInterval(resendTimer);
         if (window.google && window.google.accounts && window.google.accounts.id) {
-          try { window.google.accounts.id.cancel(); } catch (_) {}
+          try {
+            window.google.accounts.id.cancel();
+            window.google.accounts.id.disableAutoSelect();
+          } catch (_) {}
         }
         showSuccessRedirect(result.user);
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
