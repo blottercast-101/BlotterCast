@@ -585,10 +585,10 @@
       </div>
 
       <!-- Title & Role Subtitle -->
-      <h2 id="authSuccessTitle" class="text-2xl font-bold text-emerald-950 mb-2 font-serif tracking-tight">Welcome back!</h2>
+      <h2 id="authSuccessTitle" class="text-2xl font-bold text-emerald-950 mb-2 font-serif tracking-tight">Authentication Successful</h2>
       <p id="redirectSubtitle" class="text-xs text-emerald-800/80 font-medium flex items-center gap-1.5">
-        <span id="authSuccessDesc">Signed in as <strong id="redirectRole" class="font-semibold text-emerald-900">System Administrator</strong></span>
-        <span id="authSuccessRedirectingSuffix" class="inline-block">— Redirecting</span>
+        <span id="authSuccessDesc">Accessing BlotterCast Portal...</span>
+        <span id="authSuccessRedirectingSuffix" class="inline-block" style="display:none;"></span>
         <span id="authSuccessDots" class="inline-flex gap-0.5">
           <span class="animate-bounce delay-100">.</span>
           <span class="animate-bounce delay-200">.</span>
@@ -851,18 +851,18 @@
     const type = (typeof config === 'object' && config !== null) ? (config.type || 'login') : String(config || 'login');
 
     if (type === 'password_reset') {
-      if (titleEl) titleEl.textContent = (config && config.title) || 'Password Updated Successfully!';
-      if (descEl) descEl.innerHTML = (config && config.desc) || 'Your credentials have been updated. Redirecting to sign in…';
+      if (titleEl) titleEl.textContent = (config && config.title) || 'Password Updated Successfully';
+      if (descEl) descEl.innerHTML = (config && config.desc) || 'Your security credentials have been refreshed. Please sign in to continue.';
       if (suffixEl) suffixEl.style.display = 'none';
       if (dotsEl) dotsEl.style.display = 'none';
-      if (msgEl) msgEl.textContent = 'Password Updated Successfully!';
+      if (msgEl) msgEl.textContent = 'Password Updated Successfully';
 
       if (iconContainer) {
         iconContainer.innerHTML = `
           <div class="relative flex items-center justify-center">
             <div class="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-700 shadow-md success-circle-pop animate-bounce">
               <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
             <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping pointer-events-none"></div>
@@ -870,19 +870,19 @@
         `;
       }
     } else {
-      // Default Standard Login State
+      // Default Routine Sign-In State
       const roleName = (config && (config.role || config.nameOrRole)) || 'System Administrator';
-      if (titleEl) titleEl.textContent = (config && config.title) || 'Welcome back!';
+      if (titleEl) titleEl.textContent = (config && config.title) || 'Authentication Successful';
       if (descEl) {
         if (config && config.customSubtitle) {
           descEl.innerHTML = `<span>${config.customSubtitle}</span>`;
         } else {
-          descEl.innerHTML = `Signed in as <strong id="redirectRole" class="font-semibold text-emerald-900">${roleName}</strong>`;
+          descEl.innerHTML = `Signed in as <strong id="redirectRole" class="font-semibold text-emerald-900">${roleName}</strong> — Accessing BlotterCast Portal...`;
         }
       }
-      if (suffixEl) suffixEl.style.display = (config && config.customSubtitle) ? 'none' : 'inline-block';
+      if (suffixEl) suffixEl.style.display = 'none';
       if (dotsEl) dotsEl.style.display = (config && config.customSubtitle) ? 'none' : 'inline-flex';
-      if (msgEl) msgEl.textContent = (config && config.customSubtitle) || `Signed in as ${roleName} — Redirecting…`;
+      if (msgEl) msgEl.textContent = (config && config.customSubtitle) || `Signed in as ${roleName} — Accessing BlotterCast Portal...`;
 
       if (iconContainer) {
         iconContainer.innerHTML = `
@@ -1364,7 +1364,11 @@
     try {
       await BCApi.resetPassword(newPassword);
       btn.classList.remove('loading');
-      showAuthSuccessModal({ type: 'password_reset' });
+      showAuthSuccessModal({
+        type: 'password_reset',
+        title: 'Password Updated Successfully',
+        desc: 'Your security credentials have been refreshed. Please sign in to continue.'
+      });
       setTimeout(() => {
         const modal = document.getElementById('authSuccessOverlay') || document.getElementById('successOverlay');
         if (modal) {
@@ -1611,7 +1615,11 @@
       const urlParams = new URLSearchParams(window.location.search);
       const status = (urlParams.get('status') || '').toLowerCase();
       if (status === 'password-updated' || status === 'password_updated' || status === 'password-reset' || status === 'password_reset') {
-        showAuthSuccessModal({ type: 'password_reset' });
+        showAuthSuccessModal({
+          type: 'password_reset',
+          title: 'Password Updated Successfully',
+          desc: 'Your security credentials have been refreshed. Please sign in to continue.'
+        });
         setTimeout(() => {
           const modal = document.getElementById('authSuccessOverlay') || document.getElementById('successOverlay');
           if (modal) {
