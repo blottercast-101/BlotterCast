@@ -96,9 +96,16 @@
 
 <div id="app-content" class="ml-64 flex flex-col min-h-screen">
   <header class="page-header">
-    <div>
-      <h1 class="font-display text-2xl text-forest-800">Barangay Census</h1>
-      <p class="text-forest-500 text-sm">Official list of registered residents of Barangay Mapulang Lupa</p>
+    <div class="flex items-center gap-3">
+      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800">Barangay Census</h1>
+        <p class="text-forest-500 text-xs md:text-sm">Official list of registered residents of Barangay Mapulang Lupa</p>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button onclick="openModal('importCensusModal')" class="btn-secondary" id="importBtn"><span data-icon="folder" data-icon-size="16"></span> Import</button>
@@ -228,13 +235,13 @@
       <button onclick="closeModal('residentModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form class="space-y-4">
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div><label class="form-label">Resident No.</label><input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Last Name <span class="text-red-500">*</span></label><input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-no-numbers required/></div>
         <div><label class="form-label">First Name <span class="text-red-500">*</span></label><input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-no-numbers required/></div>
         <div><label class="form-label">Middle Name</label><input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-no-numbers/></div>
       </div>
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div><label class="form-label">Date of Birth <span class="text-red-500">*</span></label><input type="date" id="rf_dob" class="form-input" data-no-future required/></div>
         <div><label class="form-label">Sex <span class="text-red-500">*</span></label>
           <select id="rf_sex" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Male</option><option>Female</option></select></div>

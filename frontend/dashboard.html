@@ -128,17 +128,24 @@
   <div id="app-content" class="ml-64 flex flex-col min-h-screen">
 
     <!-- Top Bar -->
-    <header class="sticky top-0 z-20 bg-white border-b border-forest-100 px-8 py-4 flex items-center justify-between shadow-sm">
-      <div>
-        <h1 class="font-display text-2xl text-forest-800">Dashboard</h1>
-        <p id="dashboardGreeting" data-user-greeting class="text-forest-500 text-sm">Welcome back! Here's today's overview.</p>
+    <header class="sticky top-0 z-20 bg-white border-b border-forest-100 px-4 md:px-6 lg:px-8 py-3 md:py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-3">
+        <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800">Dashboard</h1>
+          <p id="dashboardGreeting" data-user-greeting class="text-forest-500 text-xs md:text-sm">Welcome back! Here's today's overview.</p>
+        </div>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 md:gap-4">
         <div class="relative" id="dashboardSearchWrap">
           <input type="text" id="dashboardGlobalSearch" placeholder="Search records (Case ID, name, date)…"
                  oninput="handleDashboardSearch(this.value)"
                  onfocus="if(this.value.trim()) handleDashboardSearch(this.value)"
-                 class="pl-9 pr-8 py-2 rounded-full border border-forest-200 bg-forest-50 text-sm text-forest-700 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400 focus:bg-white w-72 transition-all"
+                 class="pl-9 pr-8 py-2 rounded-full border border-forest-200 bg-forest-50 text-sm text-forest-700 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400 focus:bg-white w-48 sm:w-60 md:w-72 transition-all"
                  autocomplete="off"/>
           <span class="absolute left-3 top-2.5 text-forest-400 pointer-events-none" data-icon="search" data-icon-size="16"></span>
           <button id="clearSearchBtn" type="button" onclick="clearDashboardSearch()" class="hidden absolute right-2.5 top-2.5 text-forest-400 hover:text-forest-600 transition-colors" title="Clear search">
@@ -155,7 +162,7 @@
           </div>
         </div>
         <div class="relative">
-          <button onclick="toggleNotifPanel()" class="relative p-2 rounded-xl bg-forest-50 hover:bg-forest-100 text-forest-600 transition-colors">
+          <button onclick="toggleNotifPanel()" class="relative p-2 rounded-xl bg-forest-50 hover:bg-forest-100 text-forest-600 transition-colors" aria-label="Notifications">
             <span data-icon="bell" data-icon-size="18"></span>
             <span id="notifBadge" class="hidden absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
@@ -167,12 +174,12 @@
             <div id="notifList" class="max-h-96 overflow-y-auto"></div>
           </div>
         </div>
-        <div class="text-sm text-forest-500" id="currentDate"></div>
+        <div class="hidden sm:block text-xs md:text-sm text-forest-500 whitespace-nowrap" id="currentDate"></div>
       </div>
     </header>
 
     <!-- Dashboard Body -->
-    <main class="flex-1 p-8 space-y-8">
+    <main class="flex-1 p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
 
       <!-- Stat Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -211,25 +218,27 @@
       </div>
 
       <!-- Recent + Side widgets -->
-      <div class="grid grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <!-- Recent Blotter -->
-        <div class="col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+        <div class="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between">
             <h2 class="font-display text-lg text-forest-800">Recent Blotter Entries</h2>
             <a href="blotter.html" class="text-forest-600 text-sm hover:text-forest-800 font-medium transition-colors">View All →</a>
           </div>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Docket No.</th>
-                <th>Complainant</th>
-                <th>Nature</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="dashboardBlotterTable"></tbody>
-          </table>
+          <div class="overflow-x-auto table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sticky-col-left">Docket No.</th>
+                  <th>Complainant</th>
+                  <th>Nature</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardBlotterTable"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Resolution Rate donut + This Week -->
@@ -271,10 +280,10 @@
       </div>
 
       <!-- Quick Actions tile grid + Risk Forecast -->
-      <div class="grid grid-cols-3 gap-6">
-        <div class="col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
           <h2 class="font-display text-lg text-forest-800 mb-4">Quick Actions</h2>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
             <a href="blotter.html" class="tile-action tile-plum">
               <div class="tile-icon" data-icon="blotter" data-icon-size="18"></div>
               <div class="tile-label">Blotter<br/>Records</div>

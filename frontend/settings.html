@@ -95,9 +95,16 @@
 
 <div id="app-content" class="ml-64 flex flex-col min-h-screen">
   <header class="page-header">
-    <div>
-      <h1 class="font-display text-2xl text-forest-800">System Settings</h1>
-      <p class="text-forest-500 text-sm">Configure barangay information, notifications, security, and backup options</p>
+    <div class="flex items-center gap-3">
+      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800">System Settings</h1>
+        <p class="text-forest-500 text-xs md:text-sm">Configure barangay information, notifications, security, and backup options</p>
+      </div>
     </div>
     <button onclick="saveSettings()" class="btn-primary" data-perm="system_settings"><span data-icon="save" data-icon-size="16"></span> Save Changes</button>
   </header>
@@ -112,19 +119,24 @@
   <script>
     (function _syncSettingsEarly(){
       try {
-        const hash = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+        const rawHash = (window.location.hash || '').replace(/^#+/, '').trim().toLowerCase();
         const params = new URLSearchParams(window.location.search);
-        const q = (params.get('tab') || params.get('view') || '').toLowerCase();
-        const stored = (sessionStorage.getItem('current_active_view_settings') || '').toLowerCase();
-        let target = hash || q || stored;
+        const q = (params.get('tab') || params.get('view') || '').trim().toLowerCase();
+        const stored = (sessionStorage.getItem('current_active_view_settings') || '').trim().toLowerCase();
+        let target = rawHash || q || stored;
         if (target === 'my-account' || target === 'account' || target === 'password') target = 'security';
-        if (['general', 'notifications', 'security', 'backup'].includes(target) && target !== 'general') {
-          const gen = document.getElementById('tab-general');
-          const pan = document.getElementById('tab-' + target);
-          if (gen && pan) {
-            gen.classList.add('hidden');
-            pan.classList.remove('hidden');
-          }
+        if (target === 'notification' || target === 'alerts') target = 'notifications';
+        if (target === 'backups' || target === 'recovery') target = 'backup';
+
+        const validTabs = ['general', 'notifications', 'security', 'backup'];
+        if (validTabs.includes(target)) {
+          validTabs.forEach(t => {
+            const p = document.getElementById('tab-' + t);
+            if (p) p.classList.add('hidden');
+          });
+          const targetPan = document.getElementById('tab-' + target);
+          if (targetPan) targetPan.classList.remove('hidden');
+
           document.querySelectorAll('.settings-tab').forEach(b => {
             b.classList.toggle('active', !!b.getAttribute('onclick')?.includes(`'${target}'`));
           });
@@ -221,7 +233,7 @@
               <img id="acct_avatar_img" alt="" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('acct_avatar_default')?.classList.remove('hidden');" />
             </div>
 
-            <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/jpg, .png, .jpg, .jpeg, image/webp, .webp" class="hidden" onchange="handleAvatarFileSelect(this)" />
+            <input type="file" id="acct_avatar_file" accept="image/png, image/jpeg, image/jpg, image/webp, image/gif, image/*" class="hidden" onchange="handleAvatarFileSelect(this)" />
 
             <button type="button" onclick="document.getElementById('acct_avatar_file').click()" class="bg-[#1b4332] hover:bg-[#143326] text-white py-2.5 px-5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5 w-full max-w-[190px]">
               Upload New Photo
@@ -606,8 +618,15 @@
 <script>
 function switchTab(name, btn) {
   let targetTab = (name || 'general').trim().toLowerCase();
+  if (targetTab.startsWith('#')) {
+    targetTab = targetTab.replace(/^#+/, '');
+  }
   if (targetTab === 'my-account' || targetTab === 'account' || targetTab === 'password') {
     targetTab = 'security';
+  } else if (targetTab === 'notification' || targetTab === 'alerts') {
+    targetTab = 'notifications';
+  } else if (targetTab === 'backups' || targetTab === 'recovery') {
+    targetTab = 'backup';
   }
   const validTabs = ['general', 'notifications', 'security', 'backup'];
   if (!validTabs.includes(targetTab)) {
@@ -629,16 +648,27 @@ function switchTab(name, btn) {
 
   try {
     sessionStorage.setItem('current_active_view_settings', targetTab);
+    const expectedHash = '#' + targetTab;
+    if (window.location.hash !== expectedHash) {
+      if (typeof history !== 'undefined' && history.replaceState) {
+        history.replaceState(null, null, expectedHash);
+      } else {
+        window.location.hash = expectedHash;
+      }
+    }
     if (typeof bcSetActiveView === 'function') {
       bcSetActiveView('settings', targetTab);
-    } else {
-      if (window.location.hash !== '#' + targetTab) {
-        history.replaceState(null, '', '#' + targetTab);
-      }
     }
   } catch (_) {}
 }
 window.switchTab = switchTab;
+
+window.addEventListener('hashchange', () => {
+  const hash = (window.location.hash || '').replace(/^#+/, '').trim().toLowerCase();
+  if (hash) {
+    switchTab(hash);
+  }
+});
 
 function onTimeFormatSelectChange(val) {
   const normalized = (String(val || '12')).startsWith('24') ? '24' : '12';
@@ -897,38 +927,86 @@ async function loadMyAccount() {
   }
 }
 
+function validateAndProcessAvatar(file) {
+  if (!file) return false;
+
+  // Check by MIME type or by filename extension
+  const validExtensions = /\.(jpe?g|png|webp|gif|bmp|jfif)$/i;
+  const isImageMime = file.type ? file.type.startsWith('image/') : false;
+  const isImageExt = validExtensions.test(file.name || '');
+
+  if (!isImageMime && !isImageExt) {
+    showToast('Please upload a valid image file (JPG, PNG, WEBP)', 'error');
+    return false;
+  }
+  return true;
+}
+
+function resizeImage(file, maxDimension = 400) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      return reject(new Error('No file provided for resizing.'));
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = (err) => reject(err || new Error('Failed to load image for downscaling.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = (err) => reject(err || new Error('Failed to read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handleAvatarFileSelect(input) {
-  if (!input.files || !input.files[0]) return;
+  if (!input || !input.files || !input.files[0]) return;
   const file = input.files[0];
 
-  const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
-  const allowedMime = ['image/png', 'image/jpeg', 'image/jpg', 'image/pjpeg', 'image/webp'];
-  const allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
-  const isTypeAllowed = (file.type && allowedMime.includes(file.type.toLowerCase())) || allowedExt.includes(ext);
-
-  if (!isTypeAllowed) {
-    showToast('Please select a valid image file (JPG, PNG, or WEBP).', 'error');
-    input.value = '';
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('Image file size must be less than 5MB.', 'error');
-    input.value = '';
+  if (!validateAndProcessAvatar(file)) {
+    try { input.value = ''; } catch (_) {}
     return;
   }
 
   const prevSrc = document.getElementById('acct_avatar_img')?.src;
-  const previewUrl = URL.createObjectURL(file);
-  renderAccountAvatar(previewUrl);
+  let previewUrl = null;
 
   try {
-    const res = await BCApi.uploadMyAvatar(file);
+    // 1. Client-Side Image Compression & Downscaling (Prevents Memory & Payload Crashing)
+    const resizedDataUrl = await resizeImage(file, 400);
+    previewUrl = resizedDataUrl;
+    renderAccountAvatar(previewUrl);
+
+    // 2. Upload the normalized image
+    const res = await BCApi.uploadMyAvatar(resizedDataUrl);
     const newAvatarUrl = res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar;
     if (!newAvatarUrl || typeof newAvatarUrl !== 'string' || newAvatarUrl.startsWith('blob:')) {
       throw new Error('Server did not return a permanent profile photo path.');
     }
-    try { URL.revokeObjectURL(previewUrl); } catch (_) {}
+
     renderAccountAvatar(newAvatarUrl);
 
     let cachedUser = {};
@@ -982,12 +1060,11 @@ async function handleAvatarFileSelect(input) {
     showToast('Profile photo updated successfully.', 'success');
   } catch (err) {
     console.error('[handleAvatarFileSelect] Upload failed:', err);
-    try { URL.revokeObjectURL(previewUrl); } catch (_) {}
     renderAccountAvatar(prevSrc && !prevSrc.startsWith('blob:') ? prevSrc : null);
     const errorMsg = err?.message || err?.error || 'Failed to upload profile photo.';
     showToast(errorMsg, 'error');
   } finally {
-    input.value = '';
+    try { input.value = ''; } catch (_) {}
   }
 }
 
@@ -1050,6 +1127,8 @@ async function handleAvatarRemove() {
   }
 }
 
+window.validateAndProcessAvatar = validateAndProcessAvatar;
+window.resizeImage = resizeImage;
 window.handleAvatarFileSelect = handleAvatarFileSelect;
 window.handleAvatarRemove = handleAvatarRemove;
 
@@ -1274,7 +1353,8 @@ window.initSettings = async function () {
     }
 
     let targetTab = 'general';
-    const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('settings', 'general') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_settings') || 'general');
+    const hashVal = (window.location.hash || '').replace(/^#+/, '').trim().toLowerCase();
+    const activeView = hashVal || (typeof bcGetActiveView === 'function' ? bcGetActiveView('settings', 'general') : (sessionStorage.getItem('current_active_view_settings') || 'general'));
     const cand = (activeView || '').trim().toLowerCase();
     if (cand === 'my-account' || cand === 'account' || cand === 'password' || cand === 'security') {
       targetTab = 'security';
@@ -1283,6 +1363,8 @@ window.initSettings = async function () {
     } else if (cand === 'backup' || cand === 'backups' || cand === 'recovery') {
       targetTab = 'backup';
     } else if (cand === 'general') {
+      targetTab = 'general';
+    } else {
       targetTab = 'general';
     }
 

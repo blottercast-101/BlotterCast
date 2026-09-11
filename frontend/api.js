@@ -164,6 +164,30 @@ const BCApi = {
       if (!fd.has('photo') && fd.has('avatar')) fd.append('photo', fd.get('avatar'));
       if (!fd.has('signature') && fd.has('avatar')) fd.append('signature', fd.get('avatar'));
       if (!fd.has('file') && fd.has('avatar')) fd.append('file', fd.get('avatar'));
+    } else if (typeof fileOrFormData === 'string' && fileOrFormData.startsWith('data:image/')) {
+      try {
+        const arr = fileOrFormData.split(',');
+        const mime = (arr[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const ext = mime.includes('png') ? 'png' : (mime.includes('webp') ? 'webp' : 'jpg');
+        fd = new FormData();
+        fd.append('avatar', blob, `avatar_${Date.now()}.${ext}`);
+        fd.append('photo', blob, `avatar_${Date.now()}.${ext}`);
+        fd.append('signature', blob, `avatar_${Date.now()}.${ext}`);
+        fd.append('file', blob, `avatar_${Date.now()}.${ext}`);
+      } catch (_) {
+        fd = new FormData();
+        fd.append('avatar', fileOrFormData);
+        fd.append('photo', fileOrFormData);
+        fd.append('signature', fileOrFormData);
+        fd.append('file', fileOrFormData);
+      }
     } else {
       fd = new FormData();
       fd.append('avatar', fileOrFormData);

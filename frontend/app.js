@@ -34,6 +34,142 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial load fallback for Barangay Information across all views
   bcInitBarangayConfig();
+
+  // Responsive sidebar drawer & touch interaction initialization
+  initGlobalSidebar();
+});
+
+// ── Persistent Global Sidebar Controller (Tablet & Mobile) ──
+function initGlobalSidebar() {
+  const sidebar = document.getElementById('sidebar') || document.getElementById('mainSidebar') || document.querySelector('aside');
+  if (!sidebar) return;
+
+  // 1. Ensure Backdrop overlay exists for tablet/mobile off-canvas navigation
+  let overlay = document.getElementById('sidebarOverlay') || document.getElementById('sidebarBackdrop');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'sidebarOverlay';
+    overlay.className = 'sidebar-backdrop-overlay hidden';
+    document.body.appendChild(overlay);
+  }
+
+  // 2. Open / Close / Toggle Helpers
+  const openSidebar = () => {
+    document.body.classList.add('sidebar-open');
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.remove('hidden');
+  };
+
+  const closeSidebar = () => {
+    document.body.classList.remove('sidebar-open');
+    sidebar.classList.add('-translate-x-full');
+    sidebar.classList.remove('open');
+    if (overlay) overlay.classList.add('hidden');
+  };
+
+  const toggleSidebar = (e) => {
+    if (e) e.stopPropagation();
+    const isOpen = document.body.classList.contains('sidebar-open') ||
+                   sidebar.classList.contains('open') ||
+                   (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024);
+    if (isOpen) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  };
+
+  window.openGlobalSidebar = openSidebar;
+  window.closeGlobalSidebar = closeSidebar;
+  window.toggleGlobalSidebar = toggleSidebar;
+
+  // 3. Bind click handler to existing buttons in the DOM
+  document.querySelectorAll('#globalSidebarToggle, #sidebarToggle, [data-sidebar-toggle]').forEach(btn => {
+    btn.onclick = toggleSidebar;
+  });
+
+  if (overlay) {
+    overlay.onclick = (e) => {
+      e.stopPropagation();
+      closeSidebar();
+    };
+  }
+
+  // 4. Close sidebar on link navigation for screens < 1024px
+  sidebar.querySelectorAll('.nav-link, a').forEach(link => {
+    if (link.dataset.navBound) return;
+    link.dataset.navBound = 'true';
+    link.addEventListener('click', () => {
+      if (window.innerWidth < 1024) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // 5. Touch row selection compatibility
+  document.querySelectorAll('.data-table').forEach(table => {
+    if (table.dataset.touchSelectBound) return;
+    table.dataset.touchSelectBound = 'true';
+
+    table.addEventListener('click', (e) => {
+      const isTouch = window.matchMedia('(hover: none), (max-width: 1023px)').matches;
+      const target = e.target;
+      if (target.closest('button, a, select, input[type="text"], .pw-toggle, .icon-btn')) return;
+
+      const row = target.closest('tr');
+      if (!row || row.closest('thead') || row.classList.contains('empty-state-row') || row.classList.contains('error-state-row')) return;
+
+      const cb = row.querySelector('.bc-row-cb');
+      if (cb && (isTouch || table.classList.contains('selection-mode-active'))) {
+        if (target !== cb) {
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
+  });
+}
+window.initGlobalSidebar = initGlobalSidebar;
+window.bcInitResponsiveSidebarAndTouch = initGlobalSidebar;
+
+// Global Delegated Click Listener for Sidebar Toggles
+document.addEventListener('click', (e) => {
+  const toggleBtn = e.target.closest('#globalSidebarToggle, #sidebarToggle, [data-sidebar-toggle]');
+  if (toggleBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window.toggleGlobalSidebar === 'function') {
+      window.toggleGlobalSidebar(e);
+    }
+    return;
+  }
+
+  const overlay = e.target.closest('#sidebarOverlay, #sidebarBackdrop, .sidebar-backdrop-overlay');
+  if (overlay && document.body.classList.contains('sidebar-open')) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window.closeGlobalSidebar === 'function') {
+      window.closeGlobalSidebar();
+    }
+  }
+});
+
+// Close sidebar on Escape or window resize >= 1024px
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+    if (typeof window.closeGlobalSidebar === 'function') {
+      window.closeGlobalSidebar();
+    }
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 1024 && document.body.classList.contains('sidebar-open')) {
+    if (typeof window.closeGlobalSidebar === 'function') {
+      window.closeGlobalSidebar();
+    }
+  }
 });
 
 // ── Global Barangay Information Reactive Sync & Layout Handler ──

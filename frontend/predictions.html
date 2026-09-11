@@ -165,9 +165,16 @@
 
   <div id="app-content" class="ml-64 flex flex-col min-h-screen">
     <header class="page-header">
-      <div>
-        <h1 class="font-display text-2xl text-forest-800">Predictive Insights</h1>
-        <p class="text-forest-500 text-sm">ML-based incident risk forecasting by zone, time, and category</p>
+      <div class="flex items-center gap-3">
+        <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800">Predictive Insights</h1>
+          <p class="text-forest-500 text-xs md:text-sm">ML-based incident risk forecasting by zone, time, and category</p>
+        </div>
       </div>
       <div class="flex items-center gap-3">
         <div id="modelTrainedBadge"
@@ -184,7 +191,7 @@
     <main class="flex-1 p-6 space-y-6">
 
       <!-- Active Models — one fixed algorithm per task, no comparison/selection -->
-      <div class="grid grid-cols-3 gap-4" id="modelCardGroups"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="modelCardGroups"></div>
 
       <!-- Empty State Card for Zero / Insufficient Data -->
       <div id="predictionsEmptyState" class="hidden bg-white rounded-2xl border border-forest-100 shadow-sm p-12 text-center my-6">
@@ -208,10 +215,10 @@
       <!-- Dynamic Prediction Content Container -->
       <div id="predictionsContentContainer" class="space-y-6">
         <!-- Risk Forecast + Patrol Recommendations -->
-        <div class="grid grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- Zone Risk Forecast -->
-          <div class="col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
+          <div class="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
             <div class="flex items-center justify-between mb-5">
               <div class="flex items-center gap-3">
                 <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>

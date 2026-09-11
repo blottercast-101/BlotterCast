@@ -105,9 +105,16 @@
 
   <!-- Header -->
   <header class="page-header">
-    <div>
-      <h1 class="font-display text-2xl text-forest-800">Monitoring of Compliance to Settlement or Award</h1>
-      <p class="text-forest-500 text-sm">Track and manage settlement agreements and compliance status</p>
+    <div class="flex items-center gap-3">
+      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800">Monitoring of Compliance to Settlement or Award</h1>
+        <p class="text-forest-500 text-xs md:text-sm">Track and manage settlement agreements and compliance status</p>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button type="button" onclick="openExportFilter('api/exports.php?action=settlement_monitoring', 'Export Settlement Monitoring')" class="btn-secondary flex items-center gap-2" data-perm="generate_reports">

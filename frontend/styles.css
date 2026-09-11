@@ -3451,3 +3451,326 @@ input[type="radio"].wizard-radio,
   vertical-align: middle;
 }
 
+/* ==========================================================================
+   FRONTEND RESPONSIVENESS & TOUCH/TABLET OPTIMIZATION (>= 768px & >= 1024px)
+   ========================================================================== */
+
+/* ── Prevent iOS/iPadOS Auto-Zoom on Form Inputs ── */
+@media (max-width: 1023.98px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .form-input,
+  .filter-input,
+  .wizard-input,
+  .bc-select-trigger,
+  .bc-time-trigger {
+    font-size: 16px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .form-input,
+  .filter-input,
+  .wizard-input,
+  .bc-select-trigger,
+  .bc-time-trigger {
+    font-size: 0.875rem;
+  }
+}
+
+/* ── Responsive Viewport Rules: Tablet vs. Desktop ── */
+
+/* Tablet & Mobile Navigation: Off-canvas Drawer (< 1024px) */
+@media (max-width: 1023.98px) {
+  #sidebar,
+  #mainSidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    z-index: 50 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease !important;
+    box-shadow: none !important;
+  }
+
+  body.sidebar-open #sidebar,
+  body.sidebar-open #mainSidebar,
+  #sidebar.open,
+  #mainSidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  #app-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Responsive Outer Layout Spacing */
+  .page-header,
+  #app-content > header {
+    padding: 1rem 1.25rem !important;
+  }
+
+  main.flex-1 {
+    padding: 1rem 1.25rem !important;
+  }
+
+  /* Stat cards clean 2x2 grid on tablets */
+  .stat-grid-responsive {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Desktop Viewport Rules (>= 1024px): Permanently Expanded Sidebar */
+@media (min-width: 1024px) {
+  #sidebar,
+  #mainSidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 16rem !important;
+    transform: translateX(0) !important;
+    z-index: 30 !important;
+  }
+
+  #app-content {
+    margin-left: 16rem !important;
+  }
+
+  .sidebar-backdrop-overlay,
+  #sidebarBackdrop,
+  #sidebarOverlay,
+  #globalSidebarOverlay,
+  .sidebar-toggle-btn,
+  #sidebarToggle,
+  #globalSidebarToggle {
+    display: none !important;
+  }
+
+  .page-header,
+  #app-content > header {
+    padding: 1rem 2rem;
+  }
+
+  main.flex-1 {
+    padding: 2rem;
+  }
+}
+
+/* ── Off-Canvas Sidebar Backdrop Overlay ── */
+.sidebar-backdrop-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(10, 36, 20, 0.52) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  z-index: 45 !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease !important;
+}
+
+body.sidebar-open .sidebar-backdrop-overlay,
+body.sidebar-open #sidebarBackdrop,
+body.sidebar-open #sidebarOverlay,
+body.sidebar-open #globalSidebarOverlay {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.sidebar-open {
+  overflow: hidden !important;
+}
+
+/* ── Hamburger Toggle Button ── */
+.sidebar-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 10px;
+  background-color: #f0f9f2;
+  color: #1a5730;
+  border: 1px solid #dcf0e0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #dcf0e0;
+  color: #0a2414;
+}
+
+.sidebar-toggle-btn:active {
+  transform: scale(0.94);
+}
+
+/* ── Touch Target Sizing & Dual Touch Interaction ── */
+@media (max-width: 1023.98px), (hover: none) {
+  /* Touch target sizes (min 44x44 px zone) */
+  .btn-action,
+  .icon-btn,
+  .logout-btn,
+  .pagination-btn,
+  .modal-close-btn,
+  .bc-dp-nav,
+  .bc-dp-today-btn,
+  .bc-dp-clear-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem;
+    touch-action: manipulation;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    min-height: 44px;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+    touch-action: manipulation;
+  }
+
+  /* Adequate spacing between destructive and edit action buttons */
+  .table-actions,
+  .table-action-buttons,
+  .action-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem !important;
+  }
+
+  /* Eliminate Hover-Only Dependency for Table Row Checkboxes on Touch/Tablet */
+  .bc-row-cb,
+  .bc-header-cb {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    pointer-events: auto !important;
+  }
+
+  .bc-row-index {
+    opacity: 0 !important;
+  }
+
+  .bc-select-slot {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .bc-table-row,
+  .data-table tbody tr {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(16, 185, 129, 0.1);
+  }
+}
+
+/* ── Complex Tables, Sticky Columns & Lightweight Scrollbars ── */
+.table-responsive,
+.overflow-x-auto {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--forest-300) var(--forest-50);
+}
+
+.table-responsive::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: var(--forest-50);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: var(--forest-300);
+  border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--forest-500);
+}
+
+/* Sticky Key Table Columns on Tablet Horizontal Scroll */
+.sticky-col-left {
+  position: sticky !important;
+  left: 0 !important;
+  background-color: #ffffff !important;
+  z-index: 10 !important;
+  box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+thead th.sticky-col-left {
+  background-color: var(--forest-50) !important;
+  z-index: 15 !important;
+}
+
+.sticky-col-right {
+  position: sticky !important;
+  right: 0 !important;
+  background-color: #ffffff !important;
+  z-index: 10 !important;
+  box-shadow: -2px 0 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+thead th.sticky-col-right {
+  background-color: var(--forest-50) !important;
+  z-index: 15 !important;
+}
+
+/* ── Modals & Drawers 90vh Clamping & Internal Scrolling ── */
+.modal-overlay {
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-box,
+.modal-dialog,
+.modal-content,
+[id$="Modal"] > div:not(.modal-backdrop):not(.fixed) {
+  max-height: 90vh !important;
+  max-width: 95vw;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.modal-body,
+.modal-scroll-body,
+[id$="Modal"] form {
+  max-height: calc(90vh - 120px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Drawer Panels */
+.drawer-content,
+.drawer-panel {
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+

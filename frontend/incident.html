@@ -108,9 +108,16 @@
 
   <!-- Header -->
   <header class="page-header">
-    <div>
-      <h1 class="font-display text-2xl text-forest-800">Incident Reports</h1>
-      <p class="text-forest-500 text-sm">Log and track all reported incidents in the barangay</p>
+    <div class="flex items-center gap-3">
+      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800">Incident Reports</h1>
+        <p class="text-forest-500 text-xs md:text-sm">Log and track all reported incidents in the barangay</p>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button onclick="openAddIncident()" class="btn-primary flex items-center gap-2">
@@ -277,12 +284,12 @@
     </div>
 
     <form id="incidentForm" class="space-y-4">
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div><label class="form-label">Report No.</label><input type="text" id="if_reportNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
         <div><label class="form-label">Date Reported</label><input type="date" id="if_dateReported" class="form-input" data-no-future/></div>
         <div><label class="form-label">Time Reported</label><input type="time" id="if_timeReported" class="form-input"/></div>
       </div>
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label class="form-label">Zone</label>
           <select id="if_zone" class="form-input" required onchange="onZoneDropdownChange()">
@@ -296,7 +303,7 @@
             <option value="Zone 7">Zone 7 - Barangka St.</option>
           </select>
         </div>
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <label class="form-label">Location Detail</label>
           <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="onLocationDetailInput()"/>
         </div>

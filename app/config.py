@@ -37,7 +37,7 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"
 
-    MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8MB request body cap
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB request body cap
 
     UPLOAD_FOLDER = os.environ.get(
         "UPLOAD_FOLDER",

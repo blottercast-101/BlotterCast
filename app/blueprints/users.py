@@ -327,10 +327,10 @@ def _update():
             import base64
             try:
                 header, encoded = avatar_payload.split(",", 1)
-                mime = header.split(";")[0].split(":")[1] if ":" in header else "image/png"
-                ext = "png" if "png" in mime else ("webp" if "webp" in mime else "jpg")
+                mime = header.split(";")[0].split(":")[1].lower() if ":" in header else "image/jpeg"
+                ext = "png" if "png" in mime else ("webp" if "webp" in mime else ("gif" if "gif" in mime else ("bmp" if "bmp" in mime else "jpg")))
                 img_data = base64.b64decode(encoded)
-                if len(img_data) <= 5 * 1024 * 1024:
+                if len(img_data) <= 16 * 1024 * 1024:
                     av_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
                     os.makedirs(av_dir, exist_ok=True)
                     av_filename = f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{ext}"
@@ -528,6 +528,78 @@ def _upload_avatar_user():
     if not user:
         return json_error("User not found", 404)
 
+    avatar_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
+    os.makedirs(avatar_dir, exist_ok=True)
+
+    # 1. Check Base64 payload in JSON or form body
+    data = request.get_json(silent=True) or {}
+    avatar_payload = (
+        data.get("avatar")
+        or data.get("photo")
+        or data.get("image")
+        or data.get("profile_photo")
+        or data.get("avatar_url")
+        or data.get("profile_photo_path")
+        or request.form.get("avatar")
+        or request.form.get("photo")
+    )
+    if avatar_payload and isinstance(avatar_payload, str) and avatar_payload.startswith("data:image/"):
+        import base64
+        try:
+            header, encoded = avatar_payload.split(",", 1)
+            mime = header.split(";")[0].split(":")[1].lower() if ":" in header else "image/jpeg"
+            ext = "png" if "png" in mime else ("webp" if "webp" in mime else ("gif" if "gif" in mime else ("bmp" if "bmp" in mime else "jpg")))
+            img_data = base64.b64decode(encoded)
+            if len(img_data) > 16 * 1024 * 1024:
+                return json_error("Profile photo image must be smaller than 16MB", 400)
+
+            if user.avatar_url:
+                old_rel = user.avatar_url.lstrip("/")
+                old_full = os.path.join(current_app.static_folder, old_rel)
+                if os.path.isfile(old_full):
+                    try:
+                        os.remove(old_full)
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not remove old avatar file: {e}")
+
+            timestamp = int(datetime.utcnow().timestamp())
+            rand_token = secrets.token_hex(4)
+            filename = secure_filename(f"avatar_{user.id}_{timestamp}_{rand_token}.{ext}")
+            dest_path = os.path.join(avatar_dir, filename)
+            with open(dest_path, "wb") as f:
+                f.write(img_data)
+
+            relative_path = f"/uploads/avatars/{filename}"
+            user.avatar_url = relative_path
+            db.session.commit()
+            log_audit(session.get("username"), "Updated", "Users", f"Profile photo uploaded for {user.username}")
+
+            return jsonify({
+                "ok": True,
+                "success": True,
+                "avatar_url": relative_path,
+                "avatarUrl": relative_path,
+                "avatar": relative_path,
+                "profile_photo_path": relative_path,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "fullName": user.full_name,
+                    "full_name": user.full_name,
+                    "email": user.email,
+                    "contact": user.contact_no,
+                    "role": user.role,
+                    "avatar": relative_path,
+                    "avatar_url": relative_path,
+                    "avatarUrl": relative_path,
+                    "profile_photo_path": relative_path,
+                }
+            }), 200
+        except Exception as e:
+            current_app.logger.warning(f"Failed to decode base64 avatar: {e}")
+            return json_error("Failed to process base64 image data", 400)
+
+    # 2. Check multipart file upload
     file = (
         request.files.get("avatar")
         or request.files.get("photo")
@@ -540,18 +612,19 @@ def _upload_avatar_user():
         return json_error("No photo file uploaded, or upload failed", 400)
 
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-    allowed_mimes = ("image/png", "image/jpeg", "image/jpg", "image/pjpeg", "image/webp")
-    if ext not in ("png", "jpg", "jpeg", "webp") and (file.mimetype or "").lower() not in allowed_mimes:
-        return json_error("Profile photo must be a PNG, JPG, JPEG, or WEBP image", 400)
+    mimetype = (file.mimetype or "").lower()
+    allowed_exts = ("png", "jpg", "jpeg", "webp", "gif", "bmp", "jfif")
+    is_image_mime = mimetype.startswith("image/")
+    is_image_ext = ext in allowed_exts
+
+    if not is_image_mime and not is_image_ext:
+        return json_error("Profile photo must be an image file (JPG, PNG, WEBP, GIF, BMP)", 400)
 
     file.stream.seek(0, os.SEEK_END)
     size = file.stream.tell()
     file.stream.seek(0)
-    if size > 5 * 1024 * 1024:
-        return json_error("Profile photo image must be smaller than 5MB", 400)
-
-    avatar_dir = os.path.join(current_app.static_folder, "uploads", "avatars")
-    os.makedirs(avatar_dir, exist_ok=True)
+    if size > 16 * 1024 * 1024:
+        return json_error("Profile photo image must be smaller than 16MB", 400)
 
     if user.avatar_url:
         old_rel = user.avatar_url.lstrip("/")
@@ -562,8 +635,10 @@ def _upload_avatar_user():
             except Exception as e:
                 current_app.logger.warning(f"Could not remove old avatar file: {e}")
 
-    safe_ext = ext if ext in ("png", "jpg", "jpeg", "webp") else ("png" if file.mimetype == "image/png" else "jpg")
-    filename = secure_filename(f"avatar_{user.id}_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}.{safe_ext}")
+    safe_ext = ext if ext in allowed_exts else ("png" if "png" in mimetype else ("webp" if "webp" in mimetype else ("gif" if "gif" in mimetype else "jpg")))
+    timestamp = int(datetime.utcnow().timestamp())
+    rand_token = secrets.token_hex(4)
+    filename = secure_filename(f"avatar_{user.id}_{timestamp}_{rand_token}.{safe_ext}")
     dest_path = os.path.join(avatar_dir, filename)
     file.save(dest_path)
 
