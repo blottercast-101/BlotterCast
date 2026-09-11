@@ -180,11 +180,11 @@ def _blotter_record():
 
     wb = Workbook()
     ws = wb.active
-    _set_widths(ws, {1: 14, 2: 30, 3: 20, 4: 16, 5: 14, 6: 16, 7: 14, 8: 16, 9: 18, 10: 32, 11: 20})
+    _set_widths(ws, {1: 16, 2: 30, 3: 20, 4: 16, 5: 14, 6: 16, 7: 14, 8: 16, 9: 18, 10: 32, 11: 20})
 
     _title_row(ws, f"BLOTTER RECORD ({label})", 11, bg=HEADER_BG, fg=HEADER_FG, height=24)
 
-    headers = ["CASE NO.", "CASE TITLE", "COMPLAINT TITLE", "NATURE OF CASE", "DATE FILED",
+    headers = ["DOCKET NO.", "CASE TITLE", "COMPLAINT TITLE", "NATURE OF CASE", "DATE FILED",
                "DATE OF INITIAL CONFRONTATION", "ACTION TAKEN", "DATE OF SETTLEMENT OR AWARD",
                "DATE OF EXECUTION OF SETTLEMENT OR AWARD", "MAIN POINT OF AGREEMENT",
                "STATUS OF COMPLIANCE ON THE SETTLEMENT OR AWARD"]
@@ -219,7 +219,7 @@ def _blotter_entry_2025():
     q = BlotterRecord.query.filter_by(archived=False)
     if from_d:
         q = q.filter(BlotterRecord.date_filed.between(from_d, to_d))
-    rows = q.order_by(BlotterRecord.date_filed.asc(), BlotterRecord.id.asc()).all()
+    rows = q.order_by(BlotterRecord.date_filed.desc(), BlotterRecord.id.desc()).all()
 
     year_arg = request.args.get("year", "")
     if year_arg:
@@ -231,7 +231,7 @@ def _blotter_entry_2025():
 
     wb = Workbook()
     ws = wb.active
-    _set_widths(ws, {1: 9, 2: 13, 3: 26, 4: 28, 5: 26, 6: 28, 7: 20, 8: 11, 9: 9})
+    _set_widths(ws, {1: 16, 2: 13, 3: 26, 4: 28, 5: 26, 6: 28, 7: 20, 8: 11, 9: 9})
 
     title_suffix = f" — {label}" if (from_d and request.args.get("month")) else ""
     _title_row(ws, f"BLOTTER ENTRY RECORD {title_year}{title_suffix}", 9, bg="FFFFFF", fg="000000", height=30, size=18)
@@ -246,7 +246,7 @@ def _blotter_entry_2025():
     for i, r in enumerate(rows, start=1):
         alt = i % 2 == 0
         _data_row(ws, [
-            i, r.date_filed.isoformat() if r.date_filed else "", r.complainant, r.complainant_addr or "",
+            r.docket_no, r.date_filed.isoformat() if r.date_filed else "", r.complainant, r.complainant_addr or "",
             r.respondent, r.respondent_addr or "", r.nature or "",
             "/" if r.case_type == "CRIM" else "", "/" if r.case_type == "CIVIL" else "",
         ], alt=alt, aligns={1: "center", 2: "center", 8: "center", 9: "center"})

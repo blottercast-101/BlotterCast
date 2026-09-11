@@ -2798,7 +2798,7 @@ class BcBatchManager {
     };
 
     if (this.opts.apiType === 'census') {
-      const headers = ['Resident No', 'Last Name', 'First Name', 'Middle Name', 'Date of Birth', 'Age', 'Sex', 'Civil Status', 'Nationality', 'Zone', 'Address', 'Household No', 'Voter Status', 'Status'];
+      const headers = ['RESIDENT NO.', 'LAST NAME', 'FIRST NAME', 'MIDDLE NAME', 'DATE OF BIRTH', 'AGE', 'SEX', 'CIVIL STATUS', 'NATIONALITY', 'ZONE', 'ADDRESS', 'HOUSEHOLD NO.', 'VOTER STATUS', 'STATUS'];
       csvContent += headers.map(escapeCsv).join(',') + '\n';
       items.forEach(r => {
         csvContent += [
@@ -2808,7 +2808,7 @@ class BcBatchManager {
         ].map(escapeCsv).join(',') + '\n';
       });
     } else if (this.opts.apiType === 'incidents') {
-      const headers = ['Report No', 'Date Reported', 'Time Reported', 'Zone', 'Location', 'Category', 'Description', 'Reporter', 'Officer', 'Priority', 'Status'];
+      const headers = ['REPORT NO.', 'DATE REPORTED', 'TIME REPORTED', 'ZONE', 'LOCATION', 'CATEGORY', 'DESCRIPTION', 'REPORTER', 'OFFICER', 'PRIORITY', 'STATUS'];
       csvContent += headers.map(escapeCsv).join(',') + '\n';
       items.forEach(r => {
         csvContent += [
@@ -2817,7 +2817,17 @@ class BcBatchManager {
         ].map(escapeCsv).join(',') + '\n';
       });
     } else if (this.opts.apiType === 'blotter') {
-      const headers = ['Docket No', 'Date Filed', 'Complainant', 'Complainant Address', 'Respondent', 'Respondent Address', 'Nature', 'Type', 'Status'];
+      const headers = [
+        'DOCKET NO.',
+        'DATE FILED',
+        'COMPLAINANT',
+        'COMPLAINANT ADDRESS',
+        'RESPONDENT',
+        'RESPONDENT ADDRESS',
+        'NATURE OF CASE',
+        'CASE TYPE',
+        'STATUS'
+      ];
       csvContent += headers.map(escapeCsv).join(',') + '\n';
       items.forEach(r => {
         csvContent += [
@@ -2826,7 +2836,7 @@ class BcBatchManager {
         ].map(escapeCsv).join(',') + '\n';
       });
     } else if (this.opts.apiType === 'settlements') {
-      const headers = ['Case No', 'Case Title', 'Complaint Nature', 'Date Filed', 'Action Taken / Schedule', 'Status'];
+      const headers = ['CASE NO.', 'CASE TITLE', 'COMPLAINT NATURE', 'DATE FILED', 'ACTION TAKEN / SCHEDULE', 'STATUS'];
       csvContent += headers.map(escapeCsv).join(',') + '\n';
       items.forEach(r => {
         csvContent += [
