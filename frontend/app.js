@@ -3820,6 +3820,16 @@ function bcResidentPickerSetOptions(inputId, options) {
   if (_bcResidentPickers[inputId]) _bcResidentPickers[inputId].options = options;
 }
 
+window.bcIsResidentDeceased = function(r) {
+  if (!r) return false;
+  const status = String(r.status || '').trim().toUpperCase();
+  const vital = String(r.vital_status || r.vitalStatus || '').trim().toUpperCase();
+  if (status === 'DECEASED' || status === 'DEAD' || vital === 'DECEASED' || vital === 'DEAD') return true;
+  const isDead = r.is_deceased !== undefined ? r.is_deceased : r.isDeceased;
+  if (isDead === true || String(isDead).trim().toLowerCase() === 'true' || String(isDead).trim() === '1') return true;
+  return false;
+};
+
 function _bcFilterResidents(inputId) {
   const picker = _bcResidentPickers[inputId];
   if (!picker) return;
@@ -3838,7 +3848,7 @@ function _bcFilterResidents(inputId) {
   } else {
     const isRespondent = inputId.toLowerCase().includes('respondent');
     list.innerHTML = matches.map(r => {
-      const isDeceased = r.status === 'Deceased' || r.is_deceased;
+      const isDeceased = window.bcIsResidentDeceased(r);
       const deceasedMsg = isRespondent
         ? 'Deceased residents cannot be recorded as respondents.'
         : 'Deceased residents cannot be filed as complainants/reporters.';
@@ -3872,7 +3882,7 @@ function bcResidentPickerChoose(inputId, residentId) {
   const r = (picker.options || []).find(x => x.id === residentId);
   if (!r) return;
 
-  const isDeceased = r.status === 'Deceased' || r.is_deceased;
+  const isDeceased = window.bcIsResidentDeceased(r);
   if (isDeceased) {
     const isRespondent = inputId.toLowerCase().includes('respondent');
     const msg = isRespondent

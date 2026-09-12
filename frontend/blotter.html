@@ -631,7 +631,7 @@
   var MIN_BLOTTER_PARTY_AGE = 15;
 
   function validateComplainantParty(r) {
-    if (r.status === 'Deceased') {
+    if (window.bcIsResidentDeceased && window.bcIsResidentDeceased(r)) {
       return 'Deceased residents cannot be filed as complainants/reporters.';
     }
     if (r.age != null && r.age < MIN_BLOTTER_PARTY_AGE) {
@@ -641,7 +641,7 @@
   }
 
   function validateRespondentParty(r) {
-    if (r.status === 'Deceased') {
+    if (window.bcIsResidentDeceased && window.bcIsResidentDeceased(r)) {
       return 'Deceased residents cannot be recorded as respondents.';
     }
     if (r.age != null && r.age < MIN_BLOTTER_PARTY_AGE) {
@@ -1548,6 +1548,16 @@
           document.getElementById('f_complainant').value = compName;
           if (compId) {
             document.getElementById('f_complainantId').value = String(compId);
+          } else if (compName && Array.isArray(censusResidentsForBlotter)) {
+            const clean = compName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const found = censusResidentsForBlotter.find(r => {
+              const full1 = `${r.lastName} ${r.firstName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const full2 = `${r.firstName} ${r.lastName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return (clean === full1 || clean === full2) && !(window.bcIsResidentDeceased && window.bcIsResidentDeceased(r));
+            });
+            if (found) {
+              document.getElementById('f_complainantId').value = String(found.id);
+            }
           }
         }
 

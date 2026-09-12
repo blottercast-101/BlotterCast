@@ -249,12 +249,21 @@ def is_name_a_census_resident(name: str) -> bool:
 
 
 def find_census_resident_id_by_name(name: str) -> int | None:
-    """Matches a person's name against registered Census records (active)."""
+    """Matches a person's name against registered Census records, prioritizing active living residents."""
     name = (name or "").strip()
     if not name or name.lower() in ("unspecified complainant", "unspecified respondent", "n/a", "none", "unknown"):
         return None
     name_clean = re.sub(r"[^\w\s]", "", name).lower()
     residents = CensusRecord.query.filter_by(archived=False).all()
+
+    # Prioritize active living residents over deceased
+    def is_dec(r):
+        status_val = str(getattr(r, "status", "") or "").strip().upper()
+        vital_val = str(getattr(r, "vital_status", "") or "").strip().upper()
+        is_dead_flag = getattr(r, "is_deceased", False)
+        return status_val in ("DECEASED", "DEAD") or vital_val in ("DECEASED", "DEAD") or is_dead_flag in (True, 1, "1", "true", "True")
+
+    residents.sort(key=lambda r: 1 if is_dec(r) else 0)
 
     # 1. Full name exact matches
     for r in residents:

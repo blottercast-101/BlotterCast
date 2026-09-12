@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, session
@@ -32,10 +33,43 @@ bp = Blueprint("records", __name__)
 MIN_BLOTTER_PARTY_AGE = 15
 
 
+def is_census_deceased(res) -> bool:
+    """STRICT DECEASED CHECK:
+    Only reject if the resident status is explicitly marked as Deceased in the Census.
+    Returns False for None, 'Alive', 'ACTIVE', 'Active', 0, '0', False, 'false', etc.
+    """
+    if not res:
+        return False
+
+    if isinstance(res, dict):
+        status_val = str(res.get("status", "") or "").strip().upper()
+        vital_val = str(res.get("vital_status", "") or res.get("vitalStatus", "") or "").strip().upper()
+        is_dead_flag = res.get("is_deceased") if "is_deceased" in res else res.get("isDeceased", False)
+
+        if status_val in ("DECEASED", "DEAD") or vital_val in ("DECEASED", "DEAD"):
+            return True
+        if is_dead_flag is True or str(is_dead_flag).strip().lower() in ("true", "1"):
+            return True
+        return False
+
+    status_val = str(getattr(res, "status", "") or "").strip().upper()
+    vital_val = str(getattr(res, "vital_status", "") or "").strip().upper()
+    is_dead_flag = getattr(res, "is_deceased", False)
+
+    if status_val in ("DECEASED", "DEAD") or vital_val in ("DECEASED", "DEAD"):
+        return True
+    if is_dead_flag is True or str(is_dead_flag).strip().lower() in ("true", "1"):
+        return True
+    return False
+
+
+is_resident_deceased = is_census_deceased
+
+
 def _blotter_party_error(resident: CensusRecord, role_label: str):
     """None if `resident` is eligible to be named as a blotter party;
     otherwise the json_error() response describing why not."""
-    if resident.status == "Deceased":
+    if is_census_deceased(resident):
         if role_label.lower() in ("respondent", "respondents"):
             return json_error("Deceased residents cannot be recorded as respondents.", 422)
         else:
@@ -176,7 +210,7 @@ def elevate_incident_endpoint(incident_id):
         if not guardian_id and not guardian_name:
             return json_error("Reporter is a minor (<15). A parent/guardian must be assigned as the legal Complainant.", 422)
         if guardian_id and g_res:
-            if g_res.status == "Deceased":
+            if is_census_deceased(g_res):
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             g_age = compute_age(g_res.date_of_birth)
             if g_age is not None and g_age < 18:
@@ -207,31 +241,58 @@ def elevate_incident_endpoint(incident_id):
     respondent = d.get("respondent", "")
     respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
 
+    # Resolve resident IDs by name if not explicitly provided
+    if not complainant_id and complainant:
+        matched_c = find_census_resident_id_by_name(complainant)
+        if matched_c:
+            complainant_id = matched_c
+
+    if not respondent_id and respondent:
+        matched_r = find_census_resident_id_by_name(respondent)
+        if matched_r:
+            respondent_id = matched_r
+
     # Check for deceased complainant / reporter
     if complainant_id:
         c_res = CensusRecord.query.get(complainant_id)
-        if c_res and c_res.status == "Deceased":
+        if c_res and is_census_deceased(c_res):
             return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
     elif complainant:
-        c_dec = CensusRecord.query.filter(
-            CensusRecord.status == "Deceased",
-            (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
-        ).first()
-        if c_dec:
-            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+        name_clean = re.sub(r"[^\w\s]", "", complainant).strip().lower()
+        if name_clean:
+            deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+            for d_res in deceased_residents:
+                first = (d_res.first_name or "").strip().lower()
+                last = (d_res.last_name or "").strip().lower()
+                mid = (d_res.middle_name or "").strip().lower()
+                fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                    if not is_name_a_census_resident(complainant):
+                        return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
     # Check for deceased respondent
     if respondent_id:
         r_res = CensusRecord.query.get(respondent_id)
-        if r_res and r_res.status == "Deceased":
+        if r_res and is_census_deceased(r_res):
             return json_error("Deceased residents cannot be recorded as respondents.", 422)
     elif respondent:
-        r_dec = CensusRecord.query.filter(
-            CensusRecord.status == "Deceased",
-            (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
-        ).first()
-        if r_dec:
-            return json_error("Deceased residents cannot be recorded as respondents.", 422)
+        name_clean = re.sub(r"[^\w\s]", "", respondent).strip().lower()
+        if name_clean:
+            deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+            for d_res in deceased_residents:
+                first = (d_res.first_name or "").strip().lower()
+                last = (d_res.last_name or "").strip().lower()
+                mid = (d_res.middle_name or "").strip().lower()
+                fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                    if not is_name_a_census_resident(respondent):
+                        return json_error("Deceased residents cannot be recorded as respondents.", 422)
 
     # Conditional Residency Validation:
     # 1. If Complainant is already a verified resident in Census, selecting a Census resident for Respondent is strictly OPTIONAL.
@@ -899,7 +960,7 @@ def _incidents():
             if not resident:
                 is_non_resident = True
                 reporter_resident_id = None
-            elif resident.status == "Deceased":
+            elif is_census_deceased(resident):
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             else:
                 is_non_resident = False
@@ -913,7 +974,7 @@ def _incidents():
 
         if guardian_resident_id:
             g_res = CensusRecord.query.get(guardian_resident_id)
-            if g_res and g_res.status == "Deceased":
+            if g_res and is_census_deceased(g_res):
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if g_res and not guardian_address:
                 parts = [g_res.address, g_res.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
@@ -1043,7 +1104,7 @@ def _incidents():
             if not resident:
                 is_non_resident = True
                 reporter_resident_id = None
-            elif resident.status == "Deceased":
+            elif is_census_deceased(resident):
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             else:
                 is_non_resident = False
@@ -1057,7 +1118,7 @@ def _incidents():
 
         if guardian_resident_id:
             g_res = CensusRecord.query.get(guardian_resident_id)
-            if g_res and g_res.status == "Deceased":
+            if g_res and is_census_deceased(g_res):
                 return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
             if g_res and not guardian_address:
                 parts = [g_res.address, g_res.zone_id, "Barangay Mapulang Lupa, Valenzuela City"]
@@ -1225,6 +1286,17 @@ def _blotter():
         complainant_id = int(d["complainantId"]) if d.get("complainantId") else None
         respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
 
+        # Resolve resident IDs by name if not explicitly provided
+        if not complainant_id and complainant:
+            matched_c = find_census_resident_id_by_name(complainant)
+            if matched_c:
+                complainant_id = matched_c
+
+        if not respondent_id and respondent:
+            matched_r = find_census_resident_id_by_name(respondent)
+            if matched_r:
+                respondent_id = matched_r
+
         complainant_is_resident = (
             bool(CensusRecord.query.get(complainant_id)) if complainant_id
             else is_name_a_census_resident(complainant)
@@ -1236,7 +1308,8 @@ def _blotter():
         if not complainant_is_resident and not respondent_is_resident:
             return json_error(
                 "At least one party (complainant or respondent) must be a registered "
-                "resident in Census before a blotter record can be filed."
+                "resident in Census before a blotter record can be filed.",
+                422
             )
 
         for pid, label in ((complainant_id, "Complainant"), (respondent_id, "Respondent")):
@@ -1248,22 +1321,38 @@ def _blotter():
                 if err:
                     return err
 
-        # Name-based check for deceased residents
+        # Name-based check for deceased residents (exact full name matching only, not loose substring)
         if not complainant_id and complainant:
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+            name_clean = re.sub(r"[^\w\s]", "", complainant).strip().lower()
+            if name_clean:
+                deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+                for d_res in deceased_residents:
+                    first = (d_res.first_name or "").strip().lower()
+                    last = (d_res.last_name or "").strip().lower()
+                    mid = (d_res.middle_name or "").strip().lower()
+                    fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                    fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                    rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                    rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                    if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                        if not is_name_a_census_resident(complainant):
+                            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         if not respondent_id and respondent:
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be recorded as respondents.", 422)
+            name_clean = re.sub(r"[^\w\s]", "", respondent).strip().lower()
+            if name_clean:
+                deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+                for d_res in deceased_residents:
+                    first = (d_res.first_name or "").strip().lower()
+                    last = (d_res.last_name or "").strip().lower()
+                    mid = (d_res.middle_name or "").strip().lower()
+                    fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                    fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                    rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                    rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                    if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                        if not is_name_a_census_resident(respondent):
+                            return json_error("Deceased residents cannot be recorded as respondents.", 422)
 
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (
@@ -1359,6 +1448,17 @@ def _blotter():
         complainant_id = int(d["complainantId"]) if d.get("complainantId") else None
         respondent_id = int(d["respondentId"]) if d.get("respondentId") else None
 
+        # Resolve resident IDs by name if not explicitly provided
+        if not complainant_id and complainant:
+            matched_c = find_census_resident_id_by_name(complainant)
+            if matched_c:
+                complainant_id = matched_c
+
+        if not respondent_id and respondent:
+            matched_r = find_census_resident_id_by_name(respondent)
+            if matched_r:
+                respondent_id = matched_r
+
         for pid, label in ((complainant_id, "Complainant"), (respondent_id, "Respondent")):
             if not pid:
                 continue
@@ -1368,22 +1468,38 @@ def _blotter():
                 if err:
                     return err
 
-        # Name-based check for deceased residents
+        # Name-based check for deceased residents (exact full name matching only, not loose substring)
         if not complainant_id and complainant:
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{complainant.strip()}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
+            name_clean = re.sub(r"[^\w\s]", "", complainant).strip().lower()
+            if name_clean:
+                deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+                for d_res in deceased_residents:
+                    first = (d_res.first_name or "").strip().lower()
+                    last = (d_res.last_name or "").strip().lower()
+                    mid = (d_res.middle_name or "").strip().lower()
+                    fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                    fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                    rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                    rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                    if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                        if not is_name_a_census_resident(complainant):
+                            return json_error("Deceased residents cannot be filed as complainants/reporters.", 422)
 
         if not respondent_id and respondent:
-            dec = CensusRecord.query.filter(
-                CensusRecord.status == "Deceased",
-                (CensusRecord.first_name + " " + CensusRecord.last_name).ilike(f"%{respondent.strip()}%")
-            ).first()
-            if dec:
-                return json_error("Deceased residents cannot be recorded as respondents.", 422)
+            name_clean = re.sub(r"[^\w\s]", "", respondent).strip().lower()
+            if name_clean:
+                deceased_residents = CensusRecord.query.filter(CensusRecord.status.ilike("deceased")).all()
+                for d_res in deceased_residents:
+                    first = (d_res.first_name or "").strip().lower()
+                    last = (d_res.last_name or "").strip().lower()
+                    mid = (d_res.middle_name or "").strip().lower()
+                    fwd_full = re.sub(r"[^\w\s]", "", f"{first} {mid} {last}").strip()
+                    fwd_simple = re.sub(r"[^\w\s]", "", f"{first} {last}").strip()
+                    rev_full = re.sub(r"[^\w\s]", "", f"{last} {first} {mid}").strip()
+                    rev_simple = re.sub(r"[^\w\s]", "", f"{last} {first}").strip()
+                    if name_clean in (fwd_full, fwd_simple, rev_full, rev_simple):
+                        if not is_name_a_census_resident(respondent):
+                            return json_error("Deceased residents cannot be recorded as respondents.", 422)
 
         same_census_person = complainant_id and respondent_id and complainant_id == respondent_id
         same_name_typed = (

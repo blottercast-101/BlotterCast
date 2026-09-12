@@ -1783,7 +1783,7 @@
   }
 
   function validateIncidentReporter(r) {
-    if (r && r.status === 'Deceased') {
+    if (r && window.bcIsResidentDeceased && window.bcIsResidentDeceased(r)) {
       return 'Deceased residents cannot be filed as complainants/reporters.';
     }
     return null;
@@ -1791,7 +1791,7 @@
 
   function validateGuardianEligibility(r) {
     if (!r) return null;
-    if (r.status === 'Deceased') {
+    if (window.bcIsResidentDeceased && window.bcIsResidentDeceased(r)) {
       return 'Deceased residents cannot be filed as guardians/complainants.';
     }
     if (r.age !== null && r.age < 18) {
