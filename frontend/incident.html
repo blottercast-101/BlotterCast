@@ -306,7 +306,10 @@
         </div>
         <div class="col-span-1 sm:col-span-2">
           <label class="form-label">Location Detail</label>
-          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="onLocationDetailInput()"/>
+          <input type="text" id="if_location" class="form-input" placeholder="e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…" oninput="onLocationDetailInput()" maxlength="150"/>
+          <div class="flex justify-end mt-1">
+            <span class="text-xs text-[#52796f] font-normal" id="locationDetailCount">0/150</span>
+          </div>
         </div>
       </div>
 
@@ -421,7 +424,13 @@
           </select>
         </div>
       </div>
-      <div><label class="form-label">Description</label><textarea id="if_description" class="form-input h-20 resize-none" placeholder="Detailed description of the incident…"></textarea></div>
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="if_description" class="form-input h-20 resize-none" placeholder="Detailed description of the incident…" maxlength="500"></textarea>
+        <div class="flex justify-end mt-1">
+          <span class="text-xs text-[#52796f] font-normal" id="descriptionCount">0/500</span>
+        </div>
+      </div>
       <div class="grid grid-cols-2 gap-4 items-start relative z-40">
         <div class="relative z-40">
           <div class="flex items-end justify-between gap-2 mb-2 h-10">
@@ -433,9 +442,9 @@
             </label>
           </div>
           <!-- Resident Mode (Default) -->
-          <input type="text" id="if_reporterSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
+          <input type="text" id="if_reporterSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers maxlength="50"/>
           <!-- Non-Resident Mode -->
-          <input type="text" id="if_reporterFreeText" class="form-input hidden" placeholder="Full name (Non-resident)" data-no-numbers/>
+          <input type="text" id="if_reporterFreeText" class="form-input hidden" placeholder="Full name (Non-resident)" data-no-numbers maxlength="50"/>
           <input type="hidden" id="if_reporter"/>
           <input type="hidden" id="if_reporterResidentId"/>
           <div id="if_reporterSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl"></div>
@@ -448,15 +457,21 @@
           <!-- Manual Address for Non-Resident -->
           <div id="if_reporterAddressContainer" class="hidden mt-2">
             <label class="form-label text-xs mb-1">Reporter Address (Municipality / Location)</label>
-            <input type="text" id="if_reporterAddressManual" class="form-input text-xs" placeholder="Outside Barangay / specify municipality or address"/>
+            <input type="text" id="if_reporterAddressManual" class="form-input text-xs" placeholder="Outside Barangay / specify municipality or address" maxlength="150"/>
           </div>
           <input type="hidden" id="if_reporterAddress"/>
+          <div class="flex justify-end mt-1">
+            <span class="text-xs text-[#52796f] font-normal" id="reporterNameCount">0/50</span>
+          </div>
         </div>
         <div>
           <div class="flex items-end justify-between mb-2 h-10">
             <label class="form-label mb-0 pb-0.5">Responding Officer</label>
           </div>
-          <input type="text" id="if_officer" class="form-input" placeholder="e.g. PO1 Cruz"/>
+          <input type="text" id="if_officer" class="form-input" placeholder="e.g. PO1 Cruz" maxlength="50"/>
+          <div class="flex justify-end mt-1">
+            <span class="text-xs text-[#52796f] font-normal" id="respondingOfficerCount">0/50</span>
+          </div>
         </div>
       </div>
 
@@ -549,7 +564,7 @@
         </div>
 
         <!-- RIGHT: Standard Modal Actions -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center justify-end gap-3 ml-auto">
           <button type="button" onclick="closeModal('incidentModal')" class="btn-secondary">Cancel</button>
           <button type="button" id="btnSaveIncident" onclick="saveIncident()" class="btn-primary">Save Report</button>
         </div>
@@ -1397,6 +1412,7 @@
   }
 
   function onLocationDetailInput() {
+    updateIncidentCharCounters();
     checkZoneLocationConflict();
 
     // 1. Immediately invalidate previous geocoded pin & coords
@@ -1847,6 +1863,7 @@
       const guardianSec = document.getElementById('if_guardianSection');
       if (guardianSec) guardianSec.classList.add('hidden');
     }
+    updateIncidentCharCounters();
   }
 
   function onGuardianPicked(r) {
@@ -1909,6 +1926,7 @@
       document.getElementById('if_reporterAddress').value = '';
       addrBadge.classList.add('hidden');
     }
+    updateIncidentCharCounters();
   }
 
   function setIncidentFormLocked(isLocked, docketNo = '', lockType = 'elevated') {
@@ -2026,6 +2044,7 @@
     resetFormDropdowns('incidentForm');
     const statusSelect = document.getElementById('if_status');
     if (statusSelect) statusSelect.value = 'Under Investigation';
+    updateIncidentCharCounters();
   }
 
   async function openAddIncident() {
@@ -2147,6 +2166,7 @@
     }
 
     checkZoneLocationConflict();
+    updateIncidentCharCounters();
     openModal('incidentModal');
   }
 
@@ -2579,6 +2599,49 @@
     }
   }, true);
 
+  function updateIncidentCharCounters() {
+    const locInput = document.getElementById('if_location');
+    const locCount = document.getElementById('locationDetailCount');
+    if (locInput && locCount) {
+      locCount.textContent = `${(locInput.value || '').length}/150`;
+    }
+
+    const descInput = document.getElementById('if_description');
+    const descCount = document.getElementById('descriptionCount');
+    if (descInput && descCount) {
+      descCount.textContent = `${(descInput.value || '').length}/500`;
+    }
+
+    const isNonRes = document.getElementById('if_is_non_resident')?.checked;
+    const repInput = isNonRes ? document.getElementById('if_reporterFreeText') : document.getElementById('if_reporterSearch');
+    const repCount = document.getElementById('reporterNameCount');
+    if (repCount) {
+      const repVal = (repInput?.value || document.getElementById('if_reporter')?.value || '');
+      repCount.textContent = `${repVal.length}/50`;
+    }
+
+    const officerInput = document.getElementById('if_officer');
+    const officerCount = document.getElementById('respondingOfficerCount');
+    if (officerInput && officerCount) {
+      officerCount.textContent = `${(officerInput.value || '').length}/50`;
+    }
+  }
+
+  function initIncidentCharCounters() {
+    ['if_location', 'if_description', 'if_reporterSearch', 'if_reporterFreeText', 'if_officer'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.dataset.charCounterBound) {
+        el.dataset.charCounterBound = '1';
+        el.addEventListener('input', updateIncidentCharCounters);
+        el.addEventListener('change', updateIncidentCharCounters);
+        el.addEventListener('keyup', updateIncidentCharCounters);
+      }
+    });
+    updateIncidentCharCounters();
+  }
+
+  window.updateIncidentCharCounters = updateIncidentCharCounters;
+  window.initIncidentCharCounters = initIncidentCharCounters;
   window.loadIncidents = loadIncidents;
   window.archiveIncident = archiveIncident;
   window.restoreIncident = restoreIncident;
@@ -2602,6 +2665,7 @@
           if (typeof renderIcons === 'function') renderIcons();
         }
       }
+      try { initIncidentCharCounters(); } catch (_) {}
       try {
         await Promise.all([
           loadIncidents(),
