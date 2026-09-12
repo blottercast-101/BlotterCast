@@ -709,6 +709,14 @@ input.pw-input { padding-right: 38px; }
 .bc-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; }
 
 /* ---------------- Forms ---------------- */
+::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #52796f !important;
+  opacity: 0.7 !important;
+  font-weight: 400;
+}
+
 .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
 .form-input {
   width: 100%;
@@ -940,7 +948,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.12);
 }
 .filter-bar input[type="text"].filter-input::placeholder {
-  color: #9ca3af;
+  color: #52796f;
+  opacity: 0.7;
 }
 .filter-bar .text-forest-400 {
   color: #2d6a4f !important;
@@ -3689,7 +3698,8 @@ input:-webkit-autofill {
 }
 
 .wizard-input::placeholder {
-  color: #86c895;
+  color: #52796f;
+  opacity: 0.7;
 }
 
 /* Wizard Radio Buttons - Dark Forest Green Accent */
