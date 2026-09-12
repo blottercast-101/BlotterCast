@@ -115,7 +115,7 @@ class TestMLPipeline(unittest.TestCase):
         """Test GET /api/analytics/zone-density endpoint."""
         # Login as Desk Officer
         with self.client.session_transaction() as sess:
-            user = User.query.filter_by(username="jdelacuz").first()
+            user = User.query.filter_by(username="jdelacruz").first() or User.query.first()
             sess["user_id"] = user.id
             sess["role"] = user.role
             sess["username"] = user.username

@@ -169,23 +169,31 @@
             <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
           </div>
         </div>
-        <div id="certPrint" class="flex justify-center">
-          <div class="cert-sheet" id="certContent">
+        <div id="certPrint" class="certificate-viewport-container flex justify-center items-start overflow-auto p-4 bg-slate-100 rounded-xl min-h-[500px]">
+          <div class="a4-sheet cert-sheet certificate-sheet certificate-container printable-document relative bg-white shadow-2xl overflow-hidden flex flex-col justify-between" id="printableCertificate">
             <img src="assets/clearance-letterhead.jpg" class="cert-bg" alt="Certificate of Residency letterhead"/>
-            <div class="cert-ov cert-ov-or" id="r_or">
+            <div class="cert-ov cert-ov-or meta-row" id="r_or">
               Control No.: BR-2025-001 &nbsp;|&nbsp; O.R. No.: — &nbsp;|&nbsp; Amount Paid: ₱20.00
             </div>
-            <div class="cert-ov cert-ov-title">Certificate of Residency</div>
-            <div class="cert-ov cert-ov-body">
-              <p class="no-indent cert-body-paragraph">TO WHOM IT MAY CONCERN:</p>
-              <p class="cert-body-paragraph">This is to certify that <span class="cert-name cert-line-field min-w-[220px]" id="r_name"></span>, <span class="cert-line-field min-w-[45px]" id="r_age"></span> years old, <span class="cert-line-field min-w-[60px]" id="r_civil"></span>, Filipino citizen, is a bonafide resident of <span class="cert-line-field min-w-[200px]" id="r_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, for <span class="cert-line-field min-w-[40px]" id="r_years"></span> <span id="r_years_unit">year(s)</span>.</p>
-              <p class="cert-body-paragraph">This further certifies that the above-named person is personally known to this office as an actual resident of this barangay as of this date.</p>
-              <p class="cert-body-paragraph">This certification is issued upon the request of the above-named person for the purpose of <span class="cert-line-field min-w-[180px]" id="r_purpose"></span> and for whatever legal purpose it may serve.</p>
-              <p class="cert-body-paragraph">Issued this <span class="cert-line-field min-w-[40px]" id="r_day"></span> day of <span class="cert-line-field min-w-[90px]" id="r_month"></span>, <span class="cert-line-field min-w-[50px]" id="r_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.</p>
+            <div class="cert-ov cert-ov-title title-container">Certificate of Residency</div>
+            <div class="cert-ov cert-ov-body body-paragraphs text-left leading-relaxed space-y-4">
+              <p class="no-indent cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">TO WHOM IT MAY CONCERN:</p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This is to certify that <span class="cert-underlined field-name cert-line cert-name cert-field cert-line-field" id="r_name"></span>, <span class="cert-underlined field-age cert-line cert-age cert-field cert-line-field" id="r_age"></span> years old, <span class="cert-underlined field-status cert-line cert-status cert-field cert-line-field" id="r_civil"></span>, Filipino citizen, is a bonafide resident of <span class="cert-underlined field-address cert-line cert-address cert-field cert-line-field" id="r_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, for <span class="cert-underlined field-years cert-line cert-years cert-field cert-line-field" id="r_years"></span> <span id="r_years_unit">year(s)</span>.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This further certifies that the above-named person is personally known to this office as an actual resident of this barangay as of this date.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This certification is issued upon the request of the above-named person for the purpose of <span class="cert-underlined field-purpose cert-line cert-purpose cert-field cert-line-field" id="r_purpose"></span> and for whatever legal purpose it may serve.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                Issued this <span class="cert-underlined field-day cert-line cert-day cert-field cert-line-field" id="r_day"></span> day of <span class="cert-underlined field-month cert-line cert-month cert-field cert-line-field" id="r_month"></span>, <span class="cert-underlined field-year cert-line cert-year cert-field cert-line-field" id="r_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.
+              </p>
             </div>
-            <div class="cert-ov cert-ov-voter">( &nbsp;<span id="r_voter">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="r_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
+            <div class="cert-ov cert-ov-voter voter-status">( &nbsp;<span id="r_voter">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="r_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
             <!-- Signatory Section Container (Centered with Reduced Gap) -->
-            <div class="cert-ov cert-ov-signatories w-full flex justify-center items-end gap-10 box-border">
+            <div class="cert-ov cert-ov-signatories footer-signatures w-full flex justify-center items-end gap-10 box-border">
               <!-- Left Signatory: Applicant -->
               <div class="cert-signatory-col cert-ov-applicant-sigblock w-48 text-center flex flex-col justify-end">
                 <!-- Blank space reserved for physical wet signature / name -->
@@ -198,9 +206,9 @@
               </div>
 
               <!-- Right Signatory: Punong Barangay -->
-              <div class="captain-signatory-block cert-signatory-col w-48 text-center flex flex-col justify-end">
+              <div class="captain-signatory-block signature-block cert-signatory-col w-48 text-center flex flex-col justify-end">
                 <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-                <div class="captain-sig-wrapper" id="r_sigimg_wrap">
+                <div class="captain-sig-wrapper signature-line" id="r_sigimg_wrap">
                   <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
                 </div>
                 <!-- Printed Captain Name above the line -->
@@ -473,21 +481,24 @@ function previewResLog(id){
   const r=resLogData.find(x=>x.id===id);
   if (!r) return;
   const d = new Date(r.dateRaw + 'T00:00:00');
-  document.getElementById('r_name').textContent=r.name;
-  document.getElementById('r_applicant_name').textContent=r.name;
-  document.getElementById('r_age').textContent=r.age ?? '___';
-  document.getElementById('r_civil').textContent=r.civil ?? '___';
-  document.getElementById('r_addr').textContent=r.address ?? '';
-  document.getElementById('r_years').textContent=r.yearsResidency ?? '___';
+  document.getElementById('r_name').textContent=(r.name || '').trim();
+  document.getElementById('r_applicant_name').textContent=(r.name || '').trim();
+  document.getElementById('r_age').textContent=r.age != null ? String(r.age).trim() : '';
+  document.getElementById('r_civil').textContent=(r.civil || '').trim();
+  document.getElementById('r_addr').textContent=(r.address || '').trim();
+  document.getElementById('r_years').textContent=r.yearsResidency != null ? String(r.yearsResidency).trim() : '';
   document.getElementById('r_years_unit').textContent = r.durationUnit === 'months' ? 'month(s)' : 'year(s)';
-  document.getElementById('r_purpose').textContent=r.purpose;
-  document.getElementById('r_day').textContent=d.getDate();
-  document.getElementById('r_month').textContent=months[d.getMonth()];
-  document.getElementById('r_year').textContent=d.getFullYear();
+  document.getElementById('r_purpose').textContent=(r.purpose || '').trim();
+  document.getElementById('r_day').textContent=String(d.getDate()).trim();
+  document.getElementById('r_month').textContent=String(months[d.getMonth()] || '').trim();
+  document.getElementById('r_year').textContent=String(d.getFullYear()).trim();
   document.getElementById('r_or').innerHTML=`Control No.: ${r.ctrl} &nbsp;|&nbsp; O.R. No.: ${r.or} &nbsp;|&nbsp; Amount Paid: ₱${r.fee.toFixed(2)}`;
   renderResVoterCheckbox(r.voter);
   if (typeof bindCertificateCaptainName === 'function') {
     bindCertificateCaptainName(r);
+  }
+  if (typeof enforceCenteredFields === 'function') {
+    enforceCenteredFields('printableCertificate');
   }
 }
 

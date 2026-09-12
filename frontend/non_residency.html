@@ -169,20 +169,26 @@
             <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
           </div>
         </div>
-        <div id="certPrint" class="flex justify-center">
-          <div class="cert-sheet" id="certContent">
+        <div id="certPrint" class="certificate-viewport-container flex justify-center items-start overflow-auto p-4 bg-slate-100 rounded-xl min-h-[500px]">
+          <div class="a4-sheet cert-sheet certificate-sheet certificate-container printable-document relative bg-white shadow-2xl overflow-hidden flex flex-col justify-between" id="printableCertificate">
             <img src="assets/non-residency-letterhead.jpg?v=20260902_clean" class="cert-bg" alt="Certificate of Non-Residency letterhead"/>
-            <div class="cert-ov cert-ov-nr-ctrl-non" id="nr_ctrl_display">
+            <div class="cert-ov cert-ov-nr-ctrl-non meta-row" id="nr_ctrl_display">
               Control No.: NR-2025-001
             </div>
-            <div class="cert-ov cert-ov-title-non">Certificate of Non-Residency</div>
-            <div class="cert-ov cert-ov-nr-body">
-              <p class="no-indent cert-body-paragraph">TO WHOM IT MAY CONCERN,</p>
-              <p class="cert-body-paragraph">This is to certify that Mr./Mrs./Ms. <span class="cert-name cert-line-field min-w-[200px]" id="nr_name"></span>, which previous home address is <span class="cert-line-field min-w-[180px]" id="nr_prev_addr"></span>. He/She no longer resides in the given address.</p>
-              <p class="cert-body-paragraph">This certification was issued upon the request of <span class="cert-line-field min-w-[180px]" id="nr_purpose"></span>.</p>
-              <p class="cert-body-paragraph">Given this <span class="cert-line-field min-w-[35px]" id="nr_day"></span> day of <span class="cert-line-field min-w-[80px]" id="nr_month"></span> <span class="cert-line-field min-w-[45px]" id="nr_year"></span>, at the office of the Barangay Chairman, Mapulang Lupa, Pandi.</p>
+            <div class="cert-ov cert-ov-title-non title-container">Certificate of Non-Residency</div>
+            <div class="cert-ov cert-ov-nr-body body-paragraphs text-left leading-relaxed space-y-4">
+              <p class="no-indent cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">TO WHOM IT MAY CONCERN,</p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This is to certify that Mr./Mrs./Ms. <span class="cert-underlined field-name cert-line cert-name cert-field cert-line-field" id="nr_name"></span>, which previous home address is <span class="cert-underlined field-address cert-line cert-address cert-field cert-line-field" id="nr_prev_addr"></span>. He/She no longer resides in the given address.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This certification was issued upon the request of <span class="cert-underlined field-purpose cert-line cert-purpose cert-field cert-line-field" id="nr_purpose"></span>.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                Given this <span class="cert-underlined field-day cert-line cert-day cert-field cert-line-field" id="nr_day"></span> day of <span class="cert-underlined field-month cert-line cert-month cert-field cert-line-field" id="nr_month"></span>, <span class="cert-underlined field-year cert-line cert-year cert-field cert-line-field" id="nr_year"></span> at the office of the Barangay Chairman, Mapulang Lupa, Pandi.
+              </p>
             </div>
-            <div class="voter-checklist-green" id="nr_voter_row">
+            <div class="voter-checklist-green voter-status" id="nr_voter_row">
               <span class="voter-item">
                 (&nbsp;<span class="check-slot" id="nr_voter_check">&nbsp;</span>&nbsp;) VOTER
               </span>
@@ -191,9 +197,9 @@
               </span>
             </div>
             <div class="cert-ov cert-ov-nr-applicant-name" id="nr_applicant_name"></div>
-            <div class="captain-signatory-block cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
+            <div class="captain-signatory-block signature-block cert-ov cert-ov-nr-sigblock w-48 text-center flex flex-col justify-end">
               <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-              <div class="captain-sig-wrapper" id="nr_sigimg_wrap">
+              <div class="captain-sig-wrapper signature-line" id="nr_sigimg_wrap">
                 <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
               </div>
               <div class="h-9 flex items-end justify-center pb-0.5">
@@ -440,17 +446,20 @@ function previewNrLog(id){
   const r=nrLogData.find(x=>x.id===id);
   if (!r) return;
   const d = new Date(r.dateRaw + 'T00:00:00');
-  document.getElementById('nr_name').textContent=r.name;
-  document.getElementById('nr_prev_addr').textContent=r.previousAddress || '_____________________';
-  document.getElementById('nr_purpose').textContent=r.purpose;
-  document.getElementById('nr_day').textContent=d.getDate();
-  document.getElementById('nr_month').textContent=months[d.getMonth()];
-  document.getElementById('nr_year').textContent=d.getFullYear();
+  document.getElementById('nr_name').textContent=(r.name || '').trim();
+  document.getElementById('nr_prev_addr').textContent=(r.previousAddress || '').trim();
+  document.getElementById('nr_purpose').textContent=(r.purpose || '').trim();
+  document.getElementById('nr_day').textContent=String(d.getDate()).trim();
+  document.getElementById('nr_month').textContent=String(months[d.getMonth()] || '').trim();
+  document.getElementById('nr_year').textContent=String(d.getFullYear()).trim();
   document.getElementById('nr_ctrl_display').textContent=`Control No.: ${r.ctrl}`;
-  document.getElementById('nr_applicant_name').textContent=r.name.toUpperCase();
+  document.getElementById('nr_applicant_name').textContent=(r.name || '').trim().toUpperCase();
   setNrVoterCheckmarks(r.voterStatus);
   if (typeof bindCertificateCaptainName === 'function') {
     bindCertificateCaptainName(r);
+  }
+  if (typeof enforceCenteredFields === 'function') {
+    enforceCenteredFields('printableCertificate');
   }
 }
 

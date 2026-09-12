@@ -1,11 +1,10 @@
 {
-    "python.terminal.useEnvFile": true,
+    "python.defaultInterpreterPath": "C:\\Users\\fhaly\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+    "python.analysis.extraPaths": [
+        "C:\\Users\\fhaly\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages"
+    ],
     "python.analysis.diagnosticSeverityOverrides": {
-        "reportCallIssue": "none",
-        "reportGeneralTypeIssues": "none",
-        "reportOptionalMemberAccess": "none",
-        "reportUnknownParameterType": "none",
-        "reportAttributeAccessIssue": "none",
-        "reportArgumentType": "none"
+        "reportMissingImports": "none",
+        "reportMissingModuleSource": "none"
     }
 }

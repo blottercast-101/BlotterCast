@@ -168,22 +168,30 @@
           <h2 class="font-display text-lg text-forest-800">Certificate Preview</h2>
           <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"><span data-icon="printer" data-icon-size="16"></span> Print</button>
         </div>
-        <div id="certPrint" class="flex justify-center">
-          <div class="cert-sheet" id="certContent">
+        <div id="certPrint" class="certificate-viewport-container flex justify-center items-start overflow-auto p-4 bg-slate-100 rounded-xl min-h-[500px]">
+          <div class="a4-sheet cert-sheet certificate-sheet certificate-container printable-document relative bg-white shadow-2xl overflow-hidden flex flex-col justify-between" id="printableCertificate">
             <img src="assets/indigency-letterhead.jpg" class="cert-bg" alt="Certificate of Indigency letterhead"/>
-            <div class="cert-ov cert-ov-or" id="i_or">
+            <div class="cert-ov cert-ov-or meta-row" id="i_or">
               Control No.: CI-2025-001 &nbsp;|&nbsp; Valid Until: 6 months from date of issue &nbsp;|&nbsp; Fee: FREE
             </div>
-            <div class="cert-ov cert-ov-title">Certificate of Indigency</div>
-            <div class="cert-ov cert-ov-body">
-              <p class="no-indent cert-body-paragraph">TO WHOM IT MAY CONCERN:</p>
-              <p class="cert-body-paragraph">This is to certify that <span class="cert-name cert-line-field min-w-[220px]" id="i_name"></span>, <span class="cert-line-field min-w-[45px]" id="i_age"></span> years old, <span class="cert-line-field min-w-[60px]" id="i_civil"></span>, Filipino citizen, and a resident of <span class="cert-line-field min-w-[200px]" id="i_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, is a bonafide resident of this barangay.</p>
-              <p class="cert-body-paragraph">This further certifies that the above-named person belongs to an <strong>indigent family</strong> and is not financially capable to meet all the basic necessities of life. His/her family's income is below the poverty threshold as determined by this office.</p>
-              <p class="cert-body-paragraph">This certification is issued upon the request of the above-named person for the purpose of <span class="cert-line-field min-w-[180px]" id="i_purpose"></span> and for whatever legal purpose it may serve.</p>
-              <p class="cert-body-paragraph">Issued this <span class="cert-line-field min-w-[40px]" id="i_day"></span> day of <span class="cert-line-field min-w-[90px]" id="i_month"></span>, <span class="cert-line-field min-w-[50px]" id="i_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.</p>
+            <div class="cert-ov cert-ov-title title-container">Certificate of Indigency</div>
+            <div class="cert-ov cert-ov-body body-paragraphs text-left leading-relaxed space-y-4">
+              <p class="no-indent cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">TO WHOM IT MAY CONCERN:</p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This is to certify that <span class="cert-underlined field-name cert-line cert-name cert-field cert-line-field" id="i_name"></span>, <span class="cert-underlined field-age cert-line cert-age cert-field cert-line-field" id="i_age"></span> years old, <span class="cert-underlined field-status cert-line cert-status cert-field cert-line-field" id="i_civil"></span>, Filipino citizen, and a resident of <span class="cert-underlined field-address cert-line cert-address cert-field cert-line-field" id="i_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, is a bonafide resident of this barangay.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This further certifies that the above-named person belongs to an <strong>indigent family</strong> and is not financially capable to meet all the basic necessities of life. His/her family's income is below the poverty threshold as determined by this office.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                This certification is issued upon the request of the above-named person for the purpose of <span class="cert-underlined field-purpose cert-line cert-purpose cert-field cert-line-field" id="i_purpose"></span> and for whatever legal purpose it may serve.
+              </p>
+              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
+                Issued this <span class="cert-underlined field-day cert-line cert-day cert-field cert-line-field" id="i_day"></span> day of <span class="cert-underlined field-month cert-line cert-month cert-field cert-line-field" id="i_month"></span>, <span class="cert-underlined field-year cert-line cert-year cert-field cert-line-field" id="i_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.
+              </p>
             </div>
             <!-- Signatory Section Container (Centered with Reduced Gap) -->
-            <div class="cert-ov cert-ov-signatories w-full flex justify-center items-end gap-10 box-border">
+            <div class="cert-ov cert-ov-signatories footer-signatures w-full flex justify-center items-end gap-10 box-border">
               <!-- Left Signatory: Applicant -->
               <div class="cert-signatory-col cert-ov-applicant-sigblock w-48 text-center flex flex-col justify-end">
                 <!-- Blank space reserved for physical wet signature / name -->
@@ -196,9 +204,9 @@
               </div>
 
               <!-- Right Signatory: Punong Barangay -->
-              <div class="captain-signatory-block cert-signatory-col w-48 text-center flex flex-col justify-end">
+              <div class="captain-signatory-block signature-block cert-signatory-col w-48 text-center flex flex-col justify-end">
                 <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-                <div class="captain-sig-wrapper" id="i_sigimg_wrap">
+                <div class="captain-sig-wrapper signature-line" id="i_sigimg_wrap">
                   <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
                 </div>
                 <!-- Printed Captain Name above the line -->
@@ -462,18 +470,21 @@ function previewInd(id){
   const r=indData.find(x=>x.id===id);
   if (!r) return;
   const d = new Date(r.dateRaw + 'T00:00:00');
-  document.getElementById('i_name').textContent=r.name;
-  document.getElementById('i_applicant_name').textContent=r.name;
-  document.getElementById('i_age').textContent=r.age ?? '___';
-  document.getElementById('i_civil').textContent=r.civil ?? '___';
-  document.getElementById('i_addr').textContent=r.address ?? '';
-  document.getElementById('i_purpose').textContent=r.purpose;
-  document.getElementById('i_day').textContent=d.getDate();
-  document.getElementById('i_month').textContent=months[d.getMonth()];
-  document.getElementById('i_year').textContent=d.getFullYear();
+  document.getElementById('i_name').textContent=(r.name || '').trim();
+  document.getElementById('i_applicant_name').textContent=(r.name || '').trim();
+  document.getElementById('i_age').textContent=r.age != null ? String(r.age).trim() : '';
+  document.getElementById('i_civil').textContent=(r.civil || '').trim();
+  document.getElementById('i_addr').textContent=(r.address || '').trim();
+  document.getElementById('i_purpose').textContent=(r.purpose || '').trim();
+  document.getElementById('i_day').textContent=String(d.getDate()).trim();
+  document.getElementById('i_month').textContent=String(months[d.getMonth()] || '').trim();
+  document.getElementById('i_year').textContent=String(d.getFullYear()).trim();
   document.getElementById('i_or').innerHTML=`Control No.: ${r.ctrl} &nbsp;|&nbsp; Valid Until: 6 months from date of issue &nbsp;|&nbsp; Fee: FREE`;
   if (typeof bindCertificateCaptainName === 'function') {
     bindCertificateCaptainName(r);
+  }
+  if (typeof enforceCenteredFields === 'function') {
+    enforceCenteredFields('printableCertificate');
   }
 }
 

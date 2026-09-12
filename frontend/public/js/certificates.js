@@ -272,26 +272,75 @@ function validateNonResidencySubmission(e) {
 }
 
 /**
+ * Enforces pure inline rendering on filled fields to eliminate vertical floating
+ * and left gaps, while providing compact inline-block placeholders for empty fields.
+ *
+ * @param {string|HTMLElement} [containerId='printableCertificate']
+ */
+function enforceCenteredFields(containerId = 'printableCertificate') {
+  const root = typeof containerId === 'string'
+    ? (document.getElementById(containerId) || document)
+    : (containerId || document);
+  if (!root) return;
+
+  const fields = root.querySelectorAll('.cert-underlined, .cert-line, .cert-field, .cert-line-field');
+  fields.forEach(el => {
+    const raw = el.textContent || '';
+    const cleanText = raw.replace(/\u00a0/g, ' ').trim();
+
+    const id = el.id || '';
+    const isAge = id.includes('age') || el.classList.contains('field-age') || el.classList.contains('cert-age');
+
+    if (cleanText.length > 0) {
+      // KEEP EXISTING WORKING CODE UNCHANGED:
+      el.textContent = cleanText;
+      el.removeAttribute('style');
+      el.style.setProperty('display', 'inline', 'important');
+      el.style.setProperty('border-bottom', '1.5px solid #111827', 'important');
+      el.style.setProperty('font-weight', '700', 'important');
+      el.style.setProperty('color', '#111827', 'important');
+      el.style.setProperty('padding', '0 2px', 'important');
+      el.style.setProperty('text-decoration', 'none', 'important');
+    } else {
+      // TARGETED EMPTY ADJUSTMENT:
+      // Drop the empty inline-block down by setting vertical-align: -2px
+      el.textContent = '';
+      el.removeAttribute('style');
+      el.style.setProperty('display', 'inline-block', 'important');
+      el.style.setProperty('border-bottom', '1.5px solid #111827', 'important');
+      el.style.setProperty('vertical-align', '-2px', 'important'); /* Drops the line flush with regular letters */
+      el.style.setProperty('line-height', '1', 'important');
+      el.style.setProperty('height', '1em', 'important');
+      el.style.setProperty('box-sizing', 'border-box', 'important');
+      el.style.setProperty('min-width', isAge ? '35px' : '140px', 'important');
+    }
+  });
+}
+
+/**
  * Cleans up and ensures all certificate fillable line fields maintain clean formatting.
  * Replaces any remaining literal underscore placeholders with empty clean strings
  * so the CSS :empty::after pseudo-element creates a neat uniform line.
  */
 function formatCertificateLines(container = document) {
-  const fields = container.querySelectorAll('.cert-line-field');
-  fields.forEach(field => {
-    const text = field.textContent.trim();
-    if (/^_+$/.test(text)) {
-      field.textContent = '';
-    }
-  });
+  enforceCenteredFields(container);
 }
 
 // ── Global Reactive Event Listeners for Signatory Updates ──
 window.addEventListener('barangayConfigUpdated', (e) => {
   if (e.detail) {
     bindCertificateCaptainName(e.detail);
+    enforceCenteredFields();
   }
 });
+
+if (typeof window !== 'undefined') {
+  window.enforceCenteredFields = enforceCenteredFields;
+  window.formatCertificateLines = formatCertificateLines;
+  window.addEventListener('beforeprint', () => {
+    enforceCenteredFields('printableCertificate');
+  });
+}
 
 // ── Automatic Initialization on Document Ready ──
 if (typeof document !== 'undefined') {
@@ -299,10 +348,12 @@ if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
       formatCertificateLines();
       bindCertificateCaptainName();
+      enforceCenteredFields();
     });
   } else {
     formatCertificateLines();
     bindCertificateCaptainName();
+    enforceCenteredFields();
   }
 }
 
@@ -312,6 +363,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getCaptainName,
     bindCertificateCaptainName,
     formatCertificateLines,
+    enforceCenteredFields,
     onNonResidencyResidentSelected,
     validateNonResidencySubmission,
   };
