@@ -147,7 +147,7 @@ def ensure_columns(db):
         except Exception as repair_err:
             print(f"  [migration] is_blotter repair notice: {repair_err}")
 
-        # Standardize incident statuses to the 3 permitted lifecycle statuses (Under Investigation, Referred, Elevated to Blotter)
+        # Standardize incident statuses to the permitted lifecycle statuses (Under Investigation, Referred, Elevated to Blotter, Resolved)
         try:
             with db.engine.begin() as conn:
                 conn.execute(text("""
@@ -162,8 +162,8 @@ def ensure_columns(db):
                 """))
                 conn.execute(text("""
                     UPDATE incidents
-                    SET status = 'Referred'
-                    WHERE status IN ('Resolved', 'Closed', 'RESOLVED', 'CLOSED');
+                    SET status = 'Resolved'
+                    WHERE status IN ('Resolved', 'Closed', 'RESOLVED', 'CLOSED', 'Settled', 'SETTLED');
                 """))
         except Exception as status_err:
             print(f"  [migration] incident status standardization notice: {status_err}")

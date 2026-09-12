@@ -190,7 +190,9 @@ def elevate_incident_endpoint(incident_id):
         inc = Incident.query.get(incident_id)
         if not inc:
             return json_error("Incident not found.", 404)
-        if inc.is_blotter:
+        if inc.status == "Referred":
+            return json_error("Incidents marked as 'Referred' cannot be elevated to a barangay blotter record.", 422)
+        if inc.is_blotter or inc.status in ("Elevated to Blotter", "ELEVATED"):
             return json_error("Incident is already elevated to Blotter.", 400)
 
         d = request.get_json(silent=True) or {}
@@ -997,17 +999,19 @@ def _incidents():
                 if g_age is not None and g_age < 18:
                     return json_error("Guardian must be an adult (18 years or older).", 422)
 
-        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter"}
+        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter", "Resolved"}
         status_input = (d.get("status") or "Under Investigation").strip()
         if status_input not in ALLOWED_INCIDENT_STATUSES:
             if status_input in ("Pending", "Open", "INVESTIGATING", "Pending Investigation"):
                 status_input = "Under Investigation"
             elif status_input in ("Elevated", "Elevated to Blotter Records", "ELEVATED"):
                 status_input = "Elevated to Blotter"
-            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED"):
+            elif status_input in ("Referred", "REFERRED"):
                 status_input = "Referred"
+            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED", "Settled", "SETTLED"):
+                status_input = "Resolved"
             else:
-                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter.", 400)
+                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter, Resolved.", 400)
 
         incident = Incident(
             report_no=report_no, incident_date=idate, time_reported=time_reported, hour=hour,
@@ -1066,6 +1070,9 @@ def _incidents():
             username = session.get("username", "System")
             _log_cascade_audit(username, "RESTORE", "incidents", "Incident", incident.report_no, incidents, blotters, settlements)
             return jsonify({"ok": True, "restored": True})
+
+        if incident.status == "Referred":
+            return json_error("Referred incidents are final and cannot be modified.", 403)
 
         if incident.is_blotter or incident.status in ("Elevated to Blotter", "ELEVATED"):
             return json_error(f"Record is an official Blotter case ({incident.blotter_docket_no or 'Elevated'}). Edits must be made in Blotter Records.", 403)
@@ -1161,17 +1168,19 @@ def _incidents():
         incident.guardian_address = guardian_address
         incident.involved_parties = involved_parties
         incident.officer = d.get("officer", "")
-        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter"}
+        ALLOWED_INCIDENT_STATUSES = {"Under Investigation", "Referred", "Elevated to Blotter", "Resolved"}
         status_input = (d.get("status") or incident.status or "Under Investigation").strip()
         if status_input not in ALLOWED_INCIDENT_STATUSES:
             if status_input in ("Pending", "Open", "INVESTIGATING", "Pending Investigation"):
                 status_input = "Under Investigation"
             elif status_input in ("Elevated", "Elevated to Blotter Records", "ELEVATED"):
                 status_input = "Elevated to Blotter"
-            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED"):
+            elif status_input in ("Referred", "REFERRED"):
                 status_input = "Referred"
+            elif status_input in ("Resolved", "Closed", "RESOLVED", "CLOSED", "Settled", "SETTLED"):
+                status_input = "Resolved"
             else:
-                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter.", 400)
+                return json_error("Invalid status. Allowed statuses are: Under Investigation, Referred, Elevated to Blotter, Resolved.", 400)
 
         incident.priority = d.get("priority") or "Medium"
         incident.status = status_input
@@ -1392,6 +1401,10 @@ def _blotter():
         if source_incident_id:
             inc = Incident.query.get(source_incident_id)
             if inc:
+                if inc.status == "Referred":
+                    return json_error("Incidents marked as 'Referred' cannot be elevated to a barangay blotter record.", 422)
+                if inc.is_blotter or inc.status in ("Elevated to Blotter", "ELEVATED"):
+                    return json_error("Incident is already elevated to Blotter.", 400)
                 inc.is_blotter = True
                 inc.blotter_docket_no = docket_no
                 inc.status = "Elevated to Blotter"

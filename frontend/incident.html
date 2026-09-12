@@ -224,6 +224,7 @@
           <option value="Under Investigation">Under Investigation</option>
           <option value="Referred">Referred</option>
           <option value="Elevated to Blotter">Elevated to Blotter</option>
+          <option value="Resolved">Resolved</option>
         </select>
       </div>
 
@@ -513,6 +514,7 @@
           <option value="Under Investigation" selected>Under Investigation</option>
           <option value="Referred">Referred</option>
           <option value="Elevated to Blotter">Elevated to Blotter</option>
+          <option value="Resolved">Resolved</option>
         </select>
         <div id="if_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
           🔒 Status is driven by Settlement Monitor (<span id="if_status_docket"></span>)
@@ -622,9 +624,10 @@
   function normalizeIncidentStatus(s) {
     if (!s) return 'Under Investigation';
     if (s === 'Pending' || s === 'Open') return 'Under Investigation';
-    if (s === 'Elevated' || s === 'Elevated to Blotter Records') return 'Elevated to Blotter';
-    if (s === 'Resolved' || s === 'Closed') return 'Referred';
-    if (['Under Investigation', 'Referred', 'Elevated to Blotter'].includes(s)) return s;
+    if (s === 'Elevated' || s === 'Elevated to Blotter Records' || s === 'ELEVATED') return 'Elevated to Blotter';
+    if (s === 'Referred' || s === 'REFERRED') return 'Referred';
+    if (s === 'Resolved' || s === 'Closed' || s === 'RESOLVED' || s === 'CLOSED' || s === 'Settled' || s === 'SETTLED') return 'Resolved';
+    if (['Under Investigation', 'Referred', 'Elevated to Blotter', 'Resolved'].includes(s)) return s;
     return 'Under Investigation';
   }
 
@@ -721,6 +724,7 @@
     if (s==='Under Investigation') return 'status-investigating';
     if (s==='Elevated to Blotter') return 'status-elevated';
     if (s==='Referred') return 'status-referred';
+    if (s==='Resolved') return 'status-resolved';
     return 'status-investigating';
   }
 
@@ -831,6 +835,15 @@
               ` : (r.is_blotter || r.status === 'Elevated to Blotter') ? `
               <!-- Locked Edit Action (Elevated) -->
               <button onclick="bcAlert('This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.', { title: 'Incident Locked', okLabel: 'Understood' })" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center justify-center opacity-40 cursor-not-allowed" title="Elevated to Blotter — edits must be made in Blotter Records">
+                ${iconSvg('lock', 16)}
+              </button>
+              <!-- 3. Archive Action -->
+              <button onclick="archiveIncident(${r.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="archive_records" title="Archive Incident">
+                ${iconSvg('archive', 16)}
+              </button>
+              ` : (r.status === 'Referred') ? `
+              <!-- Locked Edit Action (Referred) -->
+              <button onclick="bcAlert('Referred incidents are final and cannot be modified or elevated to Blotter.', { title: 'Incident Referred', okLabel: 'Understood' })" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center justify-center opacity-30 cursor-not-allowed" title="Referred incidents cannot be edited.">
                 ${iconSvg('lock', 16)}
               </button>
               <!-- 3. Archive Action -->
@@ -1898,7 +1911,7 @@
     }
   }
 
-  function setIncidentFormLocked(isLocked, docketNo = '') {
+  function setIncidentFormLocked(isLocked, docketNo = '', lockType = 'elevated') {
     const banner = document.getElementById('if_elevatedLockBanner');
     const bannerText = document.getElementById('if_elevatedLockBannerText');
     const btnElevate = document.getElementById('btnElevateBlotter');
@@ -1909,7 +1922,9 @@
       'if_dateReported', 'if_timeReported', 'if_zone', 'if_location',
       'if_category', 'if_priority', 'if_description', 'if_reporter',
       'if_reporterSearch', 'if_reporterFreeText', 'if_is_non_resident',
-      'if_reporterAddressManual', 'if_officer', 'if_status'
+      'if_reporterAddressManual', 'if_officer', 'if_status',
+      'if_guardianSearch', 'if_guardianRole', 'if_guardianAddress',
+      'if_complainantSearch', 'if_involvedParties'
     ];
 
     inputs.forEach(id => {
@@ -1926,16 +1941,28 @@
     if (isLocked) {
       if (banner) {
         banner.classList.remove('hidden');
-        if (bannerText) bannerText.textContent = `This incident has been elevated to an official Blotter Record (${docketNo || 'BLT Case'}). Status is driven by Settlement Monitor.`;
+        if (lockType === 'referred') {
+          if (bannerText) bannerText.textContent = `This incident has been marked as Referred (external agency). Details are final and locked from further editing.`;
+        } else {
+          if (bannerText) bannerText.textContent = `This incident has been elevated to an official Blotter Record (${docketNo || 'BLT Case'}). Status is driven by Settlement Monitor.`;
+        }
       }
       const noteEl = document.getElementById('if_status_note');
       const docketSpan = document.getElementById('if_status_docket');
-      if (noteEl) noteEl.classList.remove('hidden');
-      if (docketSpan) docketSpan.textContent = docketNo || 'Blotter Case';
+      if (lockType === 'elevated') {
+        if (noteEl) noteEl.classList.remove('hidden');
+        if (docketSpan) docketSpan.textContent = docketNo || 'Blotter Case';
+      } else {
+        if (noteEl) noteEl.classList.add('hidden');
+      }
       if (btnElevate) btnElevate.classList.add('hidden');
       if (btnElevated) {
-        btnElevated.classList.remove('hidden');
-        btnElevated.title = `Already elevated to Blotter (${docketNo || 'BLT Case'}). Cannot be reverted.`;
+        if (lockType === 'referred') {
+          btnElevated.classList.add('hidden');
+        } else {
+          btnElevated.classList.remove('hidden');
+          btnElevated.title = `Already elevated to Blotter (${docketNo || 'BLT Case'}). Cannot be reverted.`;
+        }
       }
       if (btnSave) btnSave.classList.add('hidden');
     } else {
@@ -2020,10 +2047,21 @@
     if (!r) return;
 
     const isElevated = Boolean(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED');
+    const isReferred = Boolean(r.status === 'Referred');
+
     if (isElevated) {
       await bcAlert(
         `This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.`,
         { title: 'Incident Locked', okLabel: 'View Details' }
+      );
+      viewIncident(id);
+      return;
+    }
+
+    if (isReferred) {
+      await bcAlert(
+        `Referred incidents are final and cannot be modified or elevated to Blotter.`,
+        { title: 'Incident Referred', okLabel: 'View Details' }
       );
       viewIncident(id);
       return;
@@ -2118,6 +2156,10 @@
     if (!incEditId) return;
     const inc = incidentData.find(x => x.id === incEditId);
     if (!inc) return;
+    if (inc.status === 'Referred') {
+      bcAlert('Referred incidents cannot be elevated to blotter.', { title: 'Action Not Allowed', okLabel: 'Understood' });
+      return;
+    }
     pendingElevateIncident = inc;
     const targetEl = document.getElementById('elevateTargetReportNo');
     if (targetEl) targetEl.textContent = inc.reportNo || 'this incident';
@@ -2238,7 +2280,7 @@
       lat: document.getElementById('if_lat').value || null,
       lng: document.getElementById('if_lng').value || null,
     };
-    const ALLOWED_INCIDENT_STATUSES = ['Under Investigation', 'Referred', 'Elevated to Blotter'];
+    const ALLOWED_INCIDENT_STATUSES = ['Under Investigation', 'Referred', 'Elevated to Blotter', 'Resolved'];
     if (!ALLOWED_INCIDENT_STATUSES.includes(vals.status)) {
       vals.status = normalizeIncidentStatus(vals.status);
     }
@@ -2453,16 +2495,23 @@
           <span class="text-base flex-shrink-0">🔒</span>
           <span>This incident is locked because it has been elevated to Blotter Records (${esc(r.blotter_docket_no || 'Official Case')}). Please edit this case directly in the Blotter Records module.</span>
         </div>`
+      : (r.status === 'Referred')
+      ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">
+          <span class="text-base flex-shrink-0">🔒</span>
+          <span>This incident has been marked as Referred (external agency). Details are final and locked from further editing.</span>
+        </div>`
       : '';
 
     // Status badge
     let statusPill = '';
     if (isElevated) {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">ELEVATED TO BLOTTER</span>`;
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">ELEVATED TO BLOTTER</span>`;
     } else if (r.status === 'Resolved' || r.status === 'Settled' || r.status === 'Closed') {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(r.status)}</span>`;
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">RESOLVED</span>`;
+    } else if (r.status === 'Referred') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">REFERRED</span>`;
     } else {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${esc(r.status || 'Under Investigation')}</span>`;
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">${esc(r.status || 'Under Investigation')}</span>`;
     }
 
     // Incident type / Category badge
