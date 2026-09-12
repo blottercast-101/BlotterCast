@@ -261,7 +261,7 @@
 
 <!-- Add/Edit Modal -->
 <div class="modal-overlay" id="blotterModal">
-  <div class="modal-box w-full max-w-2xl mx-auto bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-[#c2dfd2]" style="max-width: 640px; width: 100%;">
+  <div class="modal-box w-full max-w-3xl mx-auto bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-[#c2dfd2]" style="max-width: 760px; width: 100%;">
     <div class="flex items-center justify-between mb-5">
       <h2 class="font-serif text-xl sm:text-2xl font-semibold text-[#1e3a2b]" id="modalTitle">New Blotter Entry</h2>
       <button type="button" onclick="closeModal('blotterModal')" class="text-gray-400 hover:text-[#1e3a2b] hover:bg-[#edf5f0] p-1.5 rounded-lg transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
@@ -285,12 +285,12 @@
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="min-w-0 relative">
-          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-1">
-            <label class="block text-xs font-semibold text-[#1e3a2b] truncate">
+          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-2">
+            <label class="block text-xs font-semibold text-[#1e3a2b] whitespace-nowrap">
               Name of Complainant <span class="text-rose-500">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0" id="f_complainantOutsideLabel">
-              <input type="checkbox" id="f_complainantOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleComplainantOutside()"/> <span class="text-[11px] sm:text-xs whitespace-nowrap">Not a resident / outside party</span>
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0 whitespace-nowrap" id="f_complainantOutsideLabel">
+              <input type="checkbox" id="f_complainantOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleComplainantOutside()"/> <span class="text-[11px] sm:text-xs">Not a resident / outside party</span>
             </label>
           </div>
           <div class="relative w-full">
@@ -329,12 +329,12 @@
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="min-w-0 relative">
-          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-1">
-            <label class="block text-xs font-semibold text-[#1e3a2b] truncate">
+          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-2">
+            <label class="block text-xs font-semibold text-[#1e3a2b] whitespace-nowrap">
               Name of Respondent <span class="text-rose-500">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0" id="f_respondentOutsideLabel">
-              <input type="checkbox" id="f_respondentOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleRespondentOutside()"/> <span class="text-[11px] sm:text-xs whitespace-nowrap">Not a resident / outside party</span>
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0 whitespace-nowrap" id="f_respondentOutsideLabel">
+              <input type="checkbox" id="f_respondentOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleRespondentOutside()"/> <span class="text-[11px] sm:text-xs">Not a resident / outside party</span>
             </label>
           </div>
           <div class="relative w-full">
@@ -369,16 +369,11 @@
         </div>
         <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Type</label>
-          <div class="relative w-full">
-            <select id="f_type" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 pr-8 text-sm text-[#1b3b2b] appearance-none focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] cursor-pointer" style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;" required>
-              <option value="" disabled selected hidden>-Select-</option>
-              <option value="CRIM">Criminal</option>
-              <option value="CIVIL">Civil</option>
-            </select>
-            <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#1b4d3e]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
-          </div>
+          <select id="f_type" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] cursor-pointer appearance-none" required>
+            <option value="" disabled selected hidden>-Select-</option>
+            <option value="CRIM">Criminal</option>
+            <option value="CIVIL">Civil</option>
+          </select>
         </div>
         <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Status</label>
