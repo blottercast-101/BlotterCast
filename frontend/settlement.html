@@ -261,10 +261,10 @@
       <div id="sf_blotter_picker_wrap" class="relative z-30">
         <label class="form-label">Link to Blotter Case <span class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal">(Search docket no. or complainant)</span></label>
         <div class="relative">
-          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off" oninput="clearFieldSpecificError('sf_blotterId')"/>
+          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off" maxlength="100" oninput="clearFieldSpecificError('sf_blotterId'); updateSettlementCharCounters();"/>
           <input type="hidden" id="sf_blotterId"/>
-          <button type="button" onclick="clearBlotterCasePicker()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-forest-400 hover:text-forest-700 bg-forest-50 hover:bg-forest-100 px-2 py-0.5 rounded border border-forest-200">Clear</button>
         </div>
+        <span id="linkBlotterCount" class="text-xs text-[#52796f] mt-1 text-right block">0/100</span>
         <p id="err_sf_blotterId" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         <div id="sf_blotterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
       </div>
@@ -542,6 +542,7 @@
     if (idEl) idEl.value = String(id);
     document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
     onBlotterPicked();
+    updateSettlementCharCounters();
   }
 
   function clearBlotterCasePicker() {
@@ -551,6 +552,7 @@
     if (idEl) idEl.value = '';
     document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
     onBlotterPicked();
+    updateSettlementCharCounters();
   }
 
   function onBlotterPicked() {
@@ -708,6 +710,7 @@
     clearBlotterCasePicker();
     document.getElementById('sf_caseNo').value = 'Loading…';
     document.getElementById('sf_officer').value = '';
+    updateSettlementCharCounters();
     openModal('settlementModal');
     try {
       const { seqNo } = await BCApi.peekSeq('settlements');
@@ -946,6 +949,27 @@
     openModal('stlViewModal');
   }
 
+  function updateSettlementCharCounters() {
+    const searchEl = document.getElementById('sf_blotterSearch');
+    const countEl = document.getElementById('linkBlotterCount');
+    if (searchEl && countEl) {
+      countEl.textContent = `${(searchEl.value || '').length}/100`;
+    }
+  }
+
+  function initSettlementCharCounters() {
+    const searchEl = document.getElementById('sf_blotterSearch');
+    if (searchEl && !searchEl.dataset.charCounterBound) {
+      searchEl.dataset.charCounterBound = '1';
+      searchEl.addEventListener('input', updateSettlementCharCounters);
+      searchEl.addEventListener('change', updateSettlementCharCounters);
+      searchEl.addEventListener('keyup', updateSettlementCharCounters);
+    }
+    updateSettlementCharCounters();
+  }
+
+  window.updateSettlementCharCounters = updateSettlementCharCounters;
+  window.initSettlementCharCounters = initSettlementCharCounters;
   window.loadSettlements = loadSettlements;
   window.archiveSettlement = archiveSettlement;
   window.restoreSettlement = restoreSettlement;
@@ -969,6 +993,7 @@
           if (typeof renderIcons === 'function') renderIcons();
         }
       }
+      try { initSettlementCharCounters(); } catch (_) {}
       try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
     } catch (initErr) {
       console.error('initSettlement error:', initErr);
