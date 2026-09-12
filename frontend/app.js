@@ -3065,6 +3065,8 @@ class BcBatchManager {
     showToast(`Rescheduled hearing for ${updatedCount} case(s).`);
     this.clearSelection();
     await this.opts.onRefresh();
+  }
+
   async executeBatchArchive() {
     const ids = Array.from(this.selectedIds);
     if (!ids.length) return;
