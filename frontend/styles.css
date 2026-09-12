@@ -709,31 +709,25 @@ input.pw-input { padding-right: 38px; }
 .bc-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; }
 
 /* ---------------- Forms ---------------- */
-/* Global Placeholder Color */
+/* Universal Placeholder Color */
 ::placeholder,
 input::placeholder,
 textarea::placeholder,
-select:invalid,
-select:has(option[value=""]:checked),
-select:has(option:disabled:checked),
-select.placeholder-selected,
-select[data-placeholder-active="true"],
 .search-input::placeholder,
 .filter-input::placeholder,
 .form-input::placeholder,
 .wizard-input::placeholder {
   color: #52796f !important;
-  opacity: 0.75 !important;
-  font-weight: 400 !important;
+  opacity: 1 !important;
+  font-weight: 500;
 }
 
 /* Active Typing & Filled Text Color */
 input,
 textarea,
-select,
-.form-input,
-.filter-input,
 .search-input,
+.filter-input,
+.form-input,
 .wizard-input,
 input[type="text"],
 input[type="search"],
@@ -742,23 +736,40 @@ input[type="password"],
 input[type="tel"],
 input[type="number"],
 input[type="date"],
-input[type="time"] {
-  color: #1e3a2b !important;
-  font-family: 'DM Sans', sans-serif;
-}
-
-/* Ensure typed text remains deep forest green upon focus/active typing */
+input[type="time"],
 input:focus,
 textarea:focus,
-select:focus,
 input:active,
 textarea:active,
-select:active,
 .form-input:focus,
 .filter-input:focus,
 .search-input:focus,
 .wizard-input:focus {
-  color: #1e3a2b !important;
+  color: #52796f !important;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Dropdown Select Display & Option Colors */
+select,
+select:focus,
+select option,
+select:not([value=""]),
+select:invalid,
+.bc-select-trigger,
+.bc-select-value,
+.bc-select-value.bc-select-placeholder,
+.bc-select-option {
+  color: #52796f !important;
+  font-weight: 500;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #52796f !important;
+}
+
+select::-ms-expand {
+  display: none;
 }
 
 .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: #1e3a2b; margin-bottom: 4px; }
@@ -768,27 +779,14 @@ select:active,
   border: 1.5px solid var(--forest-100);
   border-radius: 10px;
   font-size: 0.875rem;
-  color: #1e3a2b !important;
+  color: #52796f !important;
   background: var(--forest-50);
   transition: border-color 0.15s, background 0.15s;
   font-family: 'DM Sans', sans-serif;
 }
-.form-input:focus { outline: none; border-color: var(--forest-500); background: #fff; color: #1e3a2b !important; }
+.form-input:focus { outline: none; border-color: var(--forest-500); background: #fff; color: #52796f !important; }
 .form-input:focus-visible { outline: 2px solid var(--forest-400); outline-offset: 1px; }
-select.form-input { cursor: pointer; color: #1e3a2b !important; }
-
-select option {
-  color: #1e3a2b !important;
-  background-color: #ffffff;
-}
-
-select option:disabled,
-select option[value=""][disabled],
-select option[value=""] {
-  color: #52796f !important;
-  opacity: 0.75 !important;
-  font-weight: 400 !important;
-}
+select.form-input { cursor: pointer; color: #52796f !important; }
 
 /* ---------------- Buttons ---------------- */
 .btn-primary {
@@ -994,7 +992,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: 0.75rem;
   font-size: 0.84rem;
   background: #ffffff;
-  color: #1e3a2b !important;
+  color: #52796f !important;
+  font-weight: 500;
   font-family: 'DM Sans', sans-serif;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -1003,15 +1002,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .filter-input:active {
   outline: none;
   border-color: #1e3a2b;
-  color: #1e3a2b !important;
+  color: #52796f !important;
   box-shadow: 0 0 0 3px rgba(30, 58, 43, 0.12);
 }
 .filter-bar input[type="text"].filter-input::placeholder,
 .filter-input::placeholder,
 .search-input::placeholder {
   color: #52796f !important;
-  opacity: 0.75 !important;
-  font-weight: 400 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
 }
 .filter-bar .text-forest-400 {
   color: #2d6a4f !important;
@@ -1021,7 +1020,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid #c6e6d1;
   background: #ffffff;
   padding: 8.5px 14px;
-  color: #1e3a2b !important;
+  color: #52796f !important;
+  font-weight: 500;
   font-size: 0.84rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
@@ -1031,7 +1031,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   box-shadow: 0 0 0 3px rgba(30, 58, 43, 0.12) !important;
 }
 .filter-bar .bc-select-chevron {
-  color: #1e3a2b !important;
+  color: #52796f !important;
 }
 
 /* ---------------- Toggle switches (Settings) ---------------- */
@@ -2290,7 +2290,21 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
    .value all keep working exactly as before. A themed trigger button +
    floating option list sit on top of it. See custom-controls.js. */
 .bc-select-wrap { position: relative; }
-.bc-select-native { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.bc-select-native {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+  border: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
 .bc-select-trigger {
   display: flex;
   align-items: center;
@@ -2302,15 +2316,16 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
   -webkit-appearance: none;
   appearance: none;
   font: inherit;
-  color: #1e3a2b !important;
+  color: #52796f !important;
+  font-weight: 500;
 }
 .bc-select-trigger .bc-select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
 .bc-select-value.bc-select-placeholder {
   color: #52796f !important;
-  opacity: 0.75 !important;
-  font-weight: 400 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
 }
-.bc-select-chevron { flex-shrink: 0; color: var(--forest-500); transition: transform 0.15s ease; }
+.bc-select-chevron { flex-shrink: 0; color: #52796f !important; transition: transform 0.15s ease; }
 .bc-select-trigger-open .bc-select-chevron { transform: rotate(180deg); }
 .bc-select-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
 .bc-select-trigger.bc-select-disabled { opacity: 0.6; cursor: not-allowed; }
@@ -2339,12 +2354,13 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #1e3a2b !important;
+  color: #52796f !important;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.1s ease;
 }
-.bc-select-option:hover { background: var(--forest-50); }
-.bc-select-option-active { background: var(--forest-100); color: #163c29 !important; font-weight: 600; }
+.bc-select-option:hover { background: var(--forest-50); color: #52796f !important; }
+.bc-select-option-active { background: var(--forest-100); color: #52796f !important; font-weight: 600; }
 .bc-select-option-disabled { color: #52796f !important; opacity: 0.75 !important; cursor: default; }
 .bc-select-option-disabled:hover { background: transparent; }
 
