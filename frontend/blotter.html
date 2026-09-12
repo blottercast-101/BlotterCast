@@ -1047,14 +1047,11 @@
     }
   }
 
-  // Official records are never permanently deleted — this moves the entry
-  // to the archive. It's still in the database for recordkeeping/audit and
-  // can be restored from the "View Archived" list at any time.
   async function archiveRecord(id) {
-    if (!(await bcConfirm('Archive this blotter entry? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Blotter Entry', okLabel: 'Archive', danger: true }))) return;
+    if (!(await bcConfirm('Archive this blotter entry? Any linked Incident Report and Settlement Case will also be automatically archived. You can restore them later from "View Archived".', { title: 'Archive Blotter Entry', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('blotter', id);
-      showToast('Entry archived.');
+      showToast('Blotter entry and linked records archived.');
       await loadBlotter();
     } catch (err) {
       showToast(err.message, 'error');
@@ -1062,10 +1059,10 @@
   }
 
   async function restoreRecord(id) {
-    if (!(await bcConfirm('Restore this blotter entry to the active list?', { title: 'Restore Blotter Entry', okLabel: 'Restore' }))) return;
+    if (!(await bcConfirm('Restore this blotter entry to the active list? Any linked Incident Report and Settlement Case will also be automatically restored.', { title: 'Restore Blotter Entry', okLabel: 'Restore' }))) return;
     try {
       await BCApi.restore('blotter', id);
-      showToast('Entry restored.');
+      showToast('Blotter entry and linked records restored.');
       await loadBlotter();
     } catch (err) {
       showToast(err.message, 'error');
@@ -1075,13 +1072,13 @@
   async function permanentDeleteRecord(id, docketNo) {
     const label = docketNo ? `Blotter Record #${docketNo}` : 'this blotter record';
     const confirmed = await bcConfirmPermanentDelete(
-      `Are you sure you want to permanently delete ${label}? This action is irreversible and will purge the blotter record and linked hearings from the database.`,
+      `Are you sure you want to permanently delete ${label}? This action is IRREVERSIBLE and will also permanently delete the underlying Incident Report, linked Settlement Cases, and all associated notifications from the database.`,
       { title: 'Permanently Delete Blotter Record' }
     );
     if (!confirmed) return;
     try {
       await BCApi.permanentDelete('blotter', id);
-      showToast(`${label} permanently deleted.`);
+      showToast(`${label} and associated records permanently deleted.`);
       await loadBlotter();
     } catch (err) {
       showToast(err.message, 'error');

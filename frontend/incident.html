@@ -2371,10 +2371,10 @@
   }
 
   async function archiveIncident(id) {
-    if (!(await bcConfirm('Archive this incident report? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Incident Report', okLabel: 'Archive', danger: true }))) return;
+    if (!(await bcConfirm('Archive this incident report? Any linked Blotter Record and Settlement Case will also be automatically archived. You can restore them later from "View Archived".', { title: 'Archive Incident Report', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('incidents', id);
-      showToast('Incident report archived.');
+      showToast('Incident report and linked records archived.');
       await loadIncidents();
     } catch (err) {
       showToast(err.message, 'error');
@@ -2382,10 +2382,10 @@
   }
 
   async function restoreIncident(id) {
-    if (!(await bcConfirm('Restore this incident report to the active list?', { title: 'Restore Incident Report', okLabel: 'Restore' }))) return;
+    if (!(await bcConfirm('Restore this incident report to the active list? Any linked Blotter Record and Settlement Case will also be automatically restored.', { title: 'Restore Incident Report', okLabel: 'Restore' }))) return;
     try {
       await BCApi.restore('incidents', id);
-      showToast('Incident report restored.');
+      showToast('Incident report and linked records restored.');
       await loadIncidents();
     } catch (err) {
       showToast(err.message, 'error');
@@ -2395,13 +2395,13 @@
   async function permanentDeleteIncident(id, reportNo) {
     const label = reportNo ? `Incident Report #${reportNo}` : 'this incident report';
     const confirmed = await bcConfirmPermanentDelete(
-      `Are you sure you want to permanently delete ${label}? This action is irreversible and will purge the record from the database.`,
+      `Are you sure you want to permanently delete ${label}? This action is IRREVERSIBLE and will also permanently purge all associated Blotter Records, Settlement Cases, and notifications from the database.`,
       { title: 'Permanently Delete Incident Report' }
     );
     if (!confirmed) return;
     try {
       await BCApi.permanentDelete('incidents', id);
-      showToast(`${label} permanently deleted.`);
+      showToast(`${label} and associated records permanently deleted.`);
       await loadIncidents();
     } catch (err) {
       showToast(err.message, 'error');

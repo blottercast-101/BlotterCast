@@ -847,10 +847,10 @@
   }
 
   async function archiveSettlement(id) {
-    if (!(await bcConfirm('Archive this settlement record? It will be removed from the active list but kept on record — you can restore it later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
+    if (!(await bcConfirm('Archive this settlement record? The associated Blotter Record and underlying Incident Report will also be automatically archived. You can restore them later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
     try {
       await BCApi.remove('settlements', id);
-      showToast('Settlement record archived.');
+      showToast('Settlement record and linked records archived.');
       await loadSettlements();
     } catch (err) {
       showToast(err.message, 'error');
@@ -858,10 +858,10 @@
   }
 
   async function restoreSettlement(id) {
-    if (!(await bcConfirm('Restore this settlement record to the active list?', { title: 'Restore Settlement Record', okLabel: 'Restore' }))) return;
+    if (!(await bcConfirm('Restore this settlement record to the active list? The associated Blotter Record and underlying Incident Report will also be automatically restored.', { title: 'Restore Settlement Record', okLabel: 'Restore' }))) return;
     try {
       await BCApi.restore('settlements', id);
-      showToast('Settlement record restored to active list.');
+      showToast('Settlement record and linked records restored to active list.');
       await loadSettlements();
     } catch (err) {
       showToast(err.message, 'error');
@@ -871,13 +871,13 @@
   async function permanentDeleteSettlement(id, caseNo) {
     const label = caseNo ? `Settlement Case #${caseNo}` : 'this settlement record';
     const confirmed = await bcConfirmPermanentDelete(
-      `Are you sure you want to permanently delete ${label}? This action is irreversible and will purge the settlement record from the database.`,
+      `Are you sure you want to permanently delete ${label}? This action is IRREVERSIBLE and will also permanently delete the associated Blotter Record, underlying Incident Report, and all related notifications from the database.`,
       { title: 'Permanently Delete Settlement Record' }
     );
     if (!confirmed) return;
     try {
       await BCApi.permanentDelete('settlements', id);
-      showToast(`${label} permanently deleted.`);
+      showToast(`${label} and associated records permanently deleted.`);
       await loadSettlements();
     } catch (err) {
       showToast(err.message, 'error');

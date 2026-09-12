@@ -3065,16 +3065,17 @@ class BcBatchManager {
     showToast(`Rescheduled hearing for ${updatedCount} case(s).`);
     this.clearSelection();
     await this.opts.onRefresh();
-  }
-
   async executeBatchArchive() {
     const ids = Array.from(this.selectedIds);
     if (!ids.length) return;
     const count = ids.length;
     const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+    const cascadeNote = ['incidents', 'blotter', 'settlements'].includes(this.opts.apiType)
+      ? ' Any connected Incident Reports, Blotter Records, and Settlement Cases will also be automatically archived.'
+      : '';
 
     const confirmed = await bcConfirm(
-      `Archive ${count} selected ${label}? They will be moved to the archive view and can be restored later.`,
+      `Archive ${count} selected ${label}? They will be moved to the archive view and can be restored later.${cascadeNote}`,
       { title: `Batch Archive ${this.opts.entityPlural.toUpperCase()}`, danger: true, okLabel: `Archive Selected (${count})` }
     );
     if (!confirmed) return;
@@ -3099,9 +3100,12 @@ class BcBatchManager {
     if (!ids.length) return;
     const count = ids.length;
     const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+    const cascadeNote = ['incidents', 'blotter', 'settlements'].includes(this.opts.apiType)
+      ? ' Any connected Incident Reports, Blotter Records, and Settlement Cases will also be automatically restored.'
+      : '';
 
     const confirmed = await bcConfirm(
-      `Restore ${count} selected ${label} back to the active list?`,
+      `Restore ${count} selected ${label} back to the active list?${cascadeNote}`,
       { title: `Batch Restore ${this.opts.entityPlural.toUpperCase()}`, okLabel: `Restore Selected (${count})` }
     );
     if (!confirmed) return;
@@ -3133,9 +3137,12 @@ class BcBatchManager {
     if (!ids.length) return;
     const count = ids.length;
     const label = count === 1 ? this.opts.entityName : this.opts.entityPlural;
+    const cascadeNote = ['incidents', 'blotter', 'settlements'].includes(this.opts.apiType)
+      ? ' All connected Incident Reports, Blotter Records, Settlement Cases, and notifications will also be permanently purged.'
+      : '';
 
     const confirmed = await bcConfirmPermanentDelete(
-      `Are you sure you want to permanently delete ${count} selected ${label}? This action is IRREVERSIBLE and will hard-delete matching data from the database.`,
+      `Are you sure you want to permanently delete ${count} selected ${label}? This action is IRREVERSIBLE and will hard-delete matching data from the database.${cascadeNote}`,
       { title: `Batch Permanent Delete (${count} ${label})` }
     );
     if (!confirmed) return;
