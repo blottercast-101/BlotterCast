@@ -319,3 +319,20 @@ def parse_time(value):
 
 def full_name_of(resident: CensusRecord) -> str:
     return f"{resident.last_name}, {resident.first_name} {resident.middle_name or ''}".strip()
+
+
+def get_initials(name: str) -> str:
+    """Generate avatar initials for a user's name:
+    - 1 word: first 2 letters uppercase (e.g. 'Admin' -> 'AD')
+    - 2+ words: first letter of first name + first letter of last name (e.g. 'Juan Cruz' -> 'JC', 'Maria Clara Santos' -> 'MS', 'Jose Protacio Rizal Mercado' -> 'JM')
+    - empty/none: '??'
+    """
+    if not name or not isinstance(name, str):
+        return "??"
+    words = [w for w in name.strip().split() if w]
+    if not words:
+        return "??"
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return f"{words[0][0].upper()}{words[-1][0].upper()}"
+

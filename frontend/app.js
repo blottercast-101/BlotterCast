@@ -401,7 +401,9 @@ function hydrateGlobalState() {
     if (role) el.textContent = role;
   });
 
-  const initials = typeof bcInitials === 'function' ? bcInitials(fullName) : ((fullName || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U');
+  const initials = typeof getInitials === 'function'
+    ? getInitials(fullName)
+    : (typeof bcInitials === 'function' ? bcInitials(fullName) : '??');
 
   document.querySelectorAll('[data-user-avatar]').forEach(el => {
     if (avatarUrl) {
@@ -1282,15 +1284,33 @@ function bcFirstName(fullName) {
   return words[0] || 'User';
 }
 
-// Initials shown in the sidebar avatar circle, e.g. "Juan Dela Cruz" -> "JD"
-// (first letter of the first two words). Falls back to a single letter for
-// one-word names, and "?" if the name is somehow empty.
-function bcInitials(fullName) {
-  const words = (fullName || '').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  if (words.length === 1) return words[0][0].toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
+// Initials shown in the avatar circles (e.g. "Juan Cruz" -> "JC", "Maria Clara Santos" -> "MS", "Admin" -> "AD")
+// Multi-word names (2, 3, 4+ words) consistently use the first letter of the FIRST name
+// and the first letter of the LAST name. Single-word names use the first 2 letters.
+function getInitials(name) {
+  if (!name || typeof name !== 'string') return '??';
+
+  // Clean extra spaces and split words
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '??';
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  // For 2, 3, 4, or more words:
+  // Always take the first letter of the FIRST name and the first letter of the LAST name
+  const firstInitial = words[0].charAt(0).toUpperCase();
+  const lastInitial = words[words.length - 1].charAt(0).toUpperCase();
+
+  return `${firstInitial}${lastInitial}`;
 }
+window.getInitials = getInitials;
+
+function bcInitials(fullName) {
+  return getInitials(fullName);
+}
+window.bcInitials = bcInitials;
 
 function bcBroadcastUserPresence(status = 'Active', userId = null) {
   let uid = userId;

@@ -229,8 +229,9 @@
               <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                 <span data-icon="idCard" data-icon-size="18"></span>
               </div>
-              <input type="text" id="wiz_name" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="Full name" data-no-numbers autocomplete="name" required />
+              <input type="text" id="wiz_name" maxlength="50" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="Full name" data-no-numbers autocomplete="name" required />
             </div>
+            <span id="userFullNameCount" class="text-xs text-[#52796f] mt-1 text-right block font-normal">0/50</span>
           </div>
 
           <!-- Top-Right: Username -->
@@ -240,8 +241,9 @@
               <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                 <span data-icon="user" data-icon-size="18"></span>
               </div>
-              <input type="text" id="wiz_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="username" autocomplete="username" required />
+              <input type="text" id="wiz_username" maxlength="30" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="username" autocomplete="username" required />
             </div>
+            <span id="userUsernameCount" class="text-xs text-[#52796f] mt-1 text-right block font-normal">0/30</span>
           </div>
 
           <!-- Bottom-Left: Email -->
@@ -251,8 +253,9 @@
               <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                 <span data-icon="mail" data-icon-size="18"></span>
               </div>
-              <input type="email" id="wiz_email" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="yourname@gmail.com" autocomplete="email" required />
+              <input type="email" id="wiz_email" maxlength="50" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="yourname@gmail.com" autocomplete="email" required />
             </div>
+            <span id="userEmailCount" class="text-xs text-[#52796f] mt-1 text-right block font-normal">0/50</span>
           </div>
 
           <!-- Bottom-Right: Contact No. -->
@@ -434,7 +437,7 @@
               <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                 <span data-icon="user" data-icon-size="18"></span>
               </div>
-              <input type="text" id="uf_name" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="Full name" data-no-numbers autocomplete="name" required />
+              <input type="text" id="uf_name" maxlength="50" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="Full name" data-no-numbers autocomplete="name" required />
             </div>
           </div>
 
@@ -445,7 +448,7 @@
               <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                 <span data-icon="mail" data-icon-size="18"></span>
               </div>
-              <input type="email" id="uf_email" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="yourname@gmail.com" autocomplete="email" required />
+              <input type="email" id="uf_email" maxlength="50" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-[#52796f]/70" placeholder="yourname@gmail.com" autocomplete="email" required />
             </div>
           </div>
 
@@ -759,7 +762,7 @@ function renderUsers() {
   usersPage = Math.min(Math.max(1, usersPage), totalPages);
   const start = (usersPage - 1) * USERS_ROWS;
   const pageRows = filtered.slice(start, start + USERS_ROWS);
-  const initials = n => (n || '').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const initials = n => (typeof getInitials === 'function' ? getInitials(n) : (typeof bcInitials === 'function' ? bcInitials(n) : ((n || '').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'U')));
   const tbody = document.getElementById('usersTableBody');
   if (pageRows.length === 0) {
     if (usersData.length === 0) {
@@ -1099,6 +1102,46 @@ function copyWizardTempPassword() {
   }
 }
 
+function updateUserCharCounters() {
+  const pairs = [
+    { inputId: 'wiz_name', counterId: 'userFullNameCount', max: 50 },
+    { inputId: 'wiz_username', counterId: 'userUsernameCount', max: 30 },
+    { inputId: 'wiz_email', counterId: 'userEmailCount', max: 50 }
+  ];
+
+  pairs.forEach(({ inputId, counterId, max }) => {
+    const input = document.getElementById(inputId);
+    const counter = document.getElementById(counterId);
+    if (input && counter) {
+      const len = (input.value || '').length;
+      counter.textContent = `${len}/${max}`;
+    }
+  });
+}
+
+function initUserCharCounters() {
+  const pairs = [
+    { inputId: 'wiz_name', counterId: 'userFullNameCount', max: 50 },
+    { inputId: 'wiz_username', counterId: 'userUsernameCount', max: 30 },
+    { inputId: 'wiz_email', counterId: 'userEmailCount', max: 50 }
+  ];
+
+  pairs.forEach(({ inputId }) => {
+    const input = document.getElementById(inputId);
+    if (input && !input.dataset.charCounterBound) {
+      input.dataset.charCounterBound = '1';
+      input.addEventListener('input', updateUserCharCounters);
+      input.addEventListener('change', updateUserCharCounters);
+      input.addEventListener('keyup', updateUserCharCounters);
+    }
+  });
+
+  updateUserCharCounters();
+}
+
+window.updateUserCharCounters = updateUserCharCounters;
+window.initUserCharCounters = initUserCharCounters;
+
 function openAddUser() {
   editUserId = null;
   const form = document.getElementById('addUserWizardForm');
@@ -1113,6 +1156,7 @@ function openAddUser() {
   const pwInput = document.getElementById('wiz_password');
   if (pwInput) pwInput.value = generateTempPasswordForRole('Desk Officer');
 
+  updateUserCharCounters();
   updateWizardStepperUI(1);
   openModal('addUserWizardModal');
   if (typeof renderIcons === 'function') {
@@ -1688,6 +1732,7 @@ window.initUsers = async function () {
     try {
       await Promise.all([loadUsers(), loadAuditLog()]);
       initPresenceSync();
+      try { initUserCharCounters(); } catch (_) {}
       // Restore section focus if hash exists
       const hash = (window.location.hash || '').replace(/^#/, '').toLowerCase();
       if (hash) {
@@ -1702,6 +1747,11 @@ window.initUsers = async function () {
     console.error('initUsers error:', initErr);
   }
 };
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { try { initUserCharCounters(); } catch (_) {} });
+} else {
+  try { initUserCharCounters(); } catch (_) {}
+}
 if (!window._bcSpaNavActive) { initUsers(); }
 
 </script>
