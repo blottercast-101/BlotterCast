@@ -709,29 +709,86 @@ input.pw-input { padding-right: 38px; }
 .bc-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; }
 
 /* ---------------- Forms ---------------- */
+/* Global Placeholder Color */
 ::placeholder,
 input::placeholder,
-textarea::placeholder {
+textarea::placeholder,
+select:invalid,
+select:has(option[value=""]:checked),
+select:has(option:disabled:checked),
+select.placeholder-selected,
+select[data-placeholder-active="true"],
+.search-input::placeholder,
+.filter-input::placeholder,
+.form-input::placeholder,
+.wizard-input::placeholder {
   color: #52796f !important;
-  opacity: 0.7 !important;
-  font-weight: 400;
+  opacity: 0.75 !important;
+  font-weight: 400 !important;
 }
 
-.form-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
+/* Active Typing & Filled Text Color */
+input,
+textarea,
+select,
+.form-input,
+.filter-input,
+.search-input,
+.wizard-input,
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="time"] {
+  color: #1e3a2b !important;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Ensure typed text remains deep forest green upon focus/active typing */
+input:focus,
+textarea:focus,
+select:focus,
+input:active,
+textarea:active,
+select:active,
+.form-input:focus,
+.filter-input:focus,
+.search-input:focus,
+.wizard-input:focus {
+  color: #1e3a2b !important;
+}
+
+.form-label { display: block; font-size: 0.8rem; font-weight: 600; color: #1e3a2b; margin-bottom: 4px; }
 .form-input {
   width: 100%;
   padding: 9px 12px;
   border: 1.5px solid var(--forest-100);
   border-radius: 10px;
   font-size: 0.875rem;
-  color: #111827;
+  color: #1e3a2b !important;
   background: var(--forest-50);
   transition: border-color 0.15s, background 0.15s;
   font-family: 'DM Sans', sans-serif;
 }
-.form-input:focus { outline: none; border-color: var(--forest-500); background: #fff; }
+.form-input:focus { outline: none; border-color: var(--forest-500); background: #fff; color: #1e3a2b !important; }
 .form-input:focus-visible { outline: 2px solid var(--forest-400); outline-offset: 1px; }
-select.form-input { cursor: pointer; }
+select.form-input { cursor: pointer; color: #1e3a2b !important; }
+
+select option {
+  color: #1e3a2b !important;
+  background-color: #ffffff;
+}
+
+select option:disabled,
+select option[value=""][disabled],
+select option[value=""] {
+  color: #52796f !important;
+  opacity: 0.75 !important;
+  font-weight: 400 !important;
+}
 
 /* ---------------- Buttons ---------------- */
 .btn-primary {
@@ -937,19 +994,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: 0.75rem;
   font-size: 0.84rem;
   background: #ffffff;
-  color: #1b4332;
+  color: #1e3a2b !important;
   font-family: 'DM Sans', sans-serif;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
-.filter-input:focus {
+.filter-input:focus,
+.filter-input:active {
   outline: none;
-  border-color: #1b4332;
-  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.12);
+  border-color: #1e3a2b;
+  color: #1e3a2b !important;
+  box-shadow: 0 0 0 3px rgba(30, 58, 43, 0.12);
 }
-.filter-bar input[type="text"].filter-input::placeholder {
-  color: #52796f;
-  opacity: 0.7;
+.filter-bar input[type="text"].filter-input::placeholder,
+.filter-input::placeholder,
+.search-input::placeholder {
+  color: #52796f !important;
+  opacity: 0.75 !important;
+  font-weight: 400 !important;
 }
 .filter-bar .text-forest-400 {
   color: #2d6a4f !important;
@@ -959,17 +1021,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid #c6e6d1;
   background: #ffffff;
   padding: 8.5px 14px;
-  color: #1b4332;
+  color: #1e3a2b !important;
   font-size: 0.84rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 .filter-bar .bc-select-trigger:focus,
 .filter-bar .bc-select-trigger-open {
-  border-color: #1b4332 !important;
-  box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.12) !important;
+  border-color: #1e3a2b !important;
+  box-shadow: 0 0 0 3px rgba(30, 58, 43, 0.12) !important;
 }
 .filter-bar .bc-select-chevron {
-  color: #1b4332;
+  color: #1e3a2b !important;
 }
 
 /* ---------------- Toggle switches (Settings) ---------------- */
@@ -2240,10 +2302,14 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
   -webkit-appearance: none;
   appearance: none;
   font: inherit;
-  color: #111827;
+  color: #1e3a2b !important;
 }
-.bc-select-trigger .bc-select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bc-select-value.bc-select-placeholder { color: #9ca3af; }
+.bc-select-trigger .bc-select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
+.bc-select-value.bc-select-placeholder {
+  color: #52796f !important;
+  opacity: 0.75 !important;
+  font-weight: 400 !important;
+}
 .bc-select-chevron { flex-shrink: 0; color: var(--forest-500); transition: transform 0.15s ease; }
 .bc-select-trigger-open .bc-select-chevron { transform: rotate(180deg); }
 .bc-select-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
@@ -2273,13 +2339,13 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--forest-400); out
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #111827;
+  color: #1e3a2b !important;
   cursor: pointer;
   transition: background 0.1s ease;
 }
 .bc-select-option:hover { background: var(--forest-50); }
-.bc-select-option-active { background: var(--forest-100); color: var(--forest-700); font-weight: 600; }
-.bc-select-option-disabled { color: #9ca3af; cursor: default; }
+.bc-select-option-active { background: var(--forest-100); color: #163c29 !important; font-weight: 600; }
+.bc-select-option-disabled { color: #52796f !important; opacity: 0.75 !important; cursor: default; }
 .bc-select-option-disabled:hover { background: transparent; }
 
 /* ---------------- Custom date & time pickers ---------------- */
@@ -2399,11 +2465,15 @@ input.bc-time-enhanced::-webkit-calendar-picker-indicator { opacity: 0; cursor: 
   -webkit-appearance: none;
   appearance: none;
   font: inherit;
-  color: #111827;
+  color: #1e3a2b !important;
   padding-right: 34px;
 }
-.bc-time-trigger .bc-time-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bc-time-value.bc-time-placeholder { color: #9ca3af; }
+.bc-time-trigger .bc-time-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
+.bc-time-value.bc-time-placeholder {
+  color: #52796f !important;
+  opacity: 0.75 !important;
+  font-weight: 400 !important;
+}
 .bc-time-trigger-open { border-color: var(--forest-500) !important; background: #fff !important; }
 .bc-time-trigger.bc-time-disabled { opacity: 0.6; cursor: not-allowed; }
 
