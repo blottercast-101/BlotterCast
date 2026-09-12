@@ -269,13 +269,13 @@
     <form id="blotterForm" class="space-y-4">
       <input type="hidden" id="editId"/>
       <div class="grid grid-cols-2 gap-4">
-        <div>
+        <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Docket No.</label>
           <input type="text" id="f_docketNo" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] font-medium cursor-default focus:outline-none select-none" placeholder="Auto-generated on save" readonly/>
         </div>
-        <div>
+        <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Date Filed</label>
-          <div class="relative">
+          <div class="relative w-full">
             <input type="date" id="f_dateFiled" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 pr-10 text-sm text-[#1b3b2b] focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" data-no-future/>
             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[#1b4d3e] pointer-events-none" data-icon="calendar" data-icon-size="16"></span>
           </div>
@@ -284,16 +284,16 @@
 
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
-        <div class="relative">
-          <div class="flex items-center justify-between mb-1.5 min-h-[22px]">
-            <label class="block text-xs font-semibold text-[#1e3a2b]">
+        <div class="min-w-0 relative">
+          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-1">
+            <label class="block text-xs font-semibold text-[#1e3a2b] truncate">
               Name of Complainant <span class="text-rose-500">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none" id="f_complainantOutsideLabel">
-              <input type="checkbox" id="f_complainantOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleComplainantOutside()"/> <span class="text-[11px] sm:text-xs">Not a resident / outside party</span>
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0" id="f_complainantOutsideLabel">
+              <input type="checkbox" id="f_complainantOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleComplainantOutside()"/> <span class="text-[11px] sm:text-xs whitespace-nowrap">Not a resident / outside party</span>
             </label>
           </div>
-          <div class="relative">
+          <div class="relative w-full">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#1b4d3e] pointer-events-none" id="f_compIcon" data-icon="user" data-icon-size="16"></span>
             <input type="text" id="f_complainantSearch" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers maxlength="50"/>
             <input type="text" id="f_complainantFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] hidden" placeholder="Full name" data-no-numbers maxlength="50"/>
@@ -305,11 +305,11 @@
             <span class="text-xs text-[#52796f]" id="f_complainantCount">0/50</span>
           </div>
         </div>
-        <div>
+        <div class="min-w-0">
           <div class="flex items-center justify-between mb-1.5 min-h-[22px]">
             <label class="block text-xs font-semibold text-[#1e3a2b]">Complainant Address</label>
           </div>
-          <div class="relative">
+          <div class="relative w-full">
             <input type="text" id="f_complainantAddr" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" placeholder="Address" maxlength="150"/>
           </div>
           <div class="flex justify-end mt-1">
@@ -319,7 +319,7 @@
       </div>
 
       <!-- Bullet Notes Callout Container (Between Complainant & Respondent) -->
-      <div class="rounded-xl bg-[#e8f4ec] border border-[#c2ded0] p-3.5 px-4 my-1">
+      <div class="w-full rounded-xl bg-[#e8f4ec] border border-[#c2ded0] p-3.5 px-4 my-1">
         <ul class="list-disc list-outside pl-4 space-y-1 text-xs text-[#204332] font-medium leading-relaxed">
           <li>Either the complainant or the respondent can be marked <strong>'Not a resident'</strong> if they're from outside the barangay.</li>
           <li><strong>But not both</strong>, since at least one party must be a registered Census resident.</li>
@@ -328,16 +328,16 @@
 
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
-        <div class="relative">
-          <div class="flex items-center justify-between mb-1.5 min-h-[22px]">
-            <label class="block text-xs font-semibold text-[#1e3a2b]">
+        <div class="min-w-0 relative">
+          <div class="flex items-center justify-between mb-1.5 min-h-[22px] gap-1">
+            <label class="block text-xs font-semibold text-[#1e3a2b] truncate">
               Name of Respondent <span class="text-rose-500">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none" id="f_respondentOutsideLabel">
-              <input type="checkbox" id="f_respondentOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleRespondentOutside()"/> <span class="text-[11px] sm:text-xs">Not a resident / outside party</span>
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none shrink-0" id="f_respondentOutsideLabel">
+              <input type="checkbox" id="f_respondentOutside" class="rounded accent-[#1e4d36] text-[#1e4d36] cursor-pointer" onchange="toggleRespondentOutside()"/> <span class="text-[11px] sm:text-xs whitespace-nowrap">Not a resident / outside party</span>
             </label>
           </div>
-          <div class="relative">
+          <div class="relative w-full">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#1b4d3e] pointer-events-none" id="f_respIcon" data-icon="search" data-icon-size="16"></span>
             <input type="text" id="f_respondentSearch" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers maxlength="50"/>
             <input type="text" id="f_respondentFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] hidden" placeholder="Full name" data-no-numbers maxlength="50"/>
@@ -349,11 +349,11 @@
             <span class="text-xs text-[#52796f]" id="f_respondentCount">0/50</span>
           </div>
         </div>
-        <div>
+        <div class="min-w-0">
           <div class="flex items-center justify-between mb-1.5 min-h-[22px]">
             <label class="block text-xs font-semibold text-[#1e3a2b]">Respondent Address</label>
           </div>
-          <div class="relative">
+          <div class="relative w-full">
             <input type="text" id="f_respondentAddr" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" placeholder="Address" maxlength="150"/>
           </div>
           <div class="flex justify-end mt-1">
@@ -363,24 +363,24 @@
       </div>
 
       <div class="grid grid-cols-3 gap-4">
-        <div>
+        <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Nature of Case</label>
           <input type="text" id="f_nature" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e]" placeholder="e.g. Pag-aaway" data-no-numbers/>
         </div>
-        <div>
+        <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Type</label>
-          <div class="relative">
-            <select id="f_type" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 pr-8 text-sm text-[#1b3b2b] appearance-none focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] cursor-pointer" required>
+          <div class="relative w-full">
+            <select id="f_type" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 pr-8 text-sm text-[#1b3b2b] appearance-none focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] cursor-pointer" style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;" required>
               <option value="" disabled selected hidden>-Select-</option>
               <option value="CRIM">Criminal</option>
               <option value="CIVIL">Civil</option>
             </select>
-            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#1b4d3e]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#1b4d3e]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
           </div>
         </div>
-        <div>
+        <div class="min-w-0">
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Status</label>
           <input type="text" name="status" id="elevateStatus" value="Pending" readonly class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] font-medium cursor-default focus:outline-none select-none"/>
           <div id="f_status_note" class="hidden text-[11px] text-[#204332] font-medium mt-1">
