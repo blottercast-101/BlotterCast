@@ -261,89 +261,119 @@
 
 <!-- Add/Edit Modal -->
 <div class="modal-overlay" id="blotterModal">
-  <div class="modal-box">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="font-display text-xl text-forest-800" id="modalTitle">New Blotter Entry</h2>
-      <button onclick="closeModal('blotterModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box bg-white rounded-2xl shadow-xl border border-[#c6dfd4] p-6 sm:p-7 max-w-2xl w-full">
+    <div class="flex items-center justify-between pb-4 mb-5 border-b border-[#c6dfd4]/40">
+      <h2 class="font-serif text-xl sm:text-2xl font-bold text-[#1e3a2b]" id="modalTitle">New Blotter Entry</h2>
+      <button type="button" onclick="closeModal('blotterModal')" class="p-2 text-[#52796f] hover:text-[#1e3a2b] hover:bg-[#edf5f0] rounded-lg transition-colors"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form id="blotterForm" class="space-y-4">
       <input type="hidden" id="editId"/>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Docket No.</label><input type="text" id="f_docketNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
-        <div><label class="form-label">Date Filed</label><input type="date" id="f_dateFiled" class="form-input" data-no-future/></div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] mb-1.5">Docket No.</label>
+          <input type="text" id="f_docketNo" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e] cursor-default select-none" placeholder="Auto-generated on save" readonly disabled/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] mb-1.5">Date Filed</label>
+          <input type="date" id="f_dateFiled" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" data-no-future/>
+        </div>
       </div>
 
       <!-- Complainant Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-end justify-between gap-2 mb-2 h-10">
-            <label class="form-label mb-0 leading-tight">
-              Name of<br/>Complainant<span class="text-red-500 ml-0.5">*</span>
+          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[38px]">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] leading-tight">
+              Name of<br/>Complainant<span class="text-rose-500 ml-0.5">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_complainantOutsideLabel">
-              <input type="checkbox" id="f_complainantOutside" class="rounded accent-forest-600" onchange="toggleComplainantOutside()"/> Not a resident / outside party
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_complainantOutsideLabel">
+              <input type="checkbox" id="f_complainantOutside" class="rounded accent-[#1e4d36]" onchange="toggleComplainantOutside()"/> Not a resident / outside party
             </label>
           </div>
-          <input type="text" id="f_complainantSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
-          <input type="text" id="f_complainantFreeText" class="form-input hidden" placeholder="Full name" data-no-numbers/>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#52796f] pointer-events-none" id="f_complainantSearchIcon" data-icon="search" data-icon-size="16"></span>
+            <input type="text" id="f_complainantSearch" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers maxlength="50"/>
+            <input type="text" id="f_complainantFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e] hidden" placeholder="Full name" data-no-numbers maxlength="50"/>
+          </div>
           <input type="hidden" id="f_complainant"/>
           <input type="hidden" id="f_complainantId"/>
-          <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+          <div class="text-right text-xs text-[#52796f] mt-1" id="cnt_complainant">0/50</div>
+          <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#c6dfd4] rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-end justify-between mb-2 h-10">
-            <label class="form-label mb-0 pb-0.5">Complainant Address</label>
+          <div class="flex items-end justify-between mb-1.5 min-h-[38px]">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] pb-0.5">Complainant Address</label>
           </div>
-          <input type="text" id="f_complainantAddr" class="form-input" placeholder="Address"/>
+          <input type="text" id="f_complainantAddr" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" placeholder="Address" maxlength="150"/>
+          <div class="text-right text-xs text-[#52796f] mt-1" id="cnt_complainantAddr">0/150</div>
         </div>
+      </div>
+
+      <!-- Bullet Notes Callout Box (Between Complainant & Respondent) -->
+      <div class="rounded-xl bg-[#e8f4ec] border border-[#c2ded0] p-3.5 px-4 my-2">
+        <ul class="list-disc list-inside space-y-1 text-xs text-[#204332] font-medium leading-relaxed">
+          <li>Either the complainant or the respondent can be marked <strong class="font-semibold text-[#1e3a2b]">'Not a resident'</strong> if they're from outside the barangay.</li>
+          <li><strong class="font-semibold text-[#1e3a2b]">But not both</strong>, since at least one party must be a registered Census resident.</li>
+        </ul>
       </div>
 
       <!-- Respondent Row (Name on left, Address on right) -->
       <div class="grid grid-cols-2 gap-4 items-start">
         <div class="relative">
-          <div class="flex items-end justify-between gap-2 mb-2 h-10">
-            <label class="form-label mb-0 leading-tight">
-              Name of<br/>Respondent<span class="text-red-500 ml-0.5">*</span>
+          <div class="flex items-end justify-between gap-2 mb-1.5 min-h-[38px]">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] leading-tight">
+              Name of<br/>Respondent<span class="text-rose-500 ml-0.5">*</span>
             </label>
-            <label class="flex items-center gap-1.5 text-xs text-forest-600 cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_respondentOutsideLabel">
-              <input type="checkbox" id="f_respondentOutside" class="rounded accent-forest-600" onchange="toggleRespondentOutside()"/> Not a resident / outside party
+            <label class="flex items-center gap-1.5 text-xs text-[#2d5a43] cursor-pointer select-none pb-0.5 whitespace-nowrap" id="f_respondentOutsideLabel">
+              <input type="checkbox" id="f_respondentOutside" class="rounded accent-[#1e4d36]" onchange="toggleRespondentOutside()"/> Not a resident / outside party
             </label>
           </div>
-          <input type="text" id="f_respondentSearch" class="form-input" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers/>
-          <input type="text" id="f_respondentFreeText" class="form-input hidden" placeholder="Full name" data-no-numbers/>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#52796f] pointer-events-none" id="f_respondentSearchIcon" data-icon="search" data-icon-size="16"></span>
+            <input type="text" id="f_respondentSearch" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" placeholder="Type a name to search Census…" autocomplete="off" data-no-numbers maxlength="50"/>
+            <input type="text" id="f_respondentFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e] hidden" placeholder="Full name" data-no-numbers maxlength="50"/>
+          </div>
           <input type="hidden" id="f_respondent"/>
           <input type="hidden" id="f_respondentId"/>
-          <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+          <div class="text-right text-xs text-[#52796f] mt-1" id="cnt_respondent">0/50</div>
+          <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-[#c6dfd4] rounded-xl shadow-lg"></div>
         </div>
         <div>
-          <div class="flex items-end justify-between mb-2 h-10">
-            <label class="form-label mb-0 pb-0.5">Respondent Address</label>
+          <div class="flex items-end justify-between mb-1.5 min-h-[38px]">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] pb-0.5">Respondent Address</label>
           </div>
-          <input type="text" id="f_respondentAddr" class="form-input" placeholder="Address"/>
+          <input type="text" id="f_respondentAddr" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" placeholder="Address" maxlength="150"/>
+          <div class="text-right text-xs text-[#52796f] mt-1" id="cnt_respondentAddr">0/150</div>
         </div>
       </div>
-      <p class="text-xs text-forest-600 leading-relaxed -mt-1">Either the complainant or the respondent can be marked "Not a resident" if they're from outside the barangay — but not both, since at least one party must be a registered Census resident.</p>
-      <div class="grid grid-cols-3 gap-4">
-        <div><label class="form-label">Nature of Case</label><input type="text" id="f_nature" class="form-input" placeholder="e.g. Pag-aaway" data-no-numbers/></div>
+
+      <!-- Nature, Type, Status Row -->
+      <div class="grid grid-cols-3 gap-4 pt-1">
         <div>
-          <label class="form-label">Type</label>
-          <select id="f_type" class="form-input" required>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] mb-1.5">Nature of Case</label>
+          <input type="text" id="f_nature" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] placeholder-[#719b8c] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" placeholder="e.g. Pag-aaway" data-no-numbers/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] mb-1.5">Type</label>
+          <select id="f_type" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4d3e]/20 focus:border-[#1b4d3e]" required>
             <option value="" disabled selected hidden>-Select-</option>
             <option value="CRIM">Criminal</option>
             <option value="CIVIL">Civil</option>
           </select>
         </div>
         <div>
-          <label class="form-label">Status</label>
-          <input type="text" name="status" id="elevateStatus" value="Pending" readonly class="form-input bg-forest-50 pointer-events-none cursor-not-allowed text-gray-700 select-none"/>
-          <div id="f_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-[#1e3a2b] mb-1.5">Status</label>
+          <input type="text" name="status" id="elevateStatus" value="Pending" readonly class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2.5 text-[#1b3b2b] text-sm cursor-default select-none pointer-events-none"/>
+          <div id="f_status_note" class="hidden text-[11px] text-[#2d5a43] font-medium mt-1">
             🔒 Status is driven by Settlement Monitor
           </div>
         </div>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button type="button" onclick="closeModal('blotterModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveBlotter()" class="btn-primary">Save Entry</button>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 pt-3 border-t border-[#c6dfd4]/40 mt-4">
+        <button type="button" onclick="closeModal('blotterModal')" class="bg-[#eef6f2] text-[#2d5a43] hover:bg-[#dcefe4] font-medium px-6 py-2.5 rounded-xl border border-[#c6dfd4] transition-colors">Cancel</button>
+        <button type="button" onclick="saveBlotter()" class="bg-[#1e4d36] hover:bg-[#163c29] text-white font-semibold rounded-xl px-6 py-2.5 shadow-sm transition-colors">Save Entry</button>
       </div>
     </form>
   </div>
@@ -647,6 +677,28 @@
     return null;
   }
 
+  function updateBlotterCharCounters() {
+    const compOutside = document.getElementById('f_complainantOutside')?.checked;
+    const compInput = compOutside ? document.getElementById('f_complainantFreeText') : document.getElementById('f_complainantSearch');
+    const compVal = (compInput ? compInput.value : (document.getElementById('f_complainant')?.value || '')) || '';
+    const compCnt = document.getElementById('cnt_complainant');
+    if (compCnt) compCnt.textContent = `${compVal.length}/50`;
+
+    const compAddrVal = (document.getElementById('f_complainantAddr')?.value || '') || '';
+    const compAddrCnt = document.getElementById('cnt_complainantAddr');
+    if (compAddrCnt) compAddrCnt.textContent = `${compAddrVal.length}/150`;
+
+    const respOutside = document.getElementById('f_respondentOutside')?.checked;
+    const respInput = respOutside ? document.getElementById('f_respondentFreeText') : document.getElementById('f_respondentSearch');
+    const respVal = (respInput ? respInput.value : (document.getElementById('f_respondent')?.value || '')) || '';
+    const respCnt = document.getElementById('cnt_respondent');
+    if (respCnt) respCnt.textContent = `${respVal.length}/50`;
+
+    const respAddrVal = (document.getElementById('f_respondentAddr')?.value || '') || '';
+    const respAddrCnt = document.getElementById('cnt_respondentAddr');
+    if (respAddrCnt) respAddrCnt.textContent = `${respAddrVal.length}/150`;
+  }
+
   function onComplainantPicked(r) {
     if (r) {
       const fullName = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
@@ -662,6 +714,7 @@
       document.getElementById('f_complainantId').value = '';
       document.getElementById('f_complainantAddr').value = '';
     }
+    updateBlotterCharCounters();
   }
 
   function onRespondentPicked(r) {
@@ -679,6 +732,7 @@
       document.getElementById('f_respondentId').value = '';
       document.getElementById('f_respondentAddr').value = '';
     }
+    updateBlotterCharCounters();
   }
 
   // Both complainant and respondent can be marked "outside party," but not
@@ -688,9 +742,12 @@
   function _setOutsideMode(role, outside) {
     const checkboxId = `f_${role}Outside`;
     const searchId = `f_${role}Search`;
+    const searchIconId = `f_${role}SearchIcon`;
     const freeTextId = `f_${role}FreeText`;
     const valueId = `f_${role}`;
     document.getElementById(searchId).classList.toggle('hidden', outside);
+    const searchIcon = document.getElementById(searchIconId);
+    if (searchIcon) searchIcon.classList.toggle('hidden', outside);
     document.getElementById(freeTextId).classList.toggle('hidden', !outside);
     if (outside) {
       bcResidentPickerClear(searchId);
@@ -699,6 +756,7 @@
       document.getElementById(valueId).value = '';
       document.getElementById(freeTextId).value = '';
     }
+    updateBlotterCharCounters();
   }
 
   function _updateOutsideToggleAvailability() {
@@ -847,10 +905,14 @@
     bcResidentPickerClear('f_respondentSearch');
     document.getElementById('f_complainantOutside').checked = false;
     document.getElementById('f_complainantSearch').classList.remove('hidden');
+    const compIcon = document.getElementById('f_complainantSearchIcon');
+    if (compIcon) compIcon.classList.remove('hidden');
     document.getElementById('f_complainantFreeText').classList.add('hidden');
     document.getElementById('f_complainantFreeText').value = '';
     document.getElementById('f_respondentOutside').checked = false;
     document.getElementById('f_respondentSearch').classList.remove('hidden');
+    const respIcon = document.getElementById('f_respondentSearchIcon');
+    if (respIcon) respIcon.classList.remove('hidden');
     document.getElementById('f_respondentFreeText').classList.add('hidden');
     document.getElementById('f_respondentFreeText').value = '';
     document.getElementById('f_docketNo').value = '';
@@ -862,6 +924,7 @@
     if (noteEl) noteEl.classList.add('hidden');
     _updateOutsideToggleAvailability();
     resetFormDropdowns('blotterForm');
+    updateBlotterCharCounters();
   }
 
   async function openAdd() {
@@ -901,12 +964,16 @@
     if (compMatch) {
       document.getElementById('f_complainantOutside').checked = false;
       document.getElementById('f_complainantSearch').classList.remove('hidden');
+      const compIcon = document.getElementById('f_complainantSearchIcon');
+      if (compIcon) compIcon.classList.remove('hidden');
       document.getElementById('f_complainantFreeText').classList.add('hidden');
       document.getElementById('f_complainantSearch').value = r.complainant;
       document.getElementById('f_complainantId').value = String(compMatch.id);
     } else {
       document.getElementById('f_complainantOutside').checked = true;
       document.getElementById('f_complainantSearch').classList.add('hidden');
+      const compIcon = document.getElementById('f_complainantSearchIcon');
+      if (compIcon) compIcon.classList.add('hidden');
       document.getElementById('f_complainantFreeText').classList.remove('hidden');
       document.getElementById('f_complainantFreeText').value = r.complainant;
     }
@@ -917,12 +984,16 @@
     if (respMatch) {
       document.getElementById('f_respondentOutside').checked = false;
       document.getElementById('f_respondentSearch').classList.remove('hidden');
+      const respIcon = document.getElementById('f_respondentSearchIcon');
+      if (respIcon) respIcon.classList.remove('hidden');
       document.getElementById('f_respondentFreeText').classList.add('hidden');
       document.getElementById('f_respondentSearch').value = r.respondent;
       document.getElementById('f_respondentId').value = String(respMatch.id);
     } else {
       document.getElementById('f_respondentOutside').checked = true;
       document.getElementById('f_respondentSearch').classList.add('hidden');
+      const respIcon = document.getElementById('f_respondentSearchIcon');
+      if (respIcon) respIcon.classList.add('hidden');
       document.getElementById('f_respondentFreeText').classList.remove('hidden');
       document.getElementById('f_respondentFreeText').value = r.respondent;
     }
@@ -938,6 +1009,7 @@
     }
     const noteEl = document.getElementById('f_status_note');
     if (noteEl) noteEl.classList.remove('hidden');
+    updateBlotterCharCounters();
     openModal('blotterModal');
   }
 
@@ -1564,6 +1636,7 @@
         }
 
         _updateOutsideToggleAvailability();
+        updateBlotterCharCounters();
         if (data.reporter_name && data.complainant_name && data.reporter_name !== data.complainant_name) {
           showToast(`Elevating Incident ${data.source_report_no || ''}. Legal Complainant set to ${data.complainant_name} (Initial Reporter: ${data.reporter_name}).`, 'info');
         } else {
@@ -1574,6 +1647,14 @@
       }
     }
   }
+
+  // Attach live input character counting listeners
+  ['f_complainantSearch', 'f_complainantFreeText', 'f_complainantAddr', 'f_respondentSearch', 'f_respondentFreeText', 'f_respondentAddr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', updateBlotterCharCounters);
+    }
+  });
 
   window.loadBlotter = loadBlotter;
   window.archiveRecord = archiveRecord;
@@ -1586,6 +1667,8 @@
   window.initBlotter = async function () {
     try {
       await requireAuth();
+      // Ensure counters are up to date
+      updateBlotterCharCounters();
       // Restore active view (active vs archived)
       const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('blotter', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_blotter') || 'active');
       if (activeView === 'archived') {
