@@ -236,21 +236,48 @@
     </div>
     <form class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div><label class="form-label">Resident No.</label><input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
-        <div><label class="form-label">Last Name <span class="text-red-500">*</span></label><input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-no-numbers required/></div>
-        <div><label class="form-label">First Name <span class="text-red-500">*</span></label><input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-no-numbers required/></div>
-        <div><label class="form-label">Middle Name</label><input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-no-numbers/></div>
+        <div>
+          <label class="form-label">Resident No.</label>
+          <input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/>
+        </div>
+        <div>
+          <label class="form-label">Last Name <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-no-numbers maxlength="50" required/>
+          <span id="rf_last_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
+        </div>
+        <div>
+          <label class="form-label">First Name <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-no-numbers maxlength="50" required/>
+          <span id="rf_first_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
+        </div>
+        <div>
+          <label class="form-label">Middle Name</label>
+          <input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-no-numbers maxlength="50"/>
+          <span id="rf_mid_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
+        </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div><label class="form-label">Date of Birth <span class="text-red-500">*</span></label><input type="date" id="rf_dob" class="form-input" data-no-future required/></div>
-        <div><label class="form-label">Sex <span class="text-red-500">*</span></label>
-          <select id="rf_sex" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Male</option><option>Female</option></select></div>
-        <div><label class="form-label">Civil Status <span class="text-red-500">*</span></label>
-          <select id="rf_civil" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select></div>
-        <div><label class="form-label">Nationality <span class="text-red-500">*</span></label><input type="text" id="rf_nat" class="form-input" value="Filipino" required/></div>
+        <div>
+          <label class="form-label">Date of Birth <span class="text-red-500">*</span></label>
+          <input type="date" id="rf_dob" class="form-input" data-no-future required/>
+        </div>
+        <div>
+          <label class="form-label">Sex <span class="text-red-500">*</span></label>
+          <select id="rf_sex" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Male</option><option>Female</option></select>
+        </div>
+        <div>
+          <label class="form-label">Civil Status <span class="text-red-500">*</span></label>
+          <select id="rf_civil" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select>
+        </div>
+        <div>
+          <label class="form-label">Nationality <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_nat" class="form-input" value="Filipino" maxlength="50" required/>
+          <span id="rf_nat_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
+        </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Zone / Purok <span class="text-red-500">*</span></label>
+        <div>
+          <label class="form-label">Zone / Purok <span class="text-red-500">*</span></label>
           <select id="rf_zone" class="form-input" required>
             <option value="" disabled selected hidden>-Select-</option>
             <option value="Zone 1">Zone 1</option><option value="Zone 2">Zone 2</option>
@@ -259,17 +286,48 @@
             <option value="Zone 7">Zone 7</option>
           </select>
         </div>
-        <div><label class="form-label">Street / House Address <span class="text-red-500">*</span></label><input type="text" id="rf_addr" class="form-input" placeholder="Blk, Lot, Street" required/></div>
+        <div>
+          <label class="form-label">Street / House Address <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_addr" class="form-input" placeholder="Blk, Lot, Street" maxlength="150" required/>
+          <span id="rf_addr_count" class="text-xs text-[#52796f] mt-1 text-right block">0/150</span>
+        </div>
       </div>
       <div class="grid grid-cols-3 gap-4">
-        <div><label class="form-label">Household No. <span class="text-red-500">*</span></label><input type="text" id="rf_hh" class="form-input" placeholder="HH-001" required/></div>
-        <div><label class="form-label">Contact Number <span class="text-red-500">*</span></label><input type="text" id="rf_contact" class="form-input" placeholder="09171234567" data-digits-only maxlength="11" required/></div>
-        <div><label class="form-label">Voter Status <span class="text-red-500">*</span></label>
-          <select id="rf_voter" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Registered Voter</option><option>Not Registered</option><option>Deactivated</option></select></div>
+        <div>
+          <label class="form-label">Household No. <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_hh" class="form-input" placeholder="HH-001" maxlength="20" required/>
+          <span id="rf_hh_count" class="text-xs text-[#52796f] mt-1 text-right block">0/20</span>
+        </div>
+        <div>
+          <label class="form-label">Contact Number <span class="text-red-500">*</span></label>
+          <div class="flex items-center w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3 py-2 focus-within:ring-1 focus-within:ring-[#1e4d36] transition-all">
+            <span class="text-sm font-bold text-[#1e3a2b] select-none pr-2 border-r border-[#c6dfd4] mr-2">+63</span>
+            <input 
+              type="tel" 
+              id="rf_contact" 
+              name="contact_number" 
+              maxlength="10" 
+              placeholder="9171234567" 
+              data-digits-only
+              class="w-full bg-transparent border-none p-0 text-sm text-[#1e3a2b] placeholder-[#52796f]/60 focus:outline-none focus:ring-0"
+              required
+            />
+          </div>
+          <span id="rf_contact_count" class="text-xs text-[#52796f] mt-1 text-right block">0/10</span>
+        </div>
+        <div>
+          <label class="form-label">Voter Status <span class="text-red-500">*</span></label>
+          <select id="rf_voter" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Registered Voter</option><option>Not Registered</option><option>Deactivated</option></select>
+        </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Occupation <span class="text-red-500">*</span></label><input type="text" id="rf_occ" class="form-input" placeholder="e.g. Farmer, Teacher" data-no-numbers required/></div>
-        <div><label class="form-label">Status <span class="text-red-500">*</span></label>
+        <div>
+          <label class="form-label">Occupation <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_occ" class="form-input" placeholder="e.g. Farmer, Teacher" data-no-numbers maxlength="50" required/>
+          <span id="rf_occ_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
+        </div>
+        <div>
+          <label class="form-label">Status <span class="text-red-500">*</span></label>
           <select id="rf_status" class="form-input" required onchange="onRfStatusChange()"><option value="" disabled selected hidden>-Select-</option><option>Active</option><option>Deceased</option><option>Transferred</option></select>
           <p id="rf_deceased_hint" class="text-xs text-forest-400 mt-1 hidden">Voter Status is automatically set to Deactivated for deceased residents.</p>
         </div>
@@ -562,15 +620,61 @@ function renderResidents(){
 }
 
 
+var RESIDENT_CHAR_LIMITS = [
+  { inputId: 'rf_last', countId: 'rf_last_count', max: 50 },
+  { inputId: 'rf_first', countId: 'rf_first_count', max: 50 },
+  { inputId: 'rf_mid', countId: 'rf_mid_count', max: 50 },
+  { inputId: 'rf_nat', countId: 'rf_nat_count', max: 50 },
+  { inputId: 'rf_addr', countId: 'rf_addr_count', max: 150 },
+  { inputId: 'rf_hh', countId: 'rf_hh_count', max: 20 },
+  { inputId: 'rf_contact', countId: 'rf_contact_count', max: 10 },
+  { inputId: 'rf_occ', countId: 'rf_occ_count', max: 50 }
+];
+
+function updateResidentCharCounters() {
+  RESIDENT_CHAR_LIMITS.forEach(({ inputId, countId, max }) => {
+    const inputEl = document.getElementById(inputId);
+    const countEl = document.getElementById(countId);
+    if (inputEl && countEl) {
+      countEl.textContent = `${(inputEl.value || '').length}/${max}`;
+    }
+  });
+}
+
+function initResidentCharCounters() {
+  RESIDENT_CHAR_LIMITS.forEach(({ inputId, max }) => {
+    const inputEl = document.getElementById(inputId);
+    if (inputEl && !inputEl.dataset.charCounterBound) {
+      inputEl.dataset.charCounterBound = '1';
+      inputEl.addEventListener('input', function() {
+        if (inputId === 'rf_contact') {
+          this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        }
+        updateResidentCharCounters();
+      });
+      inputEl.addEventListener('change', updateResidentCharCounters);
+      inputEl.addEventListener('keyup', updateResidentCharCounters);
+    }
+  });
+  updateResidentCharCounters();
+}
+
 async function openAddResident(){
   editId=null; document.getElementById('resModalTitle').textContent='Add Resident';
-  ['rf_last','rf_first','rf_mid','rf_dob','rf_addr','rf_hh','rf_contact','rf_occ'].forEach(id=>document.getElementById(id).value='');
-  ['rf_sex','rf_civil','rf_zone','rf_voter','rf_status'].forEach(id=>document.getElementById(id).value='');
+  ['rf_last','rf_first','rf_mid','rf_dob','rf_addr','rf_hh','rf_contact','rf_occ'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['rf_sex','rf_civil','rf_zone','rf_voter','rf_status'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   resetFormDropdowns('residentModal');
   document.getElementById('rf_resNo').value = 'Loading…';
   document.getElementById('rf_nat').value='Filipino';
   document.getElementById('rf_deceased_hint').classList.add('hidden');
   setResidentFormLock(false); // Desk Officer's restriction only applies to editing existing residents
+  updateResidentCharCounters();
   openModal('residentModal');
   try {
     const { seqNo } = await BCApi.peekSeq('census');
@@ -582,27 +686,50 @@ async function openAddResident(){
 function editResident(id){
   editId=id; const r=censusData.find(x=>x.id===id);
   document.getElementById('resModalTitle').textContent='Edit Resident';
-  document.getElementById('rf_resNo').value=r.resNo;
-  document.getElementById('rf_last').value=r.lastName;
-  document.getElementById('rf_first').value=r.firstName;
-  document.getElementById('rf_mid').value=r.midName;
-  document.getElementById('rf_dob').value=r.dob;
-  document.getElementById('rf_sex').value=r.sex;
-  document.getElementById('rf_civil').value=r.civil;
+  document.getElementById('rf_resNo').value=r.resNo || '';
+  document.getElementById('rf_last').value=r.lastName || '';
+  document.getElementById('rf_first').value=r.firstName || '';
+  document.getElementById('rf_mid').value=r.midName || '';
+  document.getElementById('rf_dob').value=r.dob || '';
+  document.getElementById('rf_sex').value=r.sex || '';
+  document.getElementById('rf_civil').value=r.civil || '';
   document.getElementById('rf_nat').value=r.nationality || 'Filipino';
-  document.getElementById('rf_zone').value=r.zone;
-  document.getElementById('rf_addr').value=r.address;
-  document.getElementById('rf_hh').value=r.household;
-  document.getElementById('rf_contact').value=r.contact;
-  document.getElementById('rf_voter').value=r.voter;
-  document.getElementById('rf_occ').value=r.occupation;
-  document.getElementById('rf_status').value=r.status;
+  document.getElementById('rf_zone').value=r.zone || '';
+  document.getElementById('rf_addr').value=r.address || '';
+  document.getElementById('rf_hh').value=r.household || '';
+
+  // Strip +63 / 63 / 0 prefix so only the 10 digits appear in the input box
+  let contactDigits = (r.contact || '').trim().replace(/\D/g, '');
+  if (contactDigits.startsWith('63')) contactDigits = contactDigits.slice(2);
+  else if (contactDigits.startsWith('0')) contactDigits = contactDigits.slice(1);
+  contactDigits = contactDigits.slice(0, 10);
+  const contactEl = document.getElementById('rf_contact');
+  if (contactEl) contactEl.value = contactDigits;
+
+  document.getElementById('rf_voter').value=r.voter || '';
+  document.getElementById('rf_occ').value=r.occupation || '';
+  document.getElementById('rf_status').value=r.status || '';
   document.getElementById('rf_deceased_hint').classList.toggle('hidden', r.status !== 'Deceased');
   setResidentFormLock(currentRole === 'Desk Officer');
   if (r.status === 'Deceased') document.getElementById('rf_voter').disabled = true;
+  updateResidentCharCounters();
   openModal('residentModal');
 }
 async function saveResident(){
+  const rawContact = (document.getElementById('rf_contact')?.value || '').trim().replace(/\D/g, '').slice(0, 10);
+  let normalizedContact = '';
+  if (rawContact) {
+    if (rawContact.length === 10 && rawContact.startsWith('9')) {
+      normalizedContact = '0' + rawContact;
+    } else if (rawContact.length === 11 && rawContact.startsWith('0')) {
+      normalizedContact = rawContact;
+    } else if (rawContact.startsWith('0')) {
+      normalizedContact = rawContact;
+    } else {
+      normalizedContact = '0' + rawContact;
+    }
+  }
+
   const vals={
     residentNo: editId ? document.getElementById('rf_resNo').value.trim() : '',
     lastName:document.getElementById('rf_last').value.trim(),
@@ -615,7 +742,7 @@ async function saveResident(){
     zone:document.getElementById('rf_zone').value,
     address:document.getElementById('rf_addr').value.trim(),
     householdNo:document.getElementById('rf_hh').value.trim(),
-    contactNo:document.getElementById('rf_contact').value.trim(),
+    contactNo: normalizedContact,
     voterStatus:document.getElementById('rf_voter').value,
     occupation:document.getElementById('rf_occ').value.trim(),
     status:document.getElementById('rf_status').value,
@@ -1152,9 +1279,12 @@ async function handleCensusFile(e) {
   window.viewResident = viewResident;
   window.editResident = editResident;
   window.toggleArchivedView = toggleArchivedView;
+  window.updateResidentCharCounters = updateResidentCharCounters;
+  window.initResidentCharCounters = initResidentCharCounters;
 
   window.initCensus = async function () {
     try {
+      initResidentCharCounters();
       const user = await requireAuth();
       if (user) currentRole = user.role;
       if (user && typeof roleCan === 'function' && !roleCan(user.role, 'import_data')) {
@@ -1179,6 +1309,11 @@ async function handleCensusFile(e) {
       showToast('Could not load residents: ' + (err.message || err), 'error');
     }
   };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initResidentCharCounters);
+  } else {
+    initResidentCharCounters();
+  }
   if (!window._bcSpaNavActive) { initCensus(); }
 
 </script>

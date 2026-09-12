@@ -41,6 +41,7 @@ class TestIncidentStatusAndReferredLock(unittest.TestCase):
 
         # Seed Census resident
         self.resident = CensusRecord(
+            resident_no="RES-0001",
             first_name="Juan",
             last_name="Dela Cruz",
             middle_name="Santos",
