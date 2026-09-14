@@ -1228,10 +1228,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
 
   .certificate-viewport-container,
+  .certificate-preview-viewport,
   #certPrint {
     position: static !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -1251,7 +1252,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .certificate-sheet,
   .printable-document,
   #certContent,
-  .cert-sheet {
+  .cert-sheet,
+  .certificate-paper {
     transform: none !important;
     position: fixed !important;
     left: 0 !important;
@@ -1825,6 +1827,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   align-items: flex-start;
   width: 100%;
   overflow-x: auto;
+}
+
+.certificate-preview-viewport {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.certificate-paper {
+  transform-origin: top center;
+  transition: transform 0.15s ease-out;
+  flex-shrink: 0;
 }
 
 .a4-sheet,

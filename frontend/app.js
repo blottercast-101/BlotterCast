@@ -2033,7 +2033,13 @@ function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
 // ── Modal helpers ──────────────────────────────────────────
 function openModal(id) {
   const el = document.getElementById(id);
-  if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  if (el) {
+    el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (typeof fitCertificatePreview === 'function') {
+      setTimeout(fitCertificatePreview, 50);
+    }
+  }
 }
 function closeModal(id) {
   const el = document.getElementById(id);
@@ -2041,6 +2047,9 @@ function closeModal(id) {
     el.classList.remove('open');
     if (!document.querySelector('.modal-overlay.open')) {
       document.body.style.overflow = '';
+    }
+    if (typeof fitCertificatePreview === 'function') {
+      setTimeout(fitCertificatePreview, 50);
     }
   }
 }

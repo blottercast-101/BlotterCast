@@ -326,35 +326,91 @@ function formatCertificateLines(container = document) {
   enforceCenteredFields(container);
 }
 
-// ── Global Reactive Event Listeners for Signatory Updates ──
+/**
+ * Proportional responsive downscaling for certificate preview containers.
+ * Dynamically calculates the scaling factor based on container width
+ * so certificate previews scale smoothly without text clipping, overflow,
+ * or large bottom gaps on smaller viewports.
+ */
+function fitCertificatePreview() {
+  const viewports = document.querySelectorAll('.certificate-preview-viewport');
+  viewports.forEach(viewport => {
+    const sheet = viewport.querySelector('.certificate-paper') || viewport.querySelector('#printableCertificate');
+    if (!sheet) return;
+
+    // Target base width of the certificate sheet (e.g., 794px for A4)
+    const baseWidth = parseFloat(sheet.dataset.baseWidth) || 794;
+    const style = window.getComputedStyle ? window.getComputedStyle(viewport) : null;
+    const padX = style ? ((parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)) : 16;
+    const availableWidth = viewport.clientWidth - (padX || 16);
+
+    if (availableWidth > 0 && availableWidth < baseWidth) {
+      const scale = availableWidth / baseWidth;
+      sheet.style.transform = `scale(${scale})`;
+      sheet.style.transformOrigin = 'top center';
+      const unscaledHeight = sheet.offsetHeight || 1123;
+      const padY = style ? ((parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)) : 16;
+      // Compensate container height so no large empty bottom gap remains
+      viewport.style.height = `${Math.ceil(unscaledHeight * scale + padY)}px`;
+    } else if (availableWidth >= baseWidth) {
+      sheet.style.transform = 'none';
+      viewport.style.height = 'auto';
+    }
+  });
+}
+
+// ── Global Reactive Event Listeners for Signatory Updates & Auto-Scaling ──
 window.addEventListener('barangayConfigUpdated', (e) => {
   if (e.detail) {
     bindCertificateCaptainName(e.detail);
     enforceCenteredFields();
+    fitCertificatePreview();
   }
 });
+
+// Trigger responsive fit on window resize
+window.addEventListener('resize', fitCertificatePreview);
 
 if (typeof window !== 'undefined') {
   window.enforceCenteredFields = enforceCenteredFields;
   window.formatCertificateLines = formatCertificateLines;
+  window.fitCertificatePreview = fitCertificatePreview;
+
   window.addEventListener('beforeprint', () => {
     enforceCenteredFields('printableCertificate');
+  });
+
+  window.addEventListener('afterprint', () => {
+    fitCertificatePreview();
   });
 }
 
 // ── Automatic Initialization on Document Ready ──
+function initCertificateScaling() {
+  formatCertificateLines();
+  bindCertificateCaptainName();
+  enforceCenteredFields();
+  fitCertificatePreview();
+
+  if (typeof ResizeObserver !== 'undefined') {
+    if (!window._certResizeObserver) {
+      window._certResizeObserver = new ResizeObserver(() => {
+        fitCertificatePreview();
+      });
+    }
+    document.querySelectorAll('.certificate-preview-viewport').forEach(vp => {
+      window._certResizeObserver.observe(vp);
+    });
+  }
+}
+
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      formatCertificateLines();
-      bindCertificateCaptainName();
-      enforceCenteredFields();
-    });
+    document.addEventListener('DOMContentLoaded', initCertificateScaling);
   } else {
-    formatCertificateLines();
-    bindCertificateCaptainName();
-    enforceCenteredFields();
+    initCertificateScaling();
   }
+  window.addEventListener('load', fitCertificatePreview);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -364,7 +420,9 @@ if (typeof module !== 'undefined' && module.exports) {
     bindCertificateCaptainName,
     formatCertificateLines,
     enforceCenteredFields,
+    fitCertificatePreview,
     onNonResidencyResidentSelected,
     validateNonResidencySubmission,
   };
 }
+
