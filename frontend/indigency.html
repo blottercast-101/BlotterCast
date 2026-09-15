@@ -229,12 +229,14 @@
 
 <!-- Issue Form Modal -->
 <div class="modal-overlay" id="indFormModal">
-  <div class="modal-box max-w-lg">
-    <div class="flex items-center justify-between mb-5">
+  <div class="modal-box max-w-lg max-h-[90vh] flex flex-col">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100 flex-shrink-0">
       <h2 class="font-display text-xl text-forest-800">Issue Certificate of Indigency</h2>
       <button onclick="closeModal('indFormModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
-    <div class="space-y-4">
+    <!-- Modal Body -->
+    <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
       <div class="relative">
         <label class="form-label">Resident <span class="text-red-500">*</span></label>
         <input type="text" id="if_residentSearch" class="form-input" placeholder="Type a name to search…" autocomplete="off"/>
@@ -282,10 +284,11 @@
       <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
         <strong>Note:</strong> Certifying indigency is the responsibility of the Punong Barangay. Ensure the applicant's financial status has been verified before issuance.
       </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button onclick="closeModal('indFormModal')" class="btn-secondary">Cancel</button>
-        <button id="if_submit_btn" onclick="issueIndigency()" class="btn-primary">Issue & Preview</button>
-      </div>
+    </div>
+    <!-- Modal Footer -->
+    <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-forest-100 flex-shrink-0">
+      <button onclick="closeModal('indFormModal')" class="btn-secondary">Cancel</button>
+      <button id="if_submit_btn" onclick="issueIndigency()" class="btn-primary">Issue & Preview</button>
     </div>
   </div>
 </div>

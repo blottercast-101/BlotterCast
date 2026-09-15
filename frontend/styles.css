@@ -4129,6 +4129,26 @@ thead th.sticky-col-right {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Custom Scrollbar for Modal Scrollable Containers ── */
+.modal-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: #52796f #edf5f0;
+}
+.modal-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-scrollable::-webkit-scrollbar-track {
+  background: #edf5f0;
+  border-radius: 9999px;
+}
+.modal-scrollable::-webkit-scrollbar-thumb {
+  background: #52796f;
+  border-radius: 9999px;
+}
+.modal-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #1e3a2b;
+}
+
 /* Responsive Drawer Panels */
 .drawer-content,
 .drawer-panel {
