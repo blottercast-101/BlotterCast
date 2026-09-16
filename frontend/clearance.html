@@ -239,11 +239,14 @@
     </div>
     <!-- Modal Body -->
     <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
-      <div class="relative">
+      <div class="relative w-full">
         <label class="form-label">Resident <span class="text-red-500">*</span></label>
-        <input type="text" id="cl_residentSearch" class="form-input" placeholder="Type a name to search…" autocomplete="off"/>
+        <input type="text" id="residentSearch" placeholder="Type a name to search..." class="form-input" autocomplete="off" />
         <input type="hidden" id="cl_residentId"/>
-        <div id="cl_residentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
+        <!-- Ensure this dropdown container exists -->
+        <div id="residentDropdownList" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-[#c6dfd4] rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
+          <!-- Dynamic resident items populate here -->
+        </div>
         <p class="text-xs text-forest-400 mt-1">A clearance can only be issued to someone already recorded in Census. Name, age, civil status, address, and voter status are inherited from that record.</p>
       </div>
       <div class="grid grid-cols-2 gap-4" id="cl_derived_preview">
@@ -321,15 +324,18 @@ async function loadResidentOptionsForPicker() {
   const raw = await BCApi.docList('census');
   residentOptions = raw.map(r => {
     const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
+    const fullName = `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`.trim();
     return {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
+      last_name: r.last_name, first_name: r.first_name, middle_name: r.middle_name || '',
+      full_name: fullName,
       age, civilStatus: r.civil_status, address: r.address || '', voterStatus: r.voter_status,
       householdNo: r.household_no || '', status: r.status || 'Active',
       resident_status: r.status || 'Active', census_status: r.status || 'Active',
       is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
     };
   });
-  bcInitResidentPicker('cl_residentSearch', 'cl_residentId', 'cl_residentSuggestions', residentOptions, onResidentPicked, validateClearanceEligibility);
+  bcInitResidentPicker('residentSearch', 'cl_residentId', 'residentDropdownList', residentOptions, onResidentPicked, validateClearanceEligibility);
 }
 
 // Mirrors the server-side rule in api/documents.php — Deceased or
@@ -499,7 +505,7 @@ function printLog(id){
 }
 
 async function openClearanceForm(){
-  bcResidentPickerClear('cl_residentSearch');
+  bcResidentPickerClear('residentSearch');
   resetFormDropdowns('clearanceFormModal');
   openModal('clearanceFormModal');
 
@@ -518,7 +524,7 @@ async function openClearanceForm(){
 }
 
 function resetClearanceForm(){
-  bcResidentPickerClear('cl_residentSearch');
+  bcResidentPickerClear('residentSearch');
   resetFormDropdowns('clearanceFormModal');
   clRespondentBlocked = false;
   const submitBtn = document.getElementById('cl_submit_btn');
@@ -606,7 +612,7 @@ window.initClearance = async function () {
     const prefillResidentId = sessionStorage.getItem('bc_prefill_resident_id');
     if (prefillResidentId) {
       if (typeof bcResidentPickerChoose === 'function') {
-        bcResidentPickerChoose('cl_residentSearch', Number(prefillResidentId));
+        bcResidentPickerChoose('residentSearch', Number(prefillResidentId));
       }
       sessionStorage.removeItem('bc_prefill_resident_id');
       if (typeof openModal === 'function') openModal('clearanceFormModal');

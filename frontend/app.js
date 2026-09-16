@@ -3930,8 +3930,148 @@ function bcCheckUrlHighlight({ items, matcher, pageSize, setPage, render, rowSel
 // after residentOptions has been loaded.
 const _bcResidentPickers = {}; // keyed by input id, holds { options, hiddenId, listId, onPick, validate }
 
+// Backward compatibility shim for legacy prefixed IDs if referenced
+if (typeof Document !== 'undefined' && Document.prototype.getElementById) {
+  const _nativeGetElementById = Document.prototype.getElementById;
+  Document.prototype.getElementById = function(id) {
+    const el = _nativeGetElementById.call(this, id);
+    if (!el && this === document) {
+      if (id === 'cl_residentSearch' || id === 'rs_residentSearch' || id === 'if_residentSearch') {
+        return _nativeGetElementById.call(this, 'residentSearch');
+      }
+      if (id === 'cl_residentSuggestions' || id === 'rs_residentSuggestions' || id === 'if_residentSuggestions') {
+        return _nativeGetElementById.call(this, 'residentDropdownList');
+      }
+    }
+    return el;
+  };
+}
+
+function renderResidentResults(results) {
+  const dropdown = document.getElementById('residentDropdownList');
+  if (!dropdown) return;
+
+  if (!results || results.length === 0) {
+    dropdown.innerHTML = '<div class="p-3 text-xs text-[#52796f] text-center">No active residents found</div>';
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  // Populate items (skipping deceased)
+  const activeResults = results.filter(r => {
+    const statusValue = String(r.status || r.resident_status || r.census_status || '').toLowerCase().trim();
+    const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
+    return !isDeceased;
+  });
+
+  if (activeResults.length === 0) {
+    dropdown.innerHTML = '<div class="p-3 text-xs text-[#52796f] text-center">No active residents found</div>';
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  dropdown.innerHTML = activeResults.map(r => `
+    <div class="resident-item p-2 hover:bg-[#edf5f0] cursor-pointer text-sm text-[#1e3a2b]" data-id="${r.id}">
+      ${r.full_name || (r.last_name + ', ' + r.first_name)}
+    </div>
+  `).join('');
+
+  dropdown.classList.remove('hidden');
+
+  dropdown.querySelectorAll('.resident-item').forEach(el => {
+    el.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const resId = Number(el.dataset.id);
+      if (typeof selectResident === 'function') {
+        selectResident(resId);
+      } else if (typeof bcResidentPickerChoose === 'function') {
+        const activeInput = document.getElementById('residentSearch') || document.querySelector('[id$="residentSearch"]');
+        const activeId = activeInput ? activeInput.id : 'residentSearch';
+        bcResidentPickerChoose(activeId, resId);
+      }
+    });
+  });
+}
+window.renderResidentResults = renderResidentResults;
+
+function selectResident(residentId) {
+  const activeInput = document.getElementById('residentSearch') || document.querySelector('[id$="residentSearch"]');
+  const activeId = activeInput ? activeInput.id : 'residentSearch';
+  if (typeof bcResidentPickerChoose === 'function') {
+    bcResidentPickerChoose(activeId, residentId);
+  }
+}
+window.selectResident = selectResident;
+
+function filterResidents(val) {
+  const query = String(val || '').trim().toLowerCase();
+  const dropdown = document.getElementById('residentDropdownList');
+  if (!dropdown) return;
+
+  if (query.length === 0) {
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
+    return;
+  }
+
+  let options = [];
+  const searchInput = document.getElementById('residentSearch') || document.querySelector('[id$="residentSearch"]');
+  const activeId = searchInput ? searchInput.id : 'residentSearch';
+  const picker = _bcResidentPickers[activeId] || _bcResidentPickers['residentSearch'] || _bcResidentPickers['cl_residentSearch'] || _bcResidentPickers['rs_residentSearch'] || _bcResidentPickers['if_residentSearch'];
+
+  if (picker && Array.isArray(picker.options) && picker.options.length > 0) {
+    options = picker.options;
+  } else if (typeof residentOptions !== 'undefined' && Array.isArray(residentOptions) && residentOptions.length > 0) {
+    options = residentOptions;
+  } else if (typeof resResidentOptions !== 'undefined' && Array.isArray(resResidentOptions) && resResidentOptions.length > 0) {
+    options = resResidentOptions;
+  } else if (typeof indResidentOptions !== 'undefined' && Array.isArray(indResidentOptions) && indResidentOptions.length > 0) {
+    options = indResidentOptions;
+  }
+
+  const normalized = options.map(r => {
+    const lastName = r.lastName || r.last_name || '';
+    const firstName = r.firstName || r.first_name || '';
+    const middleName = r.middleName || r.middle_name || '';
+    const fullName = r.full_name || `${lastName}, ${firstName}${middleName ? ' ' + middleName : ''}`.trim();
+    return {
+      ...r,
+      last_name: lastName,
+      first_name: firstName,
+      middle_name: middleName,
+      lastName,
+      firstName,
+      middleName,
+      full_name: fullName,
+    };
+  });
+
+  const matches = normalized.filter(r => {
+    // Exclude deceased residents
+    const statusValue = String(r.status || r.resident_status || r.census_status || '').toLowerCase().trim();
+    const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
+    if (isDeceased) return false;
+
+    const target = `${r.last_name} ${r.first_name} ${r.middle_name} ${r.full_name}`.toLowerCase();
+    return target.includes(query);
+  }).slice(0, 20);
+
+  renderResidentResults(matches);
+}
+window.filterResidents = filterResidents;
+
 function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, validate) {
   _bcResidentPickers[inputId] = { options, hiddenId, listId, onPick, validate };
+  if (inputId === 'residentSearch') {
+    _bcResidentPickers['cl_residentSearch'] = _bcResidentPickers[inputId];
+    _bcResidentPickers['rs_residentSearch'] = _bcResidentPickers[inputId];
+    _bcResidentPickers['if_residentSearch'] = _bcResidentPickers[inputId];
+  }
+
   const input = document.getElementById(inputId);
   if (!input) return;
 
@@ -3948,19 +4088,28 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
     // Open ONLY if the user has already entered text
     input.addEventListener('focus', () => {
       if (input.value.trim().length > 0) {
-        _bcFilterResidents(inputId);
+        if (listId === 'residentDropdownList' || inputId === 'residentSearch') {
+          filterResidents(input.value.trim());
+        } else {
+          _bcFilterResidents(inputId);
+        }
       }
     });
 
     input.addEventListener('input', (e) => {
-      const query = e.target.value.trim();
-      if (query.length > 0) {
-        _bcFilterResidents(inputId);
+      const val = e.target.value.trim();
+      if (val.length > 0) {
+        if (listId === 'residentDropdownList' || inputId === 'residentSearch') {
+          filterResidents(val);
+        } else {
+          _bcFilterResidents(inputId);
+        }
       } else {
-        const curList = document.getElementById(listId);
-        if (curList) {
-          curList.classList.add('hidden');
-          curList.innerHTML = '';
+        const curList = document.getElementById(listId) || document.getElementById('residentDropdownList');
+        const dropdown = curList;
+        if (dropdown) {
+          dropdown.classList.add('hidden');
+          dropdown.innerHTML = '';
         }
         const parentSec = input.closest('#if_guardianSection, #if_involvedPartiesSection');
         if (parentSec) parentSec.style.removeProperty('z-index');
@@ -3970,7 +4119,11 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
     input.addEventListener('click', (e) => {
       e.stopPropagation();
       if (input.value.trim().length > 0) {
-        _bcFilterResidents(inputId);
+        if (listId === 'residentDropdownList' || inputId === 'residentSearch') {
+          filterResidents(input.value.trim());
+        } else {
+          _bcFilterResidents(inputId);
+        }
       }
     });
   }
@@ -3979,6 +4132,21 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
     list.dataset.bcListBound = '1';
     list.addEventListener('mousedown', (e) => e.stopPropagation());
     list.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  // Requirement 3: searchInput input listener
+  const searchInput = document.getElementById('residentSearch');
+  if (searchInput && !searchInput.dataset.bcResidentSearchBound) {
+    searchInput.dataset.bcResidentSearchBound = '1';
+    searchInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val.length > 0) {
+        filterResidents(val);
+      } else {
+        const dropdown = document.getElementById('residentDropdownList');
+        if (dropdown) dropdown.classList.add('hidden');
+      }
+    });
   }
 
   if (!window._bcResidentPickerDocClickBound) {
@@ -4013,6 +4181,11 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
 
 function bcResidentPickerSetOptions(inputId, options) {
   if (_bcResidentPickers[inputId]) _bcResidentPickers[inputId].options = options;
+  if (inputId === 'residentSearch') {
+    if (_bcResidentPickers['cl_residentSearch']) _bcResidentPickers['cl_residentSearch'].options = options;
+    if (_bcResidentPickers['rs_residentSearch']) _bcResidentPickers['rs_residentSearch'].options = options;
+    if (_bcResidentPickers['if_residentSearch']) _bcResidentPickers['if_residentSearch'].options = options;
+  }
 }
 
 window.bcIsResidentDeceased = function(r) {
@@ -4026,11 +4199,11 @@ window.bcIsResidentDeceased = function(r) {
 };
 
 function _bcFilterResidents(inputId) {
-  const picker = _bcResidentPickers[inputId];
+  const picker = _bcResidentPickers[inputId] || _bcResidentPickers['residentSearch'];
   if (!picker) return;
-  const input = document.getElementById(inputId);
+  const input = document.getElementById(inputId) || document.getElementById('residentSearch');
   if (!input) return;
-  const list = document.getElementById(picker.listId);
+  const list = document.getElementById(picker.listId) || document.getElementById('residentDropdownList');
   if (!list) return;
   const q = input.value.trim().toLowerCase();
 
@@ -4043,7 +4216,12 @@ function _bcFilterResidents(inputId) {
     return;
   }
 
-  const isCertPicker = ['cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
+  if (list.id === 'residentDropdownList' || inputId === 'residentSearch') {
+    filterResidents(q);
+    return;
+  }
+
+  const isCertPicker = ['residentSearch', 'cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
                        inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
                        window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency');
 
@@ -4058,7 +4236,7 @@ function _bcFilterResidents(inputId) {
 
   const matches = q === ''
     ? rawOptions.slice(0, 20)
-    : rawOptions.filter(r => `${r.lastName} ${r.firstName} ${r.middleName || ''}`.toLowerCase().includes(q)).slice(0, 20);
+    : rawOptions.filter(r => `${r.lastName || r.last_name} ${r.firstName || r.first_name} ${r.middleName || r.middle_name || ''}`.toLowerCase().includes(q)).slice(0, 20);
 
   if (matches.length === 0) {
     list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
@@ -4078,17 +4256,20 @@ function _bcFilterResidents(inputId) {
         ? 'Deceased residents cannot be recorded as respondents.'
         : 'Deceased residents cannot be filed as complainants/reporters.';
       const deadIneligible = (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
+      const resLastName = resident.lastName || resident.last_name || '';
+      const resFirstName = resident.firstName || resident.first_name || '';
+      const resMiddleName = resident.middleName || resident.middle_name || '';
       return `
       <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${deadIneligible ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
               onmousedown="event.stopPropagation(); event.preventDefault();"
               onclick="${deadIneligible ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${resident.id})`}">
         <div class="flex items-center justify-between gap-2">
           <div class="text-sm font-semibold ${deadIneligible ? 'text-gray-500 line-through' : 'text-forest-800'}">
-            ${resident.lastName}, ${resident.firstName} ${resident.middleName || ''}
+            ${resLastName}, ${resFirstName} ${resMiddleName}
           </div>
           ${deadIneligible ? `<span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 rounded">Deceased - Ineligible</span>` : ''}
         </div>
-        <div class="text-xs text-forest-500">${resident.age ?? '—'} yrs old &middot; ${resident.address || '—'} &middot; Household ${resident.householdNo || '—'}</div>
+        <div class="text-xs text-forest-500">${resident.age ?? '—'} yrs old &middot; ${resident.address || '—'} &middot; Household ${resident.householdNo || resident.household_no || '—'}</div>
       </button>`;
     }).filter(Boolean);
 
@@ -4109,7 +4290,12 @@ function _bcFilterResidents(inputId) {
 }
 
 function bcResidentPickerChoose(inputId, residentId) {
-  const picker = _bcResidentPickers[inputId];
+  let targetId = inputId;
+  if (!_bcResidentPickers[targetId]) {
+    if (document.getElementById('residentSearch')) targetId = 'residentSearch';
+    else if (document.getElementById(inputId)) targetId = inputId;
+  }
+  const picker = _bcResidentPickers[targetId] || _bcResidentPickers[inputId] || _bcResidentPickers['residentSearch'];
   if (!picker) return;
   const r = (picker.options || []).find(x => x.id === residentId);
   if (!r) return;
@@ -4118,7 +4304,7 @@ function bcResidentPickerChoose(inputId, residentId) {
   const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
   if (isDeceased) {
     const isRespondent = inputId.toLowerCase().includes('respondent');
-    const isCertPicker = ['cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
+    const isCertPicker = ['residentSearch', 'cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
                          inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
                          window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency');
     const msg = isCertPicker
@@ -4127,9 +4313,9 @@ function bcResidentPickerChoose(inputId, residentId) {
           ? 'Deceased residents cannot be recorded as respondents.'
           : 'Deceased residents cannot be filed as complainants/reporters.');
     showToast(msg, 'error');
-    const list = document.getElementById(picker.listId);
+    const list = document.getElementById(picker.listId) || document.getElementById('residentDropdownList');
     if (list) list.classList.add('hidden');
-    const curIn = document.getElementById(inputId);
+    const curIn = document.getElementById(inputId) || document.getElementById(targetId);
     const parentSec = curIn ? curIn.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
     if (parentSec) parentSec.style.removeProperty('z-index');
     return;
@@ -4139,40 +4325,57 @@ function bcResidentPickerChoose(inputId, residentId) {
     const reason = picker.validate(r);
     if (reason) {
       showToast(reason, 'error');
-      const list = document.getElementById(picker.listId);
+      const list = document.getElementById(picker.listId) || document.getElementById('residentDropdownList');
       if (list) list.classList.add('hidden');
-      const curIn = document.getElementById(inputId);
+      const curIn = document.getElementById(inputId) || document.getElementById(targetId);
       const parentSec = curIn ? curIn.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
       if (parentSec) parentSec.style.removeProperty('z-index');
       return;
     }
   }
-  const input = document.getElementById(inputId);
-  if (input) input.value = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
+  const input = document.getElementById(inputId) || document.getElementById(targetId);
+  const resLast = r.lastName || r.last_name || '';
+  const resFirst = r.firstName || r.first_name || '';
+  const resMiddle = r.middleName || r.middle_name || '';
+  if (input) input.value = `${resLast}, ${resFirst} ${resMiddle}`.trim();
   const hidden = document.getElementById(picker.hiddenId);
   if (hidden) hidden.value = String(residentId);
-  const list = document.getElementById(picker.listId);
-  if (list) list.classList.add('hidden');
-  const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
-  if (parentSec) parentSec.style.removeProperty('z-index');
-  if (typeof picker.onPick === 'function') picker.onPick(r);
-}
-
-function bcResidentPickerClear(inputId) {
-  const picker = _bcResidentPickers[inputId];
-  if (!picker) return;
-  const input = document.getElementById(inputId);
-  if (input) input.value = '';
-  const hidden = document.getElementById(picker.hiddenId);
-  if (hidden) hidden.value = '';
-  const list = document.getElementById(picker.listId);
+  const list = document.getElementById(picker.listId) || document.getElementById('residentDropdownList');
   if (list) {
     list.classList.add('hidden');
     list.innerHTML = '';
   }
   const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
   if (parentSec) parentSec.style.removeProperty('z-index');
-  if (typeof picker.onPick === 'function') picker.onPick(null);
+  if (typeof picker.onPick === 'function') picker.onPick(r);
+}
+
+function bcResidentPickerClear(inputId) {
+  let targetId = inputId;
+  if (!_bcResidentPickers[targetId]) {
+    if (document.getElementById('residentSearch')) targetId = 'residentSearch';
+    else if (document.getElementById(inputId)) targetId = inputId;
+  }
+  const picker = _bcResidentPickers[targetId] || _bcResidentPickers[inputId] || _bcResidentPickers['residentSearch'];
+  const input = document.getElementById(inputId) || document.getElementById(targetId) || document.getElementById('residentSearch');
+  if (input) input.value = '';
+  if (picker) {
+    const hidden = document.getElementById(picker.hiddenId);
+    if (hidden) hidden.value = '';
+    const list = document.getElementById(picker.listId);
+    if (list) {
+      list.classList.add('hidden');
+      list.innerHTML = '';
+    }
+    if (typeof picker.onPick === 'function') picker.onPick(null);
+  }
+  const dropdown = document.getElementById('residentDropdownList');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
+  }
+  const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+  if (parentSec) parentSec.style.removeProperty('z-index');
 }
 
 // ============================================================

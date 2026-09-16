@@ -668,6 +668,11 @@ input.pw-input { padding-right: 38px; }
   z-index: 61 !important;
 }
 
+#residentDropdownList,
+.resident-dropdown-list {
+  z-index: 70 !important;
+}
+
 /* Confirmation / Alert Popups */
 .confirm-modal-backdrop,
 #bcDialogOverlay,
