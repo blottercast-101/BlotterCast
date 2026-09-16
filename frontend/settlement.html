@@ -135,41 +135,37 @@
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="settlement" data-icon-size="18"></div>
         </div>
         <div>
-          <div class="font-display text-3xl mt-3" id="stlTotal">0</div>
-          <div class="text-xs text-white/70 mt-1" id="stlTotalSub">scheduled hearings &amp; cases</div>
+          <div class="font-display text-3xl mt-3" id="totalSettlementCases">0</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Ongoing Mediation</span>
+          <span class="text-white/80 text-sm font-medium">Pending</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
         </div>
         <div>
-          <div class="font-display text-3xl mt-3" id="stlPending">0</div>
-          <div class="text-xs text-white/70 mt-1" id="stlPendingSub">under active conciliation</div>
+          <div class="font-display text-3xl mt-3" id="pendingSettlementCases">0</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Amicably Settled</span>
+          <span class="text-white/80 text-sm font-medium">Complied</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
         <div>
-          <div class="font-display text-3xl mt-3" id="stlComplied">0</div>
-          <div class="text-xs text-white/70 mt-1" id="stlCompliedSub">compliance fulfilled</div>
+          <div class="font-display text-3xl mt-3" id="compliedSettlementCases">0</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Repudiated / Elevated</span>
+          <span class="text-white/80 text-sm font-medium">Not Complied</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="x" data-icon-size="18"></div>
         </div>
         <div>
-          <div class="font-display text-3xl text-white mt-3" id="stlNotComplied">0</div>
-          <div class="text-xs text-white/70 mt-1" id="stlNotCompliedSub">non-compliance / CFA issued</div>
+          <div class="font-display text-3xl text-white mt-3" id="notCompliedSettlementCases">0</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
@@ -284,12 +280,10 @@
         <div>
           <label class="form-label">Action Taken <span class="text-red-500">*</span></label>
           <select id="sf_actionTaken" class="form-input" required onchange="clearFieldSpecificError('sf_actionTaken')">
-            <option value="" disabled selected hidden>-Select-</option>
+            <option value="" disabled selected>-Select-</option>
             <option value="Mediation (M)">Mediation (M)</option>
             <option value="Conciliation (C)">Conciliation (C)</option>
             <option value="Arbitration (A)">Arbitration (A)</option>
-            <option value="w EP">w EP</option>
-            <option value="C46+">C46+</option>
           </select>
           <p id="err_sf_actionTaken" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
@@ -390,7 +384,7 @@
   async function loadSettlements(silent = false) {
     if (!document.getElementById('settlementTableBody')) return;
     if (!silent) {
-      bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
+      bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
       bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
     }
 
@@ -398,7 +392,7 @@
       const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
       if (!document.getElementById('settlementTableBody')) return;
       settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
-      updateStlSummary();
+      updateSettlementMetrics();
       renderSettlements();
       bcCheckUrlHighlight({
         items: settlementData,
@@ -410,7 +404,7 @@
       if (!document.getElementById('settlementTableBody')) return;
       console.error('loadSettlements error:', err);
       settlementData = [];
-      bcSetStatsLoading(['stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
+      bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
       bcSetTableError('settlementTableBody', 'Could not load settlement records from server.', 'loadSettlements()', 9);
       showToast('Could not load settlements: ' + (err.message || err), 'error');
     }
@@ -570,18 +564,53 @@
     if (natureEl) natureEl.value = (b.caseType === 'CRIM' ? 'Criminal' : 'Civil') + ' — ' + b.nature;
   }
 
-  function updateStlSummary() {
-    const totalEl = document.getElementById('stlTotal');
-    const compEl = document.getElementById('stlComplied');
-    const notCompEl = document.getElementById('stlNotComplied');
-    const pendEl = document.getElementById('stlPending');
-    if (!totalEl && !compEl && !notCompEl && !pendEl) return;
+  function updateSettlementMetrics() {
+    const totalEl = document.getElementById('totalSettlementCases') || document.getElementById('stlTotal');
+    const pendEl = document.getElementById('pendingSettlementCases') || document.getElementById('stlPending');
+    const compEl = document.getElementById('compliedSettlementCases') || document.getElementById('stlComplied');
+    const notCompEl = document.getElementById('notCompliedSettlementCases') || document.getElementById('stlNotComplied');
+    if (!totalEl && !pendEl && !compEl && !notCompEl) return;
 
-    if (totalEl) totalEl.textContent = settlementData.length;
-    if (compEl) compEl.textContent = settlementData.filter(r=>r.status==='Complied').length;
-    if (notCompEl) notCompEl.textContent = settlementData.filter(r=>r.status==='Not Complied').length;
-    if (pendEl) pendEl.textContent = settlementData.filter(r=>r.status==='Pending').length;
+    const isPending = (status) => {
+      const s = String(status || '').toLowerCase().trim();
+      return s === 'pending' || s === 'ongoing';
+    };
+
+    const isComplied = (status) => {
+      const s = String(status || '').toLowerCase().trim();
+      return s === 'complied' || s === 'settled';
+    };
+
+    const isNotComplied = (status) => {
+      const s = String(status || '').toLowerCase().trim();
+      return s === 'not complied' || s === 'non-compliant' || s === 'repudiated' || s === 'elevated';
+    };
+
+    const data = settlementData || [];
+    const totalCount = data.length;
+    const pendingCount = data.filter(r => isPending(r.status)).length;
+    const compliedCount = data.filter(r => isComplied(r.status)).length;
+    const notCompliedCount = data.filter(r => isNotComplied(r.status) || (!isPending(r.status) && !isComplied(r.status))).length;
+
+    if (totalEl) totalEl.textContent = totalCount;
+    if (pendEl) pendEl.textContent = pendingCount;
+    if (compEl) compEl.textContent = compliedCount;
+    if (notCompEl) notCompEl.textContent = notCompliedCount;
+
+    // Sync legacy element IDs if they exist
+    ['stlTotal', 'stlPending', 'stlComplied', 'stlNotComplied'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el !== totalEl && el !== pendEl && el !== compEl && el !== notCompEl) {
+        if (id === 'stlTotal') el.textContent = totalCount;
+        if (id === 'stlPending') el.textContent = pendingCount;
+        if (id === 'stlComplied') el.textContent = compliedCount;
+        if (id === 'stlNotComplied') el.textContent = notCompliedCount;
+      }
+    });
   }
+  var updateStlSummary = updateSettlementMetrics;
+  window.updateSettlementMetrics = updateSettlementMetrics;
+  window.updateStlSummary = updateStlSummary;
 
   function getStlFiltered() {
     const searchEl = document.getElementById('stlSearch');
