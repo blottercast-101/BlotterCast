@@ -19,22 +19,85 @@ if hasattr(time, "tzset"):
 
 @event.listens_for(Engine, "connect")
 def _set_db_timezone(dbapi_connection, connection_record):
-    """Enforce UTC+8 / Asia/Manila timezone across database sessions (MySQL & PostgreSQL)."""
+    """Enforce UTC+8 / Asia/Manila timezone across database sessions safely without failing connections."""
     try:
+        mod = getattr(dbapi_connection.__class__, "__module__", "").lower()
+        name = getattr(dbapi_connection.__class__, "__name__", "").lower()
+
+        # SQLite does not support session timezones; skip to avoid syntax errors
+        if "sqlite" in mod or "sqlite" in name:
+            return
+
+        is_postgres = any(k in mod or k in name for k in ("postgres", "psycopg", "asyncpg", "pg8000"))
+        is_mysql = any(k in mod or k in name for k in ("mysql", "mariadb", "pymysql"))
+
         cursor = dbapi_connection.cursor()
         try:
-            # Enforce UTC+8 in MySQL/MariaDB connections
-            cursor.execute("SET time_zone = '+08:00'")
-        except Exception:
-            pass
-        try:
-            # Enforce Asia/Manila in PostgreSQL connections
-            cursor.execute("SET TIME ZONE 'Asia/Manila'")
-        except Exception:
-            pass
+            if is_postgres:
+                # PostgreSQL timezone setting
+                try:
+                    cursor.execute("SET TIME ZONE 'Asia/Manila'")
+                    if hasattr(dbapi_connection, "commit"):
+                        try:
+                            dbapi_connection.commit()
+                        except Exception:
+                            pass
+                except Exception:
+                    if hasattr(dbapi_connection, "rollback"):
+                        try:
+                            dbapi_connection.rollback()
+                        except Exception:
+                            pass
+            elif is_mysql:
+                # MySQL / MariaDB timezone setting
+                try:
+                    cursor.execute("SET time_zone = '+08:00'")
+                    if hasattr(dbapi_connection, "commit"):
+                        try:
+                            dbapi_connection.commit()
+                        except Exception:
+                            pass
+                except Exception:
+                    if hasattr(dbapi_connection, "rollback"):
+                        try:
+                            dbapi_connection.rollback()
+                        except Exception:
+                            pass
+            else:
+                # Fallback: attempt timezone setting safely and rollback immediately if unsupported
+                try:
+                    cursor.execute("SET time_zone = '+08:00'")
+                    if hasattr(dbapi_connection, "commit"):
+                        try:
+                            dbapi_connection.commit()
+                        except Exception:
+                            pass
+                except Exception:
+                    if hasattr(dbapi_connection, "rollback"):
+                        try:
+                            dbapi_connection.rollback()
+                        except Exception:
+                            pass
+                    try:
+                        cursor.execute("SET TIME ZONE 'Asia/Manila'")
+                        if hasattr(dbapi_connection, "commit"):
+                            try:
+                                dbapi_connection.commit()
+                            except Exception:
+                                pass
+                    except Exception:
+                        if hasattr(dbapi_connection, "rollback"):
+                            try:
+                                dbapi_connection.rollback()
+                            except Exception:
+                                pass
         finally:
-            cursor.close()
+            try:
+                cursor.close()
+            except Exception:
+                pass
     except Exception:
+        # Guarantee database connection STILL succeeds regardless of any exception
         pass
 
 

@@ -224,7 +224,7 @@ def auth_router():
             return _verify_otp()
         if action == "resend_otp" and request.method == "POST":
             return _resend_otp()
-        if action == "heartbeat" and request.method == "POST":
+        if action == "heartbeat":
             return _heartbeat()
         if action == "logout":
             return _logout()

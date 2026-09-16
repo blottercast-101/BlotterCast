@@ -34,6 +34,8 @@ def users_router():
             or ""
         ).strip().lower()
         method = request.method
+        if action in ("health", "ping"):
+            return jsonify({"ok": True, "status": "healthy"})
 
         # Avatar actions accessible to any signed-in user
         if (action in ("upload_avatar", "upload_profile_photo", "avatar", "profile_photo") or bool(request.files.get("avatar") or request.files.get("photo") or request.files.get("profile_photo") or request.files.get("image") or request.files.get("file"))) and method in ("POST", "PUT"):
