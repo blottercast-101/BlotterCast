@@ -4197,4 +4197,126 @@ thead th.sticky-col-right {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================================
+   Generated Reports Table & Print Layout Fix
+   Enforces responsive, non-overlapping table cells & text wrapping
+   ============================================================ */
+table.report-table {
+  width: 100% !important;
+  table-layout: fixed !important; /* Critical to respect defined cell widths */
+  border-collapse: collapse !important;
+  margin-top: 12px;
+  font-size: 0.825rem;
+}
+
+table.report-table th,
+table.report-table td {
+  white-space: normal !important; /* Disables nowrap */
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  vertical-align: top !important;
+  padding: 6px 8px !important;
+}
+
+table.report-table th {
+  background-color: #1e3a2b !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: 1px solid #1e3a2b !important;
+  text-align: left !important;
+  letter-spacing: 0.02em;
+}
+
+table.report-table td {
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  line-height: 1.35;
+}
+
+table.report-table tbody tr:nth-child(even) {
+  background-color: #f0f9f2 !important; /* Alternating row stripes */
+}
+
+table.report-table tbody tr:nth-child(odd) {
+  background-color: #ffffff !important;
+}
+
+/* Proportional column width definitions for report tables */
+table.report-table th.col-case-no,
+table.report-table td.col-case-no,
+table.report-table th.w-\[15\%\],
+table.report-table td.w-\[15\%\],
+table.report-table .w-\[15\%\] {
+  width: 15% !important;
+}
+
+table.report-table th.col-case-title,
+table.report-table td.col-case-title,
+table.report-table th.w-\[35\%\],
+table.report-table td.w-\[35\%\],
+table.report-table .w-\[35\%\] {
+  width: 35% !important;
+}
+
+table.report-table th.col-nature,
+table.report-table td.col-nature,
+table.report-table th.w-\[18\%\],
+table.report-table td.w-\[18\%\],
+table.report-table .w-\[18\%\] {
+  width: 18% !important;
+}
+
+table.report-table th.col-date-filed,
+table.report-table td.col-date-filed,
+table.report-table th.w-\[17\%\],
+table.report-table td.w-\[17\%\],
+table.report-table .w-\[17\%\] {
+  width: 17% !important;
+}
+
+table.report-table th.col-status,
+table.report-table td.col-status {
+  width: 15% !important;
+}
+
+/* Print Engine & Export Stylesheet */
+@media print {
+  table.report-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+
+  table.report-table th,
+  table.report-table td {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    vertical-align: top !important;
+    padding: 6px 8px !important;
+    text-overflow: clip !important;
+  }
+
+  table.report-table th {
+    background-color: #1e3a2b !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color: #ffffff !important;
+    border: 1px solid #1e3a2b !important;
+  }
+
+  table.report-table tbody tr:nth-child(even) {
+    background-color: #f0f9f2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table.report-table td {
+    border: 1px solid #cbd5e1 !important;
+  }
+}
+
+
 

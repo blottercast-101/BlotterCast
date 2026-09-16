@@ -3040,7 +3040,23 @@ class BcBatchManager {
     }
 
     let tableRowsHtml = '';
+    let tableHeadersHtml = '';
+
     if (this.opts.apiType === 'census') {
+      tableHeadersHtml = `
+        <tr>
+          <th style="width: 5%;">#</th>
+          <th style="width: 13%;">Resident No.</th>
+          <th style="width: 18%;">Full Name</th>
+          <th style="width: 10%;">Birth Date</th>
+          <th style="width: 6%;">Age</th>
+          <th style="width: 6%;">Sex</th>
+          <th style="width: 7%;">Civil</th>
+          <th style="width: 8%;">Zone</th>
+          <th style="width: 17%;">Address</th>
+          <th style="width: 10%;">Status</th>
+        </tr>
+      `;
       tableRowsHtml = items.map((r, i) => `
         <tr>
           <td>${i + 1}</td>
@@ -3056,39 +3072,82 @@ class BcBatchManager {
         </tr>
       `).join('');
     } else if (this.opts.apiType === 'incidents') {
+      tableHeadersHtml = `
+        <tr>
+          <th style="width: 15%;">Report No.</th>
+          <th style="width: 15%;">Date &amp; Time</th>
+          <th style="width: 18%;">Location</th>
+          <th style="width: 20%;">Category</th>
+          <th style="width: 18%;">Reporter</th>
+          <th style="width: 14%;">Status</th>
+        </tr>
+      `;
       tableRowsHtml = items.map((r, i) => `
         <tr>
-          <td>${i + 1}</td>
           <td><strong>${r.reportNo || '—'}</strong></td>
           <td>${r.dateReported || '—'} ${r.timeReported || ''}</td>
           <td>${r.zone || ''} ${r.location || ''}</td>
           <td>${r.category || '—'}</td>
           <td>${r.reporter || '—'}</td>
-          <td>${r.priority || '—'}</td>
           <td>${r.status || '—'}</td>
         </tr>
       `).join('');
     } else if (this.opts.apiType === 'blotter') {
+      tableHeadersHtml = `
+        <tr>
+          <th style="width: 15%;">Docket No.</th>
+          <th style="width: 13%;">Date Filed</th>
+          <th style="width: 20%;">Complainant</th>
+          <th style="width: 20%;">Respondent</th>
+          <th style="width: 18%;">Nature</th>
+          <th style="width: 14%;">Status</th>
+        </tr>
+      `;
       tableRowsHtml = items.map((r, i) => `
         <tr>
-          <td>${i + 1}</td>
           <td><strong>${r.docketNo || '—'}</strong></td>
           <td>${r.dateFiled || '—'}</td>
           <td>${r.complainant || '—'}</td>
           <td>${r.respondent || '—'}</td>
           <td>${r.nature || '—'}</td>
-          <td>${r.type || '—'}</td>
+          <td>${r.status || '—'}</td>
+        </tr>
+      `).join('');
+    } else if (this.opts.apiType === 'settlements') {
+      tableHeadersHtml = `
+        <tr>
+          <th class="w-[15%]" style="width: 15%;">Case No.</th>
+          <th class="w-[35%]" style="width: 35%;">Case Title</th>
+          <th class="w-[18%]" style="width: 18%;">Nature</th>
+          <th class="w-[17%]" style="width: 17%;">Date Filed</th>
+          <th class="w-[15%]" style="width: 15%;">Status</th>
+        </tr>
+      `;
+      tableRowsHtml = items.map((r, i) => `
+        <tr>
+          <td><strong>${r.caseNo || '—'}</strong></td>
+          <td>${r.caseTitle || r.title || '—'}</td>
+          <td>${r.nature || r.complaintTitle || '—'}</td>
+          <td>${r.dateFiled || '—'}</td>
           <td>${r.status || '—'}</td>
         </tr>
       `).join('');
     } else {
+      tableHeadersHtml = `
+        <tr>
+          <th class="w-[15%]" style="width: 15%;">Case No.</th>
+          <th class="w-[35%]" style="width: 35%;">Case Title</th>
+          <th class="w-[18%]" style="width: 18%;">Nature</th>
+          <th class="w-[17%]" style="width: 17%;">Date Filed</th>
+          <th class="w-[15%]" style="width: 15%;">Status</th>
+        </tr>
+      `;
       tableRowsHtml = items.map((r, i) => `
         <tr>
-          <td>${i + 1}</td>
           <td><strong>${r.caseNo || '—'}</strong></td>
           <td>${r.caseTitle || r.title || '—'}</td>
-          <td>${r.nature || '—'}</td>
-          <td>${r.actionTaken || r.dateFiled || '—'}</td>
+          <td>${r.nature || r.complaintTitle || '—'}</td>
+          <td>${r.dateFiled || '—'}</td>
           <td>${r.status || '—'}</td>
         </tr>
       `).join('');
@@ -3103,16 +3162,78 @@ class BcBatchManager {
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; }
           .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
-          .header h2 { margin: 0 0 4px; font-size: 18px; color: #1b4332; text-transform: uppercase; }
+          .header h2 { margin: 0 0 4px; font-size: 18px; color: #1e3a2b; text-transform: uppercase; }
           .header p { margin: 0; font-size: 13px; color: #64748b; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
-          th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
-          th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
-          tr:nth-child(even) { background: #f8fafc; }
+          
+          /* Enforce responsive, non-overlapping table cells */
+          table.report-table {
+            width: 100% !important;
+            table-layout: fixed !important; /* Critical to respect defined cell widths */
+            border-collapse: collapse !important;
+            font-size: 11px;
+            margin-top: 12px;
+          }
+
+          table.report-table th,
+          table.report-table td {
+            white-space: normal !important; /* Disables nowrap */
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            vertical-align: top !important;
+            padding: 6px 8px !important;
+          }
+
+          table.report-table th {
+            background: #1e3a2b !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            border: 1px solid #1e3a2b;
+            text-align: left;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          table.report-table td {
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+          }
+
+          table.report-table tbody tr:nth-child(even) {
+            background: #f0f9f2 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: right; }
           @media print {
             body { padding: 0; }
             @page { margin: 1.5cm; }
+            table.report-table {
+              width: 100% !important;
+              table-layout: fixed !important;
+              border-collapse: collapse !important;
+            }
+            table.report-table th,
+            table.report-table td {
+              white-space: normal !important;
+              word-wrap: break-word !important;
+              overflow-wrap: break-word !important;
+              word-break: break-word !important;
+              vertical-align: top !important;
+              padding: 6px 8px !important;
+            }
+            table.report-table th {
+              background-color: #1e3a2b !important;
+              color: #ffffff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            table.report-table tbody tr:nth-child(even) {
+              background-color: #f0f9f2 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
           }
         </style>
       </head>
@@ -3120,20 +3241,11 @@ class BcBatchManager {
         <div class="header">
           <h2>Republic of the Philippines • City of Valenzuela</h2>
           <p><strong>BARANGAY MAPULANG LUPA</strong> • BlotterCast Official Records System</p>
-          <p style="margin-top: 4px; font-weight: bold; color: #1b4332;">${title} (${items.length} records printed on ${new Date().toLocaleDateString()})</p>
+          <p style="margin-top: 4px; font-weight: bold; color: #1e3a2b;">${title} (${items.length} records printed on ${new Date().toLocaleDateString()})</p>
         </div>
-        <table>
+        <table class="report-table">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Reference No.</th>
-              <th>Primary Party / Entity</th>
-              <th>Date / Schedule</th>
-              <th>Category / Details</th>
-              <th>Location / Address</th>
-              <th>Priority / Type</th>
-              <th>Status</th>
-            </tr>
+            ${tableHeadersHtml}
           </thead>
           <tbody>
             ${tableRowsHtml}

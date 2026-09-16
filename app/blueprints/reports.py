@@ -1,4 +1,5 @@
 import csv
+import html
 import io
 import json
 import os
@@ -22,7 +23,7 @@ from reportlab.platypus import (
 
 from ..extensions import db
 from ..helpers import parse_date
-from ..models import GeneratedReport, Incident, MlRun, Settlement
+from ..models import BlotterRecord, GeneratedReport, Incident, MlRun, Settlement
 from ..permissions import json_error, login_required, permission_required
 
 bp = Blueprint("reports", __name__)
@@ -33,9 +34,10 @@ try:
 except OSError:
     pass
 
-BC_GREEN = colors.Color(30 / 255, 126 / 255, 30 / 255)
-BC_GREEN_DARK = colors.Color(15 / 255, 66 / 255, 15 / 255)
-BC_GREEN_PALE = colors.Color(240 / 255, 250 / 255, 240 / 255)
+BC_GREEN = colors.HexColor("#1e3a2b")
+BC_GREEN_DARK = colors.HexColor("#1e3a2b")
+BC_GREEN_HEADER = colors.HexColor("#1e3a2b")
+BC_GREEN_PALE = colors.HexColor("#f0f9f2")
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -111,15 +113,49 @@ def _kv_line(label, value):
 
 
 def _data_table(headers, rows, col_widths):
-    table_data = [headers] + rows
+    th_style = ParagraphStyle(
+        "ReportTableTh",
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.white,
+        alignment=0,
+        wordWrap="CJK",
+    )
+    td_style = ParagraphStyle(
+        "ReportTableTd",
+        fontName="Helvetica",
+        fontSize=7.5,
+        leading=9.5,
+        textColor=colors.Color(30 / 255, 30 / 255, 30 / 255),
+        alignment=0,
+        wordWrap="CJK",
+    )
+
+    def _to_flowable(val, style):
+        if isinstance(val, Paragraph):
+            return val
+        s = html.escape(str(val) if val is not None else "")
+        return Paragraph(s, style)
+
+    wrapped_headers = [_to_flowable(h, th_style) for h in headers]
+    wrapped_rows = [
+        [_to_flowable(cell, td_style) for cell in row]
+        for row in rows
+    ]
+    table_data = [wrapped_headers] + wrapped_rows
+
     t = Table(table_data, colWidths=[w * mm for w in col_widths], repeatRows=1)
     style = [
-        ("BACKGROUND", (0, 0), (-1, 0), BC_GREEN),
+        ("BACKGROUND", (0, 0), (-1, 0), BC_GREEN_HEADER),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.Color(200 / 255, 200 / 255, 200 / 255)),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
     ]
     for i in range(1, len(table_data)):
         if i % 2 == 0:
@@ -153,7 +189,7 @@ def _build_incident_summary_pdf(from_date, to_date, zone):
     for cat, c in by_category.items():
         story.append(_kv_line(f"{cat}:", str(c)))
     story += [Spacer(1, 8), Paragraph("Incident Log", _heading_style())]
-    table_rows = [[r.report_no, r.incident_date.isoformat(), r.zone_id, r.category, r.priority, r.status] for r in rows]
+    table_rows = [[r.report_no or "", r.incident_date.isoformat() if r.incident_date else "", r.zone_id or "", r.category or "", r.priority or "", r.status or ""] for r in rows]
     story.append(_data_table(["Report No.", "Date", "Zone", "Category", "Priority", "Status"], table_rows, [30, 24, 18, 45, 22, 41]))
 
     doc.build(story)
@@ -171,8 +207,47 @@ def _build_settlement_compliance_pdf():
     for s, c in by_status.items():
         story.append(_kv_line(f"{s}:", str(c)))
     story += [Spacer(1, 8), Paragraph("Case Log", _heading_style())]
-    table_rows = [[r.case_no, r.case_title or "", r.nature, r.date_filed.isoformat() if r.date_filed else "", r.status] for r in rows]
-    story.append(_data_table(["Case No.", "Case Title", "Nature", "Date Filed", "Status"], table_rows, [26, 55, 30, 30, 39]))
+    table_rows = [[r.case_no or "", r.case_title or "", r.nature or "", r.date_filed.isoformat() if r.date_filed else "", r.status or ""] for r in rows]
+    # Proportional column widths across 180mm printable width:
+    # Case No.: 15% (27mm), Case Title: 35% (63mm), Nature: 18% (32.4mm), Date Filed: 17% (30.6mm), Status: 15% (27mm)
+    story.append(_data_table(["Case No.", "Case Title", "Nature", "Date Filed", "Status"], table_rows, [27, 63, 32.4, 30.6, 27]))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+def _build_blotter_summary_pdf(from_date, to_date, zone=None):
+    q = BlotterRecord.query.filter(BlotterRecord.date_filed.between(parse_date(from_date), parse_date(to_date)))
+    if zone:
+        q = q.filter(BlotterRecord.zone_id == zone)
+    rows = q.order_by(BlotterRecord.date_filed.desc()).all()
+
+    by_status = {}
+    for r in rows:
+        by_status[r.status] = by_status.get(r.status, 0) + 1
+
+    buf, doc = _new_pdf_buffer("Blotter Summary Report")
+    story = [
+        _kv_line("Period:", f"{from_date} to {to_date}" + (f"   ·   Zone: {zone}" if zone else "   ·   All Zones")),
+        _kv_line("Total Blotter Records:", str(len(rows))),
+        Spacer(1, 8),
+        Paragraph("Status Breakdown", _heading_style()),
+    ]
+    for status, c in by_status.items():
+        story.append(_kv_line(f"{status}:", str(c)))
+    story += [Spacer(1, 8), Paragraph("Blotter Log", _heading_style())]
+    table_rows = [
+        [
+            r.docket_no or "",
+            r.date_filed.isoformat() if r.date_filed else "",
+            r.complainant or "",
+            r.respondent or "",
+            r.nature or "",
+            r.status or "",
+        ]
+        for r in rows
+    ]
+    story.append(_data_table(["Docket No.", "Date Filed", "Complainant", "Respondent", "Nature", "Status"], table_rows, [28, 22, 38, 38, 30, 24]))
 
     doc.build(story)
     return buf.getvalue()
@@ -274,6 +349,13 @@ def _generate():
                 w.writerow(["Case No.", "Case Title", "Nature", "Date Filed", "Status"])
                 for r in Settlement.query.order_by(Settlement.date_filed.desc()).all():
                     w.writerow([r.case_no, r.case_title, r.nature, r.date_filed, r.status])
+            elif report_type in ("Blotter Summary Report", "Blotter Report"):
+                q = BlotterRecord.query.filter(BlotterRecord.date_filed.between(parse_date(from_date), parse_date(to_date)))
+                if zone:
+                    q = q.filter(BlotterRecord.zone_id == zone)
+                w.writerow(["Docket No.", "Date Filed", "Complainant", "Respondent", "Nature", "Case Type", "Status"])
+                for r in q.order_by(BlotterRecord.date_filed.desc()).all():
+                    w.writerow([r.docket_no, r.date_filed, r.complainant, r.respondent, r.nature, r.case_type, r.status])
             elif report_type in ("Trend Analysis Report", "Comparative Period Report"):
                 from sqlalchemy import extract, func
                 w.writerow(["Month", "Incident Count"])
@@ -288,6 +370,8 @@ def _generate():
     else:
         if report_type == "Settlement Compliance Report":
             pdf_bytes = _build_settlement_compliance_pdf()
+        elif report_type in ("Blotter Summary Report", "Blotter Report"):
+            pdf_bytes = _build_blotter_summary_pdf(from_date, to_date, zone)
         elif report_type in ("Trend Analysis Report", "Comparative Period Report"):
             pdf_bytes = _build_trend_analysis_pdf(year)
         elif report_type in ("Predictive Risk Assessment", "Patrol Deployment Plan"):
