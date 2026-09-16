@@ -926,7 +926,7 @@ function formatActiveSinceDate(rawDate) {
   try {
     const d = new Date(rawDate);
     if (isNaN(d.getTime())) return String(rawDate);
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
   } catch (_) {
     return String(rawDate);
   }

@@ -27,6 +27,7 @@ from ..models import (
     Settlement,
 )
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
+from ..timezone import ph_now, ph_today, ph_time
 
 bp = Blueprint("records", __name__)
 
@@ -148,7 +149,7 @@ def update_settlement_status(settlement_id):
     _sync_settlement_to_blotter_and_incident(settlement)
 
     actor = session.get("username") or "System"
-    ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+    ts = ph_now().strftime("%b %d, %Y %I:%M %p")
     db.session.add(Notification(
         type="settlement_updated",
         title=f"Settlement Status Updated: {settlement.case_no}",
@@ -335,7 +336,7 @@ def elevate_incident_endpoint(incident_id):
         docket_no = d.get("docketNo") or next_seq_no(BlotterRecord, "docket_no", "BLT")
         record = BlotterRecord(
             docket_no=docket_no,
-            date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
+            date_filed=parse_date(d.get("dateFiled")) or ph_today(),
             complainant=complainant,
             complainant_id=complainant_id,
             complainant_addr=complainant_addr,
@@ -356,7 +357,7 @@ def elevate_incident_endpoint(incident_id):
         inc.is_blotter = True
         inc.blotter_docket_no = docket_no
         inc.status = "Elevated to Blotter"
-        inc.updated_at = datetime.utcnow()
+        inc.updated_at = ph_now().replace(tzinfo=None)
 
         # Auto-initialize 1:1 Settlement
         stl_case_no = next_seq_no(Settlement, "case_no", "STL")
@@ -374,7 +375,7 @@ def elevate_incident_endpoint(incident_id):
         db.session.flush()
 
         actor = session.get("username") or "System"
-        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        ts = ph_now().strftime("%b %d, %Y %I:%M %p")
         db.session.add(Notification(
             type="incident_elevated",
             title=f"Incident Elevated to Blotter: {inc.report_no}",
@@ -943,8 +944,8 @@ def _incidents():
                 lat, lng = float(geo["lat"]), float(geo["lng"])
 
         report_no = d.get("reportNo") or next_seq_no(Incident, "report_no", "INC", 4)
-        idate = parse_date(d.get("date")) or datetime.utcnow().date()
-        time_reported = parse_time(d.get("timeReported")) or datetime.utcnow().time().replace(microsecond=0)
+        idate = parse_date(d.get("date")) or ph_today()
+        time_reported = parse_time(d.get("timeReported")) or ph_time()
         hour = time_reported.hour
 
         reporter_resident_id = int(d["reporterResidentId"]) if d.get("reporterResidentId") else (int(d["reporter_resident_id"]) if d.get("reporter_resident_id") else None)
@@ -1034,7 +1035,7 @@ def _incidents():
         db.session.flush()
 
         actor = session.get("username") or "System"
-        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        ts = ph_now().strftime("%b %d, %Y %I:%M %p")
         db.session.add(Notification(
             type="incident_crud",
             title=f"New Incident Report Filed: {incident.report_no}",
@@ -1148,7 +1149,7 @@ def _incidents():
                 if g_age is not None and g_age < 18:
                     return json_error("Guardian must be an adult (18 years or older).", 422)
 
-        incident.incident_date = parse_date(d.get("date")) or datetime.utcnow().date()
+        incident.incident_date = parse_date(d.get("date")) or ph_today()
         incident.time_reported = time_reported
         incident.hour = time_reported.hour
         incident.zone_id = zone_id
@@ -1186,7 +1187,7 @@ def _incidents():
         incident.status = status_input
 
         actor = session.get("username") or "System"
-        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        ts = ph_now().strftime("%b %d, %Y %I:%M %p")
         if incident.status == "Elevated to Blotter":
             db.session.add(Notification(
                 type="incident_elevated",
@@ -1386,7 +1387,7 @@ def _blotter():
         docket_no = d.get("docketNo") or next_seq_no(BlotterRecord, "docket_no", "BLT")
         source_incident_id = d.get("sourceIncidentId") or d.get("source_incident_id")
         record = BlotterRecord(
-            docket_no=docket_no, date_filed=parse_date(d.get("dateFiled")) or datetime.utcnow().date(),
+            docket_no=docket_no, date_filed=parse_date(d.get("dateFiled")) or ph_today(),
             complainant=complainant, complainant_id=complainant_id, complainant_addr=d.get("complainantAddr", ""),
             respondent=respondent, respondent_id=respondent_id, respondent_addr=d.get("respondentAddr", ""),
             nature=d.get("nature", ""), case_type=d.get("type") or "CRIM", status="Pending",
@@ -1408,7 +1409,7 @@ def _blotter():
                 inc.is_blotter = True
                 inc.blotter_docket_no = docket_no
                 inc.status = "Elevated to Blotter"
-                inc.updated_at = datetime.utcnow()
+                inc.updated_at = ph_now().replace(tzinfo=None)
 
         # Auto-Forward / Auto-Initialize 1:1 Settlement Record
         existing_stl = Settlement.query.filter_by(blotter_id=record.id).first()
@@ -1431,7 +1432,7 @@ def _blotter():
 
         if source_incident_id and inc:
             actor = session.get("username") or "System"
-            ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+            ts = ph_now().strftime("%b %d, %Y %I:%M %p")
             db.session.add(Notification(
                 type="incident_elevated",
                 title=f"Incident Elevated to Blotter: {inc.report_no}",
@@ -1534,7 +1535,7 @@ def _blotter():
         if same_census_person or same_name_typed:
             return json_error("Complainant and respondent cannot be the same person.")
 
-        record.date_filed = parse_date(d.get("dateFiled")) or datetime.utcnow().date()
+        record.date_filed = parse_date(d.get("dateFiled")) or ph_today()
         record.complainant = complainant
         record.complainant_id = complainant_id
         record.complainant_addr = d.get("complainantAddr", "")
@@ -1571,7 +1572,7 @@ def _blotter():
                     inc.category = d.get("type")
                 if d.get("zone"):
                     inc.zone_id = d.get("zone")
-                inc.updated_at = datetime.utcnow()
+                inc.updated_at = ph_now().replace(tzinfo=None)
 
         db.session.commit()
         trigger_trend_and_prediction_check()
@@ -1661,15 +1662,15 @@ def _sync_settlement_to_blotter_and_incident(settlement):
 
     if st in ("Settled", "Complied", "Resolved") or "settled" in act_lower or "amicable" in act_lower or "resolved" in act_lower:
         b.status = "Resolved" if st == "Resolved" else "Settled"
-        b.resolved_at = datetime.utcnow()
+        b.resolved_at = ph_now().replace(tzinfo=None)
         if b.source_incident_id:
             inc = Incident.query.get(b.source_incident_id)
             if inc:
                 inc.status = "Resolved"
-                inc.resolved_at = datetime.utcnow()
+                inc.resolved_at = ph_now().replace(tzinfo=None)
     elif st in ("Dismissed", "CFA Issued", "Repudiated") or "dismissed" in act_lower:
         b.status = st
-        b.resolved_at = datetime.utcnow()
+        b.resolved_at = ph_now().replace(tzinfo=None)
         if b.source_incident_id:
             inc = Incident.query.get(b.source_incident_id)
             if inc:
@@ -1731,7 +1732,7 @@ def _settlements():
         _sync_settlement_to_blotter_and_incident(settlement)
 
         actor = session.get("username") or "System"
-        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        ts = ph_now().strftime("%b %d, %Y %I:%M %p")
         db.session.add(Notification(
             type="settlement_created",
             title=f"New Settlement Case: {settlement.case_no}",
@@ -1787,7 +1788,7 @@ def _settlements():
         _sync_settlement_to_blotter_and_incident(settlement)
 
         actor = session.get("username") or "System"
-        ts = datetime.utcnow().strftime("%b %d, %Y %I:%M %p")
+        ts = ph_now().strftime("%b %d, %Y %I:%M %p")
         db.session.add(Notification(
             type="settlement_updated",
             title=f"Settlement Case Updated: {settlement.case_no}",

@@ -1484,7 +1484,7 @@ function bcFormatTime(val, formatPref) {
 }
 
 /**
- * Universal Date+Time Formatter.
+ * Universal Date+Time Formatter (Asia/Manila, UTC+8).
  * Formats timestamps into:
  *   - 12-Hour: "Aug 23, 2026, 01:36 AM" / "Aug 23, 2026, 01:36 PM"
  *   - 24-Hour: "Aug 23, 2026, 01:36" / "Aug 23, 2026, 13:36"
@@ -1492,13 +1492,26 @@ function bcFormatTime(val, formatPref) {
 function bcFormatTimestamp(iso, emptyLabel = 'Never', formatPref) {
   if (!iso) return emptyLabel;
   try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return emptyLabel;
+    let d;
+    if (typeof iso === 'string') {
+      const s = iso.trim();
+      if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s) && !/[zZ+-]\d*$/.test(s)) {
+        d = new Date(s.replace(' ', 'T') + 'Z');
+      } else {
+        d = new Date(s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s);
+      }
+    } else {
+      d = new Date(iso);
+    }
+    if (isNaN(d.getTime())) {
+      d = new Date(iso);
+      if (isNaN(d.getTime())) return emptyLabel;
+    }
     const use24 = (formatPref || bcGetTimeFormat()) === '24';
-    const datePart = d.toLocaleDateString('en-PH', {
+    const datePart = d.toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE
     });
-    const timePart = d.toLocaleTimeString('en-PH', {
+    const timePart = d.toLocaleTimeString('en-US', {
       hour: '2-digit', minute: '2-digit', hour12: !use24, timeZone: BC_SYSTEM_TIMEZONE
     });
     return `${datePart}, ${timePart}`;
@@ -1514,15 +1527,61 @@ function bcFormatDateTime(iso, emptyLabel = 'Never', formatPref) {
 function bcFormatDate(iso, emptyLabel = '') {
   if (!iso) return emptyLabel;
   try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return emptyLabel;
-    return d.toLocaleDateString('en-PH', {
+    let d;
+    if (typeof iso === 'string') {
+      const s = iso.trim();
+      if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s) && !/[zZ+-]\d*$/.test(s)) {
+        d = new Date(s.replace(' ', 'T') + 'Z');
+      } else {
+        d = new Date(s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s);
+      }
+    } else {
+      d = new Date(iso);
+    }
+    if (isNaN(d.getTime())) {
+      d = new Date(iso);
+      if (isNaN(d.getTime())) return emptyLabel;
+    }
+    return d.toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', timeZone: BC_SYSTEM_TIMEZONE,
     });
   } catch (e) {
     return emptyLabel;
   }
 }
+
+function formatSystemDate(dateString) {
+  if (!dateString || dateString === 'Never') return 'Never';
+  let date;
+  if (typeof dateString === 'string') {
+    const s = dateString.trim();
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s) && !/[zZ+-]\d*$/.test(s)) {
+      date = new Date(s.replace(' ', 'T') + 'Z');
+    } else {
+      date = new Date(s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s);
+    }
+  } else {
+    date = new Date(dateString);
+  }
+  if (isNaN(date.getTime())) {
+    date = new Date(dateString);
+    if (isNaN(date.getTime())) return String(dateString);
+  }
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).format(date);
+}
+
+window.formatSystemDate = formatSystemDate;
+window.bcFormatTimestamp = bcFormatTimestamp;
+window.bcFormatDateTime = bcFormatDateTime;
+window.bcFormatDate = bcFormatDate;
 
 function bcFormatTime12h(hhmm) {
   return bcFormatTime(hhmm);
@@ -3745,7 +3804,18 @@ const NOTIF_TYPE_CONFIG = {
 
 function timeAgo(dateStr) {
   if (!dateStr) return 'just now';
-  const seconds = Math.floor((Date.now() - new Date(dateStr.replace(' ', 'T'))) / 1000);
+  let parsed;
+  if (typeof dateStr === 'string') {
+    const s = dateStr.trim();
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s) && !/[zZ+-]\d*$/.test(s)) {
+      parsed = new Date(s.replace(' ', 'T') + 'Z');
+    } else {
+      parsed = new Date(s.replace(' ', 'T'));
+    }
+  } else {
+    parsed = new Date(dateStr);
+  }
+  const seconds = Math.floor((Date.now() - parsed) / 1000);
   if (isNaN(seconds) || seconds < 60) return 'just now';
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m ago`;

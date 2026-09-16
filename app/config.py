@@ -1,4 +1,13 @@
 import os
+import time
+
+# Enforce Philippine Standard Time (Asia/Manila, UTC+8) for backend environment
+os.environ.setdefault("TZ", "Asia/Manila")
+if hasattr(time, "tzset"):
+    try:
+        time.tzset()
+    except Exception:
+        pass
 
 try:
     from dotenv import load_dotenv

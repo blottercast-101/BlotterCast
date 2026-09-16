@@ -23,6 +23,7 @@ from reportlab.platypus import (
 
 from ..extensions import db
 from ..helpers import parse_date
+from ..timezone import ph_now, ph_today
 from ..models import BlotterRecord, GeneratedReport, Incident, MlRun, Settlement
 from ..permissions import json_error, login_required, permission_required
 
@@ -322,15 +323,15 @@ def _log_report(report_type, from_date, to_date, fmt, file_path):
 def _generate():
     d = request.get_json(silent=True) or {}
     report_type = d.get("type") or "Incident Summary Report"
-    from_date = d.get("from") or datetime.utcnow().replace(day=1).strftime("%Y-%m-%d")
-    to_date = d.get("to") or datetime.utcnow().strftime("%Y-%m-%d")
+    from_date = d.get("from") or ph_today().replace(day=1).strftime("%Y-%m-%d")
+    to_date = d.get("to") or ph_today().strftime("%Y-%m-%d")
     zone = d.get("zone") or None
     fmt = d.get("format") or "pdf"
     year = from_date[:4]
 
     slug = re.sub(r"[^a-z0-9]+", "-", report_type.lower()).strip("-")
     ext = "csv" if fmt == "excel" else "pdf"
-    filename = f"{slug}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.{ext}"
+    filename = f"{slug}-{ph_now().strftime('%Y%m%d-%H%M%S')}.{ext}"
     file_path = os.path.join(REPORTS_DIR, filename)
 
     if fmt == "excel":

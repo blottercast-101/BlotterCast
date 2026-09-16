@@ -18,6 +18,7 @@ from ..models import (
     Settlement,
 )
 from ..permissions import json_error, log_audit, login_required, permission_required, role_can
+from ..timezone import ph_today
 
 bp = Blueprint("documents", __name__)
 
@@ -541,7 +542,7 @@ def _clearance():
             age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
             address=resident.address, voter_status=resident.voter_status, purpose=d.get("purpose", ""),
             or_no=or_no, fee=d.get("fee") or 20.00,
-            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            date_issued=parse_date(d.get("dateIssued")) or ph_today(),
             issued_by=session.get("full_name", "System"),
         )
         db.session.add(record)
@@ -600,7 +601,7 @@ def _residency():
             age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
             address=resident.address, years_residency=years_residency, duration_unit=duration_unit,
             purpose=d.get("purpose", ""), or_no=or_no, fee=d.get("fee") or 20.00,
-            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            date_issued=parse_date(d.get("dateIssued")) or ph_today(),
             issued_by=session.get("full_name", "System"),
         )
         db.session.add(record)
@@ -654,7 +655,7 @@ def _non_residency():
         record = BarangayNonResidency(
             resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
             previous_address=d.get("previousAddress", ""), purpose=d.get("purpose", ""), or_no=or_no,
-            fee=d.get("fee") or 20.00, date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            fee=d.get("fee") or 20.00, date_issued=parse_date(d.get("dateIssued")) or ph_today(),
             issued_by=session.get("full_name", "System"),
         )
         db.session.add(record)
@@ -709,7 +710,7 @@ def _indigency():
             resident_id=resident_id, ctrl_no=ctrl_no, full_name=full_name_of(resident),
             age=compute_age(resident.date_of_birth), civil_status=resident.civil_status,
             address=resident.address, purpose=d.get("purpose", ""),
-            date_issued=parse_date(d.get("dateIssued")) or datetime.utcnow().date(),
+            date_issued=parse_date(d.get("dateIssued")) or ph_today(),
             issued_by=session.get("full_name", "System"),
         )
         db.session.add(record)

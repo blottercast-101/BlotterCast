@@ -1,3 +1,13 @@
+import os
+import time
+
+os.environ.setdefault("TZ", "Asia/Manila")
+if hasattr(time, "tzset"):
+    try:
+        time.tzset()
+    except Exception:
+        pass
+
 from app import create_app
 
 app = create_app()

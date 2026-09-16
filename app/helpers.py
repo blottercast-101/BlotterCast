@@ -2,13 +2,14 @@ import re
 from datetime import date, datetime, time
 
 from .models import CensusRecord, Zone
+from .timezone import ph_today
 
 
 def next_seq_no(model, column_name: str, prefix: str, digits: int = 3) -> str:
     """Next sequential number for the year, e.g. next_seq_no(Incident, 'report_no',
     'INC', 4) -> 'INC-2026-0007'. Based on the highest existing number for the
     prefix+year (not a row count), then guarded against collisions."""
-    year = datetime.utcnow().year
+    year = ph_today().year
     like = f"{prefix}-{year}-%"
     column = getattr(model, column_name)
     row = (
@@ -39,7 +40,7 @@ def next_or_no() -> str:
     from .models import BarangayClearance, BarangayResidency, BarangayNonResidency
 
     or_tables = [BarangayClearance, BarangayResidency, BarangayNonResidency]
-    year = datetime.utcnow().year
+    year = ph_today().year
     like = f"OR-{year}-%"
     n = 1
     for model in or_tables:

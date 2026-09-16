@@ -1,9 +1,42 @@
 import os
+import time
 
 from flask import Flask, send_from_directory
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from .config import Config
 from .extensions import db
+
+# Enforce system environment timezone to Asia/Manila (PST / UTC+8)
+os.environ.setdefault("TZ", "Asia/Manila")
+if hasattr(time, "tzset"):
+    try:
+        time.tzset()
+    except Exception:
+        pass
+
+
+@event.listens_for(Engine, "connect")
+def _set_db_timezone(dbapi_connection, connection_record):
+    """Enforce UTC+8 / Asia/Manila timezone across database sessions (MySQL & PostgreSQL)."""
+    try:
+        cursor = dbapi_connection.cursor()
+        try:
+            # Enforce UTC+8 in MySQL/MariaDB connections
+            cursor.execute("SET time_zone = '+08:00'")
+        except Exception:
+            pass
+        try:
+            # Enforce Asia/Manila in PostgreSQL connections
+            cursor.execute("SET TIME ZONE 'Asia/Manila'")
+        except Exception:
+            pass
+        finally:
+            cursor.close()
+    except Exception:
+        pass
+
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
