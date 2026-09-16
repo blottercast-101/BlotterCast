@@ -274,10 +274,7 @@
     </div>
 
     <!-- Elevated Lock Notice Banner -->
-    <div id="if_elevatedLockBanner" class="hidden mb-4 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 flex items-center gap-2.5">
-      <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-      </svg>
+    <div id="if_elevatedLockBanner" class="hidden mb-4 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
       <div>
         <strong class="font-semibold block text-amber-950">Official Blotter Case</strong>
         <span id="if_elevatedLockBannerText">This incident has been elevated to an official Blotter Record. Details are locked from further editing.</span>
@@ -532,7 +529,7 @@
           <option value="Resolved">Resolved</option>
         </select>
         <div id="if_status_note" class="hidden text-[11px] text-amber-700 font-medium mt-1">
-          🔒 Status is driven by Settlement Monitor (<span id="if_status_docket"></span>)
+          Status is driven by Settlement Monitor (<span id="if_status_docket"></span>)
         </div>
       </div>
       <div class="flex items-center justify-between pt-4 border-t border-forest-100 mt-6">
@@ -631,6 +628,7 @@
 <script src="app.js?v=2.2.0"></script>
 <script src="icons.js?v=2.2.0"></script>
 <script src="custom-controls.js?v=2.2.0"></script>
+<script src="incidents.js"></script>
 <script>
   var INC_ROWS = 6;
   var incPage = 1, incEditId = null;
@@ -735,12 +733,34 @@
   }
 
   function priorityClass(p) { return p==='High'?'priority-high':p==='Medium'?'priority-medium':'priority-low'; }
+
+  function getStatusBadge(status) {
+    const s = String(status || '').toUpperCase().trim();
+    switch (s) {
+      case 'UNDER INVESTIGATION':
+        return 'bg-amber-100 text-amber-800 border border-amber-300';
+      case 'ELEVATED':
+      case 'ELEVATED TO BLOTTER':
+        // Enforce consistent soft red styling
+        return 'bg-red-100 text-red-700 border border-red-200';
+      case 'SETTLED':
+      case 'RESOLVED':
+        return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+      default:
+        return 'bg-gray-100 text-gray-700 border border-gray-200';
+    }
+  }
+  window.getStatusBadge = getStatusBadge;
+
   function statusClass(s) {
-    if (s==='Under Investigation') return 'status-investigating';
-    if (s==='Elevated to Blotter') return 'status-elevated';
-    if (s==='Referred') return 'status-referred';
-    if (s==='Resolved') return 'status-resolved';
-    return 'status-investigating';
+    const norm = String(s || '').toUpperCase().trim();
+    if (norm === 'ELEVATED' || norm === 'ELEVATED TO BLOTTER') {
+      return 'bg-red-100 text-red-700 border border-red-200 status-elevated';
+    }
+    if (norm === 'UNDER INVESTIGATION') return 'status-investigating';
+    if (norm === 'REFERRED') return 'status-referred';
+    if (norm === 'RESOLVED' || norm === 'SETTLED' || norm === 'CLOSED') return 'status-resolved';
+    return getStatusBadge(s);
   }
 
   function updateSummary() {
@@ -830,7 +850,7 @@
           <td class="text-xs">${r.reporter}</td>
           <td class="text-xs">${r.officer}</td>
           <td><span class="badge ${priorityClass(r.priority)}">${r.priority}</span></td>
-          <td><span class="badge ${statusClass(r.status)}" style="white-space:nowrap">${(r.is_blotter || r.status === 'Elevated to Blotter') ? 'ELEVATED' : r.status}</span></td>
+          <td><span class="badge ${getStatusBadge((r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED') ? 'ELEVATED' : r.status)}" style="white-space:nowrap">${(r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED') ? 'ELEVATED' : r.status}</span></td>
           <td>
             <div class="row-actions flex items-center gap-1.5">
               <!-- 1. View Action -->
@@ -847,7 +867,7 @@
               <button onclick="permanentDeleteIncident(${r.id}, '${r.reportNo || ''}')" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center" data-perm="delete_records" title="Permanently Delete">
                 ${iconSvg('trash', 16)}
               </button>
-              ` : (r.is_blotter || r.status === 'Elevated to Blotter') ? `
+              ` : (r.is_blotter || r.status === 'Elevated to Blotter' || r.status === 'ELEVATED') ? `
               <!-- Locked Edit Action (Elevated) -->
               <button onclick="bcAlert('This incident is locked because it has been elevated to Blotter Records (${r.blotter_docket_no || 'Official Docket'}). Please edit this case directly in the Blotter Records module.', { title: 'Incident Locked', okLabel: 'Understood' })" class="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center justify-center opacity-40 cursor-not-allowed" title="Elevated to Blotter — edits must be made in Blotter Records">
                 ${iconSvg('lock', 16)}
@@ -2511,21 +2531,19 @@
     }
 
     const lockBanner = isElevated
-      ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">
-          <span class="text-base flex-shrink-0">🔒</span>
-          <span>This incident is locked because it has been elevated to Blotter Records (${esc(r.blotter_docket_no || 'Official Case')}). Please edit this case directly in the Blotter Records module.</span>
+      ? `<div class="mb-4 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed">
+          <p>This incident is locked because it has been elevated to Blotter Records (<span class="font-semibold" id="bltRefCode">${esc(r.blotter_docket_no || 'Official Case')}</span>). Please edit this case directly in the Blotter Records module.</p>
         </div>`
       : (r.status === 'Referred')
-      ? `<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-800 font-medium">
-          <span class="text-base flex-shrink-0">🔒</span>
-          <span>This incident has been marked as Referred (external agency). Details are final and locked from further editing.</span>
+      ? `<div class="mb-4 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed">
+          <p>This incident has been marked as Referred (external agency). Details are final and locked from further editing.</p>
         </div>`
       : '';
 
     // Status badge
     let statusPill = '';
     if (isElevated) {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">ELEVATED TO BLOTTER</span>`;
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">ELEVATED TO BLOTTER</span>`;
     } else if (r.status === 'Resolved' || r.status === 'Settled' || r.status === 'Closed') {
       statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">RESOLVED</span>`;
     } else if (r.status === 'Referred') {

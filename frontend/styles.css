@@ -488,6 +488,7 @@ a.stat-card-grad:hover {
 }
 .badge-resolved     { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .badge-complied      { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-elevated      { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .badge-ongoing       { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .badge-criminal      { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .badge-pending       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
@@ -540,7 +541,8 @@ a.stat-card-grad:hover {
 .priority-low    { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
 .status-investigating { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .status-pending       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.status-elevated      { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.status-elevated,
+.badge.bg-red-100     { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 .status-resolved       { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .status-closed         { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 .status-referred       { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
