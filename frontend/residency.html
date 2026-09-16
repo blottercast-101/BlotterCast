@@ -332,16 +332,18 @@ async function loadResResidentOptionsForPicker() {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
       age, civilStatus: r.civil_status, address: r.address || '', householdNo: r.household_no || '', voterStatus: r.voter_status,
       status: r.status || 'Active',
+      resident_status: r.status || 'Active', census_status: r.status || 'Active',
+      is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
     };
   });
   bcInitResidentPicker('rs_residentSearch', 'rs_residentId', 'rs_residentSuggestions', resResidentOptions, onResResidentPicked, validateResidencyEligibility);
 }
 
-// Mirrors the server-side rule in api/documents.php — a Transferred
-// resident can't be issued a Certificate of Residency.
+// Mirrors the server-side rule in api/documents.php — Deceased or
+// Transferred residents can't be issued a Certificate of Residency.
 function validateResidencyEligibility(r) {
-  if (r.status === 'Transferred') {
-    return `${r.firstName} ${r.lastName} is recorded as Transferred in Census. A Certificate of Residency cannot be issued for a resident with this status.`;
+  if (r.status === 'Deceased' || r.status === 'Transferred') {
+    return `${r.firstName} ${r.lastName} is recorded as ${r.status} in Census. A Certificate of Residency cannot be issued for a resident with this status.`;
   }
   return null;
 }

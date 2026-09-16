@@ -322,16 +322,18 @@ async function loadIndResidentOptionsForPicker() {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
       age, civilStatus: r.civil_status, address: r.address || '', householdNo: r.household_no || '',
       status: r.status || 'Active',
+      resident_status: r.status || 'Active', census_status: r.status || 'Active',
+      is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
     };
   });
   bcInitResidentPicker('if_residentSearch', 'if_residentId', 'if_residentSuggestions', indResidentOptions, onIndResidentPicked, validateIndigencyEligibility);
 }
 
-// Mirrors the server-side rule in api/documents.php — a Transferred
-// resident can't be issued a Certificate of Indigency.
+// Mirrors the server-side rule in api/documents.php — Deceased or
+// Transferred residents can't be issued a Certificate of Indigency.
 function validateIndigencyEligibility(r) {
-  if (r.status === 'Transferred') {
-    return `${r.firstName} ${r.lastName} is recorded as Transferred in Census. A Certificate of Indigency cannot be issued for a resident with this status.`;
+  if (r.status === 'Deceased' || r.status === 'Transferred') {
+    return `${r.firstName} ${r.lastName} is recorded as ${r.status} in Census. A Certificate of Indigency cannot be issued for a resident with this status.`;
   }
   return null;
 }

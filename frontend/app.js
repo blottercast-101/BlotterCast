@@ -3868,32 +3868,60 @@ function _bcFilterResidents(inputId) {
   if (!list) return;
   const q = input.value.trim().toLowerCase();
 
+  const isCertPicker = ['cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
+                       inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
+                       window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency');
+
+  let rawOptions = picker.options || [];
+  if (isCertPicker) {
+    rawOptions = rawOptions.filter(resident => {
+      const statusValue = String(resident.status || resident.resident_status || resident.census_status || '').toLowerCase().trim();
+      const isDeceased = statusValue === 'deceased' || resident.is_deceased == 1 || resident.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
+      return !isDeceased;
+    });
+  }
+
   const matches = q === ''
-    ? (picker.options || []).slice(0, 20)
-    : (picker.options || []).filter(r => `${r.lastName} ${r.firstName} ${r.middleName || ''}`.toLowerCase().includes(q)).slice(0, 20);
+    ? rawOptions.slice(0, 20)
+    : rawOptions.filter(r => `${r.lastName} ${r.firstName} ${r.middleName || ''}`.toLowerCase().includes(q)).slice(0, 20);
 
   if (matches.length === 0) {
     list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
   } else {
     const isRespondent = inputId.toLowerCase().includes('respondent');
-    list.innerHTML = matches.map(r => {
-      const isDeceased = window.bcIsResidentDeceased(r);
+    const items = matches.map(resident => {
+      // Check if resident is deceased
+      const statusValue = String(resident.status || resident.resident_status || resident.census_status || '').toLowerCase().trim();
+      const isDeceased = statusValue === 'deceased' || resident.is_deceased == 1 || resident.is_deceased === true;
+
+      // Skip deceased residents entirely so they do not render
+      if (isDeceased) {
+        return; // (or continue; if inside a for-loop)
+      }
+
       const deceasedMsg = isRespondent
         ? 'Deceased residents cannot be recorded as respondents.'
         : 'Deceased residents cannot be filed as complainants/reporters.';
+      const deadIneligible = (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
       return `
-      <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${isDeceased ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
+      <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${deadIneligible ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
               onmousedown="event.stopPropagation(); event.preventDefault();"
-              onclick="${isDeceased ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${r.id})`}">
+              onclick="${deadIneligible ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${resident.id})`}">
         <div class="flex items-center justify-between gap-2">
-          <div class="text-sm font-semibold ${isDeceased ? 'text-gray-500 line-through' : 'text-forest-800'}">
-            ${r.lastName}, ${r.firstName} ${r.middleName || ''}
+          <div class="text-sm font-semibold ${deadIneligible ? 'text-gray-500 line-through' : 'text-forest-800'}">
+            ${resident.lastName}, ${resident.firstName} ${resident.middleName || ''}
           </div>
-          ${isDeceased ? `<span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 rounded">Deceased - Ineligible</span>` : ''}
+          ${deadIneligible ? `<span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 rounded">Deceased - Ineligible</span>` : ''}
         </div>
-        <div class="text-xs text-forest-500">${r.age ?? '—'} yrs old &middot; ${r.address || '—'} &middot; Household ${r.householdNo || '—'}</div>
+        <div class="text-xs text-forest-500">${resident.age ?? '—'} yrs old &middot; ${resident.address || '—'} &middot; Household ${resident.householdNo || '—'}</div>
       </button>`;
-    }).join('');
+    }).filter(Boolean);
+
+    if (items.length === 0) {
+      list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
+    } else {
+      list.innerHTML = items.join('');
+    }
   }
   list.classList.remove('hidden');
   list.style.position = 'absolute';
@@ -3911,12 +3939,18 @@ function bcResidentPickerChoose(inputId, residentId) {
   const r = (picker.options || []).find(x => x.id === residentId);
   if (!r) return;
 
-  const isDeceased = window.bcIsResidentDeceased(r);
+  const statusValue = String(r.status || r.resident_status || r.census_status || '').toLowerCase().trim();
+  const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
   if (isDeceased) {
     const isRespondent = inputId.toLowerCase().includes('respondent');
-    const msg = isRespondent
-      ? 'Deceased residents cannot be recorded as respondents.'
-      : 'Deceased residents cannot be filed as complainants/reporters.';
+    const isCertPicker = ['cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
+                         inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
+                         window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency');
+    const msg = isCertPicker
+      ? 'A certificate cannot be issued for a deceased resident.'
+      : (isRespondent
+          ? 'Deceased residents cannot be recorded as respondents.'
+          : 'Deceased residents cannot be filed as complainants/reporters.');
     showToast(msg, 'error');
     const list = document.getElementById(picker.listId);
     if (list) list.classList.add('hidden');

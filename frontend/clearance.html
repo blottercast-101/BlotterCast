@@ -325,6 +325,8 @@ async function loadResidentOptionsForPicker() {
       id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
       age, civilStatus: r.civil_status, address: r.address || '', voterStatus: r.voter_status,
       householdNo: r.household_no || '', status: r.status || 'Active',
+      resident_status: r.status || 'Active', census_status: r.status || 'Active',
+      is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
     };
   });
   bcInitResidentPicker('cl_residentSearch', 'cl_residentId', 'cl_residentSuggestions', residentOptions, onResidentPicked, validateClearanceEligibility);
