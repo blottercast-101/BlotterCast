@@ -239,15 +239,25 @@
     </div>
     <!-- Modal Body -->
     <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
-      <div class="relative w-full">
-        <label class="form-label">Resident <span class="text-red-500">*</span></label>
-        <input type="text" id="residentSearch" placeholder="Type a name to search..." class="form-input" autocomplete="off" />
+      <div class="relative w-full mb-3" id="residentSearchContainer">
+        <label class="block text-xs font-semibold text-[#1e3a2b] mb-1">Resident *</label>
+        <input 
+          type="text" 
+          id="residentSearch" 
+          autocomplete="off"
+          placeholder="Type a name to search..." 
+          class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-4 py-2.5 text-sm text-[#52796f] placeholder-[#52796f] focus:outline-none focus:ring-1 focus:ring-[#1e3a2b]"
+        />
         <input type="hidden" id="cl_residentId"/>
-        <!-- Ensure this dropdown container exists -->
-        <div id="residentDropdownList" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-[#c6dfd4] rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
-          <!-- Dynamic resident items populate here -->
+        <p class="text-[11px] text-[#52796f] mt-1">A clearance can only be issued to someone already recorded in Census...</p>
+
+        <!-- Autocomplete Results Container -->
+        <div 
+          id="residentResultsMenu" 
+          class="hidden absolute left-0 right-0 top-[65px] bg-white border border-[#c6dfd4] rounded-xl shadow-xl max-h-56 overflow-y-auto z-[999]"
+        >
+          <!-- Dynamic list items injected here -->
         </div>
-        <p class="text-xs text-forest-400 mt-1">A clearance can only be issued to someone already recorded in Census. Name, age, civil status, address, and voter status are inherited from that record.</p>
       </div>
       <div class="grid grid-cols-2 gap-4" id="cl_derived_preview">
         <div class="col-span-2"><label class="form-label">Full Name</label><input type="text" id="cl_name_display" class="form-input" disabled/></div>
@@ -299,6 +309,7 @@
 <script src="app.js"></script>
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
+<script src="clearance.js"></script>
 <script>
 var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var logData=[]; var clPage=1; var CL_ROWS=8;
@@ -330,12 +341,18 @@ async function loadResidentOptionsForPicker() {
       last_name: r.last_name, first_name: r.first_name, middle_name: r.middle_name || '',
       full_name: fullName,
       age, civilStatus: r.civil_status, address: r.address || '', voterStatus: r.voter_status,
-      householdNo: r.household_no || '', status: r.status || 'Active',
+      householdNo: r.household_no || '', household_no: r.household_no || '',
+      zone: r.zone_id || r.zone || '', zone_id: r.zone_id || r.zone || '',
+      status: r.status || 'Active',
       resident_status: r.status || 'Active', census_status: r.status || 'Active',
       is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
     };
   });
-  bcInitResidentPicker('residentSearch', 'cl_residentId', 'residentDropdownList', residentOptions, onResidentPicked, validateClearanceEligibility);
+  window.censusResidents = residentOptions;
+  if (typeof initClearanceSearchEvents === 'function') {
+    initClearanceSearchEvents();
+  }
+  bcInitResidentPicker('residentSearch', 'cl_residentId', 'residentResultsMenu', residentOptions, onResidentPicked, validateClearanceEligibility);
 }
 
 // Mirrors the server-side rule in api/documents.php — Deceased or
@@ -523,8 +540,41 @@ async function openClearanceForm(){
   }
 }
 
+function selectResidentForClearance(residentId) {
+  const numId = Number(residentId);
+  const sourceList = Array.isArray(window.censusResidents) 
+    ? window.censusResidents 
+    : (typeof residentOptions !== 'undefined' && Array.isArray(residentOptions) ? residentOptions : []);
+  const r = sourceList.find(x => Number(x.id) === numId);
+  if (!r) return;
+
+  const residentInput = document.getElementById('residentSearch');
+  if (residentInput) {
+    residentInput.value = `${r.last_name || r.lastName}, ${r.first_name || r.firstName} ${r.middle_name || r.middleName || ''}`.trim();
+  }
+
+  const hidden = document.getElementById('cl_residentId');
+  if (hidden) hidden.value = String(numId);
+
+  if (typeof onResidentPicked === 'function') {
+    onResidentPicked(r);
+  }
+}
+window.selectResidentForClearance = selectResidentForClearance;
+
 function resetClearanceForm(){
-  bcResidentPickerClear('residentSearch');
+  const searchInput = document.getElementById('residentSearch');
+  if (searchInput) searchInput.value = '';
+  const hidden = document.getElementById('cl_residentId');
+  if (hidden) hidden.value = '';
+  const menu = document.getElementById('residentResultsMenu') || document.getElementById('residentDropdownList');
+  if (menu) {
+    menu.classList.add('hidden');
+    menu.innerHTML = '';
+  }
+  if (typeof bcResidentPickerClear === 'function') {
+    bcResidentPickerClear('residentSearch');
+  }
   resetFormDropdowns('clearanceFormModal');
   clRespondentBlocked = false;
   const submitBtn = document.getElementById('cl_submit_btn');
@@ -535,6 +585,10 @@ function resetClearanceForm(){
   if (listEl) listEl.innerHTML = '';
   document.getElementById('cl_or').value = '';
   document.getElementById('cl_fee').value = '20';
+  ['cl_name_display','cl_age_display','cl_civil_display','cl_addr_display','cl_voter_display'].forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = '';
+  });
 }
 
 async function issueClearance(){

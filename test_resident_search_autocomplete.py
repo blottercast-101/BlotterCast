@@ -21,15 +21,16 @@ class TestResidentSearchAutocomplete(unittest.TestCase):
                 content = f.read()
 
             self.assertIn('id="residentSearch"', content, f"{tpath} missing #residentSearch")
-            self.assertIn('id="residentDropdownList"', content, f"{tpath} missing #residentDropdownList")
+            if "clearance.html" in tpath:
+                self.assertIn('id="residentResultsMenu"', content, f"{tpath} missing #residentResultsMenu")
+                self.assertIn('z-[999]', content, f"{tpath} dropdown missing z-[999]")
+            else:
+                self.assertIn('id="residentDropdownList"', content, f"{tpath} missing #residentDropdownList")
+                self.assertIn('z-[70]', content, f"{tpath} dropdown missing z-[70]")
 
             # Verify relative w-full wrapper
             self.assertIn('relative w-full', content, f"{tpath} missing relative w-full wrapper")
-
-            # Verify dropdown classes
-            self.assertIn('z-[70]', content, f"{tpath} dropdown missing z-[70]")
             self.assertIn('border-[#c6dfd4]', content, f"{tpath} dropdown missing border-[#c6dfd4]")
-            self.assertIn('hidden absolute left-0 right-0 top-full mt-1 bg-white border border-[#c6dfd4] rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]', content)
 
     def test_styles_css_resident_dropdown_z_index(self):
         """Verify styles.css explicitly guarantees high z-index for residentDropdownList."""

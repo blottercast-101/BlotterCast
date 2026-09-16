@@ -3940,6 +3940,12 @@ if (typeof Document !== 'undefined' && Document.prototype.getElementById) {
         return _nativeGetElementById.call(this, 'residentSearch');
       }
       if (id === 'cl_residentSuggestions' || id === 'rs_residentSuggestions' || id === 'if_residentSuggestions') {
+        return _nativeGetElementById.call(this, 'residentResultsMenu') || _nativeGetElementById.call(this, 'residentDropdownList');
+      }
+      if (id === 'residentDropdownList') {
+        return _nativeGetElementById.call(this, 'residentResultsMenu');
+      }
+      if (id === 'residentResultsMenu') {
         return _nativeGetElementById.call(this, 'residentDropdownList');
       }
     }
