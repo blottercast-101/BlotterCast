@@ -425,8 +425,9 @@
 
       <!-- STEP 1: Personal Information -->
       <div id="edit_wiz_view_step_1" class="space-y-4">
-        <div class="text-xs font-bold uppercase tracking-wider text-forest-800 mb-3 flex items-center gap-2">
-          <span>PERSONAL INFORMATION</span>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xs font-bold tracking-wider text-[#1e3a2b] uppercase">Personal Information</span>
+          <span class="text-xs font-medium text-[#52796f] lowercase tracking-normal">(Read-Only)</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -810,7 +811,7 @@ function renderUsers() {
       <td>${statusBadge}</td>
       <td>
         <div class="row-actions items-center">
-          <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> Edit</button>
+          <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> <span>View & Edit</span></button>
           ${isProtected
             ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> Protected</span>`
             : `<button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Suspended'?'Activate':'Suspend'}</button>
@@ -827,6 +828,7 @@ function renderUsers() {
 
 window.usersData = usersData;
 window.renderUsers = renderUsers;
+window.openEditUserModal = editUser;
 window.addEventListener('userAvatarUpdated', (e) => {
   const updatedUser = e.detail?.user;
   const avatarUrl = e.detail?.avatar_url;

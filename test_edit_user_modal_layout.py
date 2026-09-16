@@ -11,6 +11,11 @@ class TestEditUserModalLayout(unittest.TestCase):
         self.assertIsNotNone(step1_match, "Could not find #edit_wiz_view_step_1 in users.html")
         step1_html = step1_match.group(1)
 
+        # Check section header in Edit User modal has (Read-Only)
+        self.assertIn('Personal Information', step1_html)
+        self.assertIn('(Read-Only)', step1_html)
+        self.assertTrue(re.search(r'<span[^>]*class="[^"]*text-\[#52796f\][^"]*"[^>]*>\(Read-Only\)</span>', step1_html))
+
         # Check the grid container
         grid_match = re.search(r'<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">(.*?)</div>\s*<div class="flex items-center justify-end', step1_html, re.DOTALL)
         self.assertIsNotNone(grid_match, "Could not find grid container in #edit_wiz_view_step_1")
@@ -111,6 +116,9 @@ class TestEditUserModalLayout(unittest.TestCase):
         self.assertIsNotNone(add_modal_match, "Could not find #addUserWizardModal in users.html")
         add_modal_html = add_modal_match.group(1)
 
+        # Ensure Add User section header does NOT say (Read-Only)
+        self.assertNotIn('(Read-Only)', add_modal_html)
+
         # Ensure wiz_name, wiz_username, wiz_email, wiz_contact are NOT readonly or disabled
         for input_id in ['wiz_name', 'wiz_username', 'wiz_email', 'wiz_contact']:
             input_tag = re.search(rf'<input[^>]*id="{input_id}"[^>]*>', add_modal_html).group(0)
@@ -150,6 +158,24 @@ class TestEditUserModalLayout(unittest.TestCase):
         contact_norm_match = re.search(r'function getEditNormalizedContact\(\)\s*{(.*?)\n}', html, re.DOTALL)
         self.assertIsNotNone(contact_norm_match, "Could not find getEditNormalizedContact function")
         self.assertIn('uf_contact', contact_norm_match.group(1))
+
+    def test_table_action_button_view_and_edit(self):
+        with open("frontend/users.html", "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # Find renderUsers function
+        render_users_match = re.search(r'function renderUsers\(\)\s*{(.*?)\n}', html, re.DOTALL)
+        self.assertIsNotNone(render_users_match, "Could not find renderUsers function")
+        code = render_users_match.group(1)
+
+        # Check that the button has View & Edit, editUser(${u.id}), data-icon="edit"
+        self.assertIn('View & Edit', code)
+        self.assertIn('editUser(${u.id})', code)
+        self.assertIn('data-icon="edit"', code)
+        self.assertIn('btn-edit', code)
+
+        # Check that openEditUserModal alias exists
+        self.assertIn('window.openEditUserModal = editUser;', html)
 
 if __name__ == "__main__":
     unittest.main()
