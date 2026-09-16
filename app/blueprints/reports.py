@@ -52,7 +52,7 @@ def reports_router():
         return _list()
     if action == "generate" and request.method == "POST":
         return _generate()
-    if action == "download":
+    if action in ("download", "preview", "view"):
         return _download()
     return json_error("Unknown action", 404)
 
@@ -94,7 +94,17 @@ def _header_footer(canvas, doc, subtitle):
 
 def _new_pdf_buffer(subtitle):
     buf = io.BytesIO()
-    doc = BaseDocTemplate(buf, pagesize=A4, topMargin=38 * mm, bottomMargin=20 * mm, leftMargin=15 * mm, rightMargin=15 * mm)
+    doc = BaseDocTemplate(
+        buf,
+        pagesize=A4,
+        topMargin=38 * mm,
+        bottomMargin=20 * mm,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        title=subtitle or "Barangay Official Report",
+        subject="Barangay Official Report",
+        author="Barangay Mapulang Lupa - BlotterCast",
+    )
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal")
     template = PageTemplate(id="main", frames=[frame], onPage=lambda c, d: _header_footer(c, d, subtitle))
     doc.addPageTemplates([template])
@@ -383,7 +393,12 @@ def _generate():
             f.write(pdf_bytes)
 
     _log_report(report_type, from_date, to_date, "Excel" if fmt == "excel" else "PDF", filename)
-    return jsonify({"ok": True, "file": filename, "url": f"api/reports.php?action=download&file={filename}"})
+    return jsonify({
+        "ok": True,
+        "file": filename,
+        "url": f"api/reports.php?action=download&file={filename}",
+        "preview_url": f"api/reports.php?action=preview&file={filename}",
+    })
 
 
 def _download():
@@ -391,5 +406,15 @@ def _download():
     path = os.path.join(REPORTS_DIR, filename)
     if not filename or not os.path.isfile(path):
         return "Report not found.", 404
+    is_preview = (
+        request.args.get("action") in ("preview", "view")
+        or request.args.get("preview") == "1"
+        or request.args.get("inline") == "1"
+    )
     mimetype = "text/csv" if filename.endswith(".csv") else "application/pdf"
+    if is_preview and not filename.endswith(".csv"):
+        response = send_file(path, mimetype="application/pdf", as_attachment=False, download_name=filename)
+        response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+        response.headers["Content-Type"] = "application/pdf"
+        return response
     return send_file(path, mimetype=mimetype, as_attachment=True, download_name=filename)

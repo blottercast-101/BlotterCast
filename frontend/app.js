@@ -2741,6 +2741,143 @@ function bcConfirmPermanentDelete(message, opts = {}) {
   return new Promise(resolve => { _bcPermDeleteResolve = resolve; });
 }
 
+// ── Report Preview & Tab Management Helpers (Method A) ──
+const BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+
+function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Report', autoPrint = false) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    if (typeof showToast === 'function') {
+      showToast('Please allow popups to preview report.', 'error');
+    }
+    return null;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${reportTitle}</title>
+      <!-- Sets the PDF / App Icon in browser tab -->
+      <link rel="icon" type="image/svg+xml" href="${BC_REPORT_FAVICON}">
+      <style>
+        /* Report base styling */
+        @page { size: letter portrait; margin: 0.5in; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          padding: 24px;
+          color: #1e293b;
+          background: #ffffff;
+        }
+        .header {
+          text-align: center;
+          border-bottom: 2px solid #0f172a;
+          padding-bottom: 12px;
+          margin-bottom: 18px;
+        }
+        .header h2 {
+          margin: 0 0 4px;
+          font-size: 18px;
+          color: #1e3a2b;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .header p {
+          margin: 0;
+          font-size: 13px;
+          color: #64748b;
+        }
+        
+        /* Enforce responsive, non-overlapping table cells */
+        table.report-table {
+          width: 100% !important;
+          table-layout: fixed !important; /* Critical to respect defined cell widths */
+          border-collapse: collapse !important;
+          font-size: 11px;
+          margin-top: 12px;
+        }
+
+        table.report-table th,
+        table.report-table td {
+          white-space: normal !important; /* Disables nowrap */
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          word-break: break-word !important;
+          vertical-align: top !important;
+          padding: 6px 8px !important;
+        }
+
+        table.report-table th {
+          background: #1e3a2b !important;
+          color: #ffffff !important;
+          font-weight: 600;
+          border: 1px solid #1e3a2b;
+          text-align: left;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        table.report-table td {
+          border: 1px solid #cbd5e1;
+          color: #1e293b;
+        }
+
+        table.report-table tbody tr:nth-child(even) {
+          background: #f0f9f2 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: right; }
+        @media print {
+          body { padding: 0; }
+          @page { margin: 1.5cm; }
+          table.report-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+          }
+          table.report-table th,
+          table.report-table td {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            vertical-align: top !important;
+            padding: 6px 8px !important;
+          }
+          table.report-table th {
+            background-color: #1e3a2b !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          table.report-table tbody tr:nth-child(even) {
+            background-color: #f0f9f2 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      ${htmlContent}
+      ${autoPrint ? '<script>window.onload = function() { window.print(); };</script>' : ''}
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.document.title = reportTitle; // Guarantees title reflects on tab bar
+  return printWindow;
+}
+if (typeof window !== 'undefined') {
+  window.BC_REPORT_FAVICON = BC_REPORT_FAVICON;
+  window.openReportPrintTab = openReportPrintTab;
+}
+
 // ── Reusable Batch Action Manager for Records Tables ──
 class BcBatchManager {
   constructor(opts) {
@@ -3092,12 +3229,6 @@ class BcBatchManager {
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!printWindow) {
-      showToast('Please allow popups to print selected records.', 'error');
-      return;
-    }
-
     let tableRowsHtml = '';
     let tableHeadersHtml = '';
 
@@ -3212,114 +3343,37 @@ class BcBatchManager {
       `).join('');
     }
 
-    const title = `Barangay Mapulang Lupa — Selected ${this.opts.entityPlural.toUpperCase()}`;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1e293b; }
-          .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
-          .header h2 { margin: 0 0 4px; font-size: 18px; color: #1e3a2b; text-transform: uppercase; }
-          .header p { margin: 0; font-size: 13px; color: #64748b; }
-          
-          /* Enforce responsive, non-overlapping table cells */
-          table.report-table {
-            width: 100% !important;
-            table-layout: fixed !important; /* Critical to respect defined cell widths */
-            border-collapse: collapse !important;
-            font-size: 11px;
-            margin-top: 12px;
-          }
+    const dateStr = new Date().toISOString().slice(0, 10);
+    let entityType = 'Report';
+    if (this.opts.apiType === 'settlements') entityType = 'Settlement_Compliance_Report';
+    else if (this.opts.apiType === 'blotter') entityType = 'Blotter_Report';
+    else if (this.opts.apiType === 'incidents') entityType = 'Incident_Summary_Report';
+    else if (this.opts.apiType === 'census') entityType = 'Census_Registry_Report';
+    else if (this.opts.entityPlural) entityType = `${this.opts.entityPlural}_Report`;
 
-          table.report-table th,
-          table.report-table td {
-            white-space: normal !important; /* Disables nowrap */
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
-            word-break: break-word !important;
-            vertical-align: top !important;
-            padding: 6px 8px !important;
-          }
+    const reportTitle = `${entityType}_${dateStr}`;
+    const displayHeading = `Barangay Mapulang Lupa — Selected ${this.opts.entityPlural.toUpperCase()}`;
 
-          table.report-table th {
-            background: #1e3a2b !important;
-            color: #ffffff !important;
-            font-weight: 600;
-            border: 1px solid #1e3a2b;
-            text-align: left;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+    const reportHtml = `
+      <div class="header">
+        <h2>Republic of the Philippines • City of Valenzuela</h2>
+        <p><strong>BARANGAY MAPULANG LUPA</strong> • BlotterCast Official Records System</p>
+        <p style="margin-top: 4px; font-weight: bold; color: #1e3a2b;">${displayHeading} (${items.length} records printed on ${new Date().toLocaleDateString()})</p>
+      </div>
+      <table class="report-table">
+        <thead>
+          ${tableHeadersHtml}
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
+      <div class="footer">
+        Printed via BlotterCast System • ${new Date().toLocaleString()}
+      </div>
+    `;
 
-          table.report-table td {
-            border: 1px solid #cbd5e1;
-            color: #1e293b;
-          }
-
-          table.report-table tbody tr:nth-child(even) {
-            background: #f0f9f2 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: right; }
-          @media print {
-            body { padding: 0; }
-            @page { margin: 1.5cm; }
-            table.report-table {
-              width: 100% !important;
-              table-layout: fixed !important;
-              border-collapse: collapse !important;
-            }
-            table.report-table th,
-            table.report-table td {
-              white-space: normal !important;
-              word-wrap: break-word !important;
-              overflow-wrap: break-word !important;
-              word-break: break-word !important;
-              vertical-align: top !important;
-              padding: 6px 8px !important;
-            }
-            table.report-table th {
-              background-color: #1e3a2b !important;
-              color: #ffffff !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            table.report-table tbody tr:nth-child(even) {
-              background-color: #f0f9f2 !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h2>Republic of the Philippines • City of Valenzuela</h2>
-          <p><strong>BARANGAY MAPULANG LUPA</strong> • BlotterCast Official Records System</p>
-          <p style="margin-top: 4px; font-weight: bold; color: #1e3a2b;">${title} (${items.length} records printed on ${new Date().toLocaleDateString()})</p>
-        </div>
-        <table class="report-table">
-          <thead>
-            ${tableHeadersHtml}
-          </thead>
-          <tbody>
-            ${tableRowsHtml}
-          </tbody>
-        </table>
-        <div class="footer">
-          Printed via BlotterCast System • ${new Date().toLocaleString()}
-        </div>
-        <script>
-          window.onload = function() { window.print(); };
-        </script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
+    openReportPrintTab(reportHtml, reportTitle, true);
   }
 
   async batchUpdateIncidentStatus() {

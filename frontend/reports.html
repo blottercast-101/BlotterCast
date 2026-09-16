@@ -245,7 +245,8 @@
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button onclick="closeModal('generateModal')" class="btn-secondary">Cancel</button>
-        <button onclick="simulateGenerate()" class="btn-primary" id="genBtn"><span data-icon="reports" data-icon-size="16"></span> Generate</button>
+        <button onclick="simulateGenerate(true)" class="btn-secondary" id="prevBtn"><span data-icon="reports" data-icon-size="16"></span> Preview</button>
+        <button onclick="simulateGenerate(false)" class="btn-primary" id="genBtn"><span data-icon="download" data-icon-size="16"></span> Generate</button>
       </div>
     </div>
   </div>
@@ -254,6 +255,7 @@
 <script src="api.js"></script>
 <script src="permissions.js"></script>
 <script src="app.js"></script>
+<script src="reports.js"></script>
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
@@ -318,7 +320,12 @@ async function loadRecentReports(silent = false) {
           <td class="text-xs text-forest-400">${r.period_from || ''}${r.period_to ? ' – ' + r.period_to : ''}</td>
           <td><span class="badge ${r.format && r.format.toLowerCase() === 'pdf' ? 'badge-pdf' : 'badge-excel'} text-xs">${r.format}</span></td>
           <td>
-            <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1"><span data-icon="download" data-icon-size="14"></span> Download</a>
+            <div class="flex items-center gap-2">
+              ${r.format && r.format.toLowerCase() === 'pdf' ? `
+                <a href="api/reports.php?action=preview&file=${encodeURIComponent(r.file_path)}" target="_blank" rel="noopener noreferrer" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Preview Report in New Tab"><span data-icon="reports" data-icon-size="14"></span> Preview</a>
+              ` : ''}
+              <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Download Report"><span data-icon="download" data-icon-size="14"></span> Download</a>
+            </div>
           </td>
         </tr>`).join('');
       if (typeof renderIcons === 'function') renderIcons(tbody);
@@ -363,30 +370,48 @@ function openGenerateModal(title) {
   openModal('generateModal');
 }
 
-async function simulateGenerate() {
+async function simulateGenerate(isPreview = false) {
   const from = document.getElementById('gen_from').value;
   const to = document.getElementById('gen_to').value;
   const zone = document.getElementById('gen_zone').value;
   const fmtInput = document.querySelector('input[name="fmt"]:checked');
   const format = fmtInput ? fmtInput.value : 'pdf';
-  const btn = document.getElementById('genBtn');
+  const btn = isPreview ? document.getElementById('prevBtn') : document.getElementById('genBtn');
 
-  btn.disabled = true; btn.textContent = 'Generating…';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = isPreview ? 'Opening Preview…' : 'Generating…';
+  }
   try {
     const result = await BCApi._fetch('api/reports.php?action=generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: currentReportType, from, to, zone, format }),
     });
     closeModal('generateModal');
-    showToast('Report generated! Starting download…');
     await loadRecentReports();
-    // Trigger the actual file download
-    window.location.href = result.url;
+    if (isPreview) {
+      showToast('Opening report preview in new tab…');
+      const previewUrl = result.preview_url || (`api/reports.php?action=preview&file=${encodeURIComponent(result.file)}`);
+      window.open(previewUrl, '_blank');
+    } else {
+      showToast('Report generated! Starting download…');
+      window.location.href = result.url;
+    }
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
-    btn.disabled = false; btn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> Generate';
-    if (typeof renderIcons === 'function') renderIcons(btn);
+    const prevBtn = document.getElementById('prevBtn');
+    if (prevBtn) {
+      prevBtn.disabled = false;
+      prevBtn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> Preview';
+      if (typeof renderIcons === 'function') renderIcons(prevBtn);
+    }
+    const genBtn = document.getElementById('genBtn');
+    if (genBtn) {
+      genBtn.disabled = false;
+      genBtn.innerHTML = '<span data-icon="download" data-icon-size="16"></span> Generate';
+      if (typeof renderIcons === 'function') renderIcons(genBtn);
+    }
   }
 }
 
