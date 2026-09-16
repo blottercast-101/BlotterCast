@@ -2030,24 +2030,77 @@ function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
   addBtn('Next ›', { disabled: currentPage === totalPages, onClick: () => onPageChange(currentPage + 1) });
 }
 
-// ── Modal helpers ──────────────────────────────────────────
+// ── Modal helpers & Lifecycle Teardown ──────────────────────
+function dismissModal(modalEl, backdropEl) {
+  if (modalEl) {
+    modalEl.classList.add('hidden');
+    modalEl.classList.remove('flex', 'show', 'active', 'open');
+  }
+  if (backdropEl) {
+    backdropEl.classList.add('hidden');
+    backdropEl.classList.remove('open');
+    backdropEl.style.pointerEvents = 'none';
+    // If dynamically injected, remove from DOM
+    if (backdropEl.dataset.dynamic === "true") backdropEl.remove();
+  }
+  // Restore document body interactivity
+  const hasActiveModals = document.querySelectorAll('.modal-form-card:not(.hidden), .confirm-modal-card:not(.hidden), .modal-overlay.open:not(.hidden)').length > 0;
+  if (!hasActiveModals) {
+    document.body.classList.remove('overflow-hidden', 'modal-open');
+    document.body.style.overflow = '';
+    document.body.style.pointerEvents = 'auto';
+  }
+}
+window.dismissModal = dismissModal;
+
 function openModal(id) {
-  const el = document.getElementById(id);
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
   if (el) {
+    const isConfirm = el.id === 'bcDialogOverlay' || el.id === 'bcPermDeleteOverlay' || el.id === 'confirmModal' || el.id.toLowerCase().includes('confirm') || el.classList.contains('bc-confirm-dialog');
+    if (isConfirm) {
+      if (!document.body.contains(el) || el.parentElement !== document.body) {
+        document.body.appendChild(el);
+      }
+      el.classList.add('confirm-modal-backdrop');
+      const box = el.querySelector('.modal-box, .bc-dialog-box');
+      if (box) {
+        box.classList.add('confirm-modal-card');
+        box.classList.remove('hidden');
+      }
+    } else {
+      el.classList.add('modal-form-backdrop');
+      const box = el.querySelector('.modal-box, .bc-dialog-box');
+      if (box) {
+        box.classList.add('modal-form-card');
+        box.classList.remove('hidden');
+      }
+    }
+
+    el.classList.remove('hidden');
     el.classList.add('open');
+    el.style.pointerEvents = 'all';
+    document.body.classList.add('overflow-hidden', 'modal-open');
     document.body.style.overflow = 'hidden';
+    document.body.style.pointerEvents = 'auto';
+
+    // Scope 2: Enforce hidden initial state on modal initialization
+    const dropdowns = el.querySelectorAll('[id$="Suggestions"], #residentDropdownList, .search-results-dropdown');
+    dropdowns.forEach(dd => {
+      dd.classList.add('hidden');
+      dd.innerHTML = '';
+    });
+
     if (typeof fitCertificatePreview === 'function') {
       setTimeout(fitCertificatePreview, 50);
     }
   }
 }
+
 function closeModal(id) {
-  const el = document.getElementById(id);
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
   if (el) {
-    el.classList.remove('open');
-    if (!document.querySelector('.modal-overlay.open')) {
-      document.body.style.overflow = '';
-    }
+    const card = el.querySelector('.modal-box, .bc-dialog-box, .modal-form-card, .confirm-modal-card');
+    dismissModal(card || el, el);
     if (typeof fitCertificatePreview === 'function') {
       setTimeout(fitCertificatePreview, 50);
     }
@@ -2060,7 +2113,7 @@ function closeModal(id) {
  * @param {string|HTMLElement} target - form or modal element or its id
  */
 function resetFormDropdowns(target) {
-  const container = typeof target === 'string' ? document.getElementById(target) : target;
+  const container = typeof target === 'string' ? (document.getElementById(target) || document.getElementById('indFormModal') || document.getElementById('indigencyFormModal')) : target;
   if (!container) return;
   const selects = container.querySelectorAll('select');
   selects.forEach(select => {
@@ -2072,12 +2125,64 @@ function resetFormDropdowns(target) {
     }
     select.dispatchEvent(new Event('change', { bubbles: true }));
   });
+
+  // Clear existing autocomplete dropdown options during form reset so no stale records persist
+  const dropdowns = container.querySelectorAll('[id$="Suggestions"], #residentDropdownList, .search-results-dropdown');
+  dropdowns.forEach(dd => {
+    dd.classList.add('hidden');
+    dd.innerHTML = '';
+  });
 }
+
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay') && !e.target.hasAttribute('data-no-dismiss')) {
-    e.target.classList.remove('open');
-    if (!document.querySelector('.modal-overlay.open')) {
-      document.body.style.overflow = '';
+    closeModal(e.target);
+  }
+});
+
+// Global Escape Key Listener for Modals & Overlays
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    // 1. Dismiss open autocomplete dropdowns first
+    let dropdownClosed = false;
+    if (typeof _bcResidentPickers !== 'undefined') {
+      Object.keys(_bcResidentPickers).forEach(id => {
+        const p = _bcResidentPickers[id];
+        if (!p) return;
+        const curList = document.getElementById(p.listId);
+        if (curList && !curList.classList.contains('hidden')) {
+          curList.classList.add('hidden');
+          curList.innerHTML = '';
+          const curIn = document.getElementById(id);
+          const parentSec = curIn ? curIn.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+          if (parentSec) parentSec.style.removeProperty('z-index');
+          dropdownClosed = true;
+        }
+      });
+    }
+    const genericDropdowns = document.querySelectorAll('.search-results-dropdown:not(.hidden), #residentDropdownList:not(.hidden)');
+    genericDropdowns.forEach(dd => {
+      dd.classList.add('hidden');
+      dd.innerHTML = '';
+      dropdownClosed = true;
+    });
+    if (dropdownClosed) return;
+
+    // 2. Dismiss confirm / alert dialogs if active
+    if (typeof _bcPermDeleteEl !== 'undefined' && _bcPermDeleteEl && _bcPermDeleteEl.classList.contains('open')) {
+      _bcPermDeleteFinish(false);
+      return;
+    }
+    if (typeof _bcDialogEl !== 'undefined' && _bcDialogEl && _bcDialogEl.classList.contains('open')) {
+      _bcDialogFinish(false);
+      return;
+    }
+
+    // 3. Otherwise dismiss topmost open modal
+    const openOverlays = Array.from(document.querySelectorAll('.modal-overlay.open:not([data-no-dismiss]), .confirm-modal-backdrop.open'));
+    if (openOverlays.length > 0) {
+      const topOverlay = openOverlays[openOverlays.length - 1];
+      closeModal(topOverlay);
     }
   }
 });
@@ -2251,21 +2356,24 @@ let _bcDialogEl = null;
 let _bcDialogResolve = null;
 
 function _bcEnsureDialog() {
-  if (_bcDialogEl && document.body.contains(_bcDialogEl)) return _bcDialogEl;
+  if (_bcDialogEl && document.body.contains(_bcDialogEl) && _bcDialogEl.parentElement === document.body) return _bcDialogEl;
 
   let el = document.getElementById('bcDialogOverlay');
   if (el) {
-    if (!document.body.contains(el)) document.body.appendChild(el);
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.classList.add('confirm-modal-backdrop');
+    const box = el.querySelector('.bc-dialog-box');
+    if (box) box.classList.add('confirm-modal-card');
     _bcDialogEl = el;
     return el;
   }
 
   el = document.createElement('div');
   el.id = 'bcDialogOverlay';
-  el.className = 'modal-overlay';
+  el.className = 'modal-overlay confirm-modal-backdrop';
   el.setAttribute('data-no-dismiss', ''); // clicking the backdrop shouldn't silently dismiss it
   el.innerHTML = `
-    <div class="bc-dialog-box">
+    <div class="bc-dialog-box confirm-modal-card">
       <div class="bc-dialog-header">
         <span id="bcDialogIcon" class="bc-dialog-icon" data-icon="info" data-icon-size="18"></span>
         <h3 id="bcDialogTitle" class="bc-dialog-title"></h3>
@@ -2288,9 +2396,8 @@ function _bcEnsureDialog() {
 
 function _bcDialogFinish(result) {
   if (_bcDialogEl) {
-    _bcDialogEl.classList.remove('open');
+    dismissModal(_bcDialogEl.querySelector('.bc-dialog-box'), _bcDialogEl);
   }
-  document.body.style.overflow = '';
   const resolve = _bcDialogResolve;
   _bcDialogResolve = null;
   if (resolve) resolve(result);
@@ -2305,6 +2412,14 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   }
 
   const el = _bcEnsureDialog();
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  el.classList.add('confirm-modal-backdrop');
+  const box = el.querySelector('.bc-dialog-box');
+  if (box) {
+    box.classList.add('confirm-modal-card');
+    box.classList.remove('hidden');
+  }
+
   const titleEl = document.getElementById('bcDialogTitle');
   titleEl.textContent = title;
   if (danger) {
@@ -2336,8 +2451,12 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   icon.className = 'bc-dialog-icon' + (danger ? ' danger' : '');
   if (typeof renderIcons === 'function') renderIcons(el);
 
+  el.classList.remove('hidden');
   el.classList.add('open');
+  el.style.pointerEvents = 'all';
+  document.body.classList.add('overflow-hidden', 'modal-open');
   document.body.style.overflow = 'hidden';
+  document.body.style.pointerEvents = 'auto';
   setTimeout(() => (danger && isConfirm ? cancelBtn : okBtn).focus(), 50);
   return new Promise(resolve => { _bcDialogResolve = resolve; });
 }
@@ -2360,21 +2479,24 @@ let _bcPermDeleteEl = null;
 let _bcPermDeleteResolve = null;
 
 function _bcEnsurePermDeleteDialog() {
-  if (_bcPermDeleteEl && document.body.contains(_bcPermDeleteEl)) return _bcPermDeleteEl;
+  if (_bcPermDeleteEl && document.body.contains(_bcPermDeleteEl) && _bcPermDeleteEl.parentElement === document.body) return _bcPermDeleteEl;
 
   let el = document.getElementById('bcPermDeleteOverlay');
   if (el) {
-    if (!document.body.contains(el)) document.body.appendChild(el);
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.classList.add('confirm-modal-backdrop');
+    const box = el.querySelector('.modal-box');
+    if (box) box.classList.add('confirm-modal-card');
     _bcPermDeleteEl = el;
     return el;
   }
 
   el = document.createElement('div');
   el.id = 'bcPermDeleteOverlay';
-  el.className = 'modal-overlay';
+  el.className = 'modal-overlay confirm-modal-backdrop';
   el.setAttribute('data-no-dismiss', '');
   el.innerHTML = `
-    <div class="modal-box max-w-lg p-6 md:p-7 bg-white rounded-2xl shadow-2xl border border-rose-100" style="max-width: 520px; width: 92vw;">
+    <div class="modal-box confirm-modal-card max-w-lg p-6 md:p-7 bg-white rounded-2xl shadow-2xl border border-rose-100" style="max-width: 520px; width: 92vw;">
       <!-- Modal Header -->
       <div class="flex items-start justify-between gap-4 mb-4">
         <div class="flex items-center gap-3.5">
@@ -2488,9 +2610,8 @@ function _bcEnsurePermDeleteDialog() {
 
 function _bcPermDeleteFinish(result) {
   if (_bcPermDeleteEl) {
-    _bcPermDeleteEl.classList.remove('open');
+    dismissModal(_bcPermDeleteEl.querySelector('.modal-box'), _bcPermDeleteEl);
   }
-  document.body.style.overflow = '';
   const resolve = _bcPermDeleteResolve;
   _bcPermDeleteResolve = null;
   if (resolve) resolve(result);
@@ -2511,6 +2632,14 @@ function bcConfirmPermanentDelete(message, opts = {}) {
   }
 
   const el = _bcEnsurePermDeleteDialog();
+  if (el.parentElement !== document.body) document.body.appendChild(el);
+  el.classList.add('confirm-modal-backdrop');
+  const box = el.querySelector('.modal-box');
+  if (box) {
+    box.classList.add('confirm-modal-card');
+    box.classList.remove('hidden');
+  }
+
   document.getElementById('bcPermDeleteTitle').textContent = opts.title || 'Permanently Delete Record';
   const subEl = document.getElementById('bcPermDeleteSubtitle');
   if (subEl) {
@@ -2542,8 +2671,12 @@ function bcConfirmPermanentDelete(message, opts = {}) {
   okBtn.style.opacity = '0.7';
   okBtn.style.cursor = 'not-allowed';
 
+  el.classList.remove('hidden');
   el.classList.add('open');
+  el.style.pointerEvents = 'all';
+  document.body.classList.add('overflow-hidden', 'modal-open');
   document.body.style.overflow = 'hidden';
+  document.body.style.pointerEvents = 'auto';
   setTimeout(() => input.focus(), 60);
 
   return new Promise(resolve => { _bcPermDeleteResolve = resolve; });
@@ -3801,17 +3934,47 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
   _bcResidentPickers[inputId] = { options, hiddenId, listId, onPick, validate };
   const input = document.getElementById(inputId);
   if (!input) return;
+
+  const list = document.getElementById(listId);
+  if (list) {
+    list.classList.add('hidden');
+    list.innerHTML = '';
+  }
+
   if (!input.dataset.bcPickerBound) {
     input.dataset.bcPickerBound = '1';
-    input.addEventListener('input', () => _bcFilterResidents(inputId));
-    input.addEventListener('focus', () => _bcFilterResidents(inputId));
+
+    // Refactored Search Input Listeners:
+    // Open ONLY if the user has already entered text
+    input.addEventListener('focus', () => {
+      if (input.value.trim().length > 0) {
+        _bcFilterResidents(inputId);
+      }
+    });
+
+    input.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      if (query.length > 0) {
+        _bcFilterResidents(inputId);
+      } else {
+        const curList = document.getElementById(listId);
+        if (curList) {
+          curList.classList.add('hidden');
+          curList.innerHTML = '';
+        }
+        const parentSec = input.closest('#if_guardianSection, #if_involvedPartiesSection');
+        if (parentSec) parentSec.style.removeProperty('z-index');
+      }
+    });
+
     input.addEventListener('click', (e) => {
       e.stopPropagation();
-      _bcFilterResidents(inputId);
+      if (input.value.trim().length > 0) {
+        _bcFilterResidents(inputId);
+      }
     });
   }
 
-  const list = document.getElementById(listId);
   if (list && !list.dataset.bcListBound) {
     list.dataset.bcListBound = '1';
     list.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -3827,20 +3990,23 @@ function bcInitResidentPicker(inputId, hiddenId, listId, options, onPick, valida
         const curInput = document.getElementById(id);
         const curList = document.getElementById(p.listId);
         if (!curList || curList.classList.contains('hidden')) return;
-        if (
-          e.target === curInput ||
-          (curInput && curInput.contains(e.target)) ||
-          e.target.closest('#' + id) ||
-          e.target === curList ||
-          curList.contains(e.target) ||
-          e.target.closest('#' + p.listId)
-        ) {
-          return;
+        if ((!curInput || !curInput.contains(e.target)) && (!curList.contains(e.target))) {
+          curList.classList.add('hidden');
+          curList.innerHTML = '';
+          const parentSec = curInput ? curInput.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
+          if (parentSec) parentSec.style.removeProperty('z-index');
         }
-        curList.classList.add('hidden');
-        const parentSec = curInput ? curInput.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
-        if (parentSec) parentSec.style.removeProperty('z-index');
       });
+
+      // Also dismiss generic resident search dropdown if present
+      const genericInput = document.getElementById('residentSearch');
+      const genericDropdown = document.getElementById('residentDropdownList') || document.querySelector('.search-results-dropdown');
+      if (genericDropdown && !genericDropdown.classList.contains('hidden')) {
+        if ((!genericInput || !genericInput.contains(e.target)) && !genericDropdown.contains(e.target)) {
+          genericDropdown.classList.add('hidden');
+          genericDropdown.innerHTML = '';
+        }
+      }
     });
   }
 }
@@ -3867,6 +4033,15 @@ function _bcFilterResidents(inputId) {
   const list = document.getElementById(picker.listId);
   if (!list) return;
   const q = input.value.trim().toLowerCase();
+
+  // Guard: NEVER open or populate dropdown on empty query (prevents premature autocomplete expansion on modal open / focus)
+  if (q.length === 0) {
+    list.classList.add('hidden');
+    list.innerHTML = '';
+    const parentSec = input.closest('#if_guardianSection, #if_involvedPartiesSection');
+    if (parentSec) parentSec.style.removeProperty('z-index');
+    return;
+  }
 
   const isCertPicker = ['cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
                        inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
@@ -3991,7 +4166,10 @@ function bcResidentPickerClear(inputId) {
   const hidden = document.getElementById(picker.hiddenId);
   if (hidden) hidden.value = '';
   const list = document.getElementById(picker.listId);
-  if (list) list.classList.add('hidden');
+  if (list) {
+    list.classList.add('hidden');
+    list.innerHTML = '';
+  }
   const parentSec = input ? input.closest('#if_guardianSection, #if_involvedPartiesSection') : null;
   if (parentSec) parentSec.style.removeProperty('z-index');
   if (typeof picker.onPick === 'function') picker.onPick(null);

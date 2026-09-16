@@ -651,15 +651,46 @@ a.stat-card-grad:hover {
 .pw-toggle:hover { color: var(--forest-600); background: var(--forest-50); }
 input.pw-input { padding-right: 38px; }
 
-/* ---------------- Modal ---------------- */
+/* ---------------- Modal & Stacking Hierarchy ---------------- */
+/* Standard Form Modals & Offcanvas */
+.modal-form-backdrop,
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(9, 41, 9, 0.45);
   backdrop-filter: blur(3px);
-  z-index: 50;
+  z-index: 60 !important;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
+}
+.modal-form-card,
+.modal-box {
+  z-index: 61 !important;
+}
+
+/* Confirmation / Alert Popups */
+.confirm-modal-backdrop,
+#bcDialogOverlay,
+#bcPermDeleteOverlay,
+#confirmModal,
+.bc-confirm-dialog,
+[id*="ConfirmModal"],
+[id*="confirmModal"] {
+  z-index: 9998 !important;
+}
+.confirm-modal-card,
+.bc-dialog-box,
+#bcPermDeleteOverlay .modal-box,
+[id*="ConfirmModal"] .modal-box,
+[id*="confirmModal"] .modal-box {
+  z-index: 9999 !important;
+}
+
+/* Toast Notifications */
+.global-toast,
+#globalToast,
+.toast {
+  z-index: 10000 !important;
 }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal-box {
