@@ -214,7 +214,6 @@ async function onNonResidencyResidentSelected(resident, options = {}) {
         alertContainer.className = 'bg-rose-50 border border-rose-300 rounded-xl p-4';
         alertContainer.innerHTML = `
           <div class="flex items-start gap-2.5 mb-3">
-            <span class="text-rose-600 text-lg flex-shrink-0">⛔</span>
             <div>
               <div class="font-bold text-rose-900 text-sm">Issuance Blocked</div>
               <div class="text-xs text-rose-700 mt-0.5 leading-relaxed">
@@ -262,7 +261,7 @@ function validateNonResidencySubmission(e) {
   if (submitBtn && submitBtn.disabled) {
     if (e && e.preventDefault) e.preventDefault();
     if (typeof bcAlert === 'function') {
-      bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active derogatory/blotter records that require resolution.');
+      bcAlert('Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active derogatory/blotter records that require resolution.');
     } else {
       alert('Issuance Blocked: Resident has active derogatory records.');
     }

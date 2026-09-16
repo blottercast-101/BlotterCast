@@ -379,7 +379,7 @@
           <label class="block text-xs font-semibold text-[#1e3a2b] mb-1.5">Status</label>
           <input type="text" name="status" id="elevateStatus" value="Pending" readonly class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3.5 py-2 text-sm text-[#1b3b2b] font-medium cursor-default focus:outline-none select-none"/>
           <div id="f_status_note" class="hidden text-[11px] text-[#204332] font-medium mt-1">
-            🔒 Status is driven by Settlement Monitor
+            Status is driven by Settlement Monitor
           </div>
         </div>
       </div>
@@ -1289,7 +1289,6 @@
       if (statusEl) {
         statusEl.innerHTML = `
           <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
-            <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
             <div>
               <div class="font-bold text-rose-900">Invalid Template</div>
               <div class="mt-0.5 text-rose-700 leading-relaxed">The uploaded file (${file.name}) is a Census Resident list, not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.</div>
@@ -1318,7 +1317,6 @@
           if (statusEl) {
             statusEl.innerHTML = `
               <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
-                <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
                 <div>
                   <div class="font-bold text-rose-900">Invalid Template</div>
                   <div class="mt-0.5 text-rose-700 leading-relaxed">The uploaded file is a Census Resident list (${foundForeign.join(', ')}), not a Blotter Entry Record. Please use the official Blotter CSV/Excel template.</div>
@@ -1339,7 +1337,6 @@
             if (statusEl) {
               statusEl.innerHTML = `
                 <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
-                  <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
                   <div>
                     <div class="font-bold text-rose-900">Mismatched Template</div>
                     <div class="mt-0.5 text-rose-700 leading-relaxed">The file does not contain settlement progress columns (Docket No, Stage, Hearing Date, Remarks).</div>
@@ -1358,7 +1355,6 @@
             if (statusEl) {
               statusEl.innerHTML = `
                 <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
-                  <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
                   <div>
                     <div class="font-bold text-rose-900">Mismatched Template</div>
                     <div class="mt-0.5 text-rose-700 leading-relaxed">The file does not contain required Blotter Entry columns (Complainant, Respondent, Nature of Case, Docket No).</div>
@@ -1537,7 +1533,6 @@
       if (statusEl) {
         statusEl.innerHTML = `
           <div class="p-3 mt-2 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 font-medium animate-fadeIn">
-            <span class="text-rose-600 flex-shrink-0 text-base leading-none">⚠</span>
             <div>
               <div class="font-bold text-rose-900">Import Validation Failed</div>
               <div class="mt-0.5 text-rose-700 leading-relaxed">${err.message || 'The uploaded file does not match the expected template.'}</div>

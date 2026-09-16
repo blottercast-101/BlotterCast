@@ -313,7 +313,6 @@
       <!-- Zone vs Location Conflict Warning Banner -->
       <div id="if_zoneConflictBanner" class="hidden p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3 animate-fadeIn shadow-sm">
         <div class="flex items-start gap-2.5">
-          <span class="text-amber-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
           <div>
             <strong class="font-bold text-amber-950 block">Zone & Location Mismatch Detected</strong>
             <span id="if_zoneConflictMsg" class="text-amber-800">The entered location matches another zone.</span>
@@ -334,7 +333,7 @@
             <span class="text-xs font-bold text-forest-800 flex items-center gap-1.5">
               <span data-icon="location" data-icon-size="14"></span> Geocoded Pin & Boundary
             </span>
-            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">⚪ Unverified Location</span>
+            <span id="if_geoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">Unverified Location</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" onclick="geocodeTypedAddress()" id="btnGeocode" class="text-xs px-2.5 py-1 bg-forest-700 hover:bg-forest-800 text-white rounded font-medium transition-colors flex items-center gap-1 shadow-sm">
@@ -356,7 +355,7 @@
                 <span data-icon="map" data-icon-size="15"></span> Mapulang Lupa Pin Placement &amp; Boundaries
               </span>
               <span id="wideZoneBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">Zone: None</span>
-              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">⚪ Unverified Location</span>
+              <span id="wideGeoBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200 whitespace-nowrap">Unverified Location</span>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <span class="font-mono text-xs text-gray-500" id="wideCoordsPreview">Lat: --, Lng: --</span>
@@ -377,7 +376,7 @@
           </div>
 
           <div id="incPickerWideFooter" class="hidden items-center justify-between px-5 py-2.5 border-t border-gray-100 bg-gray-50/80 text-xs text-gray-500">
-            <span>💡 <strong class="text-gray-600">Tip:</strong> Click or drag the marker inside your designated zone boundary. Press <kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded font-mono text-[11px] shadow-sm">Esc</kbd> to collapse.</span>
+            <span><strong class="text-gray-600">Tip:</strong> Click or drag the marker inside your designated zone boundary. Press <kbd class="px-1.5 py-0.5 bg-white border border-gray-200 rounded font-mono text-[11px] shadow-sm">Esc</kbd> to collapse.</span>
             <button type="button" onclick="toggleExpandPickerMap(false)" class="ml-4 flex-shrink-0 px-3.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors">
               Done Pinning
             </button>
@@ -385,7 +384,6 @@
         </div>
 
         <div id="if_boundaryErrorBanner" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-start gap-2.5 animate-fadeIn shadow-sm">
-          <span class="text-rose-600 font-bold text-base leading-tight mt-0.5">⚠️</span>
           <div>
             <strong class="font-bold text-rose-950 block" id="if_boundaryErrorTitle">Outside Barangay Jurisdiction</strong>
             <span id="if_boundaryErrorMsg" class="text-rose-800">This location is outside Barangay Mapulang Lupa. Incident reports can only be filed within barangay jurisdiction.</span>
@@ -475,7 +473,6 @@
       <!-- Minor Reporter Guardian Section (Rule 1) -->
       <div id="if_guardianSection" class="hidden bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2 relative z-30 focus-within:z-40 overflow-visible" style="position: relative; z-index: 30; overflow: visible;">
         <div class="flex items-start gap-2">
-          <span class="text-amber-600 font-bold text-base">⚠️</span>
           <div>
             <div class="text-xs font-bold text-amber-900">Reporter is a minor (&lt;15 years old)</div>
             <div class="text-[11px] text-amber-700">A parent or adult legal guardian (18+) must be assigned as the legal Complainant.</div>
@@ -500,7 +497,6 @@
       <!-- Vehicular / Eyewitness Involved Parties Section (Rule 2) -->
       <div id="if_involvedPartiesSection" class="hidden bg-blue-50/90 border border-blue-200 rounded-xl p-3.5 space-y-2 relative z-10 focus-within:z-25 overflow-visible" style="position: relative; z-index: 10; overflow: visible;">
         <div class="flex items-start gap-2">
-          <span class="text-blue-600 font-bold text-base">ℹ️</span>
           <div>
             <div class="text-xs font-bold text-blue-900">Eyewitness / Public Incident Category</div>
             <div class="text-[11px] text-blue-700">Reporter is treated as an eyewitness. Please specify the actual aggrieved victims or involved drivers.</div>
@@ -1256,10 +1252,10 @@
     if (lat == null || lng == null) {
       const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
       badge.className = cls;
-      badge.textContent = '⚪ Unverified Location';
+      badge.textContent = 'Unverified Location';
       if (wideGeoBadge) {
         wideGeoBadge.className = cls;
-        wideGeoBadge.textContent = '⚪ Unverified Location';
+        wideGeoBadge.textContent = 'Unverified Location';
       }
       if (preview) preview.textContent = 'Lat: --, Lng: --';
       if (wideCoordsPreview) wideCoordsPreview.textContent = 'Lat: --, Lng: --';
@@ -1275,10 +1271,10 @@
       isGeocoded = true;
       const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
       badge.className = cls;
-      badge.textContent = '✓ Inside Boundary';
+      badge.textContent = 'Inside Boundary';
       if (wideGeoBadge) {
         wideGeoBadge.className = cls;
-        wideGeoBadge.textContent = '✓ Inside Boundary';
+        wideGeoBadge.textContent = 'Inside Boundary';
       }
       if (boundaryBanner) boundaryBanner.classList.add('hidden');
       setBoundaryStyle(false);
@@ -1306,10 +1302,10 @@
       isLocationVerifiedInBoundary = false;
       const cls = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
       badge.className = cls;
-      badge.textContent = '⚠️ Outside Boundary / Non-Jurisdiction';
+      badge.textContent = 'Outside Boundary / Non-Jurisdiction';
       if (wideGeoBadge) {
         wideGeoBadge.className = cls;
-        wideGeoBadge.textContent = '⚠️ Outside Boundary';
+        wideGeoBadge.textContent = 'Outside Boundary';
       }
       if (boundaryBanner && boundaryTitle && boundaryMsg) {
         boundaryTitle.textContent = 'Outside Barangay Jurisdiction';
@@ -1445,7 +1441,7 @@
     const badge = document.getElementById('if_geoBadge');
     if (badge) {
       badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200';
-      badge.textContent = '⚪ Unverified Location';
+      badge.textContent = 'Unverified Location';
     }
     const preview = document.getElementById('if_coordsPreview');
     if (preview) preview.textContent = 'Lat: --, Lng: --';
@@ -1513,7 +1509,7 @@
         const badge = document.getElementById('if_geoBadge');
         if (badge) {
           badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
-          badge.textContent = '❌ Invalid Location';
+          badge.textContent = 'Invalid Location';
         }
         const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
         const boundaryTitle = document.getElementById('if_boundaryErrorTitle');
@@ -1773,12 +1769,12 @@
       const badge = document.getElementById('if_geoBadge');
       if (badge) {
         badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
-        badge.textContent = '✓ Inside Boundary';
+        badge.textContent = 'Inside Boundary';
       }
       const wideGeoBadge = document.getElementById('wideGeoBadge');
       if (wideGeoBadge) {
         wideGeoBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
-        wideGeoBadge.textContent = '✓ Inside Boundary';
+        wideGeoBadge.textContent = 'Inside Boundary';
       }
       const wideZoneBadge = document.getElementById('wideZoneBadge');
       if (wideZoneBadge) {

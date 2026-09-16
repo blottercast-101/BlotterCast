@@ -3556,16 +3556,16 @@ window.BcBatchManager = BcBatchManager;
 // ── Sidebar shared HTML builder (call once per page) ───────
 function buildSidebar(activePage) {
   const pages = [
-    { href:'dashboard.html',  icon:'📊', label:'Dashboard',          group:'main' },
-    { href:'blotter.html',    icon:'📋', label:'Blotter Records',     group:'main' },
-    { href:'incident.html',   icon:'🚨', label:'Incident Reports',    group:'main' },
-    { href:'settlement.html', icon:'🤝', label:'Settlement Monitor',  group:'main' },
-    { href:'heatmap.html',    icon:'🗺', label:'Heat Map',            group:'analytics' },
-    { href:'trends.html',     icon:'📈', label:'Trends',              group:'analytics' },
-    { href:'predictions.html',icon:'🤖', label:'Predictions',         group:'analytics' },
-    { href:'users.html',      icon:'👥', label:'Users & Roles',       group:'system' },
-    { href:'reports.html',    icon:'📄', label:'Reports',             group:'system' },
-    { href:'settings.html',   icon:'⚙', label:'Settings',            group:'system' },
+    { href:'dashboard.html',  icon:'dashboard', label:'Dashboard',          group:'main' },
+    { href:'blotter.html',    icon:'blotter', label:'Blotter Records',     group:'main' },
+    { href:'incident.html',   icon:'incident', label:'Incident Reports',    group:'main' },
+    { href:'settlement.html', icon:'settlement', label:'Settlement Monitor',  group:'main' },
+    { href:'heatmap.html',    icon:'heatmap', label:'Heat Map',            group:'analytics' },
+    { href:'trends.html',     icon:'trends', label:'Trends',              group:'analytics' },
+    { href:'predictions.html',icon:'predictions', label:'Predictions',         group:'analytics' },
+    { href:'users.html',      icon:'users', label:'Users & Roles',       group:'system' },
+    { href:'reports.html',    icon:'reports', label:'Reports',             group:'system' },
+    { href:'settings.html',   icon:'settings', label:'Settings',            group:'system' },
   ];
   const groupLabels = { main:'Main Menu', analytics:'Analytics', system:'System' };
   let lastGroup = null, html = '';
@@ -3576,7 +3576,7 @@ function buildSidebar(activePage) {
       lastGroup = p.group;
     }
     html += `<a href="${p.href}" class="nav-link${p.href === activePage ? ' active':''}">
-               <span class="nav-icon">${p.icon}</span> ${p.label}</a>`;
+               <span class="nav-icon" data-icon="${p.icon}">${typeof iconSvg === 'function' ? iconSvg(p.icon) : ''}</span> ${p.label}</a>`;
   });
   return html;
 }
@@ -3797,7 +3797,7 @@ async function openBlotterDetailsModal(docketNoOrIdOrCaseData) {
   if (initialData && (initialData.complainant || initialData.respondent)) {
     renderDetails(initialData);
   } else {
-    contentEl.innerHTML = `<div class="py-8 text-center text-forest-500 text-xs"><span class="inline-block animate-spin mr-2">⏳</span> Loading blotter case details…</div>`;
+    contentEl.innerHTML = `<div class="py-8 text-center text-forest-500 text-xs"><span class="inline-block animate-spin mr-2" data-icon="spinner" data-icon-size="14">${typeof iconSvg === 'function' ? iconSvg('spinner', 14) : ''}</span> Loading blotter case details…</div>`;
   }
 
   openModal('bcBlotterDetailsModal');

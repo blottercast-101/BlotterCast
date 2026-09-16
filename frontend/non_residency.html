@@ -367,7 +367,7 @@ async function onNrResidentPicked(r) {
         </div>`).join('');
       warningBox.classList.remove('hidden');
       if (window.renderIcons) renderIcons(warningBox);
-      showToast('⛔ Issuance Blocked: This transferred resident has active blotter records.', 'error');
+      showToast('Issuance Blocked: This transferred resident has active blotter records.', 'error');
     }
   } catch (e) {
     console.error('Blotter check error:', e);
@@ -506,7 +506,7 @@ function resetNonResidencyForm(){
 async function issueNonResidency(){
   const submitBtn = document.getElementById('nr_submit_btn');
   if (submitBtn && submitBtn.disabled) {
-    await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active/unsettled blotter cases that require Lupon settlement first.', { title: 'Issuance Blocked' });
+    await bcAlert('Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active/unsettled blotter cases that require Lupon settlement first.', { title: 'Issuance Blocked' });
     return;
   }
 
@@ -521,7 +521,7 @@ async function issueNonResidency(){
 
   const warningVisible = !document.getElementById('nr_blotter_warning').classList.contains('hidden');
   if (warningVisible) {
-    await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active derogatory/blotter records that require Lupon resolution before release.', { title: 'Issuance Blocked' });
+    await bcAlert('Issuance Blocked: Cannot issue Certificate of Non-Residency. This resident has active derogatory/blotter records that require Lupon resolution before release.', { title: 'Issuance Blocked' });
     return;
   }
 
@@ -537,7 +537,7 @@ async function issueNonResidency(){
     showToast('Certificate of Non-Residency issued! Preview updated.', 'success');
   } catch (err) {
     if (err.message && err.message.includes('CERTIFICATE_ISSUANCE_BLOCKED') || err.message.includes('active/unsettled blotter')) {
-      await bcAlert('⛔ Issuance Blocked: Cannot issue Certificate of Non-Residency. Resident has active/unsettled blotter cases on file.', { title: 'Server Validation Block' });
+      await bcAlert('Issuance Blocked: Cannot issue Certificate of Non-Residency. Resident has active/unsettled blotter cases on file.', { title: 'Server Validation Block' });
     } else {
       showToast(err.message, 'error');
     }

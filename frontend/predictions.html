@@ -649,9 +649,8 @@
             ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
             : (horizon === 14 ? (h.expectedCount14d || h.expectedCount7d * 2) : h.expectedCount7d);
 
-          const patrol = evaluatePatrolTier(expected);
           const criticalNotice = patrol.isCritical
-            ? `<div class="text-[11px] font-semibold text-red-600 mt-1 flex items-center gap-1">⚠️ Prioritize patrol dispatch during ${h.peakWindow}</div>`
+            ? `<div class="text-[11px] font-semibold text-red-600 mt-1">Prioritize patrol dispatch during ${h.peakWindow}</div>`
             : '';
 
           return `
@@ -660,7 +659,7 @@
             <span class="font-bold text-forest-800 text-sm">${zoneDisplay(h.zone)}</span>
             <span class="badge ${patrol.badgeClass} text-xs font-bold">${patrol.tier}</span>
           </div>
-          <div class="text-xs text-forest-500">⏰ Peak: ${h.peakWindow || 'N/A'}</div>
+          <div class="text-xs text-forest-500 flex items-center gap-1"><span data-icon="clock" data-icon-size="13"></span> Peak: ${h.peakWindow || 'N/A'}</div>
           <div class="text-xs text-forest-600 font-medium flex items-center gap-1 mt-0.5">
             <span data-icon="shield" data-icon-size="13"></span>
             ${patrol.officerText} · ${expected.toFixed(1)} expected incidents / ${horizon}d
