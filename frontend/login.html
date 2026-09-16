@@ -607,7 +607,7 @@
   </div>
 
   <!-- Alert -->
-  <div class="alert-error" id="loginAlert">
+  <div class="alert-error auth-error-banner hidden" id="loginErrorAlert" data-legacy-id="loginAlert" style="display:none;">
     <span data-icon="warning" data-icon-size="16"></span>
     <span id="loginAlertMsg">Invalid username or password. Please try again.</span>
   </div>
@@ -659,7 +659,7 @@
       <label class="remember-label">
         <input type="checkbox" id="remember"/> Remember me
       </label>
-      <a href="#" class="forgot-link" id="forgotLink" onclick="showForgotStep(event)">Forgot password?</a>
+      <a href="#" class="forgot-link" id="forgotPasswordLink" data-legacy-id="forgotLink" onclick="showForgotStep(event)">Forgot password?</a>
     </div>
 
     <button type="submit" class="btn-login" id="loginBtn">
@@ -832,6 +832,7 @@
 
 <script src="api.js"></script>
 <script src="icons.js"></script>
+<script src="login.js"></script>
 <script>
   function showAuthSuccessModal(config = { type: 'login' }) {
     if (window.google && window.google.accounts && window.google.accounts.id) {
@@ -997,33 +998,56 @@
     if (pw.type === 'password') { pw.type = 'text'; btn.innerHTML = iconSvg('viewOff', 18); }
     else { pw.type = 'password'; btn.innerHTML = iconSvg('view', 18); }
   }
+
+  function clearAuthErrors() {
+    const errorBanner = document.getElementById('loginErrorAlert') || document.querySelector('.auth-error-banner');
+    if (errorBanner) {
+      errorBanner.classList.remove('show');
+      errorBanner.classList.add('hidden');
+      errorBanner.style.display = 'none';
+      errorBanner.textContent = '';
+    }
+  }
+  window.clearAuthErrors = clearAuthErrors;
+
   async function handleLogin(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const uEl = document.getElementById('username');
     const pEl = document.getElementById('password');
     const uErr = document.getElementById('usernameError');
     const pErr = document.getElementById('passwordError');
-    const alert = document.getElementById('loginAlert');
     const btn = document.getElementById('loginBtn');
 
-    // Reset
-    uEl.classList.remove('error'); pEl.classList.remove('error');
-    uErr.classList.remove('show'); pErr.classList.remove('show');
-    alert.classList.remove('show');
+    // Reset initial field errors
+    clearAuthErrors();
+    if (uEl) uEl.classList.remove('error');
+    if (pEl) pEl.classList.remove('error');
+    if (uErr) uErr.classList.remove('show');
+    if (pErr) pErr.classList.remove('show');
 
-    const username = uEl.value.trim();
-    const password = pEl.value.trim();
+    const username = uEl ? uEl.value.trim() : '';
+    const password = pEl ? pEl.value.trim() : '';
     let valid = true;
 
-    if (!username) { uEl.classList.add('error'); uErr.classList.add('show'); valid = false; }
-    if (!password) { pEl.classList.add('error'); pErr.classList.add('show'); valid = false; }
+    if (!username) { if (uEl) uEl.classList.add('error'); if (uErr) uErr.classList.add('show'); valid = false; }
+    if (!password) { if (pEl) pEl.classList.add('error'); if (pErr) pErr.classList.add('show'); valid = false; }
     if (!valid) return;
 
-    btn.classList.add('loading');
+    // Call clearAuthErrors() immediately before dispatching the login API request
+    clearAuthErrors();
+    if (btn) btn.classList.add('loading');
 
     try {
       const result = await BCApi.login(username, password);
-      btn.classList.remove('loading');
+      if (btn) btn.classList.remove('loading');
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Invalid username or password.');
+      }
+
+      // Success: Ensure banner remains hidden while redirecting to dashboard
+      clearAuthErrors();
+
       if (result.mfaRequired || result.mfa_required) {
         showOtpStep(result);
       } else {
@@ -1035,14 +1059,23 @@
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
-      btn.classList.remove('loading');
-      alert.classList.add('show');
-      const alertText = document.getElementById('loginAlertMsg');
-      if (alertText) alertText.textContent = err.message || 'Invalid username or password.';
-      uEl.classList.add('error'); pEl.classList.add('error');
+      if (btn) btn.classList.remove('loading');
+      const errorBanner = document.getElementById('loginErrorAlert') || document.querySelector('.auth-error-banner');
+      if (errorBanner) {
+        errorBanner.classList.remove('hidden');
+        errorBanner.classList.add('show');
+        errorBanner.style.display = '';
+        const msg = err.message || 'Invalid username or password.';
+        errorBanner.innerHTML = `<span data-icon="warning" data-icon-size="16"></span><span id="loginAlertMsg">${msg}</span>`;
+        if (typeof replaceIcons === 'function') replaceIcons();
+      }
+      if (uEl) uEl.classList.add('error');
+      if (pEl) pEl.classList.add('error');
       const form = document.getElementById('loginForm');
-      form.style.animation = 'shake 0.4s ease';
-      setTimeout(() => form.style.animation = '', 400);
+      if (form) {
+        form.style.animation = 'shake 0.4s ease';
+        setTimeout(() => form.style.animation = '', 400);
+      }
     }
   }
 
@@ -1050,6 +1083,7 @@
   let currentPreAuthToken = null;
 
   function showOtpStep(result) {
+    clearAuthErrors();
     currentPreAuthToken = result.pre_auth_token || result.preAuthToken || null;
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('otpForm').style.display = '';
@@ -1061,7 +1095,8 @@
   }
 
   function backToLogin(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    clearAuthErrors();
     currentPreAuthToken = null;
     ['otpForm', 'forgotForm', 'resetForm', 'newPasswordForm'].forEach(id => document.getElementById(id).style.display = 'none');
     document.getElementById('loginForm').style.display = '';
@@ -1100,7 +1135,8 @@
   let resetResendTimer = null;
 
   function showForgotStep(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    clearAuthErrors();
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('forgotForm').style.display = '';
     document.getElementById('forgotUsername').value = document.getElementById('username').value || '';
@@ -1133,6 +1169,7 @@
   }
 
   function showResetStep(result) {
+    clearAuthErrors();
     document.getElementById('forgotForm').style.display = 'none';
     document.getElementById('resetForm').style.display = '';
     document.getElementById('resetAlert').classList.remove('show');
@@ -1295,6 +1332,7 @@
   }
 
   function showNewPasswordStep() {
+    clearAuthErrors();
     document.getElementById('resetForm').style.display = 'none';
     document.getElementById('newPasswordForm').style.display = '';
     document.getElementById('newPasswordAlert').classList.remove('show');
@@ -1495,9 +1533,7 @@
   }
 
   async function handleGoogleCredentialResponse(response) {
-    const alert = document.getElementById('loginAlert');
-    const alertText = document.getElementById('loginAlertMsg');
-    alert.classList.remove('show');
+    clearAuthErrors();
     try {
       const result = await BCApi.googleLogin(response.credential);
       if (result.mfaRequired || result.mfa_required) {
@@ -1514,11 +1550,20 @@
         setTimeout(() => { window.location.replace('dashboard.html'); }, 1200);
       }
     } catch (err) {
-      alert.classList.add('show');
-      if (alertText) alertText.textContent = err.message || 'Google Sign-In failed.';
+      const errorBanner = document.getElementById('loginErrorAlert') || document.querySelector('.auth-error-banner');
+      if (errorBanner) {
+        errorBanner.classList.remove('hidden');
+        errorBanner.classList.add('show');
+        errorBanner.style.display = '';
+        const msg = err.message || 'Google Sign-In failed.';
+        errorBanner.innerHTML = `<span data-icon="warning" data-icon-size="16"></span><span id="loginAlertMsg">${msg}</span>`;
+        if (typeof replaceIcons === 'function') replaceIcons();
+      }
       const form = document.getElementById('loginForm');
-      form.style.animation = 'shake 0.4s ease';
-      setTimeout(() => form.style.animation = '', 400);
+      if (form) {
+        form.style.animation = 'shake 0.4s ease';
+        setTimeout(() => form.style.animation = '', 400);
+      }
     }
   }
 
@@ -1534,15 +1579,16 @@
       sessionStorage.removeItem('bc_logged_out_alert');
       sessionStorage.removeItem('bc_session_expired_reason');
       try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-      const alert = document.getElementById('loginAlert');
-      const alertText = document.getElementById('loginAlertMsg');
-      if (alert && alertText) {
-        if (isSessionExpired || expiredReason) {
-          alertText.textContent = expiredReason || 'Your session expired due to 2 hours of inactivity. Please sign in again.';
-        } else {
-          alertText.textContent = "You've been logged out! Please login to your account to access BlotterCast";
-        }
-        alert.classList.add('show');
+      const errorBanner = document.getElementById('loginErrorAlert') || document.querySelector('.auth-error-banner');
+      if (errorBanner) {
+        const msg = (isSessionExpired || expiredReason)
+          ? (expiredReason || 'Your session expired due to 2 hours of inactivity. Please sign in again.')
+          : "You've been logged out! Please login to your account to access BlotterCast";
+        errorBanner.classList.remove('hidden');
+        errorBanner.classList.add('show');
+        errorBanner.style.display = '';
+        errorBanner.innerHTML = `<span data-icon="warning" data-icon-size="16"></span><span id="loginAlertMsg">${msg}</span>`;
+        if (typeof replaceIcons === 'function') replaceIcons();
       }
     }
   }
@@ -1569,13 +1615,28 @@
   }`;
   document.head.appendChild(style);
 
-  // Clear errors on input
-  ['username','password'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      document.getElementById(id).classList.remove('error');
-      document.getElementById(id+'Error').classList.remove('show');
-      document.getElementById('loginAlert').classList.remove('show');
-    });
+  // Clear errors on input and focus
+  ['username', 'password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      ['input', 'focus'].forEach(evt => {
+        el.addEventListener(evt, () => {
+          clearAuthErrors();
+          el.classList.remove('error');
+          const errEl = document.getElementById(id + 'Error');
+          if (errEl) errEl.classList.remove('show');
+        });
+      });
+    }
+  });
+
+  // Clear errors on Forgot password link click
+  const forgotPwLink = document.getElementById('forgotPasswordLink') || document.getElementById('forgotLink');
+  if (forgotPwLink) forgotPwLink.addEventListener('click', clearAuthErrors);
+
+  // Clear errors on Back to sign in links
+  document.querySelectorAll('a[onclick*="backToLogin"], button[onclick*="backToLogin"]').forEach(link => {
+    link.addEventListener('click', clearAuthErrors);
   });
 
   // Live stats + status — same endpoint/calculation as the landing page.

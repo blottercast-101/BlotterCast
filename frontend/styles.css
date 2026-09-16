@@ -1163,12 +1163,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .animate-in.delay-3 { animation-delay: 0.2s; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.alert-error {
+.alert-error,
+.auth-error-banner {
   display: none; align-items: center; gap: 8px;
   background: var(--red-100); color: var(--red-600);
   padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 500;
 }
-.alert-error.show { display: flex; }
+.alert-error.show,
+.auth-error-banner.show { display: flex; }
+.alert-error.hidden,
+.auth-error-banner.hidden { display: none !important; }
 
 /* ---------------- Certificates (Clearance, Indigency) ----------------
    The letterhead (seals, watermark, green bars, footer) is the client's
