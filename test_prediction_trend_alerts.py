@@ -386,7 +386,7 @@ class TestPredictionTrendAlerts(unittest.TestCase):
         })
         self.assertEqual(r_encoder.status_code, 201)
 
-        # Barangay Captain (Singleton protected role - blocked from creation)
+        # Barangay Captain (Blocked from creation when one active captain exists)
         r_captain = self.client.post("/api/users.php?action=create", json={
             "username": "test_captain_user",
             "name": "Captain Test",
@@ -394,7 +394,8 @@ class TestPredictionTrendAlerts(unittest.TestCase):
             "role": "Barangay Captain",
             "password": "Password123!"
         })
-        self.assertEqual(r_captain.status_code, 403)
+        self.assertEqual(r_captain.status_code, 400)
+        self.assertIn("Only one active Barangay Captain is allowed", r_captain.get_json().get("error", ""))
 
         # System Administrator (Singleton protected role - blocked from creation)
         r_admin = self.client.post("/api/users.php?action=create", json={

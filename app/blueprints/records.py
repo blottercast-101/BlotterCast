@@ -147,6 +147,7 @@ def update_settlement_status(settlement_id):
         settlement.remarks = d.get("remarks")
 
     _sync_settlement_to_blotter_and_incident(settlement)
+    _sync_linked_records("settlements", settlement, d)
 
     actor = session.get("username") or "System"
     ts = ph_now().strftime("%b %d, %Y %I:%M %p")
@@ -240,7 +241,19 @@ def elevate_incident_endpoint(incident_id):
             complainant_id = int(d["complainantId"]) if d.get("complainantId") else (
                 int(d["complainant_id"]) if d.get("complainant_id") else inc.complainant_resident_id
             )
+            is_reporter_victim = bool(
+                inc.reporter and complainant and (
+                    inc.reporter.strip().lower() == complainant.strip().lower() or
+                    (inc.reporter_resident_id and complainant_id and inc.reporter_resident_id == complainant_id)
+                )
+            )
             complainant_addr = d.get("complainantAddr") or d.get("complainant_addr") or ""
+            if not complainant_addr and complainant_id:
+                c_res_victim = CensusRecord.query.get(complainant_id)
+                if c_res_victim and c_res_victim.address:
+                    complainant_addr = c_res_victim.address
+            if not complainant_addr and is_reporter_victim:
+                complainant_addr = inc.reporter_address or ""
             if not complainant and not complainant_id:
                 return json_error("For vehicular/public accidents, the reporter is treated as an eyewitness. Please specify the actual drivers/victims/involved parties.", 422)
         else:
@@ -571,6 +584,171 @@ def _get_linked_record_bundles(module, ids):
                 incidents_dict[inc.id] = inc
 
     return list(incidents_dict.values()), list(blotters_dict.values()), list(settlements_dict.values())
+
+
+def _sync_linked_records(trigger_module, primary_record, payload_data=None):
+    """
+    Synchronizes shared fields across linked records in Incident, Blotter, and Settlement modules.
+    trigger_module: 'incidents', 'blotter', or 'settlements'
+    primary_record: the entity instance being updated (Incident, BlotterRecord, or Settlement)
+    payload_data: request payload dictionary (optional, for explicit inputs)
+    """
+    if not primary_record or not getattr(primary_record, "id", None):
+        return
+
+    incidents, blotters, settlements = _get_linked_record_bundles(trigger_module, [primary_record.id])
+    now_ts = ph_now().replace(tzinfo=None)
+
+    if trigger_module in ("blotter", "blotters"):
+        blt = primary_record
+        # 1. Propagate from Blotter to linked Incidents
+        for inc in incidents:
+            if blt.complainant:
+                inc.complainant = blt.complainant
+            if blt.complainant_id:
+                inc.complainant_resident_id = blt.complainant_id
+            if blt.complainant_addr:
+                if hasattr(inc, "complainant_address"):
+                    inc.complainant_address = blt.complainant_addr
+            if blt.respondent:
+                if blt.complainant:
+                    inc.involved_parties = f"{blt.complainant} vs {blt.respondent}"
+                else:
+                    inc.involved_parties = blt.respondent
+            if blt.date_filed:
+                inc.incident_date = blt.date_filed
+            if blt.incident_time:
+                inc.time_reported = blt.incident_time
+                inc.hour = blt.incident_time.hour
+            if blt.zone_id:
+                inc.zone_id = blt.zone_id
+            if blt.nature:
+                inc.description = blt.nature
+            inc.updated_at = now_ts
+
+        # 2. Propagate from Blotter to linked Settlements
+        for stl in settlements:
+            if blt.complainant or blt.respondent:
+                stl.case_title = f"{blt.complainant or 'Complainant'} vs. {blt.respondent or 'Respondent'}"
+            if blt.nature:
+                stl.complaint_title = blt.nature
+            if blt.date_filed:
+                stl.date_filed = blt.date_filed
+            if blt.case_type:
+                stl.nature = "Criminal" if str(blt.case_type).upper() in ("CRIM", "CRIMINAL") else "Civil"
+            stl.updated_at = now_ts
+
+    elif trigger_module in ("incidents", "incident"):
+        inc = primary_record
+        resp_from_payload = payload_data.get("respondent") if payload_data else None
+
+        # 1. Propagate from Incident to linked Blotters
+        for blt in blotters:
+            if inc.complainant:
+                blt.complainant = inc.complainant
+            if inc.complainant_resident_id:
+                blt.complainant_id = inc.complainant_resident_id
+            comp_addr = getattr(inc, "complainant_address", None) or getattr(inc, "reporter_address", None)
+            if comp_addr:
+                blt.complainant_addr = comp_addr
+            if resp_from_payload:
+                blt.respondent = resp_from_payload.strip()
+            elif inc.involved_parties and ("vs" in inc.involved_parties.lower()):
+                parts = re.split(r"\s+vs\.?\s+", inc.involved_parties, flags=re.IGNORECASE)
+                if len(parts) > 1 and parts[1].strip():
+                    blt.respondent = parts[1].strip()
+            if inc.incident_date:
+                blt.date_filed = inc.incident_date
+            if inc.time_reported:
+                blt.incident_time = inc.time_reported
+            if inc.zone_id:
+                blt.zone_id = inc.zone_id
+            if inc.description and not blt.nature:
+                blt.nature = inc.description
+            blt.updated_at = now_ts
+
+        # 2. Propagate from Incident to linked Settlements
+        for stl in settlements:
+            effective_complainant = inc.complainant or (stl.blotter.complainant if stl.blotter else "")
+            curr_resp = ""
+            if resp_from_payload:
+                curr_resp = resp_from_payload.strip()
+            elif inc.involved_parties and ("vs" in inc.involved_parties.lower()):
+                parts = re.split(r"\s+vs\.?\s+", inc.involved_parties, flags=re.IGNORECASE)
+                if len(parts) > 1 and parts[1].strip():
+                    curr_resp = parts[1].strip()
+            if not curr_resp and stl.case_title and ("vs." in stl.case_title or "vs" in stl.case_title):
+                parts = re.split(r"\s+vs\.?\s+", stl.case_title, flags=re.IGNORECASE)
+                if len(parts) > 1:
+                    curr_resp = parts[1].strip()
+            if not curr_resp and stl.blotter and stl.blotter.respondent:
+                curr_resp = stl.blotter.respondent
+
+            if effective_complainant or curr_resp:
+                stl.case_title = f"{effective_complainant or 'Complainant'} vs. {curr_resp or 'Respondent'}"
+            if inc.incident_date:
+                stl.date_filed = inc.incident_date
+            if inc.officer:
+                stl.officer = inc.officer
+            stl.updated_at = now_ts
+
+    elif trigger_module in ("settlements", "settlement"):
+        stl = primary_record
+        comp_name = None
+        resp_name = None
+        if payload_data and (payload_data.get("complainant") or payload_data.get("respondent")):
+            comp_name = (payload_data.get("complainant") or "").strip() or None
+            resp_name = (payload_data.get("respondent") or "").strip() or None
+        elif stl.case_title and ("vs." in stl.case_title or "vs" in stl.case_title):
+            parts = re.split(r"\s+vs\.?\s+", stl.case_title, flags=re.IGNORECASE)
+            if len(parts) > 1:
+                comp_name = parts[0].strip() or None
+                resp_name = parts[1].strip() or None
+
+        # 1. Propagate from Settlement to linked Blotters
+        for blt in blotters:
+            if comp_name:
+                blt.complainant = comp_name
+            if resp_name:
+                blt.respondent = resp_name
+            if stl.complaint_title:
+                blt.nature = stl.complaint_title
+            if stl.date_filed:
+                blt.date_filed = stl.date_filed
+            if stl.nature:
+                blt.case_type = "CRIM" if str(stl.nature).upper() in ("CRIM", "CRIMINAL") else "CIVIL"
+            blt.updated_at = now_ts
+
+        # 2. Propagate from Settlement to linked Incidents
+        for inc in incidents:
+            if comp_name:
+                inc.complainant = comp_name
+            if comp_name and resp_name:
+                inc.involved_parties = f"{comp_name} vs {resp_name}"
+            elif resp_name:
+                inc.involved_parties = resp_name
+            if stl.date_filed:
+                inc.incident_date = stl.date_filed
+            if stl.complaint_title:
+                inc.description = stl.complaint_title
+            if stl.officer:
+                inc.officer = stl.officer
+            inc.updated_at = now_ts
+
+        # 3. Propagate to other sibling Settlements linked to the same blotter
+        for other_stl in settlements:
+            if other_stl.id != stl.id:
+                if stl.case_title:
+                    other_stl.case_title = stl.case_title
+                if stl.complaint_title:
+                    other_stl.complaint_title = stl.complaint_title
+                if stl.date_filed:
+                    other_stl.date_filed = stl.date_filed
+                if stl.nature:
+                    other_stl.nature = stl.nature
+                if stl.officer:
+                    other_stl.officer = stl.officer
+                other_stl.updated_at = now_ts
 
 
 def _log_cascade_audit(username, action_type, trigger_module, trigger_entity_name, trigger_ref, incidents, blotters, settlements):
@@ -1075,9 +1253,6 @@ def _incidents():
         if incident.status == "Referred":
             return json_error("Referred incidents are final and cannot be modified.", 403)
 
-        if incident.is_blotter or incident.status in ("Elevated to Blotter", "ELEVATED"):
-            return json_error(f"Record is an official Blotter case ({incident.blotter_docket_no or 'Elevated'}). Edits must be made in Blotter Records.", 403)
-
         d = request.get_json(silent=True) or {}
         zone_id = d.get("zone") or "Zone 1"
         loc_text = d.get("location", "")
@@ -1209,6 +1384,7 @@ def _incidents():
                 ref_id=incident.id,
             ))
 
+        _sync_linked_records("incidents", incident, d)
         db.session.commit()
         trigger_trend_and_prediction_check()
         return jsonify({"ok": True})
@@ -1560,19 +1736,8 @@ def _blotter():
         else:
             record.status = d.get("status") or "Pending"
 
-        # Single Source of Truth (SSOT): synchronize shared fields to linked Incident Report
-        if record.source_incident_id:
-            inc = Incident.query.get(record.source_incident_id)
-            if inc:
-                if d.get("dateFiled"):
-                    inc.incident_date = record.date_filed
-                if d.get("nature"):
-                    inc.description = record.nature
-                if d.get("type"):
-                    inc.category = d.get("type")
-                if d.get("zone"):
-                    inc.zone_id = d.get("zone")
-                inc.updated_at = ph_now().replace(tzinfo=None)
+        # Cross-record synchronization: propagate shared fields to linked Incident and Settlements
+        _sync_linked_records("blotter", record, d)
 
         db.session.commit()
         trigger_trend_and_prediction_check()
@@ -1770,6 +1935,15 @@ def _settlements():
             return jsonify({"ok": True, "restored": True})
 
         d = request.get_json(silent=True) or {}
+        if d.get("caseTitle") or d.get("case_title"):
+            settlement.case_title = (d.get("caseTitle") or d.get("case_title")).strip()
+        if d.get("complaintTitle") or d.get("complaint_title"):
+            settlement.complaint_title = (d.get("complaintTitle") or d.get("complaint_title")).strip()
+        if d.get("nature"):
+            settlement.nature = d.get("nature").strip()
+        if d.get("dateFiled") or d.get("date_filed"):
+            settlement.date_filed = parse_date(d.get("dateFiled") or d.get("date_filed"))
+
         settlement.date_confrontation = parse_date(d.get("dateConfrontation")) or None
         settlement.action_taken = d.get("actionTaken", "")
         settlement.date_settlement = parse_date(d.get("dateSettlement")) or None
@@ -1786,6 +1960,7 @@ def _settlements():
             settlement.status = "Pending"
         settlement.remarks = d.get("remarks", "")
         _sync_settlement_to_blotter_and_incident(settlement)
+        _sync_linked_records("settlements", settlement, d)
 
         actor = session.get("username") or "System"
         ts = ph_now().strftime("%b %d, %Y %I:%M %p")

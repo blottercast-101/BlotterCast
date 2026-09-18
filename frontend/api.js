@@ -174,10 +174,14 @@ const BCApi = {
     });
   },
   myAccount() { return this._fetch(`${BC_API}/api/auth.php?action=my_account`); },
-  updateMyAccount(fullName, email, contact) {
+  updateMyAccount(fullName, email, contact, username) {
+    const payload = { fullName, email, contact };
+    if (username !== undefined && username !== null) {
+      payload.username = username;
+    }
     return this._fetch(`${BC_API}/api/auth.php?action=update_my_account`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, contact }),
+      body: JSON.stringify(payload),
     });
   },
   async uploadMyAvatar(fileOrFormData) {

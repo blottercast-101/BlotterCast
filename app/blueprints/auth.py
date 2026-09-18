@@ -966,6 +966,17 @@ def _update_my_account():
     if User.query.filter(User.id != user.id, func.lower(User.email) == email.lower()).first():
         return json_error("That email address is already in use by another account", 409)
 
+    username = (data.get("username") or "").strip()
+    if "username" in data and not username:
+        return json_error("Username is required.")
+    if username and username != user.username:
+        if len(username) < 3:
+            return json_error("Username must be at least 3 characters long.")
+        if User.query.filter(User.id != user.id, func.lower(User.username) == username.lower()).first():
+            return json_error("That username is already taken", 409)
+        user.username = username
+        session["username"] = username
+
     user.full_name = full_name
     user.email = email
     user.contact_no = contact
@@ -999,6 +1010,7 @@ def _update_my_account():
     return jsonify({
         "ok": True,
         "success": True,
+        "username": user.username,
         "avatar_url": avatar_val,
         "avatarUrl": avatar_val,
         "avatar": avatar_val,

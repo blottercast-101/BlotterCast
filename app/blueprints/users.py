@@ -88,7 +88,7 @@ def _get_target_user_id():
         return None
 
 
-PROTECTED_ROLES = {"System Admin", "Barangay Captain"}
+PROTECTED_ROLES = {"System Admin", "System Administrator"}
 
 
 def _captain_signature():
@@ -233,12 +233,18 @@ def _create():
     if not email:
         return json_error("Email is required — sign-in codes are sent there for MFA.")
 
-    # Guard: Only Desk Officer and Data Encoder roles may be created via user management
+    # Guard: Only Desk Officer, Data Encoder, and Barangay Captain roles may be created via user management
     normalized_role = role.upper()
-    if normalized_role in {"SYSTEM ADMIN", "BARANGAY CAPTAIN", "SYSTEM ADMINISTRATOR"}:
-        return json_error("Creating accounts with 'System Admin' or 'Barangay Captain' roles is forbidden. Only Desk Officer and Data Encoder accounts can be created.", 403)
-    if role not in {"Desk Officer", "Data Encoder"}:
-        return json_error("Invalid role. Only Desk Officer and Data Encoder accounts can be created.", 400)
+    if normalized_role in {"SYSTEM ADMIN", "SYSTEM ADMINISTRATOR"}:
+        return json_error("Creating accounts with 'System Admin' role is forbidden. Only Desk Officer, Data Encoder, and Barangay Captain accounts can be created.", 403)
+    if role not in {"Desk Officer", "Data Encoder", "Barangay Captain"}:
+        return json_error("Invalid role. Only Desk Officer, Data Encoder, and Barangay Captain accounts can be created.", 400)
+
+    # Single-Active Barangay Captain validation
+    if role == "Barangay Captain":
+        existing_captain = User.query.filter_by(role="Barangay Captain").first()
+        if existing_captain and getattr(existing_captain, "status", "") != "Deleted":
+            return json_error("Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.", 400)
 
     if not password:
         password = _generate_temp_password(role)
@@ -259,6 +265,17 @@ def _create():
     db.session.add(user)
     db.session.commit()
     log_audit(session.get("username"), "Created", "Users", f"Account created: {full_name} ({role})")
+
+    # If creating Barangay Captain, synchronize official settings keys
+    if user.role == "Barangay Captain":
+        from ..models import SystemSetting
+        for skey in ["barangay_captain", "captain_name", "punong_barangay"]:
+            s_row = SystemSetting.query.get(skey)
+            if s_row:
+                s_row.setting_value = full_name
+            else:
+                db.session.add(SystemSetting(setting_key=skey, setting_value=full_name))
+        db.session.commit()
 
     # Automated Credential Email Delivery with Mandatory First-Login Password Change Reminder
     try:
@@ -317,10 +334,23 @@ def _update():
         user.password = _hash_password(password)
         user.password_changed_at = datetime.utcnow()
 
-    # Role cannot demote protected roles
+    # Role cannot demote protected roles, and cannot promote to System Admin
     req_role = d.get("role")
+    if req_role in {"System Admin", "System Administrator"} and user.role not in {"System Admin", "System Administrator"}:
+        return json_error("Assigning System Administrator role is not allowed.", 400)
+
+    # Single-Active Barangay Captain validation on role update
+    if req_role == "Barangay Captain" and user.role != "Barangay Captain":
+        existing_captain = User.query.filter(User.id != uid, User.role == "Barangay Captain").first()
+        if existing_captain and getattr(existing_captain, "status", "") != "Deleted":
+            return json_error("Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.", 400)
+
     if req_role and user.role not in PROTECTED_ROLES:
         user.role = req_role
+
+    # Prevent suspending Barangay Captain via update payload
+    if user.role == "Barangay Captain" and d.get("status") == "Suspended":
+        return json_error("Barangay Captain accounts cannot be suspended.", 400)
 
     # Avatar update support (URL, null, or Data URL base64)
     avatar_payload = d.get("avatar") or d.get("avatar_url") or d.get("profile_photo") or d.get("profile_photo_path")
@@ -388,6 +418,8 @@ def _toggle_status():
         return json_error("User not found", 404)
     if user.role in PROTECTED_ROLES:
         return json_error(f"{user.role} accounts are protected and cannot be suspended.", 400)
+    if user.role == "Barangay Captain":
+        return json_error("Barangay Captain accounts cannot be suspended.", 400)
     
     if user.status == "Suspended":
         user.status = "Inactive"

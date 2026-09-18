@@ -342,10 +342,16 @@
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importCensusModal">
-  <div class="modal-box max-w-md">
+  <div class="modal-box max-w-md" id="importResidentModal">
     <div class="flex items-center justify-between mb-5">
       <h2 class="font-display text-xl text-forest-800">Import Resident Data</h2>
       <button onclick="closeModal('importCensusModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+    </div>
+    <div class="flex items-center justify-between p-3.5 mb-4 bg-[#edf5f0] border border-[#d8e8dd] rounded-xl text-xs font-medium text-[#1e3a2b]">
+      <span>CSV Template:</span>
+      <a href="/templates/census_resident_template.csv" download class="inline-flex items-center gap-1 text-[#1e3a2b] underline hover:text-[#52796f] transition-colors">
+        <span>↓ Resident Census Template (.csv)</span>
+      </a>
     </div>
     <div class="border-2 border-dashed border-forest-300 rounded-xl p-10 text-center bg-forest-50 hover:bg-forest-100 transition-colors cursor-pointer" onclick="document.getElementById('censusFileInput').click()">
       <div class="flex justify-center mb-3" style="color:var(--forest-500)" data-icon="folder" data-icon-size="40"></div>

@@ -218,9 +218,10 @@
     </div>
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Date From</label><input type="date" id="gen_from" class="form-input" value="2025-01-01"/></div>
-        <div><label class="form-label">Date To</label><input type="date" id="gen_to" class="form-input" value="2025-01-31"/></div>
+        <div><label class="form-label">Date From</label><input type="date" id="gen_from" class="form-input" value="2025-01-01" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
+        <div><label class="form-label">Date To</label><input type="date" id="gen_to" class="form-input" value="2025-01-31" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
       </div>
+      <p id="gen_date_warn" class="text-xs text-rose-600 font-medium hidden mt-1">Date To cannot be earlier than Date From.</p>
       <div>
         <label class="form-label">Zone Filter</label>
         <select class="form-input" id="gen_zone"><option value="">All Zones</option>
@@ -338,6 +339,34 @@ async function loadRecentReports(silent = false) {
 
 var currentReportType = 'Incident Summary Report';
 
+function onReportDateChange() {
+  const fromEl = document.getElementById('gen_from');
+  const toEl = document.getElementById('gen_to');
+  const warnEl = document.getElementById('gen_date_warn');
+  if (!fromEl || !toEl) return true;
+
+  if (fromEl.value) {
+    toEl.min = fromEl.value;
+  } else {
+    toEl.removeAttribute('min');
+  }
+
+  if (fromEl.value && toEl.value && toEl.value < fromEl.value) {
+    if (warnEl) {
+      warnEl.textContent = 'Date To cannot be earlier than Date From.';
+      warnEl.classList.remove('hidden');
+    }
+    toEl.classList.add('border-rose-500', 'focus:border-rose-500', 'focus:ring-rose-500');
+    return false;
+  } else {
+    if (warnEl) {
+      warnEl.classList.add('hidden');
+    }
+    toEl.classList.remove('border-rose-500', 'focus:border-rose-500', 'focus:ring-rose-500');
+    return true;
+  }
+}
+
 function openGenerateModal(title) {
   currentReportType = title;
   const modalTitle = document.getElementById('genModalTitle');
@@ -366,11 +395,17 @@ function openGenerateModal(title) {
   }
 
   if (pdfRadio) pdfRadio.checked = true;
+  onReportDateChange();
   if (typeof renderIcons === 'function') renderIcons();
   openModal('generateModal');
 }
 
 async function simulateGenerate(isPreview = false) {
+  if (!onReportDateChange()) {
+    showToast('Date To cannot be earlier than Date From.', 'error');
+    return;
+  }
+
   const from = document.getElementById('gen_from').value;
   const to = document.getElementById('gen_to').value;
   const zone = document.getElementById('gen_zone').value;

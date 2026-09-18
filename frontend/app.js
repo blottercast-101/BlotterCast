@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial load fallback for Barangay Information across all views
   bcInitBarangayConfig();
+  bcInitLanguage();
 
   // Responsive sidebar drawer & touch interaction initialization
   initGlobalSidebar();
@@ -264,6 +265,10 @@ function bcApplyBarangayConfig(config) {
   document.querySelectorAll('.cert-header-municipality').forEach(el => { el.textContent = muni; });
   document.querySelectorAll('.cert-header-province').forEach(el => { el.textContent = prov; });
   document.querySelectorAll('.cert-captain-name').forEach(el => { el.textContent = capt; });
+
+  if (config.default_language && typeof bcSetLanguage === 'function') {
+    bcSetLanguage(config.default_language);
+  }
 }
 
 window.addEventListener('barangayConfigUpdated', (e) => {
@@ -291,6 +296,325 @@ function bcInitBarangayConfig() {
       .catch(() => {});
   }
 }
+
+// ── Internationalization (i18n) Engine: English / Filipino ──
+const BC_TRANSLATIONS = {
+  fil: {
+    // Nav & Sidebar
+    "Main Menu": "Pangunahing Menu",
+    "Dashboard": "Dashboard",
+    "Blotter Records": "Mga Tala ng Blotter",
+    "Incident Reports": "Mga Ulat ng Insidente",
+    "Settlement Monitor": "Pagsubaybay sa Kasunduan",
+    "Documents": "Mga Dokumento",
+    "Census": "Sensus",
+    "Brgy Clearance": "Barangay Clearance",
+    "Cert. of Residency": "Katibayan ng Paninirahan",
+    "Cert. of Non-Residency": "Katibayan ng Di-Paninirahan",
+    "Cert. of Indigency": "Katibayan ng Kawalan ng Sapat na Kita",
+    "Analytics": "Pagsusuri at Datos",
+    "Heat Map": "Mapa ng Insidente",
+    "Trends": "Mga Trend at Pagsusuri",
+    "Predictions": "Mga Pagtataya",
+    "System": "Sistema",
+    "Users & Roles": "Mga Gumagamit at Tungkulin",
+    "Reports": "Mga Ulat",
+    "Settings": "Mga Setting",
+    "Log out": "Mag-log out",
+
+    // Page titles & Subtitles
+    "System Settings": "Mga Setting ng Sistema",
+    "Configure barangay information, notifications, security, and backup options": "Isaayos ang impormasyon ng barangay, mga abiso, seguridad, at mga opsyon sa pag-backup",
+    "Save Changes": "I-save ang mga Pagbabago",
+    "Barangay Information": "Impormasyon ng Barangay",
+    "System Preferences": "Mga Kagustuhan sa Sistema",
+    "Alert Thresholds": "Mga Limitasyon ng Alerto",
+    "Notification Channels": "Mga Paraan ng Pag-abiso",
+    "My Account": "Aking Account",
+    "Change Password": "Palitan ang Password",
+    "Two-Factor Authentication (2FA)": "Dalawahang Pagpapatotoo (2FA)",
+    "Session & Idle Timeout": "Pagtatapos ng Sesyon at Kawalan ng Gawain",
+    "Password Security Policy": "Patakaran sa Seguridad ng Password",
+    "Compliance & Privacy": "Pagsunod sa Patakaran at Privacy",
+    "Backup Database": "I-backup ang Database",
+    "Backup Schedule": "Iskedyul ng Backup",
+    "Backup History": "Kasaysayan ng Backup",
+    "Recent Generated Reports": "Kamakailang Nabuo na mga Ulat",
+    "Generate Report": "Bumuo ng Ulat",
+    "Scheduled Reports": "Naka-iskedyul na mga Ulat",
+    "Incident Summary Report": "Buod ng Ulat ng Insidente",
+    "Settlement Compliance Report": "Ulat ng Pagsunod sa Kasunduan",
+    "Blotter Summary Report": "Buod ng Ulat ng Blotter",
+    "Trend Analysis Report": "Ulat ng Pagsusuri ng Trend",
+    "Predictive Risk Assessment": "Pagtataya ng Panganib (Predictive)",
+
+    // Settings tabs
+    "General": "Pangkalahatan",
+    "Notifications": "Mga Abiso",
+    "Security": "Seguridad",
+    "Backup & Recovery": "Pag-backup at Pagbawi",
+
+    // Form labels
+    "Barangay Name": "Pangalan ng Barangay",
+    "Municipality / City": "Bayan / Lungsod",
+    "Region": "Rehiyon",
+    "Barangay Captain": "Kapitan ng Barangay",
+    "Date Format": "Format ng Petsa",
+    "Time Format": "Format ng Oras",
+    "Records Per Page": "Mga Tala Bawat Pahina",
+    "Default Language": "Pangunahing Wika",
+    "Risk Score Threshold (0–100)": "Limitasyon ng Marka ng Panganib (0–100)",
+    "Incident Spike Threshold": "Limitasyon sa Pagdami ng Insidente",
+    "In-App Notifications": "Mga Abiso sa App",
+    "Model Retraining Alerts": "Mga Alerto sa Pagsasanay ng Modelo",
+    "Username": "Pangalan ng Gumagamit",
+    "Role": "Tungkulin",
+    "Full Name": "Buong Pangalan",
+    "Contact Number": "Numero ng Telepono",
+    "Email Address": "Email Address",
+    "Account Status": "Katayuan ng Account",
+    "Current Password": "Kasalukuyang Password",
+    "New Password": "Bagong Password",
+    "Confirm New Password": "Kumpirmahin ang Bagong Password",
+    "Date From": "Petsa Mula",
+    "Date To": "Petsa Hanggang",
+    "Zone Filter": "Salain ayon sa Zone",
+    "Export Format": "Format ng Pag-export",
+
+    // Buttons and actions
+    "Upload New Photo": "Mag-upload ng Bagong Larawan",
+    "Remove": "Alisin",
+    "Save Account Details": "I-save ang Detalye ng Account",
+    "Update Password": "I-update ang Password",
+    "Run Backup Now": "Magsagawa ng Backup Ngayon",
+    "Cancel": "Kanselahin",
+    "Save": "I-save",
+    "Close": "Isara",
+    "Edit": "I-edit",
+    "Delete": "Tanggalin",
+    "Preview": "Silipin",
+    "Download": "I-download",
+    "Generate": "Bumuo",
+    "Filter": "Salain",
+    "Search": "Maghanap",
+    "Add Incident": "Magdagdag ng Insidente",
+    "New Blotter Entry": "Bagong Tala sa Blotter",
+    "Add User": "Magdagdag ng Gumagamit",
+    "Import": "Mag-import",
+
+    // Badges & Statuses
+    "Active": "Aktibo",
+    "Pending": "Nakabinbin",
+    "Resolved": "Nalutas",
+    "Under Investigation": "Iniimbestigahan",
+    "Dismissed": "Ibinalewala",
+    "Complied": "Nasunod",
+    "Hearing Scheduled": "Nakatakda ang Pagdinig",
+    "All Zones": "Lahat ng Zone",
+    "PDF Document": "Dokumentong PDF",
+    "Excel / CSV": "Excel / CSV",
+
+    // Common Messages
+    "Barangay details successfully saved and updated.": "Matagumpay na na-save at na-update ang mga detalye ng barangay.",
+    "Account details updated successfully.": "Matagumpay na na-update ang mga detalye ng account.",
+    "Password updated successfully.": "Matagumpay na na-update ang password.",
+    "Profile photo updated successfully.": "Matagumpay na na-update ang larawan sa profile.",
+    "Profile photo removed.": "Naalis na ang larawan sa profile.",
+    "Schedule enabled.": "Pinagana ang iskedyul.",
+    "Schedule disabled.": "Hindi pinagana ang iskedyul.",
+    "Report generated! Starting download…": "Nabuo na ang ulat! Simulan ang pag-download…",
+    "Opening report preview in new tab…": "Binubuksan ang preview ng ulat sa bagong tab…",
+    "Please enter a valid email address.": "Mangyaring maglagay ng wastong email address.",
+    "Full Name is required.": "Kailangan ang Buong Pangalan.",
+    "Username is required.": "Kailangan ang Pangalan ng Gumagamit.",
+    "Contact Number is required.": "Kailangan ang Numero ng Telepono."
+  }
+};
+
+function bcGetLanguage() {
+  let lang = localStorage.getItem('bc_language');
+  if (!lang) {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
+      lang = cfg.default_language;
+    } catch (_) {}
+  }
+  if (lang && (lang.toLowerCase().startsWith('fil') || lang.toLowerCase().startsWith('tag'))) {
+    return 'Filipino';
+  }
+  return 'English';
+}
+
+function bcSetLanguage(lang) {
+  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') ? 'Filipino' : 'English';
+  localStorage.setItem('bc_language', normalized);
+  try {
+    const raw = localStorage.getItem('barangayConfig');
+    const cfg = raw ? JSON.parse(raw) : {};
+    cfg.default_language = normalized;
+    localStorage.setItem('barangayConfig', JSON.stringify(cfg));
+  } catch (_) {}
+  bcApplyLanguage(normalized);
+  window.dispatchEvent(new CustomEvent('bc-language-changed', { detail: { language: normalized } }));
+}
+
+function bcT(text, fallback) {
+  const currentLang = bcGetLanguage();
+  if (currentLang === 'Filipino' && BC_TRANSLATIONS.fil[text]) {
+    return BC_TRANSLATIONS.fil[text];
+  }
+  return fallback || text;
+}
+
+function bcApplyLanguage(lang) {
+  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') ? 'Filipino' : 'English';
+  const isFil = normalized === 'Filipino';
+  document.documentElement.lang = isFil ? 'fil' : 'en';
+
+  const dict = BC_TRANSLATIONS.fil;
+
+  // 1. Sidebar Navigation links: replace text node, keep svg icon
+  document.querySelectorAll('aside nav a.nav-link').forEach(link => {
+    let textNode = null;
+    for (let node of link.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+        textNode = node;
+        break;
+      }
+    }
+    if (!textNode) return;
+    if (!link.dataset.bcOrigNav) {
+      link.dataset.bcOrigNav = textNode.nodeValue.trim();
+    }
+    const orig = link.dataset.bcOrigNav;
+    const translated = isFil ? (dict[orig] || orig) : orig;
+    textNode.nodeValue = ' ' + translated;
+  });
+
+  // 2. Sidebar Section Labels
+  document.querySelectorAll('.nav-section-label').forEach(el => {
+    if (!el.dataset.bcOrigText) el.dataset.bcOrigText = el.textContent.trim();
+    const orig = el.dataset.bcOrigText;
+    el.textContent = isFil ? (dict[orig] || orig) : orig;
+  });
+
+  // 3. Settings Tabs
+  document.querySelectorAll('.settings-tab').forEach(btn => {
+    let textNode = null;
+    for (let node of btn.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+        textNode = node;
+        break;
+      }
+    }
+    if (textNode) {
+      if (!btn.dataset.bcOrigTab) btn.dataset.bcOrigTab = textNode.nodeValue.trim();
+      const orig = btn.dataset.bcOrigTab;
+      textNode.nodeValue = ' ' + (isFil ? (dict[orig] || orig) : orig);
+    }
+  });
+
+  // 4. Form Labels
+  document.querySelectorAll('label.form-label').forEach(label => {
+    let textNode = null;
+    for (let node of label.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+        textNode = node;
+        break;
+      }
+    }
+    if (textNode) {
+      if (!label.dataset.bcOrigLabel) label.dataset.bcOrigLabel = textNode.nodeValue.trim();
+      const orig = label.dataset.bcOrigLabel;
+      const trans = isFil ? (dict[orig] || orig) : orig;
+      textNode.nodeValue = trans + ' ';
+    }
+  });
+
+  // 5. Headings and Page Subtitles
+  document.querySelectorAll('h1, h2, h3, .page-header p').forEach(el => {
+    if (el.closest('.sidebar-header') || el.classList.contains('sidebar-brand-title') || el.classList.contains('sidebar-brand-subtitle')) return;
+    const t = el.textContent.trim();
+    if (!el.dataset.bcOrigHeading) {
+      el.dataset.bcOrigHeading = t;
+    }
+    const orig = el.dataset.bcOrigHeading;
+    if (isFil && dict[orig]) {
+      el.textContent = dict[orig];
+    } else if (!isFil && el.dataset.bcOrigHeading) {
+      el.textContent = el.dataset.bcOrigHeading;
+    }
+  });
+
+  // 6. Action buttons
+  document.querySelectorAll('button.btn-primary, button.btn-secondary, button[onclick*="save"], button[onclick*="Save"]').forEach(btn => {
+    let textNode = null;
+    for (let node of btn.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+        textNode = node;
+        break;
+      }
+    }
+    if (textNode) {
+      if (!btn.dataset.bcOrigBtn) btn.dataset.bcOrigBtn = textNode.nodeValue.trim();
+      const orig = btn.dataset.bcOrigBtn;
+      const trans = isFil ? (dict[orig] || orig) : orig;
+      textNode.nodeValue = ' ' + trans;
+    }
+  });
+
+  // 7. Sync select dropdown if on settings page
+  const langSelect = document.querySelector('select[data-setting="default_language"]');
+  if (langSelect && langSelect.value !== normalized) {
+    langSelect.value = normalized;
+  }
+}
+
+let _bcI18nObserver = null;
+function bcSetupI18nObserver() {
+  if (_bcI18nObserver || typeof MutationObserver === 'undefined') return;
+  let timer = null;
+  _bcI18nObserver = new MutationObserver((mutations) => {
+    if (bcGetLanguage() !== 'Filipino') return;
+    let shouldTranslate = false;
+    for (const m of mutations) {
+      if (m.addedNodes && m.addedNodes.length > 0) {
+        shouldTranslate = true;
+        break;
+      }
+    }
+    if (shouldTranslate) {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (bcGetLanguage() === 'Filipino') {
+          bcApplyLanguage('Filipino');
+        }
+      }, 100);
+    }
+  });
+  if (document.body) {
+    _bcI18nObserver.observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+function bcInitLanguage() {
+  const currentLang = bcGetLanguage();
+  bcApplyLanguage(currentLang);
+  bcSetupI18nObserver();
+}
+
+window.BC_TRANSLATIONS = BC_TRANSLATIONS;
+window.bcGetLanguage = bcGetLanguage;
+window.bcSetLanguage = bcSetLanguage;
+window.bcApplyLanguage = bcApplyLanguage;
+window.bcInitLanguage = bcInitLanguage;
+window.bcT = bcT;
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'bc_language') {
+    bcApplyLanguage(e.newValue);
+  }
+});
 
 // Live character-stripping filters — remove disallowed characters the
 // moment they land in a field (typed, pasted, or autofilled), rather
@@ -2113,7 +2437,10 @@ function dismissModal(modalEl, backdropEl) {
 window.dismissModal = dismissModal;
 
 function openModal(id) {
-  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  let el = typeof id === 'string' ? document.getElementById(id) : id;
+  if (el && el.classList.contains('modal-box') && el.parentElement && el.parentElement.classList.contains('modal-overlay')) {
+    el = el.parentElement;
+  }
   if (el) {
     const isConfirm = el.id === 'bcDialogOverlay' || el.id === 'bcPermDeleteOverlay' || el.id === 'confirmModal' || el.id.toLowerCase().includes('confirm') || el.classList.contains('bc-confirm-dialog');
     if (isConfirm) {
@@ -2156,7 +2483,10 @@ function openModal(id) {
 }
 
 function closeModal(id) {
-  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  let el = typeof id === 'string' ? document.getElementById(id) : id;
+  if (el && el.classList.contains('modal-box') && el.parentElement && el.parentElement.classList.contains('modal-overlay')) {
+    el = el.parentElement;
+  }
   if (el) {
     const card = el.querySelector('.modal-box, .bc-dialog-box, .modal-form-card, .confirm-modal-card');
     dismissModal(card || el, el);
@@ -2253,6 +2583,9 @@ let _toastStartTime = 0;
 let _toastDuration = 3500;
 
 function showToast(msg, type = 'success', duration = 3500) {
+  if (typeof bcT === 'function' && typeof msg === 'string') {
+    msg = bcT(msg);
+  }
   let t = document.getElementById('globalToast');
   if (!t) {
     t = document.createElement('div');

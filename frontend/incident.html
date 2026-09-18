@@ -508,6 +508,7 @@
             <input type="text" id="if_complainantSearch" class="form-input text-xs bg-white" placeholder="Search victim/driver from Census…" autocomplete="off"/>
             <input type="hidden" id="if_complainant"/>
             <input type="hidden" id="if_complainantResidentId"/>
+            <input type="hidden" id="if_complainantAddress"/>
             <div id="if_complainantSuggestions" class="hidden absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-xl" style="position: absolute; z-index: 9999 !important; top: 100%; left: 0; right: 0;"></div>
           </div>
           <div>
@@ -659,6 +660,7 @@
       guardian_address: r.guardian_address || '',
       complainant: r.complainant || '',
       complainant_resident_id: r.complainant_resident_id ? Number(r.complainant_resident_id) : null,
+      complainant_address: r.complainant_address || r.complainantAddress || '',
       involved_parties: r.involved_parties || '',
       officer: r.officer, priority: r.priority, status: normalizeIncidentStatus(r.status),
       is_blotter: Boolean(r.is_blotter), blotter_docket_no: r.blotter_docket_no
@@ -1938,14 +1940,19 @@
 
   function onComplainantPicked(r) {
     if (r) {
-      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
+      const fullName = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim();
       document.getElementById('if_complainant').value = fullName;
       document.getElementById('if_complainantSearch').value = fullName;
       document.getElementById('if_complainantResidentId').value = String(r.id);
+      const addrParts = [r.address, r.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+      const addrEl = document.getElementById('if_complainantAddress');
+      if (addrEl) addrEl.value = addrParts.join(', ');
     } else {
       document.getElementById('if_complainant').value = '';
       document.getElementById('if_complainantSearch').value = '';
       document.getElementById('if_complainantResidentId').value = '';
+      const addrEl = document.getElementById('if_complainantAddress');
+      if (addrEl) addrEl.value = '';
     }
   }
 
@@ -2080,6 +2087,7 @@
     document.getElementById('if_complainant').value = '';
     document.getElementById('if_complainantResidentId').value = '';
     document.getElementById('if_complainantSearch').value = '';
+    if (document.getElementById('if_complainantAddress')) document.getElementById('if_complainantAddress').value = '';
     if (document.getElementById('if_involvedParties')) document.getElementById('if_involvedParties').value = '';
 
     setPickerCoordinates(null, null);
@@ -2203,6 +2211,16 @@
       document.getElementById('if_complainant').value = r.complainant || '';
       document.getElementById('if_complainantSearch').value = r.complainant || '';
       document.getElementById('if_complainantResidentId').value = r.complainant_resident_id ? String(r.complainant_resident_id) : '';
+      let compAddr = r.complainant_address || r.complainantAddress || '';
+      if (!compAddr && r.complainant_resident_id && Array.isArray(censusResidentsForIncident)) {
+        const found = censusResidentsForIncident.find(x => x.id === Number(r.complainant_resident_id));
+        if (found) {
+          compAddr = [found.address, found.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean).join(', ');
+        }
+      }
+      if (document.getElementById('if_complainantAddress')) {
+        document.getElementById('if_complainantAddress').value = compAddr;
+      }
       if (document.getElementById('if_involvedParties')) {
         document.getElementById('if_involvedParties').value = r.involved_parties || '';
       }
@@ -2271,6 +2289,51 @@
         legalComplainantName = '';
         legalComplainantId = null;
       }
+
+      // Check if reporter is explicitly declared as the victim
+      const isReporterVictim = Boolean(
+        inc.reporter && (
+          (inc.complainant && inc.complainant.trim().toLowerCase() === inc.reporter.trim().toLowerCase()) ||
+          (inc.complainant_resident_id && inc.reporterResidentId && Number(inc.complainant_resident_id) === Number(inc.reporterResidentId)) ||
+          (inc.complainantResidentId && inc.reporterResidentId && Number(inc.complainantResidentId) === Number(inc.reporterResidentId))
+        )
+      );
+
+      // Resolve victim address from incident complainant/victim address fields
+      let victimAddress = inc.complainant_address || inc.complainantAddress || inc.victim_address || inc.victimAddress || '';
+
+      // If not present, resolve from Census by resident ID
+      const victimResId = inc.complainant_resident_id || inc.complainantResidentId;
+      if (!victimAddress && victimResId && Array.isArray(censusResidentsForIncident)) {
+        const found = censusResidentsForIncident.find(r => r.id === Number(victimResId));
+        if (found) {
+          const addrParts = [found.address, found.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+          victimAddress = addrParts.join(', ');
+        }
+      }
+
+      // If still not found and complainant name is known, try finding in censusResidentsForIncident by name
+      if (!victimAddress && legalComplainantName && Array.isArray(censusResidentsForIncident)) {
+        const clean = legalComplainantName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const found = censusResidentsForIncident.find(r => {
+          const full1 = `${r.lastName} ${r.firstName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const full2 = `${r.firstName} ${r.lastName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return (clean === full1 || clean === full2 || clean.includes(full1) || clean.includes(full2));
+        });
+        if (found) {
+          const addrParts = [found.address, found.zone, 'Barangay Mapulang Lupa, Valenzuela City'].filter(Boolean);
+          victimAddress = addrParts.join(', ');
+        }
+      }
+
+      // Fallback: strictly do NOT use reporter address unless the reporter themselves is declared as victim
+      if (isReporterVictim) {
+        legalComplainantAddress = victimAddress || inc.reporterAddress || '';
+      } else {
+        legalComplainantAddress = victimAddress || '';
+      }
+
+      isNonResident = !legalComplainantId && !victimAddress;
     }
 
     const elevatePayload = {
@@ -2351,6 +2414,7 @@
       guardianAddress: guardianAddr,
       complainant: complainantName,
       complainantResidentId: complainantResId,
+      complainantAddress: (document.getElementById('if_complainantAddress') ? document.getElementById('if_complainantAddress').value.trim() : ''),
       involvedParties: involvedParties,
       officer: document.getElementById('if_officer').value.trim(),
       status: document.getElementById('if_status').value || 'Under Investigation',
@@ -2424,6 +2488,8 @@
           guardian_address: vals.guardianAddress,
           complainant: vals.complainant,
           complainant_resident_id: vals.complainantResidentId,
+          complainant_address: vals.complainantAddress,
+          complainantAddress: vals.complainantAddress,
           involved_parties: vals.involvedParties,
           date: vals.date,
           timeReported: vals.timeReported,
@@ -2454,6 +2520,8 @@
             guardian_address: vals.guardianAddress,
             complainant: vals.complainant,
             complainant_resident_id: vals.complainantResidentId,
+            complainant_address: vals.complainantAddress,
+            complainantAddress: vals.complainantAddress,
             involved_parties: vals.involvedParties,
             date: vals.date,
             timeReported: vals.timeReported,

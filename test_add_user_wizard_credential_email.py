@@ -115,7 +115,7 @@ class TestAddUserWizardCredentialEmail(unittest.TestCase):
             })
             self.assertEqual(res1.status_code, 403)
 
-            # Attempt to create Barangay Captain
+            # Attempt to create Barangay Captain while one exists
             res2 = self.client.post("/api/users.php?action=create", json={
                 "name": "Fake Captain",
                 "username": "testinvalidrole",
@@ -123,7 +123,8 @@ class TestAddUserWizardCredentialEmail(unittest.TestCase):
                 "role": "Barangay Captain",
                 "password": "CPT-INVALID1",
             })
-            self.assertEqual(res2.status_code, 403)
+            self.assertEqual(res2.status_code, 400)
+            self.assertIn("Only one active Barangay Captain is allowed", res2.get_json().get("error", ""))
 
 
 if __name__ == "__main__":

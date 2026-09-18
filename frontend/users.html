@@ -288,6 +288,18 @@
         </div>
 
         <div class="space-y-3">
+          <!-- Card: Barangay Captain -->
+          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+            <input type="radio" name="wiz_role_radio" value="Barangay Captain" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onWizardRoleSelect('Barangay Captain')" />
+            <div class="ml-3.5 flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-forest-900">Barangay Captain</span>
+                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wide">EXECUTIVE</span>
+              </div>
+              <p class="text-xs text-forest-600 mt-1">Executive oversight, official clearance approvals, executive blotter review, and final settlement endorsements.</p>
+            </div>
+          </label>
+
           <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
             <input type="radio" name="wiz_role_radio" value="Desk Officer" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" checked onchange="onWizardRoleSelect('Desk Officer')" />
             <div class="ml-3.5 flex-1">
@@ -496,8 +508,8 @@
         <input type="hidden" id="uf_role" value="Desk Officer" />
 
         <div class="space-y-3">
-          <!-- Card 1: System Administrator -->
-          <label class="relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
+          <!-- Card 1: System Administrator (Hidden in Edit User flow) -->
+          <label id="editRoleCardAdmin" class="hidden relative flex items-start p-4 rounded-xl border-2 border-forest-200/80 bg-[#edf7f0] cursor-pointer hover:border-emerald-600 hover:bg-white transition-all has-[:checked]:border-[#1b4332] has-[:checked]:bg-[#e3f4e9] has-[:checked]:ring-2 has-[:checked]:ring-emerald-500/20">
             <input type="radio" name="edit_role_radio" value="System Admin" class="wizard-radio accent-[#1b4332] mt-0.5 cursor-pointer" onchange="onEditRoleSelect('System Admin')" />
             <div class="ml-3.5 flex-1">
               <div class="flex items-center justify-between">
@@ -682,7 +694,7 @@ var usersData = []; var usersPage = 1; var USERS_ROWS = 8;
 var editUserId = null;
 
 function mapUser(u) {
-  const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || !!u.is_protected;
+  const isProtected = (u.role === 'System Admin' || u.role === 'System Administrator' || !!u.is_protected) && u.role !== 'Barangay Captain';
   const avatar = u.avatar_url || u.avatar || u.avatarUrl || u.profile_photo_path || null;
   return {
     id: Number(u.id), name: u.full_name, username: u.username, email: u.email || '',
@@ -814,6 +826,8 @@ function renderUsers() {
           <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> <span>View & Edit</span></button>
           ${isProtected
             ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> Protected</span>`
+            : u.role === 'Barangay Captain'
+            ? `<button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
             : `<button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Suspended'?'Activate':'Suspend'}</button>
                <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
           }
@@ -1036,6 +1050,16 @@ async function wizardGoToStep(targetStep) {
       const valid = await validateWizardStep1();
       if (!valid) return;
     }
+    if (currentWizardStep === 2) {
+      if (selectedWizardRole === 'Barangay Captain') {
+        const existingCaptain = (window.usersData || usersData || []).find(u => u.role === 'Barangay Captain' && u.status !== 'Deleted');
+        if (existingCaptain) {
+          showToast('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.', 'error');
+          await bcAlert('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.');
+          return;
+        }
+      }
+    }
   }
 
   if (targetStep === 3) {
@@ -1060,7 +1084,7 @@ async function wizardGoToStep(targetStep) {
     // Generate or maintain password for this role
     const pwInput = document.getElementById('wiz_password');
     if (pwInput) {
-      const expectedPrefix = selectedWizardRole.includes('Desk') ? 'DSK' : 'DTA';
+      const expectedPrefix = selectedWizardRole.includes('Desk') ? 'DSK' : selectedWizardRole.includes('Captain') ? 'CPT' : 'DTA';
       if (!pwInput.value || !pwInput.value.startsWith(expectedPrefix)) {
         pwInput.value = generateTempPasswordForRole(selectedWizardRole);
       }
@@ -1072,6 +1096,12 @@ async function wizardGoToStep(targetStep) {
 
 function onWizardRoleSelect(role) {
   selectedWizardRole = role;
+  if (role === 'Barangay Captain') {
+    const existingCaptain = (window.usersData || usersData || []).find(u => u.role === 'Barangay Captain' && u.status !== 'Deleted');
+    if (existingCaptain) {
+      showToast('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.', 'error');
+    }
+  }
   const pwInput = document.getElementById('wiz_password');
   if (pwInput && pwInput.value) {
     pwInput.value = generateTempPasswordForRole(role);
@@ -1085,7 +1115,10 @@ function regenerateWizardTempPassword() {
   if (pwInput) {
     pwInput.value = newPw;
   }
-  showToast(`New ${role.includes('Desk') ? 'Desk Officer (DSK)' : 'Data Encoder (DTA)'} temporary password generated!`);
+  let label = 'Desk Officer (DSK)';
+  if (role.includes('Captain')) label = 'Barangay Captain (CPT)';
+  else if (role.includes('Data') || role.includes('Encoder')) label = 'Data Encoder (DTA)';
+  showToast(`New ${label} temporary password generated!`);
 }
 
 function copyWizardTempPassword() {
@@ -1179,9 +1212,18 @@ async function saveWizardUser() {
     return;
   }
 
-  if (role !== 'Desk Officer' && role !== 'Data Encoder') {
-    await bcAlert('Only Desk Officer and Data Encoder accounts can be created.');
+  if (role !== 'Desk Officer' && role !== 'Data Encoder' && role !== 'Barangay Captain') {
+    await bcAlert('Only Desk Officer, Data Encoder, and Barangay Captain accounts can be created.');
     return;
+  }
+
+  if (role === 'Barangay Captain') {
+    const existingCaptain = (window.usersData || usersData || []).find(u => u.role === 'Barangay Captain' && u.status !== 'Deleted');
+    if (existingCaptain) {
+      showToast('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.', 'error');
+      await bcAlert('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.');
+      return;
+    }
   }
 
   const payload = {
@@ -1227,6 +1269,12 @@ function getEditNormalizedContact() {
 }
 
 function onEditRoleSelect(role) {
+  if (role === 'Barangay Captain') {
+    const existingCaptain = (window.usersData || usersData || []).find(u => u.role === 'Barangay Captain' && u.id !== editUserId && u.status !== 'Deleted');
+    if (existingCaptain) {
+      showToast('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.', 'error');
+    }
+  }
   selectedEditRole = role;
   const hiddenInput = document.getElementById('uf_role');
   if (hiddenInput) hiddenInput.value = role;
@@ -1456,8 +1504,24 @@ async function saveUser() {
   if (editUserId && !vals.password) delete vals.password;
   if (!vals.name || !vals.username) { await bcAlert('Please fill in required fields.'); return; }
   if (!vals.role) { await bcAlert('Please select a valid role.'); return; }
-  if (!editUserId && (vals.role === 'System Admin' || vals.role === 'Barangay Captain')) {
-    await bcAlert('Creating System Admin or Barangay Captain accounts is not allowed.'); return;
+  if (!editUserId && (vals.role === 'System Admin' || vals.role === 'System Administrator')) {
+    await bcAlert('Creating System Admin accounts is not allowed.'); return;
+  }
+  if (editUserId && (vals.role === 'System Admin' || vals.role === 'System Administrator')) {
+    const origUser = (window.usersData || usersData || []).find(x => x.id === editUserId);
+    if (origUser && origUser.role !== 'System Admin' && origUser.role !== 'System Administrator') {
+      showToast('Assigning System Administrator role is not allowed.', 'error');
+      await bcAlert('Assigning System Administrator role is not allowed.');
+      return;
+    }
+  }
+  if (vals.role === 'Barangay Captain') {
+    const existingCaptain = (window.usersData || usersData || []).find(u => u.role === 'Barangay Captain' && (!editUserId || u.id !== editUserId) && u.status !== 'Deleted');
+    if (existingCaptain) {
+      showToast('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.', 'error');
+      await bcAlert('Only one active Barangay Captain is allowed. Please delete the current Barangay Captain account first.');
+      return;
+    }
   }
   if (vals.name && !bcIsValidName(vals.name)) { await bcAlert('Full Name should only contain letters (no numbers).'); return; }
   if (vals.email && !bcIsValidEmail(vals.email)) { await bcAlert('Please enter a valid email address.'); return; }
@@ -1525,8 +1589,8 @@ async function saveUser() {
 
 async function toggleStatus(id) {
   const u = usersData.find(x => x.id === id);
-  if (u && (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected)) {
-    showToast('System Admin and Barangay Captain accounts are protected and cannot be suspended.', 'error');
+  if (u && (u.role === 'System Admin' || u.role === 'System Administrator' || u.role === 'Barangay Captain' || u.is_protected)) {
+    showToast(u.role === 'Barangay Captain' ? 'Barangay Captain accounts cannot be suspended.' : 'System Admin accounts are protected and cannot be suspended.', 'error');
     return;
   }
   try {
@@ -1602,8 +1666,8 @@ async function removeUser(id) {
   }
 
   // Protected Roles Guard
-  if (u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected) {
-    showToast('System Admin and Barangay Captain accounts are protected and cannot be deleted.', 'error');
+  if (u.role === 'System Admin' || u.role === 'System Administrator' || (u.role !== 'Barangay Captain' && u.is_protected)) {
+    showToast('System Admin accounts are protected and cannot be deleted.', 'error');
     return;
   }
 

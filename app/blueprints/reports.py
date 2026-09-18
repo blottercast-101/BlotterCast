@@ -175,10 +175,28 @@ def _data_table(headers, rows, col_widths):
     return t
 
 
+def _get_zone_variants(zone):
+    if not zone:
+        return None
+    z_clean = str(zone).strip()
+    if not z_clean or z_clean.lower() in ("all", "all zones", "none"):
+        return None
+    variants = {z_clean}
+    if z_clean.isdigit():
+        variants.add(f"Zone {z_clean}")
+    elif z_clean.lower().startswith("zone "):
+        num = z_clean[5:].strip()
+        if num:
+            variants.add(num)
+            variants.add(f"Zone {num}")
+    return list(variants)
+
+
 def _build_incident_summary_pdf(from_date, to_date, zone):
     q = Incident.query.filter(Incident.incident_date.between(parse_date(from_date), parse_date(to_date)))
-    if zone:
-        q = q.filter(Incident.zone_id == zone)
+    zone_vars = _get_zone_variants(zone)
+    if zone_vars:
+        q = q.filter(Incident.zone_id.in_(zone_vars))
     rows = q.order_by(Incident.incident_date).all()
 
     by_category, by_status = {}, {}
@@ -207,14 +225,28 @@ def _build_incident_summary_pdf(from_date, to_date, zone):
     return buf.getvalue()
 
 
-def _build_settlement_compliance_pdf():
-    rows = Settlement.query.order_by(Settlement.date_filed.desc()).all()
+def _build_settlement_compliance_pdf(from_date=None, to_date=None, zone=None):
+    q = Settlement.query
+    if from_date and to_date:
+        q = q.filter(Settlement.date_filed.between(parse_date(from_date), parse_date(to_date)))
+    zone_vars = _get_zone_variants(zone)
+    if zone_vars:
+        q = q.join(BlotterRecord, Settlement.blotter_id == BlotterRecord.id).filter(BlotterRecord.zone_id.in_(zone_vars))
+    rows = q.order_by(Settlement.date_filed.desc()).all()
+
     by_status = {}
     for r in rows:
         by_status[r.status] = by_status.get(r.status, 0) + 1
 
     buf, doc = _new_pdf_buffer("Settlement Compliance Report")
-    story = [_kv_line("Total Settlement Cases:", str(len(rows))), Spacer(1, 8), Paragraph("Status Breakdown", _heading_style())]
+    period_str = f"{from_date} to {to_date}" if (from_date and to_date) else None
+    zone_str = f"Zone: {zone}" if zone else "All Zones"
+    story = [
+        _kv_line("Period:", f"{period_str}   ·   {zone_str}") if period_str else _kv_line("Zone:", zone_str),
+        _kv_line("Total Settlement Cases:", str(len(rows))),
+        Spacer(1, 8),
+        Paragraph("Status Breakdown", _heading_style()),
+    ]
     for s, c in by_status.items():
         story.append(_kv_line(f"{s}:", str(c)))
     story += [Spacer(1, 8), Paragraph("Case Log", _heading_style())]
@@ -229,8 +261,9 @@ def _build_settlement_compliance_pdf():
 
 def _build_blotter_summary_pdf(from_date, to_date, zone=None):
     q = BlotterRecord.query.filter(BlotterRecord.date_filed.between(parse_date(from_date), parse_date(to_date)))
-    if zone:
-        q = q.filter(BlotterRecord.zone_id == zone)
+    zone_vars = _get_zone_variants(zone)
+    if zone_vars:
+        q = q.filter(BlotterRecord.zone_id.in_(zone_vars))
     rows = q.order_by(BlotterRecord.date_filed.desc()).all()
 
     by_status = {}
@@ -264,20 +297,29 @@ def _build_blotter_summary_pdf(from_date, to_date, zone=None):
     return buf.getvalue()
 
 
-def _build_trend_analysis_pdf(year):
+def _build_trend_analysis_pdf(year, zone=None):
     from sqlalchemy import extract, func
-    monthly = (
+    zone_vars = _get_zone_variants(zone)
+    q_monthly = (
         db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
-        .filter(extract("year", Incident.incident_date) == year).group_by("m").order_by("m").all()
+        .filter(extract("year", Incident.incident_date) == year)
     )
-    cats = (
+    q_cats = (
         db.session.query(Incident.category, func.count().label("c"))
         .filter(extract("year", Incident.incident_date) == year)
-        .group_by(Incident.category).order_by(func.count().desc()).all()
     )
+    if zone_vars:
+        q_monthly = q_monthly.filter(Incident.zone_id.in_(zone_vars))
+        q_cats = q_cats.filter(Incident.zone_id.in_(zone_vars))
+    monthly = q_monthly.group_by("m").order_by("m").all()
+    cats = q_cats.group_by(Incident.category).order_by(func.count().desc()).all()
 
     buf, doc = _new_pdf_buffer(f"Trend Analysis Report - {year}")
-    story = [Paragraph("Monthly Incident Count", _heading_style())]
+    story = [
+        _kv_line("Period:", f"Year {year}" + (f"   ·   Zone: {zone}" if zone else "   ·   All Zones")),
+        Spacer(1, 4),
+        Paragraph("Monthly Incident Count", _heading_style()),
+    ]
     story.append(_data_table(["Month", "Incidents"], [[MONTHS[int(r.m) - 1], str(r.c)] for r in monthly], [90, 90]))
     story += [Spacer(1, 10), Paragraph("Category Breakdown", _heading_style())]
     story.append(_data_table(["Category", "Incidents"], [[r.category, str(r.c)] for r in cats], [90, 90]))
@@ -286,7 +328,7 @@ def _build_trend_analysis_pdf(year):
     return buf.getvalue()
 
 
-def _build_predictive_risk_pdf():
+def _build_predictive_risk_pdf(zone=None):
     run = MlRun.query.order_by(MlRun.id.desc()).first()
     buf, doc = _new_pdf_buffer("Predictive Risk Assessment")
     if not run:
@@ -301,7 +343,16 @@ def _build_predictive_risk_pdf():
     metrics = json.loads(run.occurrence_metrics_json)
     active = run.active_occurrence_model
 
+    zone_vars = _get_zone_variants(zone)
+    if zone_vars:
+        hotspots = [
+            h for h in hotspots
+            if h.get("zone") in zone_vars or str(h.get("zone", "")).replace("Zone ", "") in zone_vars or f"Zone {h.get('zone', '')}" in zone_vars
+        ]
+
     story = [_kv_line("Active Model:", active.replace("_", " ").title())]
+    if zone:
+        story.append(_kv_line("Zone:", zone))
     if active in metrics:
         m = metrics[active]
         story.append(_kv_line(
@@ -333,11 +384,22 @@ def _log_report(report_type, from_date, to_date, fmt, file_path):
 def _generate():
     d = request.get_json(silent=True) or {}
     report_type = d.get("type") or "Incident Summary Report"
-    from_date = d.get("from") or ph_today().replace(day=1).strftime("%Y-%m-%d")
-    to_date = d.get("to") or ph_today().strftime("%Y-%m-%d")
-    zone = d.get("zone") or None
-    fmt = d.get("format") or "pdf"
+    from_date = (d.get("from") or request.args.get("from") or ph_today().replace(day=1).strftime("%Y-%m-%d")).strip()
+    to_date = (d.get("to") or request.args.get("to") or ph_today().strftime("%Y-%m-%d")).strip()
+    zone = (d.get("zone") or d.get("zone_id") or request.args.get("zone") or request.args.get("zone_id") or "").strip() or None
+    fmt = (d.get("format") or request.args.get("format") or "pdf").strip().lower()
     year = from_date[:4]
+
+    try:
+        parsed_from = parse_date(from_date)
+        parsed_to = parse_date(to_date)
+    except (ValueError, TypeError):
+        return json_error("Invalid date format. Use YYYY-MM-DD.", 400)
+
+    if parsed_from and parsed_to and parsed_to < parsed_from:
+        return json_error("Date To cannot be earlier than Date From.", 400)
+
+    zone_vars = _get_zone_variants(zone)
 
     slug = re.sub(r"[^a-z0-9]+", "-", report_type.lower()).strip("-")
     ext = "csv" if fmt == "excel" else "pdf"
@@ -350,43 +412,51 @@ def _generate():
             w.writerow([report_type, "Barangay Mapulang Lupa, Pandi, Bulacan", f"Generated {datetime.now().strftime('%Y-%m-%d %H:%M')}"])
             w.writerow([])
             if report_type in ("Incident Summary Report", "Predictive Risk Assessment", "Patrol Deployment Plan"):
-                q = Incident.query.filter(Incident.incident_date.between(parse_date(from_date), parse_date(to_date)))
-                if zone:
-                    q = q.filter(Incident.zone_id == zone)
+                q = Incident.query.filter(Incident.incident_date.between(parsed_from, parsed_to))
+                if zone_vars:
+                    q = q.filter(Incident.zone_id.in_(zone_vars))
                 w.writerow(["Report No.", "Date", "Zone", "Category", "Priority", "Status"])
                 for r in q.order_by(Incident.incident_date).all():
                     w.writerow([r.report_no, r.incident_date, r.zone_id, r.category, r.priority, r.status])
             elif report_type == "Settlement Compliance Report":
+                q = Settlement.query
+                if parsed_from and parsed_to:
+                    q = q.filter(Settlement.date_filed.between(parsed_from, parsed_to))
+                if zone_vars:
+                    q = q.join(BlotterRecord, Settlement.blotter_id == BlotterRecord.id).filter(BlotterRecord.zone_id.in_(zone_vars))
                 w.writerow(["Case No.", "Case Title", "Nature", "Date Filed", "Status"])
-                for r in Settlement.query.order_by(Settlement.date_filed.desc()).all():
+                for r in q.order_by(Settlement.date_filed.desc()).all():
                     w.writerow([r.case_no, r.case_title, r.nature, r.date_filed, r.status])
             elif report_type in ("Blotter Summary Report", "Blotter Report"):
-                q = BlotterRecord.query.filter(BlotterRecord.date_filed.between(parse_date(from_date), parse_date(to_date)))
-                if zone:
-                    q = q.filter(BlotterRecord.zone_id == zone)
+                q = BlotterRecord.query.filter(BlotterRecord.date_filed.between(parsed_from, parsed_to))
+                if zone_vars:
+                    q = q.filter(BlotterRecord.zone_id.in_(zone_vars))
                 w.writerow(["Docket No.", "Date Filed", "Complainant", "Respondent", "Nature", "Case Type", "Status"])
                 for r in q.order_by(BlotterRecord.date_filed.desc()).all():
                     w.writerow([r.docket_no, r.date_filed, r.complainant, r.respondent, r.nature, r.case_type, r.status])
             elif report_type in ("Trend Analysis Report", "Comparative Period Report"):
                 from sqlalchemy import extract, func
                 w.writerow(["Month", "Incident Count"])
-                monthly = (
+                q_monthly = (
                     db.session.query(extract("month", Incident.incident_date).label("m"), func.count().label("c"))
-                    .filter(extract("year", Incident.incident_date) == year).group_by("m").order_by("m").all()
+                    .filter(extract("year", Incident.incident_date) == year)
                 )
+                if zone_vars:
+                    q_monthly = q_monthly.filter(Incident.zone_id.in_(zone_vars))
+                monthly = q_monthly.group_by("m").order_by("m").all()
                 for r in monthly:
                     w.writerow([MONTHS[int(r.m) - 1], r.c])
             else:
                 w.writerow(["No data available for this report type yet."])
     else:
         if report_type == "Settlement Compliance Report":
-            pdf_bytes = _build_settlement_compliance_pdf()
+            pdf_bytes = _build_settlement_compliance_pdf(from_date, to_date, zone)
         elif report_type in ("Blotter Summary Report", "Blotter Report"):
             pdf_bytes = _build_blotter_summary_pdf(from_date, to_date, zone)
         elif report_type in ("Trend Analysis Report", "Comparative Period Report"):
-            pdf_bytes = _build_trend_analysis_pdf(year)
+            pdf_bytes = _build_trend_analysis_pdf(year, zone)
         elif report_type in ("Predictive Risk Assessment", "Patrol Deployment Plan"):
-            pdf_bytes = _build_predictive_risk_pdf()
+            pdf_bytes = _build_predictive_risk_pdf(zone)
         else:
             pdf_bytes = _build_incident_summary_pdf(from_date, to_date, zone)
         with open(file_path, "wb") as f:

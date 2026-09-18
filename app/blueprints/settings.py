@@ -277,7 +277,7 @@ def admin_security_settings():
 GENERAL_SETTING_KEYS = [
     "barangay_name", "municipality", "province", "region",
     "captain_name", "punong_barangay", "contact_number", "contact_no",
-    "email", "official_logo_url"
+    "email", "official_logo_url", "default_language"
 ]
 
 
@@ -304,6 +304,7 @@ def general_settings_route():
         email = cfg.get("email", "mapulanglupa@pandi.gov.ph")
         logo = cfg.get("official_logo_url", "")
         region = cfg.get("region", "Region III – Central Luzon")
+        lang = cfg.get("default_language", "English")
         return jsonify({
             "ok": True,
             "success": True,
@@ -319,6 +320,7 @@ def general_settings_route():
                 "contact_no": contact,
                 "email": email,
                 "official_logo_url": logo,
+                "default_language": lang,
             }
         }), 200
 
@@ -393,6 +395,7 @@ def general_settings_route():
         "contact_no": contact,
         "email": email,
         "official_logo_url": logo,
+        "default_language": cfg.get("default_language", "English"),
     }
 
     return jsonify({
@@ -496,6 +499,7 @@ def _save():
         "contact_no": contact,
         "email": email,
         "official_logo_url": logo,
+        "default_language": cfg.get("default_language", "English"),
     }
 
     return jsonify({

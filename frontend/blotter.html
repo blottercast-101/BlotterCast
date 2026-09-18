@@ -1642,9 +1642,17 @@
           }
         }
 
-        if (compAddr) {
-          document.getElementById('f_complainantAddr').value = compAddr;
+        let resolvedCompAddr = compAddr;
+        if (!resolvedCompAddr) {
+          const activeId = compId || (document.getElementById('f_complainantId').value ? Number(document.getElementById('f_complainantId').value) : null);
+          if (activeId && Array.isArray(censusResidentsForBlotter)) {
+            const foundRes = censusResidentsForBlotter.find(r => r.id === activeId);
+            if (foundRes) {
+              resolvedCompAddr = foundRes.address || (foundRes.zone ? `${foundRes.zone}, Barangay Mapulang Lupa, Valenzuela City` : '');
+            }
+          }
         }
+        document.getElementById('f_complainantAddr').value = resolvedCompAddr || '';
 
         _updateOutsideToggleAvailability();
         updateBlotterCharCounters();

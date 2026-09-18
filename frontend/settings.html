@@ -180,7 +180,7 @@
           </div>
           <div>
             <label class="form-label">Default Language</label>
-            <select class="form-input" data-setting="default_language"><option>English</option><option>Filipino</option></select>
+            <select class="form-input" data-setting="default_language" id="pref_default_language" onchange="onLanguageSelectChange(this.value)"><option value="English">English</option><option value="Filipino">Filipino</option></select>
           </div>
         </div>
       </div>
@@ -250,23 +250,23 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Row 1: Username -->
               <div>
-                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username</label>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Username <span class="text-red-500 font-bold">*</span></label>
                 <div class="flex items-center gap-3">
                   <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                     <span data-icon="user" data-icon-size="18"></span>
                   </div>
-                  <input type="text" id="acct_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" />
+                  <input type="text" id="acct_username" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-900 font-medium text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all" placeholder="Username" required />
                 </div>
               </div>
 
               <!-- Row 1: Role -->
               <div>
-                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Role</label>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Role <span class="text-forest-400 font-normal text-[11px]">(read-only)</span></label>
                 <div class="flex items-center gap-3">
                   <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                     <span data-icon="shield" data-icon-size="18"></span>
                   </div>
-                  <input type="text" id="acct_role" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" />
+                  <input type="text" id="acct_role" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" disabled />
                 </div>
               </div>
 
@@ -305,12 +305,12 @@
 
               <!-- Row 3: Account Status -->
               <div>
-                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Account Status</label>
+                <label class="form-label text-forest-800 font-semibold text-xs mb-1.5 block">Account Status <span class="text-forest-400 font-normal text-[11px]">(read-only)</span></label>
                 <div class="flex items-center gap-3">
                   <div class="w-11 h-11 rounded-full border-2 border-[#1b4332] flex items-center justify-center text-[#1b4332] bg-white flex-shrink-0 shadow-xs">
                     <span data-icon="checkCircle" data-icon-size="18"></span>
                   </div>
-                  <input type="text" id="acct_status" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" value="Active" />
+                  <input type="text" id="acct_status" class="w-full py-2.5 px-3.5 bg-[#e2f3e8] border border-forest-200/80 rounded-xl text-forest-800 font-medium text-sm cursor-not-allowed select-all focus:outline-none" readonly tabindex="-1" disabled value="Active" />
                 </div>
               </div>
             </div>
@@ -765,6 +765,9 @@ function applySettings(values) {
     bcSetTimeFormat(values.time_format, true);
     syncTimeFormatControls();
   }
+  if (values.default_language && typeof bcSetLanguage === 'function') {
+    bcSetLanguage(values.default_language);
+  }
 }
 
 function collectSettings() {
@@ -793,12 +796,22 @@ async function saveSettings() {
     const res = await BCApi.settingsSave(values);
     const updatedData = res?.data || values;
     localStorage.setItem('barangayConfig', JSON.stringify(updatedData));
+    if (values.default_language && typeof bcSetLanguage === 'function') {
+      bcSetLanguage(values.default_language);
+    }
     window.dispatchEvent(new CustomEvent('barangayConfigUpdated', { detail: updatedData }));
     showToast('Barangay details successfully saved and updated.');
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
+
+function onLanguageSelectChange(val) {
+  if (typeof bcSetLanguage === 'function') {
+    bcSetLanguage(val);
+  }
+}
+window.onLanguageSelectChange = onLanguageSelectChange;
 
 async function runBackupNow() {
   const btn = document.getElementById('backupBtn');
@@ -1200,10 +1213,21 @@ window.handleAvatarFileSelect = handleAvatarFileSelect;
 window.handleAvatarRemove = handleAvatarRemove;
 
 async function saveMyAccount() {
+  const username = document.getElementById('acct_username') ? document.getElementById('acct_username').value.trim() : '';
   const fullName = document.getElementById('acct_fullName').value.trim();
   const contact = document.getElementById('acct_contact').value.trim();
   const email = document.getElementById('acct_email').value.trim();
 
+  if (!username) {
+    showToast('Username is required.', 'error');
+    document.getElementById('acct_username').focus();
+    return;
+  }
+  if (username.length < 3) {
+    showToast('Username must be at least 3 characters long.', 'error');
+    document.getElementById('acct_username').focus();
+    return;
+  }
   if (!fullName) {
     showToast('Full Name is required.', 'error');
     document.getElementById('acct_fullName').focus();
@@ -1231,8 +1255,8 @@ async function saveMyAccount() {
   }
 
   try {
-    const result = await BCApi.updateMyAccount(fullName, email, contact);
-    showToast('Account details updated successfully.', 'success');
+    const result = await BCApi.updateMyAccount(fullName, email, contact, username);
+    showToast(typeof bcT === 'function' ? bcT('Account details updated successfully.') : 'Account details updated successfully.', 'success');
     
     // Immediately synchronize local storage & session storage
     let cachedUser = {};
@@ -1240,6 +1264,7 @@ async function saveMyAccount() {
       const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
+    cachedUser.username = username;
     cachedUser.full_name = fullName;
     cachedUser.fullName = fullName;
     cachedUser.email = email;
