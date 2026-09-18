@@ -17,9 +17,11 @@ class TestCensusImportModalUI(unittest.TestCase):
             self.html = f.read()
 
     def test_modal_container_and_header(self):
-        # Modal overlay and box ID
+        # Modal overlay and box ID & widened container
         self.assertIn('id="importCensusModal"', self.html)
         self.assertIn('id="importResidentModal"', self.html)
+        self.assertIn('max-w-xl', self.html)
+        self.assertIn('w-full', self.html)
 
         # Header title: "Import Resident Data", centered, serif font
         self.assertIn('Import Resident Data', self.html)

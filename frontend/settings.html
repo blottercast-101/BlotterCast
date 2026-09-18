@@ -807,8 +807,12 @@ async function saveSettings() {
 }
 
 function onLanguageSelectChange(val) {
+  const isFil = (String(val || '')).toLowerCase().startsWith('fil') || (String(val || '')).toLowerCase().startsWith('tag') || (String(val || '')).toLowerCase() === 'tl';
+  localStorage.setItem('app_language', isFil ? 'tl' : 'en');
   if (typeof bcSetLanguage === 'function') {
     bcSetLanguage(val);
+  } else if (typeof applyLanguageTranslation === 'function') {
+    applyLanguageTranslation(isFil ? 'tl' : 'en');
   }
 }
 window.onLanguageSelectChange = onLanguageSelectChange;

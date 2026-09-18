@@ -250,14 +250,14 @@
 <div class="modal-overlay" id="settlementModal">
   <div class="modal-box" style="width:680px">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="font-display text-xl text-forest-800" id="stlModalTitle">New Settlement Record</h2>
-      <button onclick="closeModal('settlementModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+      <h2 class="font-display text-xl text-forest-800" id="stlModalTitle" data-i18n="new_settlement_title">New Settlement Record</h2>
+      <button onclick="closeModal('settlementModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form id="settlementForm" class="space-y-4" novalidate onsubmit="event.preventDefault(); saveSettlement();">
       <div id="sf_blotter_picker_wrap" class="relative z-30">
-        <label class="form-label">Link to Blotter Case <span class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal">(Search docket no. or complainant)</span></label>
+        <label class="form-label"><span data-i18n="link_blotter_case">Link to Blotter Case</span> <span class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal" data-i18n="search_docket_complainant_hint">(Search docket no. or complainant)</span></label>
         <div class="relative">
-          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" autocomplete="off" maxlength="100" oninput="clearFieldSpecificError('sf_blotterId'); updateSettlementCharCounters();"/>
+          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" data-i18n-placeholder="search_blotter_ph" autocomplete="off" maxlength="100" oninput="clearFieldSpecificError('sf_blotterId'); updateSettlementCharCounters();"/>
           <input type="hidden" id="sf_blotterId"/>
         </div>
         <span id="linkBlotterCount" class="text-xs text-[#52796f] mt-1 text-right block">0/100</span>
@@ -265,22 +265,22 @@
         <div id="sf_blotterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Case No.</label><input type="text" id="sf_caseNo" class="form-input bg-forest-50" placeholder="Auto-generated" disabled/></div>
-        <div><label class="form-label">Case Title</label><input type="text" id="sf_caseTitle" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" disabled/></div>
+        <div><label class="form-label" data-i18n="case_no">Case No.</label><input type="text" id="sf_caseNo" class="form-input bg-forest-50" placeholder="Auto-generated" data-i18n-placeholder="auto_generated" disabled/></div>
+        <div><label class="form-label" data-i18n="case_title">Case Title</label><input type="text" id="sf_caseTitle" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" data-i18n-placeholder="auto_filled_blotter" disabled/></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" disabled/></div>
+        <div><label class="form-label" data-i18n="nature_of_case">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" data-i18n-placeholder="auto_filled_blotter" disabled/></div>
         <div>
-          <label class="form-label">Date of Initial Confrontation</label>
+          <label class="form-label" data-i18n="date_initial_confrontation">Date of Initial Confrontation</label>
           <input type="date" id="sf_dateConfrontation" class="form-input" data-no-future onchange="clearFieldSpecificError('sf_dateConfrontation')"/>
           <p id="err_sf_dateConfrontation" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Action Taken <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="action_taken">Action Taken</span> <span class="text-red-500">*</span></label>
           <select id="sf_actionTaken" class="form-input" required onchange="clearFieldSpecificError('sf_actionTaken')">
-            <option value="" disabled selected>-Select-</option>
+            <option value="" disabled selected data-i18n="select_placeholder">-Select-</option>
             <option value="Mediation (M)">Mediation (M)</option>
             <option value="Conciliation (C)">Conciliation (C)</option>
             <option value="Arbitration (A)">Arbitration (A)</option>
@@ -288,47 +288,47 @@
           <p id="err_sf_actionTaken" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
         <div>
-          <label class="form-label">Date of Settlement or Award <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="date_of_settlement">Date of Settlement or Award</span> <span class="text-red-500">*</span></label>
           <input type="date" id="sf_dateSettlement" class="form-input" data-no-future required onchange="clearFieldSpecificError('sf_dateSettlement')"/>
           <p id="err_sf_dateSettlement" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Date of Execution</label>
+          <label class="form-label" data-i18n="date_of_execution">Date of Execution</label>
           <input type="date" id="sf_dateExecution" class="form-input" onchange="clearFieldSpecificError('sf_dateExecution')"/>
           <p id="err_sf_dateExecution" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
         <div>
-          <label class="form-label">Officer-in-Charge / Conciliator <span class="text-red-500">*</span></label>
-          <input type="text" id="sf_officer" class="form-input" placeholder="e.g. Punong Barangay / Pangkat Chairman" required oninput="clearFieldSpecificError('sf_officer')"/>
+          <label class="form-label"><span data-i18n="officer_in_charge">Officer-in-Charge / Conciliator</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="sf_officer" class="form-input" placeholder="e.g. Punong Barangay / Pangkat Chairman" data-i18n-placeholder="officer_ph" required oninput="clearFieldSpecificError('sf_officer')"/>
           <p id="err_sf_officer" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
       </div>
       <div>
-        <label class="form-label">Main Point of Agreement / Settlement Terms <span class="text-red-500">*</span></label>
-        <textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms and conditions of the settlement agreement…" required oninput="clearFieldSpecificError('sf_mainPoint')"></textarea>
+        <label class="form-label"><span data-i18n="agreement_terms">Main Point of Agreement / Settlement Terms</span> <span class="text-red-500">*</span></label>
+        <textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms and conditions of the settlement agreement…" data-i18n-placeholder="agreement_terms_ph" required oninput="clearFieldSpecificError('sf_mainPoint')"></textarea>
         <p id="err_sf_mainPoint" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Status of Compliance / Resolution <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="status_compliance">Status of Compliance / Resolution</span> <span class="text-red-500">*</span></label>
           <select id="sf_status" class="form-input" required onchange="clearFieldSpecificError('sf_status')">
-            <option value="" disabled selected hidden>-Select-</option>
-            <option value="Pending">Pending</option>
+            <option value="" disabled selected hidden data-i18n="select_placeholder">-Select-</option>
+            <option value="Pending" data-i18n="pending">Pending</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
           </select>
           <p id="err_sf_status" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
         <div>
-          <label class="form-label">Remarks</label>
-          <input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"/>
+          <label class="form-label" data-i18n="remarks">Remarks</label>
+          <input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes" data-i18n-placeholder="optional_notes"/>
         </div>
       </div>
       <div class="flex items-center justify-end gap-3 pt-3 border-t border-forest-100">
-        <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveSettlement()" class="btn-primary">Save Record</button>
+        <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
+        <button type="button" onclick="saveSettlement()" class="btn-primary" data-i18n="save_record">Save Record</button>
       </div>
     </form>
   </div>
@@ -343,16 +343,16 @@
           <span data-icon="settlement" data-icon-size="18"></span>
         </div>
         <div>
-          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Settlement Hearing Details</h2>
+          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight" data-i18n="settlement_hearing_details">Settlement Hearing Details</h2>
           <p class="text-xs text-emerald-700 font-medium mt-0.5" id="stlModalSubtitle">Docket: SET-2026-004</p>
         </div>
       </div>
-      <button onclick="closeModal('stlViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      <button onclick="closeModal('stlViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div id="stlViewContent" class="space-y-3"></div>
     <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
-      <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
-      <button type="button" onclick="closeModal('stlViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
+      <span class="text-emerald-700 text-sm font-medium" data-i18n="blottercast_system_label">BlotterCast Barangay System</span>
+      <button type="button" onclick="closeModal('stlViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm" data-i18n="close">Close</button>
     </div>
   </div>
 </div>
@@ -731,7 +731,9 @@
 
   async function openAddSettlement() {
     stlEditId = null;
-    document.getElementById('stlModalTitle').textContent = 'New Settlement Record';
+    const titleEl = document.getElementById('stlModalTitle');
+    titleEl.setAttribute('data-i18n', 'new_settlement_title');
+    titleEl.textContent = 'New Settlement Record';
     document.getElementById('settlementForm').reset();
     clearSettlementFormErrors();
     resetFormDropdowns('settlementForm');
@@ -754,7 +756,9 @@
     const r = settlementData.find(x => x.id === id);
     stlEditId = id;
     clearSettlementFormErrors();
-    document.getElementById('stlModalTitle').textContent = 'Edit Settlement Record';
+    const titleEl = document.getElementById('stlModalTitle');
+    titleEl.setAttribute('data-i18n', 'edit_settlement_title');
+    titleEl.textContent = 'Edit Settlement Record';
     document.getElementById('sf_blotter_picker_wrap').classList.add('hidden');
     document.getElementById('sf_caseNo').value = r.caseNo;
     document.getElementById('sf_caseTitle').value = r.caseTitle || '';

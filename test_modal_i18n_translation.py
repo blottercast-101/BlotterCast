@@ -1,0 +1,202 @@
+import unittest
+import os
+import re
+import json
+
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(REPO_ROOT, "frontend")
+
+
+class TestModalI18nTranslation(unittest.TestCase):
+    def setUp(self):
+        self.app_js_path = os.path.join(FRONTEND_DIR, "app.js")
+        with open(self.app_js_path, "r", encoding="utf-8") as f:
+            self.app_js = f.read()
+
+    def test_i18n_dictionary_exists_and_has_en_and_tl(self):
+        """Verify window.i18n is exposed and has en and tl definitions."""
+        self.assertIn("window.i18n = i18n;", self.app_js)
+        self.assertIn("window.applyLanguageTranslation = applyLanguageTranslation;", self.app_js)
+        
+        # Check that const i18n = { en: { ... }, tl: { ... } }; is present
+        self.assertIn("const i18n = {", self.app_js)
+        self.assertIn("en: {", self.app_js)
+        self.assertIn("tl: {", self.app_js)
+
+    def test_i18n_key_symmetry(self):
+        """Extract en and tl key dictionaries from app.js and check key symmetry."""
+        en_match = re.search(r"en:\s*\{(.*?)\},\s*tl:\s*\{", self.app_js, re.DOTALL)
+        self.assertIsNotNone(en_match, "Could not locate 'en' block in i18n")
+        en_block = en_match.group(1)
+
+        tl_match = re.search(r"tl:\s*\{(.*?)\}\s*\n\};", self.app_js, re.DOTALL)
+        self.assertIsNotNone(tl_match, "Could not locate 'tl' block in i18n")
+        tl_block = tl_match.group(1)
+
+        # Match top-level keys starting at the beginning of the line (ignoring whitespace)
+        en_keys = set(re.findall(r"^\s*([a-zA-Z0-9_]+)\s*:\s*[\"']", en_block, re.MULTILINE))
+        tl_keys = set(re.findall(r"^\s*([a-zA-Z0-9_]+)\s*:\s*[\"']", tl_block, re.MULTILINE))
+
+        # Test essential modal keys
+        required_keys = [
+            "import_resident_title",
+            "drag_drop_text",
+            "browse_files",
+            "upload_import",
+            "cancel",
+            "close",
+            "add_resident_title",
+            "edit_resident_title",
+            "import_blotter_title",
+            "new_blotter_entry",
+            "edit_blotter_entry",
+            "new_incident_report",
+            "edit_incident_report",
+            "issue_clearance_title",
+            "issue_residency_title",
+            "issue_non_residency_title",
+            "issue_indigency_title",
+            "new_settlement_title",
+            "edit_settlement_title",
+            "add_new_user_title",
+            "edit_user_title",
+            "permanently_delete_user",
+            "generate_report_title",
+            "full_name",
+            "address",
+            "save",
+        ]
+        for k in required_keys:
+            self.assertIn(k, en_keys, f"Missing {k} in en dictionary")
+            self.assertIn(k, tl_keys, f"Missing {k} in tl dictionary")
+
+        # Check key symmetry
+        missing_in_tl = en_keys - tl_keys
+        missing_in_en = tl_keys - en_keys
+        self.assertEqual(missing_in_tl, set(), f"Keys in en but missing in tl: {missing_in_tl}")
+        self.assertEqual(missing_in_en, set(), f"Keys in tl but missing in en: {missing_in_en}")
+
+    def test_apply_language_translation_function(self):
+        """Verify applyLanguageTranslation implementation details."""
+        # Querying data-i18n, data-i18n-placeholder, and data-i18n-title
+        self.assertIn("document.querySelectorAll('[data-i18n]')", self.app_js)
+        self.assertIn("document.querySelectorAll('[data-i18n-placeholder]')", self.app_js)
+        self.assertIn("document.querySelectorAll('[data-i18n-title]')", self.app_js)
+
+        # Icon preservation check
+        self.assertIn("el.querySelector('svg, [data-icon], i')", self.app_js)
+
+        # Open modal hook
+        self.assertIn("applyLanguageTranslation();", self.app_js)
+
+        # Storage listener sync
+        self.assertIn("localStorage.getItem('app_language')", self.app_js)
+        self.assertIn("localStorage.getItem('bc_language')", self.app_js)
+
+    def test_settings_page_language_handler(self):
+        """Verify settings.html synchronizes app_language and triggers applyLanguageTranslation."""
+        settings_path = os.path.join(FRONTEND_DIR, "settings.html")
+        with open(settings_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("app_language", content)
+        self.assertIn("applyLanguageTranslation", content)
+
+    def test_census_html_modals_i18n(self):
+        """Verify census.html has data-i18n attributes on residentModal, importModal, and censusViewModal."""
+        census_path = os.path.join(FRONTEND_DIR, "census.html")
+        with open(census_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Check modal title attributes
+        self.assertIn('data-i18n="import_resident_title"', content)
+        self.assertIn('data-i18n="drag_drop_text"', content)
+        self.assertIn('data-i18n="add_resident_title"', content)
+        self.assertIn('data-i18n="resident_profile_details"', content)
+
+        # Check button IDs preserved
+        self.assertIn('id="cancelCensusImportBtn"', content)
+        self.assertIn('id="submitCensusImportBtn"', content)
+
+        # Check template download link preserved
+        self.assertIn('/templates/census_resident_template.csv', content)
+
+        # Check reset function dynamically pulls from window.i18n
+        self.assertIn('window.i18n[isFil ? \'tl\' : \'en\']', content)
+
+    def test_blotter_html_modals_i18n(self):
+        """Verify blotter.html has data-i18n attributes on blotterModal, importModal, and viewModal."""
+        blotter_path = os.path.join(FRONTEND_DIR, "blotter.html")
+        with open(blotter_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('data-i18n="import_blotter_title"', content)
+        self.assertIn('data-i18n="new_blotter_entry"', content)
+        self.assertIn('data-i18n="blotter_record_details"', content)
+        self.assertIn('data-i18n-placeholder="search_census_ph"', content)
+
+    def test_incident_html_modals_i18n(self):
+        """Verify incident.html has data-i18n attributes on incidentModal, incViewModal, and elevateConfirmModal."""
+        incident_path = os.path.join(FRONTEND_DIR, "incident.html")
+        with open(incident_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('data-i18n="new_incident_report"', content)
+        self.assertIn('data-i18n="incident_report_details"', content)
+        self.assertIn('data-i18n="elevate_confirm_title"', content)
+        self.assertIn('data-i18n="elevate_confirm_body"', content)
+        self.assertIn('data-i18n-placeholder="location_detail_ph"', content)
+
+    def test_clearance_residency_indigency_modals_i18n(self):
+        """Verify document issuance modals have data-i18n attributes."""
+        for filename, title_key in [
+            ("clearance.html", "issue_clearance_title"),
+            ("residency.html", "issue_residency_title"),
+            ("non_residency.html", "issue_non_residency_title"),
+            ("indigency.html", "issue_indigency_title"),
+        ]:
+            filepath = os.path.join(FRONTEND_DIR, filename)
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn(f'data-i18n="{title_key}"', content, f"Missing {title_key} in {filename}")
+            self.assertIn('data-i18n="cancel"', content, f"Missing cancel in {filename}")
+
+    def test_settlement_html_modals_i18n(self):
+        """Verify settlement.html has data-i18n attributes on settlementModal and stlViewModal."""
+        stl_path = os.path.join(FRONTEND_DIR, "settlement.html")
+        with open(stl_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('data-i18n="new_settlement_title"', content)
+        self.assertIn('data-i18n="settlement_hearing_details"', content)
+        self.assertIn('data-i18n="link_blotter_case"', content)
+        self.assertIn('data-i18n="save_record"', content)
+        self.assertIn('data-i18n-placeholder="search_blotter_ph"', content)
+
+    def test_users_html_modals_i18n(self):
+        """Verify users.html has data-i18n attributes on addUserWizardModal, userModal, and deleteUserModal."""
+        users_path = os.path.join(FRONTEND_DIR, "users.html")
+        with open(users_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('data-i18n="add_new_user_title"', content)
+        self.assertIn('data-i18n="edit_user_title"', content)
+        self.assertIn('data-i18n="permanently_delete_user"', content)
+        self.assertIn('data-i18n="temporary_password"', content)
+        self.assertIn('data-i18n="e_signature"', content)
+        self.assertIn('data-i18n-placeholder="type_delete_confirm"', content)
+
+    def test_reports_html_modal_i18n(self):
+        """Verify reports.html has data-i18n attributes on generateModal."""
+        reports_path = os.path.join(FRONTEND_DIR, "reports.html")
+        with open(reports_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('data-i18n="generate_report_title"', content)
+        self.assertIn('data-i18n="date_from"', content)
+        self.assertIn('data-i18n="date_to"', content)
+        self.assertIn('data-i18n="zone_filter"', content)
+        self.assertIn('data-i18n="export_format"', content)
+
+
+if __name__ == "__main__":
+    unittest.main()

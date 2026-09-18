@@ -431,23 +431,525 @@ const BC_TRANSLATIONS = {
   }
 };
 
+const i18n = {
+  en: {
+    // General Actions & Controls
+    cancel: "Cancel",
+    close: "Close",
+    save: "Save",
+    save_changes: "Save Changes",
+    confirm: "Confirm",
+    submit: "Submit",
+    delete: "Delete",
+    permanent_delete: "Permanent Delete",
+    back: "Back",
+    next: "Next",
+    clear: "Clear",
+    reset: "Reset",
+    filter: "Filter",
+    replace: "Replace",
+    browse_files: "Browse files",
+    browse_files_cap: "Browse Files",
+    import_data: "Import Data",
+    upload_import: "Upload & Import",
+    processing: "Processing...",
+    please_wait: "Please wait...",
+    done: "Done",
+
+    // Census Import Modal
+    import_resident_title: "Import Resident Data",
+    drag_drop_text: "Drag & Drop CSV or Excel file (.xlsx, .xls) here or Click to upload",
+    supported_files_census: "Supported types: CSV, Excel (.xlsx, .xls)",
+    download_resident_template: "Download Resident Census Template (.csv)",
+    selected_file: "Selected File",
+    file_ready_import: "File ready for import",
+
+    // Resident Modal (Census)
+    add_resident_title: "Add Resident",
+    edit_resident_title: "Edit Resident",
+    save_resident: "Save Resident",
+    resident_no: "Resident No.",
+    resident_no_ph: "Auto-generated on save",
+    last_name: "Last Name",
+    last_name_ph: "Last name",
+    first_name: "First Name",
+    first_name_ph: "First name",
+    middle_name: "Middle Name",
+    middle_name_ph: "Middle name (optional)",
+    dob: "Date of Birth",
+    sex: "Sex",
+    select_sex: "-Select-",
+    male: "Male",
+    female: "Female",
+    civil_status: "Civil Status",
+    select_civil_status: "-Select-",
+    single: "Single",
+    married: "Married",
+    widowed: "Widowed",
+    separated: "Separated",
+    nationality: "Nationality",
+    zone: "Zone / Purok",
+    select_zone: "-Select-",
+    address: "Street / House Address",
+    address_ph: "Blk, Lot, Street",
+    household_no: "Household No.",
+    household_no_ph: "HH-001",
+    contact_no: "Contact Number",
+    voter_status: "Voter Status",
+    registered_voter: "Registered Voter",
+    not_registered: "Not Registered",
+    deactivated: "Deactivated",
+    occupation: "Occupation",
+    occupation_ph: "e.g. Farmer, Teacher",
+    status: "Status",
+    active: "Active",
+    deceased: "Deceased",
+    transferred: "Transferred",
+    resident_profile_details: "Resident Profile Details",
+    deceased_hint: "Voter Status is automatically set to Deactivated for deceased residents.",
+
+    // Blotter Import Modal
+    import_blotter_title: "Import Blotter Data",
+    import_type: "Import Type",
+    blotter_entry_record: "Blotter Entry Record",
+    blotter_entry_record_desc: "Imports case logs and automatically creates linked Incident Reports with coordinates for Heatmap & Prediction.",
+    blotter_record: "Blotter Record",
+    blotter_record_desc: "Updates case progress and links records to the Settlement Monitor.",
+    csv_templates: "CSV Templates:",
+    blotter_entry_csv: "Blotter Entry (.csv)",
+    blotter_record_csv: "Blotter Record (.csv)",
+    click_choose_drag_drop: "Click to choose a file or drag & drop",
+    supports_xlsx_csv: "Supports .xlsx and .csv (Max 10MB)",
+
+    // Blotter Entry Modal
+    new_blotter_entry: "New Blotter Entry",
+    edit_blotter_entry: "Edit Blotter Record",
+    docket_no: "Docket No.",
+    date_filed: "Date Filed",
+    name_of_complainant: "Name of Complainant",
+    not_a_resident: "Not a resident / outside party",
+    search_census_ph: "Type a name to search Census…",
+    full_name_ph: "Full name",
+    complainant_address: "Complainant Address",
+    name_of_respondent: "Name of Respondent",
+    respondent_address: "Respondent Address",
+    nature_of_case: "Nature of Case",
+    nature_of_case_ph: "e.g. Pag-aaway / Alitan sa Hangganan",
+    type: "Type",
+    criminal: "Criminal",
+    civil: "Civil",
+    pending: "Pending",
+    save_entry: "Save Entry",
+    blotter_record_details: "Blotter Record Details",
+    blotter_rule_note_1: "Either the complainant or the respondent can be marked 'Not a resident' if they're from outside the barangay.",
+    blotter_rule_note_2: "But not both, since at least one party must be a registered Census resident.",
+
+    // Incident Modal
+    new_incident_report: "New Incident Report",
+    edit_incident_report: "Edit Incident Report",
+    save_report: "Save Report",
+    report_no: "Report No.",
+    date_reported: "Date Reported",
+    time_reported: "Time Reported",
+    location_detail: "Location Detail",
+    location_detail_ph: "e.g. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…",
+    zone_mismatch_title: "Zone & Location Mismatch Detected",
+    zone_mismatch_desc: "The entered location matches another zone.",
+    switch_zone: "Switch Zone",
+    geocoded_pin_boundary: "Geocoded Pin & Boundary",
+    unverified_location: "Unverified Location",
+    geocode_location: "Geocode Location",
+    toggle_mini_map: "Toggle Mini-Map",
+    wide_view: "Wide View",
+    category: "Category",
+    priority_level: "Priority Level",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    description: "Description",
+    description_ph: "Detailed description of the incident…",
+    reporter_name: "Reporter Name",
+    non_resident_reporter: "Non-Resident Reporter",
+    reporter_address: "Reporter Address (Municipality / Location)",
+    reporter_address_ph: "Outside Barangay / specify municipality or address",
+    responding_officer: "Responding Officer",
+    responding_officer_ph: "e.g. PO1 Cruz",
+    elevate_to_blotter: "Elevate to Blotter",
+    already_elevated: "Already Elevated",
+    incident_report_details: "Incident Report Details",
+    view_in_heatmap: "View in Heatmap",
+    elevate_confirm_title: "Elevate Incident to Official Blotter?",
+    elevate_confirm_body: "This action cannot be undone or reverted. Elevating this report will permanently lock this incident report and create an official Blotter Case for Lupon conciliation.",
+    proceed_to_blotter_form: "Proceed to Blotter Form",
+
+    // Certificate Modals (Clearance, Residency, Non-Residency, Indigency)
+    issue_clearance_title: "Issue Barangay Clearance",
+    issue_residency_title: "Issue Certificate of Residency",
+    issue_non_residency_title: "Issue Certificate of Non-Residency",
+    issue_indigency_title: "Issue Certificate of Indigency",
+    resident_label: "Resident",
+    search_resident_ph: "Type a name to search...",
+    full_name: "Full Name",
+    age: "Age",
+    purpose_of_clearance: "Purpose of Clearance",
+    purpose_of_certificate: "Purpose of Certificate",
+    or_number: "O.R. Number",
+    amount_paid: "Amount Paid (₱)",
+    duration_of_residency: "Duration of Residency",
+    years: "Years",
+    months: "Months",
+    previous_home_address: "Previous / Former Home Address in this Barangay",
+    requested_by_purpose: "Requested By / Purpose",
+    issue_preview: "Issue & Preview",
+    derogatory_alert: "Derogatory Alert",
+    applicant_active_blotter: "Applicant has an active blotter record",
+
+    // Certificate Modals additions
+    census_inheritance_help: "A certificate can only be issued to someone already recorded in Census. Name, age, civil status, and address are inherited from that record.",
+    indigency_blotter_warning: "This resident is listed as a Respondent in active or unresolved blotter case(s). A Certificate of Indigency cannot be released until all respondent cases are resolved.",
+    indigency_note: "Certifying indigency is the responsibility of the Punong Barangay. Ensure the applicant's financial status has been verified before issuance.",
+    note_label: "Note:",
+    select_placeholder: "-Select-",
+
+    // Settlement Modals
+    new_settlement_title: "New Settlement Record",
+    edit_settlement_title: "Edit Settlement Record",
+    link_blotter_case: "Link to Blotter Case",
+    search_blotter_ph: "Type docket no. or name to search Blotter…",
+    search_docket_complainant_hint: "(Search docket no. or complainant)",
+    auto_generated: "Auto-generated",
+    auto_filled_blotter: "Auto-filled from Blotter",
+    optional_notes: "Optional notes",
+    blottercast_system_label: "BlotterCast Barangay System",
+    case_no: "Case No.",
+    case_title: "Case Title",
+    date_initial_confrontation: "Date of Initial Confrontation",
+    action_taken: "Action Taken",
+    date_of_settlement: "Date of Settlement or Award",
+    date_of_execution: "Date of Execution",
+    officer_in_charge: "Officer-in-Charge / Conciliator",
+    officer_ph: "e.g. Punong Barangay / Pangkat Chairman",
+    agreement_terms: "Main Point of Agreement / Settlement Terms",
+    agreement_terms_ph: "Key terms and conditions of the settlement agreement…",
+    status_compliance: "Status of Compliance / Resolution",
+    remarks: "Remarks",
+    save_record: "Save Record",
+    settlement_hearing_details: "Settlement Hearing Details",
+
+    // User Modals
+    add_new_user_title: "Add New User",
+    edit_user_title: "Edit User",
+    personal_info_cap: "PERSONAL INFORMATION",
+    roles_cap: "ROLES",
+    security_cap: "SECURITY",
+    assign_user_role: "ASSIGN USER ROLE",
+    assigned_roles: "ASSIGNED ROLES",
+    security_credentials: "SECURITY & CREDENTIALS",
+    read_only: "(Read-Only)",
+    username: "Username",
+    email: "Email",
+    contact_no: "Contact No.",
+    temporary_password: "Temporary Password",
+    temp_password_hint: "This temporary password will be emailed directly to the user. The recipient must update their credentials in Settings upon initial login.",
+    e_signature: "E-Signature",
+    e_sig_hint: "(used on printed Barangay Clearance & Certificate of Indigency)",
+    no_sig_uploaded: "No signature uploaded",
+    upload_signature: "Upload Signature",
+    remove_sig: "Remove",
+    sig_format_hint: "PNG with transparent background recommended, max 2MB.",
+    del_user_warning_box: "Warning: This action cannot be undone. All personal data, activity records, and authentication credentials linked to this user will be permanently purged from the database.",
+    type_to_proceed: "Type DELETE to proceed:",
+    copy_clipboard: "Copy to Clipboard",
+    regenerate_password: "Regenerate Password",
+    save_user: "Save User",
+    permanently_delete_user: "Permanently Delete User",
+    destructive_removal: "Destructive Account Removal",
+    type_delete_confirm: "TYPE DELETE TO CONFIRM",
+
+    // Reports Modal
+    generate_report_title: "Generate Report",
+    date_from: "Date From",
+    date_to: "Date To",
+    zone_filter: "Zone Filter",
+    all_zones: "All Zones",
+    export_format: "Export Format",
+    pdf_document: "PDF Document",
+    preview: "Preview",
+    generate: "Generate"
+  },
+  tl: {
+    // General Actions & Controls
+    cancel: "Kanselahin",
+    close: "Isara",
+    save: "I-save",
+    save_changes: "I-save ang mga Pagbabago",
+    confirm: "Kumpirmahin",
+    submit: "Isumite",
+    delete: "Burahin",
+    permanent_delete: "Permanenteng Burahin",
+    back: "Bumalik",
+    next: "Susunod",
+    clear: "Linisin",
+    reset: "I-reset",
+    filter: "Salain",
+    replace: "Palitan",
+    browse_files: "Mag-browse ng mga file",
+    browse_files_cap: "Mag-browse ng mga File",
+    import_data: "I-import ang Datos",
+    upload_import: "I-upload at I-import",
+    processing: "Pinoproseso...",
+    please_wait: "Mangyaring maghintay...",
+    done: "Tapos na",
+
+    // Census Import Modal
+    import_resident_title: "Mag-import ng Datos ng Residente",
+    drag_drop_text: "I-drag at I-drop ang CSV o Excel file (.xlsx, .xls) dito o I-click para mag-upload",
+    supported_files_census: "Suportadong mga uri: CSV, Excel (.xlsx, .xls)",
+    download_resident_template: "I-download ang Resident Census Template (.csv)",
+    selected_file: "Napiling File",
+    file_ready_import: "Handa na ang file para sa pag-import",
+
+    // Resident Modal (Census)
+    add_resident_title: "Magdagdag ng Residente",
+    edit_resident_title: "I-edit ang Residente",
+    save_resident: "I-save ang Residente",
+    resident_no: "Blg. ng Residente",
+    resident_no_ph: "Awtomatikong bubuuin sa pag-save",
+    last_name: "Apelyido",
+    last_name_ph: "Apelyido",
+    first_name: "Pangalan",
+    first_name_ph: "Pangalan",
+    middle_name: "Gitnang Pangalan",
+    middle_name_ph: "Gitnang pangalan (opsyonal)",
+    dob: "Araw ng Kapanganakan",
+    sex: "Kasarian",
+    select_sex: "-Pumili-",
+    male: "Lalaki",
+    female: "Babae",
+    civil_status: "Katayuang Sibil",
+    select_civil_status: "-Pumili-",
+    single: "Walang Asawa",
+    married: "May Asawa",
+    widowed: "Balo",
+    separated: "Hiwalay",
+    nationality: "Nasyonalidad",
+    zone: "Sona / Purok",
+    select_zone: "-Pumili-",
+    address: "Tirahan / Kalye",
+    address_ph: "Blk, Lot, Kalye",
+    household_no: "Blg. ng Sambahayan",
+    household_no_ph: "HH-001",
+    contact_no: "Numero ng Telepono",
+    voter_status: "Katayuan sa Pagboto",
+    registered_voter: "Rehistradong Botante",
+    not_registered: "Hindi Rehistrado",
+    deactivated: "Hindi Aktibo (Deactivated)",
+    occupation: "Trabaho / Propesyon",
+    occupation_ph: "hal. Magsasaka, Guro",
+    status: "Katayuan",
+    active: "Aktibo",
+    deceased: "Yumao",
+    transferred: "Lumipat",
+    resident_profile_details: "Mga Detalye ng Profile ng Residente",
+    deceased_hint: "Ang Katayuan sa Pagboto ay awtomatikong itinatakda sa Deactivated para sa mga yumaong residente.",
+
+    // Blotter Import Modal
+    import_blotter_title: "Mag-import ng Datos ng Blotter",
+    import_type: "Uri ng Pag-import",
+    blotter_entry_record: "Rekord ng Blotter Entry",
+    blotter_entry_record_desc: "Nag-i-import ng tala ng mga kaso at awtomatikong lumilikha ng mga ulat ng insidente na may coordinate para sa Heatmap at Prediction.",
+    blotter_record: "Rekord ng Blotter",
+    blotter_record_desc: "Nag-a-update ng progreso ng kaso at nag-uugnay ng mga tala sa Settlement Monitor.",
+    csv_templates: "Mga CSV Template:",
+    blotter_entry_csv: "Blotter Entry (.csv)",
+    blotter_record_csv: "Blotter Record (.csv)",
+    click_choose_drag_drop: "I-click para pumili ng file o i-drag at i-drop",
+    supports_xlsx_csv: "Suportado ang .xlsx at .csv (Hanggang 10MB)",
+
+    // Blotter Entry Modal
+    new_blotter_entry: "Bagong Rekord ng Blotter",
+    edit_blotter_entry: "I-edit ang Rekord ng Blotter",
+    docket_no: "Blg. ng Docket",
+    date_filed: "Petsa ng Paghahain",
+    name_of_complainant: "Pangalan ng Nagrereklamo",
+    not_a_resident: "Hindi residente / taga-labas",
+    search_census_ph: "Mag-type ng pangalan para hanapin sa Census…",
+    full_name_ph: "Buong pangalan",
+    complainant_address: "Tirahan ng Nagrereklamo",
+    name_of_respondent: "Pangalan ng Inirereklamo",
+    respondent_address: "Tirahan ng Inirereklamo",
+    nature_of_case: "Uri ng Kaso",
+    nature_of_case_ph: "hal. Pananakit / Alitan sa Hangganan",
+    type: "Uri",
+    criminal: "Kriminal",
+    civil: "Sibil",
+    pending: "Nakabinbin",
+    save_entry: "I-save ang Rekord",
+    blotter_record_details: "Mga Detalye ng Rekord ng Blotter",
+    blotter_rule_note_1: "Maaaring markahan ang nagrereklamo o inirereklamo bilang 'Hindi residente' kung sila ay taga-labas ng barangay.",
+    blotter_rule_note_2: "Ngunit hindi pareho, dahil hindi bababa sa isang partido ang dapat rehistradong residente sa Census.",
+
+    // Incident Modal
+    new_incident_report: "Bagong Ulat ng Insidente",
+    edit_incident_report: "I-edit ang Ulat ng Insidente",
+    save_report: "I-save ang Ulat",
+    report_no: "Blg. ng Ulat",
+    date_reported: "Petsa ng Pag-uulat",
+    time_reported: "Oras ng Pag-uulat",
+    location_detail: "Detalye ng Lokasyon",
+    location_detail_ph: "hal. Pandi Encampment One, Ph1 Blk24 Lot 4 Residence 1…",
+    zone_mismatch_title: "May Hindi Pagtutugma sa Sona at Lokasyon",
+    zone_mismatch_desc: "Ang inilagay na lokasyon ay tumutugma sa ibang sona.",
+    switch_zone: "Lumipat sa Sona",
+    geocoded_pin_boundary: "Geocoded na Pin at Hangganan",
+    unverified_location: "Hindi pa Beripikadong Lokasyon",
+    geocode_location: "Geocode ang Lokasyon",
+    toggle_mini_map: "Ipakita/Itago ang Mini-Map",
+    wide_view: "Malapad na View",
+    category: "Kategorya",
+    priority_level: "Lebel ng Prayoridad",
+    high: "Mataas",
+    medium: "Katamtaman",
+    low: "Mababa",
+    description: "Paglalarawan",
+    description_ph: "Detalyadong paglalarawan ng insidente…",
+    reporter_name: "Pangalan ng Nag-ulat",
+    non_resident_reporter: "Hindi Residente na Nag-ulat",
+    reporter_address: "Tirahan ng Nag-ulat (Munisipalidad / Lokasyon)",
+    reporter_address_ph: "Labas ng Barangay / tukuyin ang munisipalidad o tirahan",
+    responding_officer: "Rumespondeng Opisyal",
+    responding_officer_ph: "hal. PO1 Cruz",
+    elevate_to_blotter: "Iakyat sa Blotter",
+    already_elevated: "Naiakyat Na",
+    incident_report_details: "Mga Detalye ng Ulat ng Insidente",
+    view_in_heatmap: "Tingnan sa Heatmap",
+    elevate_confirm_title: "Iakyat ang Insidente sa Opisyal na Blotter?",
+    elevate_confirm_body: "Ang aksyong ito ay hindi na maaaring bawiin o ipagpaliban. Ang pag-aakyat ng ulat na ito ay permanenteng magla-lock sa ulat ng insidente at lilikha ng opisyal na kaso sa Blotter para sa pamamagitan ng Lupon.",
+    proceed_to_blotter_form: "Tumuloy sa Form ng Blotter",
+
+    // Certificate Modals (Clearance, Residency, Non-Residency, Indigency)
+    issue_clearance_title: "Mag-isyu ng Barangay Clearance",
+    issue_residency_title: "Mag-isyu ng Katunayan ng Paninirahan (Residency)",
+    issue_non_residency_title: "Mag-isyu ng Katunayan ng Hindi Paninirahan (Non-Residency)",
+    issue_indigency_title: "Mag-isyu ng Katunayan ng Kawalan ng Sapat na Kita (Indigency)",
+    resident_label: "Residente",
+    search_resident_ph: "Mag-type ng pangalan para maghanap...",
+    full_name: "Buong Pangalan",
+    age: "Edad",
+    purpose_of_clearance: "Layunin ng Clearance",
+    purpose_of_certificate: "Layunin ng Sertipiko",
+    or_number: "Blg. ng O.R.",
+    amount_paid: "Halagang Binayaran (₱)",
+    duration_of_residency: "Tagal ng Paninirahan",
+    years: "Taon",
+    months: "Buwan",
+    previous_home_address: "Dating Tirahan sa Barangay na Ito",
+    requested_by_purpose: "Hiningi Ni / Layunin",
+    issue_preview: "I-isyu at I-preview",
+    derogatory_alert: "Babala sa Rekord (Derogatory Alert)",
+    applicant_active_blotter: "Ang aplikante ay may aktibong rekord sa blotter",
+
+    // Certificate Modals additions
+    census_inheritance_help: "Maaari lamang mag-isyu ng sertipiko sa taong nakatala na sa Census. Ang pangalan, edad, katayuang sibil, at tirahan ay awtomatikong magmumula sa talaang iyon.",
+    indigency_blotter_warning: "Ang residenteng ito ay nakatala bilang Respondent sa aktibo o hindi pa nareresolbang kaso sa blotter. Hindi maaaring ibigay ang Certificate of Indigency hangga't hindi nareresolba ang lahat ng kaso.",
+    indigency_note: "Ang pagpapatunay ng kahirapan (indigency) ay responsibilidad ng Punong Barangay. Siguraduhing napatunayan ang estado sa pananalapi ng aplikante bago mag-isyu.",
+    note_label: "Paunawa:",
+    select_placeholder: "-Pumili-",
+
+    // Settlement Modals
+    new_settlement_title: "Bagong Rekord ng Pag-aayos",
+    edit_settlement_title: "I-edit ang Rekord ng Pag-aayos",
+    link_blotter_case: "Iugnay sa Kaso ng Blotter",
+    search_blotter_ph: "Mag-type ng docket no. o pangalan para hanapin sa Blotter…",
+    search_docket_complainant_hint: "(Maghanap ng docket no. o nagrereklamo)",
+    auto_generated: "Awtomatikong bubuuin",
+    auto_filled_blotter: "Awtomatikong kinuha sa Blotter",
+    optional_notes: "Opsyonal na mga tala",
+    blottercast_system_label: "BlotterCast Sistemang Pambarangay",
+    case_no: "Blg. ng Kaso",
+    case_title: "Pamagat ng Kaso",
+    date_initial_confrontation: "Petsa ng Unang Pagtutuos",
+    action_taken: "Hakbang na Isinagawa",
+    date_of_settlement: "Petsa ng Pagkakasundo o Gawad",
+    date_of_execution: "Petsa ng Pagpapatupad",
+    officer_in_charge: "Namumunong Opisyal / Tagapamagitan",
+    officer_ph: "hal. Punong Barangay / Tagapangulo ng Pangkat",
+    agreement_terms: "Pangunahing Kasunduan / Tuntunin ng Pag-aayos",
+    agreement_terms_ph: "Pangunahing mga tuntunin at kundisyon ng kasunduan sa pag-aayos…",
+    status_compliance: "Katayuan ng Pagsunod / Resolusyon",
+    remarks: "Mga Tala / Puna",
+    save_record: "I-save ang Rekord",
+    settlement_hearing_details: "Mga Detalye ng Pagdinig sa Pag-aayos",
+
+    // User Modals
+    add_new_user_title: "Magdagdag ng Bagong Gumagamit",
+    edit_user_title: "I-edit ang Gumagamit",
+    personal_info_cap: "PERSONAL NA IMPORMASYON",
+    roles_cap: "MGA GAMPANIN",
+    security_cap: "SEGURIDAD",
+    assign_user_role: "ITALAGA ANG GAMPANIN NG GUMAGAMIT",
+    assigned_roles: "MGA NAKATALAGANG GAMPANIN",
+    security_credentials: "SEGURIDAD AT MGA KREDENSYAL",
+    read_only: "(Babasahin Lamang)",
+    username: "Pangalan ng Gumagamit (Username)",
+    email: "Email",
+    contact_no: "Numero ng Telepono",
+    temporary_password: "Pansamantalang Password",
+    temp_password_hint: "Ang pansamantalang password na ito ay ipapadala sa email ng gumagamit. Kailangang i-update ng tatanggap ang kanilang kredensyal sa Settings sa unang pag-login.",
+    e_signature: "Elektronikong Lagda (E-Signature)",
+    e_sig_hint: "(ginagamit sa nakalimbag na Barangay Clearance at Certificate of Indigency)",
+    no_sig_uploaded: "Walang nai-upload na lagda",
+    upload_signature: "Mag-upload ng Lagda",
+    remove_sig: "Alisin",
+    sig_format_hint: "Inirerekomenda ang PNG na may transparent background, hanggang 2MB.",
+    del_user_warning_box: "Babala: Ang aksyong ito ay hindi na mababawi. Ang lahat ng personal na datos, talaan ng aktibidad, at kredensyal ng pagpapatunay na nauugnay sa gumagamit na ito ay permanenteng buburahin sa database.",
+    type_to_proceed: "I-type ang DELETE para magpatuloy:",
+    copy_clipboard: "Kopyahin sa Clipboard",
+    regenerate_password: "Bumuo Muli ng Password",
+    save_user: "I-save ang Gumagamit",
+    permanently_delete_user: "Permanenteng Burahin ang Gumagamit",
+    destructive_removal: "Mapangwasak na Pag-alis ng Account",
+    type_delete_confirm: "I-TYPE ANG DELETE PARA KUMFIRMAHIN",
+
+    // Reports Modal
+    generate_report_title: "Bumuo ng Ulat",
+    date_from: "Mula sa Petsa",
+    date_to: "Hanggang sa Petsa",
+    zone_filter: "Salain ayon sa Sona",
+    all_zones: "Lahat ng Sona",
+    export_format: "Format ng Pag-export",
+    pdf_document: "Dokumentong PDF",
+    preview: "Silipin",
+    generate: "Bumuo"
+  }
+};
+
 function bcGetLanguage() {
-  let lang = localStorage.getItem('bc_language');
+  let lang = localStorage.getItem('app_language');
+  if (lang) {
+    if (lang.toLowerCase() === 'tl' || lang.toLowerCase().startsWith('fil') || lang.toLowerCase().startsWith('tag')) {
+      return 'Filipino';
+    }
+    return 'English';
+  }
+  lang = localStorage.getItem('bc_language');
   if (!lang) {
     try {
       const cfg = JSON.parse(localStorage.getItem('barangayConfig') || '{}');
       lang = cfg.default_language;
     } catch (_) {}
   }
-  if (lang && (lang.toLowerCase().startsWith('fil') || lang.toLowerCase().startsWith('tag'))) {
+  if (lang && (lang.toLowerCase().startsWith('fil') || lang.toLowerCase().startsWith('tag') || lang.toLowerCase() === 'tl')) {
     return 'Filipino';
   }
   return 'English';
 }
 
 function bcSetLanguage(lang) {
-  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') ? 'Filipino' : 'English';
+  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') || (String(lang || '')).toLowerCase() === 'tl' ? 'Filipino' : 'English';
+  const appLang = normalized === 'Filipino' ? 'tl' : 'en';
   localStorage.setItem('bc_language', normalized);
+  localStorage.setItem('app_language', appLang);
   try {
     const raw = localStorage.getItem('barangayConfig');
     const cfg = raw ? JSON.parse(raw) : {};
@@ -455,7 +957,8 @@ function bcSetLanguage(lang) {
     localStorage.setItem('barangayConfig', JSON.stringify(cfg));
   } catch (_) {}
   bcApplyLanguage(normalized);
-  window.dispatchEvent(new CustomEvent('bc-language-changed', { detail: { language: normalized } }));
+  applyLanguageTranslation(appLang);
+  window.dispatchEvent(new CustomEvent('bc-language-changed', { detail: { language: normalized, app_language: appLang } }));
 }
 
 function bcT(text, fallback) {
@@ -466,8 +969,61 @@ function bcT(text, fallback) {
   return fallback || text;
 }
 
+function applyLanguageTranslation(lang) {
+  let targetLang = lang;
+  if (!targetLang) {
+    targetLang = localStorage.getItem('app_language');
+  }
+  if (!targetLang) {
+    const bc = localStorage.getItem('bc_language') || (typeof bcGetLanguage === 'function' ? bcGetLanguage() : 'English');
+    targetLang = (bc.toLowerCase().startsWith('fil') || bc.toLowerCase().startsWith('tag') || bc.toLowerCase() === 'tl') ? 'tl' : 'en';
+  }
+  targetLang = (targetLang.toLowerCase().startsWith('fil') || targetLang.toLowerCase().startsWith('tag') || targetLang.toLowerCase() === 'tl') ? 'tl' : 'en';
+
+  if (!window.i18n || !window.i18n[targetLang]) return;
+  const dict = window.i18n[targetLang];
+
+  // 1. Elements with data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key && dict[key] !== undefined) {
+      const icon = el.querySelector('svg, [data-icon], i');
+      if (icon && el.childNodes.length > 1) {
+        let textFound = false;
+        el.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim().length > 0) {
+            node.nodeValue = ' ' + dict[key];
+            textFound = true;
+          }
+        });
+        if (!textFound) {
+          el.appendChild(document.createTextNode(' ' + dict[key]));
+        }
+      } else {
+        el.textContent = dict[key];
+      }
+    }
+  });
+
+  // 2. Elements with data-i18n-placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key && dict[key] !== undefined) {
+      el.placeholder = dict[key];
+    }
+  });
+
+  // 3. Elements with data-i18n-title
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key && dict[key] !== undefined) {
+      el.title = dict[key];
+    }
+  });
+}
+
 function bcApplyLanguage(lang) {
-  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') ? 'Filipino' : 'English';
+  const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') || (String(lang || '')).toLowerCase() === 'tl' ? 'Filipino' : 'English';
   const isFil = normalized === 'Filipino';
   document.documentElement.lang = isFil ? 'fil' : 'en';
 
@@ -568,6 +1124,9 @@ function bcApplyLanguage(lang) {
   if (langSelect && langSelect.value !== normalized) {
     langSelect.value = normalized;
   }
+
+  // 8. Run modal / data-i18n translations
+  applyLanguageTranslation(isFil ? 'tl' : 'en');
 }
 
 let _bcI18nObserver = null;
@@ -575,7 +1134,6 @@ function bcSetupI18nObserver() {
   if (_bcI18nObserver || typeof MutationObserver === 'undefined') return;
   let timer = null;
   _bcI18nObserver = new MutationObserver((mutations) => {
-    if (bcGetLanguage() !== 'Filipino') return;
     let shouldTranslate = false;
     for (const m of mutations) {
       if (m.addedNodes && m.addedNodes.length > 0) {
@@ -586,9 +1144,11 @@ function bcSetupI18nObserver() {
     if (shouldTranslate) {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        if (bcGetLanguage() === 'Filipino') {
+        const cur = bcGetLanguage();
+        if (cur === 'Filipino') {
           bcApplyLanguage('Filipino');
         }
+        applyLanguageTranslation();
       }, 100);
     }
   });
@@ -604,6 +1164,8 @@ function bcInitLanguage() {
 }
 
 window.BC_TRANSLATIONS = BC_TRANSLATIONS;
+window.i18n = i18n;
+window.applyLanguageTranslation = applyLanguageTranslation;
 window.bcGetLanguage = bcGetLanguage;
 window.bcSetLanguage = bcSetLanguage;
 window.bcApplyLanguage = bcApplyLanguage;
@@ -611,8 +1173,11 @@ window.bcInitLanguage = bcInitLanguage;
 window.bcT = bcT;
 
 window.addEventListener('storage', (e) => {
-  if (e.key === 'bc_language') {
-    bcApplyLanguage(e.newValue);
+  if (e.key === 'bc_language' || e.key === 'app_language') {
+    const rawVal = localStorage.getItem('app_language') || localStorage.getItem('bc_language') || e.newValue;
+    const isFil = (String(rawVal || '')).toLowerCase().startsWith('fil') || (String(rawVal || '')).toLowerCase().startsWith('tag') || (String(rawVal || '')).toLowerCase() === 'tl';
+    bcApplyLanguage(isFil ? 'Filipino' : 'English');
+    applyLanguageTranslation(isFil ? 'tl' : 'en');
   }
 });
 
@@ -2475,6 +3040,10 @@ function openModal(id) {
       dd.classList.add('hidden');
       dd.innerHTML = '';
     });
+
+    if (typeof applyLanguageTranslation === 'function') {
+      applyLanguageTranslation();
+    }
 
     if (typeof fitCertificatePreview === 'function') {
       setTimeout(fitCertificatePreview, 50);

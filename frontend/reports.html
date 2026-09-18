@@ -213,29 +213,29 @@
 <div class="modal-overlay" id="generateModal">
   <div class="modal-box max-w-lg">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="font-display text-xl text-forest-800" id="genModalTitle">Generate Report</h2>
-      <button onclick="closeModal('generateModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+      <h2 class="font-display text-xl text-forest-800" id="genModalTitle" data-i18n="generate_report_title">Generate Report</h2>
+      <button onclick="closeModal('generateModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label">Date From</label><input type="date" id="gen_from" class="form-input" value="2025-01-01" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
-        <div><label class="form-label">Date To</label><input type="date" id="gen_to" class="form-input" value="2025-01-31" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
+        <div><label class="form-label" data-i18n="date_from">Date From</label><input type="date" id="gen_from" class="form-input" value="2025-01-01" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
+        <div><label class="form-label" data-i18n="date_to">Date To</label><input type="date" id="gen_to" class="form-input" value="2025-01-31" onchange="onReportDateChange()" oninput="onReportDateChange()"/></div>
       </div>
       <p id="gen_date_warn" class="text-xs text-rose-600 font-medium hidden mt-1">Date To cannot be earlier than Date From.</p>
       <div>
-        <label class="form-label">Zone Filter</label>
-        <select class="form-input" id="gen_zone"><option value="">All Zones</option>
+        <label class="form-label" data-i18n="zone_filter">Zone Filter</label>
+        <select class="form-input" id="gen_zone"><option value="" data-i18n="all_zones">All Zones</option>
           <option>Zone 1</option><option>Zone 2</option><option>Zone 3</option>
           <option>Zone 4</option><option>Zone 5</option><option>Zone 6</option>
           <option>Zone 7</option>
         </select>
       </div>
       <div>
-        <label class="form-label">Export Format</label>
+        <label class="form-label" data-i18n="export_format">Export Format</label>
         <div class="flex flex-wrap gap-3 mt-1.5" id="formatSelectorGroup">
           <label class="format-selector-label" id="fmt_pdf_wrap">
             <input type="radio" name="fmt" id="fmt_pdf" value="pdf" checked class="accent-forest-600"/>
-            <span class="flex items-center gap-1.5"><span data-icon="file" data-icon-size="15"></span> PDF Document</span>
+            <span class="flex items-center gap-1.5"><span data-icon="file" data-icon-size="15"></span> <span data-i18n="pdf_document">PDF Document</span></span>
           </label>
           <label class="format-selector-label" id="fmt_excel_wrap">
             <input type="radio" name="fmt" id="fmt_excel" value="excel" class="accent-forest-600"/>
@@ -245,9 +245,9 @@
         <p id="gen_fmt_note" class="text-xs text-forest-500 mt-2 hidden"></p>
       </div>
       <div class="flex justify-end gap-3 pt-2">
-        <button onclick="closeModal('generateModal')" class="btn-secondary">Cancel</button>
-        <button onclick="simulateGenerate(true)" class="btn-secondary" id="prevBtn"><span data-icon="reports" data-icon-size="16"></span> Preview</button>
-        <button onclick="simulateGenerate(false)" class="btn-primary" id="genBtn"><span data-icon="download" data-icon-size="16"></span> Generate</button>
+        <button onclick="closeModal('generateModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
+        <button onclick="simulateGenerate(true)" class="btn-secondary" id="prevBtn"><span data-icon="reports" data-icon-size="16"></span> <span data-i18n="preview">Preview</span></button>
+        <button onclick="simulateGenerate(false)" class="btn-primary" id="genBtn"><span data-icon="download" data-icon-size="16"></span> <span data-i18n="generate">Generate</span></button>
       </div>
     </div>
   </div>

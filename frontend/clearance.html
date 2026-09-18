@@ -234,18 +234,19 @@
   <div class="modal-box max-w-lg max-h-[90vh] flex flex-col">
     <!-- Modal Header -->
     <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100 flex-shrink-0">
-      <h2 class="font-display text-xl text-forest-800">Issue Barangay Clearance</h2>
-      <button onclick="closeModal('clearanceFormModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+      <h2 class="font-display text-xl text-forest-800" data-i18n="issue_clearance_title">Issue Barangay Clearance</h2>
+      <button onclick="closeModal('clearanceFormModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <!-- Modal Body -->
     <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
       <div class="relative w-full mb-3" id="residentSearchContainer">
-        <label class="block text-xs font-semibold text-[#1e3a2b] mb-1">Resident *</label>
+        <label class="block text-xs font-semibold text-[#1e3a2b] mb-1"><span data-i18n="resident_label">Resident</span> *</label>
         <input 
           type="text" 
           id="residentSearch" 
           autocomplete="off"
           placeholder="Type a name to search..." 
+          data-i18n-placeholder="search_resident_ph"
           class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-4 py-2.5 text-sm text-[#52796f] placeholder-[#52796f] focus:outline-none focus:ring-1 focus:ring-[#1e3a2b]"
         />
         <input type="hidden" id="cl_residentId"/>
@@ -260,22 +261,22 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4" id="cl_derived_preview">
-        <div class="col-span-2"><label class="form-label">Full Name</label><input type="text" id="cl_name_display" class="form-input" disabled/></div>
-        <div><label class="form-label">Age</label><input type="text" id="cl_age_display" class="form-input" disabled/></div>
-        <div><label class="form-label">Civil Status</label><input type="text" id="cl_civil_display" class="form-input" disabled/></div>
-        <div class="col-span-2"><label class="form-label">Address</label><input type="text" id="cl_addr_display" class="form-input" disabled/></div>
-        <div class="col-span-2"><label class="form-label">Voter Status</label><input type="text" id="cl_voter_display" class="form-input" disabled/></div>
+        <div class="col-span-2"><label class="form-label" data-i18n="full_name">Full Name</label><input type="text" id="cl_name_display" class="form-input" disabled/></div>
+        <div><label class="form-label" data-i18n="age">Age</label><input type="text" id="cl_age_display" class="form-input" disabled/></div>
+        <div><label class="form-label" data-i18n="civil_status">Civil Status</label><input type="text" id="cl_civil_display" class="form-input" disabled/></div>
+        <div class="col-span-2"><label class="form-label" data-i18n="address">Address</label><input type="text" id="cl_addr_display" class="form-input" disabled/></div>
+        <div class="col-span-2"><label class="form-label" data-i18n="voter_status">Voter Status</label><input type="text" id="cl_voter_display" class="form-input" disabled/></div>
         <div class="col-span-2">
-          <label class="form-label">Purpose of Clearance</label>
+          <label class="form-label" data-i18n="purpose_of_clearance">Purpose of Clearance</label>
           <select id="cl_purpose" class="form-input" required>
-            <option value="" disabled selected hidden>-Select-</option>
+            <option value="" disabled selected hidden data-i18n="purpose_of_clearance">-Select-</option>
             <option>Employment</option><option>Loan Application</option><option>Business Permit</option>
             <option>School Requirement</option><option>Travel Abroad</option><option>Legal Purposes</option>
             <option>Other</option>
           </select>
         </div>
-        <div><label class="form-label">O.R. Number</label><input type="text" id="cl_or" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/></div>
-        <div><label class="form-label">Amount Paid (₱)</label><input type="number" id="cl_fee" class="form-input" value="20"/></div>
+        <div><label class="form-label" data-i18n="or_number">O.R. Number</label><input type="text" id="cl_or" class="form-input bg-forest-50" placeholder="Auto-generated on save" data-i18n-placeholder="resident_no_ph" disabled/></div>
+        <div><label class="form-label" data-i18n="amount_paid">Amount Paid (₱)</label><input type="number" id="cl_fee" class="form-input" value="20"/></div>
       </div>
       <div id="cl_blotter_block" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 transition-all">
         <div class="flex items-start gap-2.5 mb-2.5">
@@ -284,9 +285,9 @@
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <span class="font-semibold text-amber-900 text-sm flex items-center gap-1.5">
                 <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                Applicant has an active blotter record
+                <span data-i18n="applicant_active_blotter">Applicant has an active blotter record</span>
               </span>
-              <span class="badge badge-pending text-xs font-semibold px-2 py-0.5">Derogatory Alert</span>
+              <span class="badge badge-pending text-xs font-semibold px-2 py-0.5" data-i18n="derogatory_alert">Derogatory Alert</span>
             </div>
             <p class="text-xs text-amber-800 mt-1 leading-relaxed">
               This resident is listed as a Respondent in active or unresolved blotter case(s). A Certificate of Clearance cannot be released until all respondent cases are resolved.
@@ -298,8 +299,8 @@
     </div>
     <!-- Modal Footer -->
     <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-forest-100 flex-shrink-0">
-      <button onclick="closeModal('clearanceFormModal')" class="btn-secondary">Cancel</button>
-      <button id="cl_submit_btn" onclick="issueClearance()" class="btn-primary">Issue & Preview</button>
+      <button onclick="closeModal('clearanceFormModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
+      <button id="cl_submit_btn" onclick="issueClearance()" class="btn-primary" data-i18n="issue_preview">Issue &amp; Preview</button>
     </div>
   </div>
 </div>

@@ -231,55 +231,55 @@
 <div class="modal-overlay" id="residentModal">
   <div class="modal-box" style="width:680px">
     <div class="flex items-center justify-between mb-5">
-      <h2 class="font-display text-xl text-forest-800" id="resModalTitle">Add Resident</h2>
-      <button onclick="closeModal('residentModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+      <h2 class="font-display text-xl text-forest-800" id="resModalTitle" data-i18n="add_resident_title">Add Resident</h2>
+      <button onclick="closeModal('residentModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <form class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="form-label">Resident No.</label>
-          <input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" disabled/>
+          <label class="form-label" data-i18n="resident_no">Resident No.</label>
+          <input type="text" id="rf_resNo" class="form-input bg-forest-50" placeholder="Auto-generated on save" data-i18n-placeholder="resident_no_ph" disabled/>
         </div>
         <div>
-          <label class="form-label">Last Name <span class="text-red-500">*</span></label>
-          <input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-no-numbers maxlength="50" required/>
+          <label class="form-label"><span data-i18n="last_name">Last Name</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_last" class="form-input" placeholder="Apellido" data-i18n-placeholder="last_name_ph" data-no-numbers maxlength="50" required/>
           <span id="rf_last_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
         </div>
         <div>
-          <label class="form-label">First Name <span class="text-red-500">*</span></label>
-          <input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-no-numbers maxlength="50" required/>
+          <label class="form-label"><span data-i18n="first_name">First Name</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_first" class="form-input" placeholder="Pangalan" data-i18n-placeholder="first_name_ph" data-no-numbers maxlength="50" required/>
           <span id="rf_first_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
         </div>
         <div>
-          <label class="form-label">Middle Name</label>
-          <input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-no-numbers maxlength="50"/>
+          <label class="form-label" data-i18n="middle_name">Middle Name</label>
+          <input type="text" id="rf_mid" class="form-input" placeholder="Gitnang Pangalan (optional)" data-i18n-placeholder="middle_name_ph" data-no-numbers maxlength="50"/>
           <span id="rf_mid_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="form-label">Date of Birth <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="dob">Date of Birth</span> <span class="text-red-500">*</span></label>
           <input type="date" id="rf_dob" class="form-input" data-no-future required/>
         </div>
         <div>
-          <label class="form-label">Sex <span class="text-red-500">*</span></label>
-          <select id="rf_sex" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Male</option><option>Female</option></select>
+          <label class="form-label"><span data-i18n="sex">Sex</span> <span class="text-red-500">*</span></label>
+          <select id="rf_sex" class="form-input" required><option value="" disabled selected hidden data-i18n="select_sex">-Select-</option><option data-i18n="male">Male</option><option data-i18n="female">Female</option></select>
         </div>
         <div>
-          <label class="form-label">Civil Status <span class="text-red-500">*</span></label>
-          <select id="rf_civil" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option></select>
+          <label class="form-label"><span data-i18n="civil_status">Civil Status</span> <span class="text-red-500">*</span></label>
+          <select id="rf_civil" class="form-input" required><option value="" disabled selected hidden data-i18n="select_civil_status">-Select-</option><option data-i18n="single">Single</option><option data-i18n="married">Married</option><option data-i18n="widowed">Widowed</option><option data-i18n="separated">Separated</option></select>
         </div>
         <div>
-          <label class="form-label">Nationality <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="nationality">Nationality</span> <span class="text-red-500">*</span></label>
           <input type="text" id="rf_nat" class="form-input" value="Filipino" maxlength="50" required/>
           <span id="rf_nat_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Zone / Purok <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="zone">Zone / Purok</span> <span class="text-red-500">*</span></label>
           <select id="rf_zone" class="form-input" required>
-            <option value="" disabled selected hidden>-Select-</option>
+            <option value="" disabled selected hidden data-i18n="select_zone">-Select-</option>
             <option value="Zone 1">Zone 1</option><option value="Zone 2">Zone 2</option>
             <option value="Zone 3">Zone 3</option><option value="Zone 4">Zone 4</option>
             <option value="Zone 5">Zone 5</option><option value="Zone 6">Zone 6</option>
@@ -287,19 +287,19 @@
           </select>
         </div>
         <div>
-          <label class="form-label">Street / House Address <span class="text-red-500">*</span></label>
-          <input type="text" id="rf_addr" class="form-input" placeholder="Blk, Lot, Street" maxlength="150" required/>
+          <label class="form-label"><span data-i18n="address">Street / House Address</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_addr" class="form-input" placeholder="Blk, Lot, Street" data-i18n-placeholder="address_ph" maxlength="150" required/>
           <span id="rf_addr_count" class="text-xs text-[#52796f] mt-1 text-right block">0/150</span>
         </div>
       </div>
       <div class="grid grid-cols-3 gap-4">
         <div>
-          <label class="form-label">Household No. <span class="text-red-500">*</span></label>
-          <input type="text" id="rf_hh" class="form-input" placeholder="HH-001" maxlength="20" required/>
+          <label class="form-label"><span data-i18n="household_no">Household No.</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_hh" class="form-input" placeholder="HH-001" data-i18n-placeholder="household_no_ph" maxlength="20" required/>
           <span id="rf_hh_count" class="text-xs text-[#52796f] mt-1 text-right block">0/20</span>
         </div>
         <div>
-          <label class="form-label">Contact Number <span class="text-red-500">*</span></label>
+          <label class="form-label"><span data-i18n="contact_no">Contact Number</span> <span class="text-red-500">*</span></label>
           <div class="flex items-center w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-3 py-2 focus-within:ring-1 focus-within:ring-[#1e4d36] transition-all">
             <span class="text-sm font-bold text-[#1e3a2b] select-none pr-2 border-r border-[#c6dfd4] mr-2">+63</span>
             <input 
@@ -316,25 +316,25 @@
           <span id="rf_contact_count" class="text-xs text-[#52796f] mt-1 text-right block">0/10</span>
         </div>
         <div>
-          <label class="form-label">Voter Status <span class="text-red-500">*</span></label>
-          <select id="rf_voter" class="form-input" required><option value="" disabled selected hidden>-Select-</option><option>Registered Voter</option><option>Not Registered</option><option>Deactivated</option></select>
+          <label class="form-label"><span data-i18n="voter_status">Voter Status</span> <span class="text-red-500">*</span></label>
+          <select id="rf_voter" class="form-input" required><option value="" disabled selected hidden data-i18n="voter_status">-Select-</option><option data-i18n="registered_voter">Registered Voter</option><option data-i18n="not_registered">Not Registered</option><option data-i18n="deactivated">Deactivated</option></select>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="form-label">Occupation <span class="text-red-500">*</span></label>
-          <input type="text" id="rf_occ" class="form-input" placeholder="e.g. Farmer, Teacher" data-no-numbers maxlength="50" required/>
+          <label class="form-label"><span data-i18n="occupation">Occupation</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="rf_occ" class="form-input" placeholder="e.g. Farmer, Teacher" data-i18n-placeholder="occupation_ph" data-no-numbers maxlength="50" required/>
           <span id="rf_occ_count" class="text-xs text-[#52796f] mt-1 text-right block">0/50</span>
         </div>
         <div>
-          <label class="form-label">Status <span class="text-red-500">*</span></label>
-          <select id="rf_status" class="form-input" required onchange="onRfStatusChange()"><option value="" disabled selected hidden>-Select-</option><option>Active</option><option>Deceased</option><option>Transferred</option></select>
-          <p id="rf_deceased_hint" class="text-xs text-forest-400 mt-1 hidden">Voter Status is automatically set to Deactivated for deceased residents.</p>
+          <label class="form-label"><span data-i18n="status">Status</span> <span class="text-red-500">*</span></label>
+          <select id="rf_status" class="form-input" required onchange="onRfStatusChange()"><option value="" disabled selected hidden data-i18n="status">-Select-</option><option data-i18n="active">Active</option><option data-i18n="deceased">Deceased</option><option data-i18n="transferred">Transferred</option></select>
+          <p id="rf_deceased_hint" class="text-xs text-forest-400 mt-1 hidden" data-i18n="deceased_hint">Voter Status is automatically set to Deactivated for deceased residents.</p>
         </div>
       </div>
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" onclick="closeModal('residentModal')" class="btn-secondary">Cancel</button>
-        <button type="button" onclick="saveResident()" class="btn-primary">Save Resident</button>
+        <button type="button" onclick="closeModal('residentModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
+        <button type="button" onclick="saveResident()" class="btn-primary" data-i18n="save_resident">Save Resident</button>
       </div>
     </form>
   </div>
@@ -342,11 +342,11 @@
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importCensusModal">
-  <div class="modal-box w-full max-w-[580px] p-0 rounded-3xl bg-white shadow-2xl relative overflow-hidden" id="importResidentModal" style="width: 580px; max-width: 92vw; padding: 0; border-radius: 1.5rem !important;">
+  <div class="modal-box bg-white rounded-2xl sm:rounded-3xl max-w-xl sm:max-w-2xl w-full p-0 shadow-2xl text-left flex flex-col justify-between transition-all relative overflow-hidden" id="importResidentModal" style="width: 680px; max-width: 94vw; padding: 0; border-radius: 1.5rem !important;">
     <!-- Modal Header -->
     <div class="relative px-6 py-5 border-b border-gray-200 flex items-center justify-center">
-      <h2 class="font-display text-2xl font-bold text-[#143525] text-center tracking-tight" style="font-family: 'Playfair Display', Georgia, serif;">Import Resident Data</h2>
-      <button type="button" onclick="closeCensusImportModal()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1.5 rounded-lg transition-colors focus:outline-none" title="Close" aria-label="Close modal">
+      <h2 class="font-display text-2xl font-bold text-[#143525] text-center tracking-tight" style="font-family: 'Playfair Display', Georgia, serif;" data-i18n="import_resident_title">Import Resident Data</h2>
+      <button type="button" onclick="closeCensusImportModal()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1.5 rounded-lg transition-colors focus:outline-none" title="Close" aria-label="Close modal" data-i18n-title="close">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -374,7 +374,7 @@
         </div>
 
         <!-- Primary text -->
-        <div class="text-[#2d3748] text-[15px] font-normal mb-4 max-w-[340px] mx-auto leading-snug pointer-events-none" id="importDropLabel">
+        <div class="text-[#2d3748] text-[15px] font-normal mb-4 max-w-[340px] sm:max-w-[420px] mx-auto leading-snug pointer-events-none" id="importDropLabel" data-i18n="drag_drop_text">
           Drag &amp; Drop CSV or Excel file (.xlsx, .xls) here or Click to upload
         </div>
 
@@ -386,11 +386,11 @@
           <svg class="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
           </svg>
-          <span>Browse Files</span>
+          <span data-i18n="browse_files_cap">Browse Files</span>
         </button>
 
         <!-- Hint text -->
-        <div class="text-xs text-gray-500 mt-3.5 pointer-events-none">
+        <div class="text-xs text-gray-500 mt-3.5 pointer-events-none" data-i18n="supported_files_census">
           Supported types: CSV, Excel (.xlsx, .xls)
         </div>
       </div>
@@ -400,24 +400,25 @@
     </div>
 
     <!-- Modal Footer Container (Left Download Link & Right Action Buttons) -->
-    <div class="w-full mt-6 pt-4 px-6 pb-4 border-t border-gray-100 flex flex-row items-center justify-between gap-4 bg-white" style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important;">
+    <div class="w-full mt-6 pt-4 px-4 sm:px-6 pb-4 border-t border-gray-100 flex flex-row items-center justify-between gap-3 sm:gap-4 bg-white" style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important;">
       <!-- FAR LEFT: Download Template Link -->
       <a href="/templates/census_resident_template.csv" download class="inline-flex items-center gap-1.5 text-xs text-gray-700 hover:text-[#1e3a2b] underline font-medium shrink-0 cursor-pointer" style="flex-shrink: 0 !important;">
         <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
-        <span>Download Resident Census Template (.csv)</span>
+        <span data-i18n="download_resident_template">Download Resident Census Template (.csv)</span>
       </a>
 
       <!-- FAR RIGHT: Action Buttons Group (Horizontal Row) -->
-      <div class="flex flex-row items-center gap-2.5 shrink-0" style="display: flex !important; flex-direction: row !important; align-items: center !important; flex-shrink: 0 !important; flex-wrap: nowrap !important;">
+      <div class="flex flex-row items-center gap-2 sm:gap-2.5 shrink-0" style="display: flex !important; flex-direction: row !important; align-items: center !important; flex-shrink: 0 !important; flex-wrap: nowrap !important;">
         <!-- Cancel Button -->
         <button 
           type="button" 
           id="cancelCensusImportBtn" 
           onclick="closeCensusImportModal()" 
-          class="px-5 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors shrink-0 cursor-pointer"
-          style="flex-shrink: 0 !important;">
+          class="px-4 sm:px-5 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors shrink-0 cursor-pointer"
+          style="flex-shrink: 0 !important;"
+          data-i18n="cancel">
           Cancel
         </button>
 
@@ -426,8 +427,9 @@
           type="button" 
           id="submitCensusImportBtn" 
           onclick="executeCensusImport()" 
-          class="px-5 py-2.5 bg-[#1e3a2b] hover:bg-[#152a1f] text-white text-xs font-semibold rounded-xl shadow-sm transition-colors shrink-0 cursor-pointer"
-          style="flex-shrink: 0 !important;">
+          class="px-4 sm:px-5 py-2.5 bg-[#1e3a2b] hover:bg-[#152a1f] text-white text-xs font-semibold rounded-xl shadow-sm transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+          style="flex-shrink: 0 !important; white-space: nowrap !important;"
+          data-i18n="import_data">
           Import Data
         </button>
       </div>
@@ -444,16 +446,16 @@
           <span data-icon="user" data-icon-size="18"></span>
         </div>
         <div>
-          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Resident Profile Details</h2>
+          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight" data-i18n="resident_profile_details">Resident Profile Details</h2>
           <p class="text-xs text-emerald-700 font-medium mt-0.5" id="resModalSubtitle">Resident ID: RES-2026-102</p>
         </div>
       </div>
-      <button onclick="closeModal('censusViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      <button onclick="closeModal('censusViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close" data-i18n-title="close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div id="resViewContent" class="space-y-3"></div>
     <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
       <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
-      <button type="button" onclick="closeModal('censusViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
+      <button type="button" onclick="closeModal('censusViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm" data-i18n="close">Close</button>
     </div>
   </div>
 </div>
@@ -1288,7 +1290,9 @@ function resetCensusImportModalState() {
   if (fileInput) fileInput.value = '';
   const label = document.getElementById('importDropLabel');
   if (label) {
-    label.innerHTML = 'Drag &amp; Drop CSV or Excel file (.xlsx, .xls) here or Click to upload';
+    const isFil = typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino';
+    const dict = window.i18n && window.i18n[isFil ? 'tl' : 'en'];
+    label.innerHTML = (dict && dict.drag_drop_text) || 'Drag &amp; Drop CSV or Excel file (.xlsx, .xls) here or Click to upload';
   }
   const status = document.getElementById('importStatus');
   if (status) status.innerHTML = '';
