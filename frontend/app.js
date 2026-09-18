@@ -340,13 +340,16 @@ const BC_TRANSLATIONS = {
     "Backup Schedule": "Iskedyul ng Backup",
     "Backup History": "Kasaysayan ng Backup",
     "Recent Generated Reports": "Kamakailang Nabuo na mga Ulat",
-    "Generate Report": "Bumuo ng Ulat",
+    "Generate Report": "Gumawa ng Ulat",
     "Scheduled Reports": "Naka-iskedyul na mga Ulat",
-    "Incident Summary Report": "Buod ng Ulat ng Insidente",
-    "Settlement Compliance Report": "Ulat ng Pagsunod sa Kasunduan",
+    "Incident Summary Report": "Ulat sa Buod ng Insidente",
+    "Settlement Compliance Report": "Ulat sa Pagtupad sa Kasunduan",
+    "Settlement Compliance": "Ulat sa Pagtupad sa Kasunduan",
     "Blotter Summary Report": "Buod ng Ulat ng Blotter",
-    "Trend Analysis Report": "Ulat ng Pagsusuri ng Trend",
-    "Predictive Risk Assessment": "Pagtataya ng Panganib (Predictive)",
+    "Trend Analysis Report": "Ulat sa Pagsusuri ng Trend",
+    "Predictive Risk Assessment": "Pagtatasa ng Inaasahang Panganib",
+    "Patrol Deployment Plan": "Plano ng Pagpapakalat ng Patrolya",
+    "Comparative Period Report": "Ulat sa Paghahambing ng Panahon",
 
     // Settings tabs
     "General": "Pangkalahatan",
@@ -370,18 +373,194 @@ const BC_TRANSLATIONS = {
     "Username": "Pangalan ng Gumagamit",
     "Role": "Tungkulin",
     "Full Name": "Buong Pangalan",
+    "First Name": "Pangalan",
+    "Last Name": "Apelyido",
+    "Middle Name": "Gitnang Pangalan",
+    "Date of Birth": "Araw ng Kapanganakan",
+    "Sex": "Kasarian",
+    "Civil Status": "Katayuang Sibil",
+    "Nationality": "Nasyonalidad",
+    "Zone / Purok": "Sona / Purok",
+    "Address": "Tirahan / Kalye",
+    "Street / House Address": "Tirahan / Kalye",
+    "Household No.": "Blg. ng Sambahayan",
     "Contact Number": "Numero ng Telepono",
+    "Contact No.": "Numero ng Telepono",
     "Email Address": "Email Address",
     "Account Status": "Katayuan ng Account",
     "Current Password": "Kasalukuyang Password",
     "New Password": "Bagong Password",
     "Confirm New Password": "Kumpirmahin ang Bagong Password",
+    "Temporary Password": "Pansamantalang Password",
+    "E-Signature": "E-Lagda",
     "Date From": "Petsa Mula",
     "Date To": "Petsa Hanggang",
     "Zone Filter": "Salain ayon sa Zone",
     "Export Format": "Format ng Pag-export",
+    "Period": "Panahon",
+    "Year": "Taon",
+    "Month": "Buwan",
+    "Docket No.": "Blg. ng Tala (Docket No.)",
+    "Date Filed": "Petsa ng Pagkakasampa",
+    "Name of Complainant": "Pangalan ng Nagrereklamo",
+    "Complainant Address": "Tirahan ng Nagrereklamo",
+    "Name of Respondent": "Pangalan ng Inirereklamo",
+    "Respondent Address": "Tirahan ng Inirereklamo",
+    "Nature of Case": "Uri ng Kaso",
+    "Type": "Uri",
+    "Report No.": "Blg. ng Ulat",
+    "Date Reported": "Petsa ng Pag-ulat",
+    "Time Reported": "Oras ng Pag-ulat",
+    "Location Detail": "Detalye ng Lokasyon",
+    "Category": "Kategorya",
+    "Priority Level": "Antas ng Priyoridad",
+    "Priority": "Priyoridad",
+    "Description": "Deskripsyon",
+    "Reporter Name": "Pangalan ng Nag-ulat",
+    "Reporter Address": "Tirahan ng Nag-ulat",
+    "Responding Officer": "Tumugong Opisyal",
+    "Case No.": "Blg. ng Kaso",
+    "Case Title": "Pamagat ng Kaso",
+    "Date of Initial Confrontation": "Petsa ng Unang Paghaharap",
+    "Action Taken": "Isinagawang Aksyon",
+    "Date of Settlement or Award": "Petsa ng Kasunduan o Gawad",
+    "Date of Execution": "Petsa ng Pagpapatupad",
+    "Officer-in-Charge / Conciliator": "Namamahala / Tagapamagitan",
+    "Main Point of Agreement / Settlement Terms": "Pangunahing Punto ng Kasunduan",
+    "Status of Compliance / Resolution": "Katayuan ng Pagsunod / Paglutas",
+    "Remarks": "Mga Tala / Puna",
+    "Purpose of Clearance": "Layunin ng Clearance",
+    "Purpose of Certificate": "Layunin ng Katibayan",
+    "O.R. Number": "Blg. ng O.R.",
+    "Amount Paid (₱)": "Halagang Binayaran (₱)",
+    "Duration of Residency": "Tagal ng Paninirahan",
+
+    // Modal Headers & Page Titles
+    "Import Resident Data": "Mag-import ng Datos ng Residente",
+    "Export Blotter Records": "I-export ang Tala ng Blotter",
+    "Export Blotter Record": "I-export ang Tala ng Blotter",
+    "Export Blotter Entry Record": "I-export ang Tala ng Entry sa Blotter",
+    "Export Settlement Monitoring": "I-export ang Pagsubaybay sa Settlement",
+    "Add Resident": "Magdagdag ng Residente",
+    "Edit Resident": "I-edit ang Residente",
+    "Import Blotter Data": "Mag-import ng Datos ng Blotter",
+    "New Incident Report": "Bagong Ulat ng Insidente",
+    "Edit Incident Report": "I-edit ang Ulat ng Insidente",
+    "Issue Barangay Clearance": "Mag-isyu ng Barangay Clearance",
+    "Issue Certificate of Residency": "Mag-isyu ng Katibayan ng Paninirahan",
+    "Issue Certificate of Non-Residency": "Mag-isyu ng Katibayan ng Di-Paninirahan",
+    "Issue Certificate of Indigency": "Mag-isyu ng Katibayan ng Kawalan ng Sapat na Kita",
+    "New Settlement Record": "Bagong Rekord ng Settlement",
+    "Edit Settlement Record": "I-edit ang Rekord ng Settlement",
+    "Add New User": "Magdagdag ng Bagong Gumagamit",
+    "Edit User": "I-edit ang Gumagamit",
+    "Blotter Record Details": "Mga Detalye ng Tala ng Blotter",
+    "Resident Profile Details": "Mga Detalye ng Profile ng Residente",
+    "Incident Report Details": "Mga Detalye ng Ulat ng Insidente",
+    "Settlement Hearing Details": "Mga Detalye ng Pagdinig sa Kasunduan",
+    "Elevate Incident to Official Blotter?": "Iakyat ang Insidente sa Opisyal na Blotter?",
+
+    // Dropdown Options
+    "All Records": "Lahat ng Tala",
+    "Specific Year": "Tiyak na Taon",
+    "Specific Month": "Tiyak na Buwan",
+    "All Status": "Lahat ng Katayuan",
+    "All Sex": "Lahat ng Kasarian",
+    "All Zones": "Lahat ng Zone",
+    "All Categories": "Lahat ng Kategorya",
+    "All Types": "Lahat ng Uri",
+    "All Priorities": "Lahat ng Priyoridad",
+    "All Roles": "Lahat ng Tungkulin",
+    "All Periods": "Lahat ng Panahon",
+    "-Select-": "-Pumili-",
+    "Male": "Lalaki",
+    "Female": "Babae",
+    "Single": "Walang Asawa",
+    "Married": "May Asawa",
+    "Widowed": "Balo",
+    "Separated": "Hiwalay",
+    "Registered Voter": "Rehistradong Botante",
+    "Not Registered": "Hindi Rehistrado",
+    "Deactivated": "Hindi Aktibo (Deactivated)",
+    "High": "Mataas",
+    "Medium": "Katamtaman",
+    "Low": "Mababa",
+    "Criminal": "Kriminal",
+    "Civil": "Sibil",
+    "Daily": "Araw-araw",
+    "Weekly": "Lingguhan",
+    "Monthly": "Buwanan",
+    "Quarterly": "Kada Tatlong Buwan",
+    "Annually": "Taunan",
+    "Today": "Ngayong Araw",
+    "This Week": "Ngayong Linggo",
+    "This Month": "Ngayong Buwan",
+    "This Quarter": "Ngayong Kwarter",
+    "This Year": "Ngayong Taon",
+
+    // Months (Dropdown & Display)
+    "January": "Enero",
+    "February": "Pebreo",
+    "March": "Marso",
+    "April": "Abril",
+    "May": "Mayo",
+    "June": "Hunyo",
+    "July": "Hulyo",
+    "August": "Agosto",
+    "September": "Setyembre",
+    "October": "Oktubre",
+    "November": "Nobyembre",
+    "December": "Disyembre",
+
+    // Table Column Headers
+    "Resident No.": "Blg. ng Residente",
+    "Name": "Pangalan",
+    "Age": "Edad",
+    "Actions": "Mga Aksyon",
+    "Complainant": "Nagrereklamo",
+    "Respondent": "Inirereklamo",
+    "Nature": "Uri ng Kaso",
+    "Date": "Petsa",
+    "Time": "Oras",
+    "Location": "Lokasyon",
+    "Reporter": "Nag-ulat",
+    "Officer": "Opisyal",
+    "Complaint Title": "Pamagat ng Reklamo",
+    "Status of Compliance": "Katayuan ng Pagsunod",
+    "User": "Gumagamit",
+    "Last Login": "Huling Pag-login",
+    "Timestamp": "Petsa at Oras",
+    "Details": "Mga Detalye",
+    "Module": "Modyul",
+    "Permission": "Pahintulot",
+    "Frequency": "Dalas",
+    "Next Run": "Susunod na Pagsasagawa",
+    "Recipients": "Mga Tagatanggap",
+    "Enabled": "Pinagana",
+    "Report Name": "Pangalan ng Ulat",
+    "Generated By": "Binuo Ni",
+    "Control No.": "Blg. ng Kontrol",
+    "Purpose": "Layunin",
+    "Date Issued": "Petsa ng Pag-isyu",
+    "OR No.": "Blg. ng O.R.",
+    "File": "File",
+    "Size": "Laki",
+    "By": "Ni",
+    "Zone": "Sona",
+    "Hotspot Probability": "Probabilidad ng Hotspot",
+    "Risk Level": "Antas ng Panganib",
+    "Predicted Top Category": "Inaasahang Pangunahing Kategorya",
+    "Peak Time Window": "Oras ng Pinakamataas na Insidente",
+    "Latitude": "Latitude",
+    "Longitude": "Longitude",
+    "Weight": "Bigat",
 
     // Buttons and actions
+    "Export to Excel": "I-export sa Excel",
+    "Import Data": "I-import ang Datos",
+    "Download": "I-download",
+    "View & Edit": "Tignan at Baguhin",
+    "Tingnan at I-edit": "Tignan at Baguhin",
     "Upload New Photo": "Mag-upload ng Bagong Larawan",
     "Remove": "Alisin",
     "Save Account Details": "I-save ang Detalye ng Account",
@@ -391,9 +570,9 @@ const BC_TRANSLATIONS = {
     "Save": "I-save",
     "Close": "Isara",
     "Edit": "I-edit",
-    "Delete": "Tanggalin",
+    "Delete": "Burahin",
+    "Tanggalin": "Burahin",
     "Preview": "Silipin",
-    "Download": "I-download",
     "Generate": "Bumuo",
     "Filter": "Salain",
     "Search": "Maghanap",
@@ -401,18 +580,102 @@ const BC_TRANSLATIONS = {
     "New Blotter Entry": "Bagong Tala sa Blotter",
     "Add User": "Magdagdag ng Gumagamit",
     "Import": "Mag-import",
+    "Permanent Delete": "Permanenteng Burahin",
+    "Permanently Delete": "Permanenteng Burahin",
+    "View Details": "Tingnan ang Detalye",
+    "Restore to Active": "Ibalik sa Aktibo",
+    "Archive": "I-archive",
+    "Activate": "I-activate",
+    "Suspend": "I-suspend",
+    "Elevate to Blotter": "Iakyat sa Blotter",
+    "Already Elevated": "Na-iakyat na sa Blotter",
+    "Switch Zone": "Lumipat ng Zone",
+    "Toggle Mini-Map": "I-toggle ang Mini-Map",
+    "Wide View": "Malawak na Tanaw",
+    "Geocode Location": "I-geocode ang Lokasyon",
+    "Browse files": "Mag-browse ng mga file",
+    "Browse Files": "Mag-browse ng mga File",
+    "Upload & Import": "I-upload at I-import",
+    "Save Resident": "I-save ang Residente",
+    "Save Entry": "I-save ang Tala",
+    "Save Report": "I-save ang Ulat",
+    "Save Record": "I-save ang Rekord",
+    "Save User": "I-save ang Gumagamit",
+    "Issue & Preview": "Mag-isyu at Silipin",
 
     // Badges & Statuses
     "Active": "Aktibo",
+    "ACTIVE": "AKTIBO",
     "Pending": "Nakabinbin",
+    "PENDING": "NAKABINBIN",
     "Resolved": "Nalutas",
+    "RESOLVED": "NALUTAS",
+    "Settled": "Napagkasunduan",
+    "SETTLED": "NAPAGKASUNDUAN",
     "Under Investigation": "Iniimbestigahan",
+    "UNDER INVESTIGATION": "INIIMBESTIGAHAN",
     "Dismissed": "Ibinalewala",
+    "DISMISSED": "IBINALEWALA",
     "Complied": "Nasunod",
+    "COMPLIED": "NASUNOD",
+    "Not Complied": "Hindi Nasunod",
+    "NOT COMPLIED": "HINDI NASUNOD",
     "Hearing Scheduled": "Nakatakda ang Pagdinig",
+    "HEARING SCHEDULED": "NAKATAKDA ANG PAGDINIG",
+    "Suspended": "Suspendido",
+    "SUSPENDED": "SUSPENDIDO",
+    "Inactive": "Hindi Aktibo",
+    "INACTIVE": "HINDI AKTIBO",
+    "Deceased": "Yumao",
+    "DECEASED": "YUMAO",
+    "Transferred": "Lumipat",
+    "TRANSFERRED": "LUMIPAT",
+    "Elevated": "Iniakyat",
+    "Elevated to Blotter": "Iniakyat sa Blotter",
+    "ELEVATED TO BLOTTER": "INIAKYAT SA BLOTTER",
+    "Closed": "Isinara",
+    "CLOSED": "ISINARA",
+    "Protected": "Protektado",
+    "PROTECTED": "PROTEKTADO",
+    "SENIOR": "SENIOR",
+    "MALE": "LALAKI",
+    "FEMALE": "BABAE",
     "All Zones": "Lahat ng Zone",
     "PDF Document": "Dokumentong PDF",
     "Excel / CSV": "Excel / CSV",
+    "PDF Only": "PDF LAMANG",
+    "PDF ONLY": "PDF LAMANG",
+    "Next Monday": "Susunod na Lunes",
+    "1st of month": "Unang araw ng buwan",
+    "All incidents in a selected date range with category and status breakdown.": "Lahat ng insidente sa napiling saklaw ng petsa na may breakdown ng kategorya at katayuan.",
+    "Zone-level risk forecast with patrol deployment recommendations.": "Pagtataya ng panganib sa antas ng sona na may mga rekomendasyon sa pagpapakalat ng patrolya.",
+    "Recommended patrol schedules by zone, time, and risk level.": "Inirerekomendang mga iskedyul ng patrolya ayon sa sona, oras, at antas ng panganib.",
+    "Historical patterns, seasonal trends, and category comparisons.": "Mga historikal na pattern, pana-panahong trend, at paghahambing ng kategorya.",
+    "Status of all active settlement agreements and compliance tracking.": "Katayuan ng lahat ng aktibong kasunduan sa settlement at pagsubaybay sa pagsunod.",
+    "Side-by-side comparison of two date ranges (e.g. Q1 vs Q2).": "Paghahambing ng dalawang saklaw ng petsa (hal. Q1 laban sa Q2).",
+    "All Statuses": "Lahat ng Status",
+    "View Archived": "Tignan ang Naka-arkibo",
+    "View Active": "Tignan ang Aktibo",
+    "records": "mga tala",
+    "Showing": "Ipinapakita ang",
+    "of": "ng",
+    "‹ Prev": "‹ Nakalipas",
+    "‹ Previous": "‹ Nakalipas",
+    "Next ›": "Susunod ›",
+    "Report": "Ulat",
+
+    // Audit actions & badges
+    "CREATED": "GINAWA",
+    "Created": "GINAWA",
+    "DELETED": "BINURA",
+    "Deleted": "BINURA",
+    "UPDATED": "INUPDATE",
+    "Updated": "INUPDATE",
+    "LOGIN": "NAG-LOGIN",
+    "Login": "NAG-LOGIN",
+    "Action": "KILOS",
+    "ACTION": "KILOS",
+    "action": "KILOS",
 
     // Common Messages
     "Barangay details successfully saved and updated.": "Matagumpay na na-save at na-update ang mga detalye ng barangay.",
@@ -427,20 +690,301 @@ const BC_TRANSLATIONS = {
     "Please enter a valid email address.": "Mangyaring maglagay ng wastong email address.",
     "Full Name is required.": "Kailangan ang Buong Pangalan.",
     "Username is required.": "Kailangan ang Pangalan ng Gumagamit.",
-    "Contact Number is required.": "Kailangan ang Numero ng Telepono."
+    "Contact Number is required.": "Kailangan ang Numero ng Telepono.",
+
+    // Dashboard & Global Headers
+    "Search records (Case ID, name, date)…": "Maghanap ng tala (Case ID, pangalan, petsa...)",
+    "Search records (Case ID, name, date)...": "Maghanap ng tala (Case ID, pangalan, petsa...)",
+    "Search users…": "Maghanap ng guma-gamit...",
+    "Search users...": "Maghanap ng guma-gamit...",
+    "Welcome back! Here's today's overview.": "Maligayang pagbabalik! Narito ang buod ngayong araw.",
+
+    // Stat Cards & Metrics
+    "Total Blotters": "Kabuuan ng Blotter",
+    "blotter entries on file": "mga tala ng blotter sa file",
+    "Incident Reports": "Mga Ulat ng Insidente",
+    "New this week": "Bago ngayong linggo",
+    "Pending Settlement": "Nakahimlay sa Pag-aayos",
+    "awaiting settlement": "naghihintay ng pag-aayos",
+    "Awaiting settlement": "Naghihintay ng pag-aayos",
+    "Resolved Cases": "Mga Resolbadong Kaso",
+    "resolved": "resolbado",
+    "RISK FORECAST": "PREDIKSYON NG PANGANIB",
+    "Risk Forecast": "Prediksyon ng Panganib",
+    "View This Week's Zone Risk Rankings": "Tignan ang Antas ng Panganib sa Bawat Zone Ngayong Linggo",
+    "View This Week's\nZone Risk Rankings": "Tignan ang Antas ng Panganib sa Bawat Zone Ngayong Linggo",
+    "Model-predicted hotspots by zone →": "Mga inaasahang hotspot ayon sa zone →",
+
+    // Quick Actions & Headers
+    "Manage all barangay blotter records": "Pamahalaan ang lahat ng tala ng blotter sa barangay",
+    "Recent Blotter Entries": "Mga Huling Tala ng Blotter",
+    "Resolution Rate": "Antas ng Pagresolba",
+    "View All →": "Tignan Lahat →",
+    "Quick Actions": "Mabilis na Aksyon",
+    "Blotter Records": "Mga Tala ng Blotter",
+    "Blotter\nRecords": "Mga Tala ng Blotter",
+    "New Incident Report": "Bagong Ulat ng Insidente",
+    "New Incident\nReport": "Bagong Ulat ng Insidente",
+    "Monitor Settlement": "Subaybayan ang Pag-aayos",
+    "Monitor\nSettlement": "Subaybayan ang Pag-aayos",
+    "Import Census CSV": "Mag-import ng Census CSV",
+    "Import\nCensus CSV": "Mag-import ng Census CSV",
+    "Users & Roles": "Mga Gumagamit at Tungkulin",
+    "Users &\nRoles": "Mga Gumagamit at Tungkulin",
+
+    // Role Permission Matrix
+    "Role Permission Matrix": "Talahanayan ng Pahintulot ng Tungkulin",
+    "Permission": "Pahintulot",
+    "System Admin": "Tagapamahala ng Sistema",
+    "SYSTEM ADMIN": "TAGAPAMAHALA NG SISTEMA",
+    "Barangay Captain": "Punong Barangay",
+    "BARANGAY CAPTAIN": "PUNONG BARANGAY",
+    "Desk Officer": "Desk Officer",
+    "DESK OFFICER": "DESK OFFICER",
+    "Data Encoder": "Data Encoder",
+    "DATA ENCODER": "DATA ENCODER",
+    "View All Records": "Tignan ang Lahat ng Tala",
+    "Add Blotter Entry": "Magdagdag ng Entry sa Blotter",
+    "Edit Any Record": "Baguhin ang Anumang Tala",
+    "Delete Records": "Burahin ang mga Tala",
+    "Archive Records": "I-arkibo ang mga Tala",
+    "Generate Reports": "Gumawa ng mga Ulat",
+    "View Analytics": "Tignan ang Analytics",
+    "Manage Users": "Pamahalaan ang mga Gumagamit",
+    "Retrain ML Model": "I-retrain ang Modelong ML",
+    "Import CSV/Excel": "Mag-import ng CSV/Excel",
+    "System Settings": "Mga Setting ng Sistema",
+
+    // System Badges & Headings
+    "Protected": "Protektado",
+    "System Users": "Mga Gumagamit ng Sistema",
+
+    // Incident Reports Page
+    "Log and track all reported incidents in the barangay": "I-tala at subaybayan ang lahat ng inulat na insidente sa barangay",
+    "Total Reports": "Kabuuan ng Ulat",
+    "incident logs on record": "mga tala ng insidente sa rekord",
+    "High Priority": "Mataas na Priyoridad",
+    "urgent attention required": "kailangang aksyunan agad",
+    "Under Investigation": "Kasalukuyang Inimbestigahan",
+    "in progress by officers": "inaaksyunan ng mga opisyal",
+    "Referred": "Isinangguni / Naireselba",
+    "referred to blotter & lupon": "isinangguni sa blotter at lupon",
+    "Search report no., location, reporter…": "Maghanap ng no. ng ulat, lokasyon, nag-ulat...",
+    "Search report no., location, reporter...": "Maghanap ng no. ng ulat, lokasyon, nag-ulat...",
+
+    // Settlement / Compliance Monitoring Page
+    "Monitoring of Compliance to Settlement or Award": "Pagsubaybay sa Pagtupad sa Pag-aayos o Gawad",
+    "Track and manage settlement agreements and compliance status": "Subaybayan at pamahalaan ang mga kasunduan sa pag-aayos at katayuan ng pagtupad",
+    "Total Cases": "Kabuuan ng Kaso",
+    "Complied": "Nakatupad",
+    "Not Complied": "Hindi Nakatupad",
+    "Add Settlement Record": "Magdagdag ng Tala ng Pag-aayos",
+    "+ Add Settlement Record": "+ Magdagdag ng Tala ng Pag-aayos",
+    "Settlement Records": "Mga Tala ng Pag-aayos",
+    "Search case no., title…": "Maghanap ng no. ng kaso, pamagat...",
+    "Search case no., title...": "Maghanap ng no. ng kaso, pamagat...",
+
+    // Barangay Census Page
+    "Barangay Census": "Sensus ng Barangay",
+    "Official list of registered residents of Barangay Mapulang Lupa": "Opisyal na talaan ng mga nakatatalang residente ng Barangay Mapulang Lupa",
+    "Total Residents": "Kabuuan ng Residente",
+    "registered in barangay": "nakatala sa barangay",
+    "Total Households": "Kabuuan ng Kaya-bahayan",
+    "indexed residences": "nakatalang mga tahanan",
+    "Registered Voters": "Rehistradong Botante",
+    "active precinct voters": "mga aktibong botante sa presinto",
+    "Senior Citizens": "Mga Senior Citizen",
+    "60+ years & special care": "60+ taong gulang at nangangailangan ng tanging pangangalaga",
+    "Resident Records": "Mga Tala ng Residente",
+    "Search name, address…": "Maghanap ng pangalan, tirahan...",
+    "Search name, address...": "Maghanap ng pangalan, tirahan...",
+    "Add Resident": "Magdagdag ng Residente",
+    "+ Add Resident": "+ Magdagdag ng Residente",
+
+    // Barangay Clearance Page
+    "Barangay Clearance": "Barangay Clearance",
+    "Issue and manage barangay clearance certificates": "Mag-isyu at pamahalaan ang mga sertipiko ng barangay clearance",
+    "Issue New Clearance": "Mag-isyu ng Bagong Clearance",
+    "+ Issue New Clearance": "+ Mag-isyu ng Bagong Clearance",
+    "Issued This Month": "Nai-isyu Ngayong Buwan",
+    "Total This Year": "Kabuuan Ngayong Taon",
+    "Revenue (Fees)": "Kikita / Halaga (Bayad)",
+    "Issuance Log": "Talaan ng Pag-iisyu",
+    "Certificate Preview": "Pasilip sa Sertipiko",
+    "Print": "I-print",
+
+    // Trends & Comparative Analytics
+    "Trends & Comparative Analytics": "Mga Trend at Paghahambing ng Analitika",
+    "Incident-to-blotter elevation, Lupon settlement rates, and spatial performance": "Pagtataas mula insidente patungong blotter, antas ng pag-aayos sa Lupon, at pagganap ng bawat lugar",
+    "Total Incidents": "Kabuuan ng mga Insidente",
+    "Peak Month": "Buwan na may Pinakamataas na Bilang",
+    "Highest incident volume": "May pinakamataas na bilang ng insidente",
+    "All field incident logs": "Lahat ng tala ng insidente sa larangan",
+    "Settlement Rate": "Antas ng Pagkakasundo / Pag-aayos",
+    "Amicably resolved cases": "Mapayapang naresolbang mga kaso",
+    "Elevated to Blotter": "Iniakyat sa Blotter",
+    "Official docketed cases": "Opisyal na naitalang mga kaso",
+    "Monthly Comparative Pipeline": "Paghahambing ng Daloy Kada Buwan",
+    "Field Incidents vs. Elevated Blotter Cases vs. Resolved": "Mga Insidente sa Larangan vs. Iniakyat sa Blotter vs. Naresolba",
+    "Elevated Blotters": "Iniakyat sa Blotter",
+    "Category Severity": "Antas ng Lahi/Kategorya ng Insidente",
+    "Incidents & Elevation Distribution": "Pamamahagi ng mga Insidente at Pag-aakyat ng Kaso",
+    "Zonal Elevation & Settlement Matrix": "Matris ng Pag-aakyat at Pagkakasundo Bawat Sona",
+    "Administrative Zone 1 to Zone 7 comparative performance": "Paghahambing ng pagganap ng Sona 1 hanggang Sona 7",
+    "7 Official Administrative Zones": "7 Opisyal na Sonang Pampangasiwaan",
+    "ZONE / SUBSTATION": "SONA / SUBSTATION",
+    "Zone / Substation": "SONA / SUBSTATION",
+    "TOTAL INCIDENTS": "KABUAN NG INSIDENTE",
+    "ELEVATED TO BLOTTER": "INIAKYAT SA BLOTTER",
+    "ELEVATION RATE": "ANTAS NG PAG-AAKYAT SA BLOTTER",
+    "Elevation Rate": "ANTAS NG PAG-AAKYAT SA BLOTTER",
+    "RESOLVED CASES": "NARESOLBANG MGA KASO",
+    "Resolved Cases": "NARESOLBANG MGA KASO",
+    "STATUS": "KALAGAYAN / STATUS",
+    "Status": "KALAGAYAN / STATUS",
+    "STABLE CONTROL": "MAAYOS NA KONTROL",
+    "Stable Control": "MAAYOS NA KONTROL",
+    "HIGH ELEVATION": "MATAAS NA PAG-AAKYAT",
+    "High Elevation": "MATAAS NA PAG-AAKYAT",
+    "Incidents by Day of Week": "Mga Insidente Ayon sa Araw ng Linggo",
+    "Weekly occurrence distribution": "Pamamahagi ng paglitaw kada linggo",
+    "Top Incident Categories": "Mga Nangungunang Kategorya ng Insidente",
+    "Ranked by volume": "PinaSunod-sunod ayon sa dami",
+
+    // Predictive Insights
+    "Predictive Insights": "Mga Pahiwatig at Hula ng AI",
+    "ML-based incident risk forecasting by zone, time, and category": "Paghula ng panganib ng insidente gamit ang Machine Learning batay sa sona, oras, at kategorya",
+    "Loading latest insights...": "Ikinakarga ang pinakabagong pahiwatig...",
+    "Loading latest insights…": "Ikinakarga ang pinakabagong pahiwatig...",
+    "Retrain Model": "Muling Sanayin ang Modelo (Retrain)",
+    "INCIDENT OCCURRENCE": "Pagkakaroon ng Insidente",
+    "INCIDENT TYPE": "Uri ng Insidente",
+    "HOTSPOT RISK": "Panganib sa Hotspot",
+    "Incident Occurrence": "Pagkakaroon ng Insidente",
+    "Incident Type": "Uri ng Insidente",
+    "Hotspot Risk": "Panganib sa Hotspot",
+    "Accuracy": "Katumpakan",
+    "F1 Score": "F1 Score",
+    "Showing {from} to {to} of {total} incidents": "Ipinapakita ang {from} hanggang {to} sa {total} na insidente",
+    "7-Day Forecast — Expected Incidents": "Hula para sa 7 Araw — Inaasahang mga Insidente",
+    "High Risk Zones": "Mga Sonang Mataas ang Panganib",
+    "Moderate Risk Zones": "Mga Sonang Katamtaman ang Panganib",
+    "Low Risk Zones": "Mga Sonang Mababa ang Panganib",
+    "All Zones (1 - 7)": "Lahat ng Sona (1 - 7)",
+    "Next 7 Days": "Susunod na 7 Araw",
+    "Next 14 Days": "Susunod na 14 Araw",
+    "Patrol Recommendations": "Mga Inirerekomendang Pagpapatrolya",
+    "Category Forecast by Zone": "Hula ng Kategorya Bawat Sona",
+    "Expected incidents per day, broken down by category, for the selected zone": "Inaasahang insidente bawat araw, na nakahimay ayon sa kategorya, para sa napiling sona",
+    "Predicted Incident Risk by Zone": "Inaasahang Panganib ng Insidente Bawat Sona",
+    "Hotspot Probability": "PROBABILIDAD NG HOTSPOT",
+    "Expected Incidents (7d)": "INAASAHANG MGA INSIDENTE (7 ARAW)",
+    "Risk Level": "ANTAS NG PANGANIB",
+    "Predicted Top Category": "INAASAHANG PANGUNAHING KATEGORYA",
+    "Peak Time Window": "ORAS NG PINAKAMATAAS NA INSIDENTE",
+    "14-Day Trend": "TREND SA LOOB NG 14 ARAW",
+
+    // System & Audit Settings
+    "Manage personnel accounts, roles, and access permissions": "Pamahalaan ang mga account ng tauhan, papel (roles), at pahintulot sa pag-access",
+    "Recent Audit Log": "Kamakailang Talaan ng Pagsusuri (Audit Log)",
+    "Generate, schedule, and download formatted reports": "Gumawa, mag-iskedyul, at mag-download ng mga naka-pormat na ulat",
+
+    // [DATA MANAGEMENT & EXPORT]
+    "Data Management": "Pamamahala ng Data",
+    "All records are stored in the PostgreSQL blottercast database. Records added on the Blotter and Incident pages automatically feed the Heat Map, Trends, and the Python ML Predictions module.": "Ang lahat ng tala ay nakaimbak sa PostgreSQL blottercast database. Ang mga talang idinadagdag sa mga pahina ng Blotter at Incident ay awtomatikong nagpapakain sa Heat Map, Trends, at Python ML Predictions module.",
+    "Reset Demo Dataset": "I-reset ang Sample na Data",
+    "Export Records (JSON)": "I-export ang mga Tala (JSON)",
+
+    // [ALERTS & NOTIFICATIONS]
+    "Trigger alert when predicted risk exceeds this value.": "Magpadala ng babala kapag ang inaasahang panganib ay lumampas sa halagang ito.",
+    "Alert when new incidents exceed this count in 24 hours.": "Magpadala ng babala kapag ang mga bagong insidente ay lumampas sa bilang na ito sa loob ng 24 oras.",
+    "In-App Notifications": "Mga Notification sa App",
+    "Show alerts in the notification center": "Ipakita ang mga babala sa notification center",
+    "Model Retraining Alerts": "Mga Babala sa Muling Pagsasanay ng Modelo",
+    "Notify when ML model retraining completes": "Magbigay-alam kapag natapos ang muling pagsasanay ng ML model",
+
+    // [SECURITY & PASSWORD RULES]
+    "PASSWORD MUST CONTAIN:": "ANG PASSWORD AY DAPAT NAGLALAMAN NG:",
+    "At least 6 characters long": "Hindi bababa sa 6 na character",
+    "At least 1 uppercase letter (A–Z)": "Hindi bababa sa 1 malaking titik (A–Z)",
+    "At least 1 uppercase letter (A-Z)": "Hindi bababa sa 1 malaking titik (A–Z)",
+    "At least 1 lowercase letter (a–z)": "Hindi bababa sa 1 maliit na titik (a–z)",
+    "At least 1 lowercase letter (a-z)": "Hindi bababa sa 1 maliit na titik (a–z)",
+    "At least 1 number (0–9)": "Hindi bababa sa 1 numero (0–9)",
+    "At least 1 number (0-9)": "Hindi bababa sa 1 numero (0–9)",
+    "At least 1 special character (e.g., !@#$%^&*)": "Hindi bababa sa 1 espesyal na karakter (hal. !@#$%^&*)",
+    "Security Tip": "Tip sa Seguridad",
+    "NEVER REUSE PASSWORDS ACROSS MULTIPLE SYSTEMS": "HUWAG KAILANMAN GAMITIN ANG PAREHONG PASSWORD SA IBANG SYSTEM",
+
+    // [DISPLAY & AUTHENTICATION SETTINGS]
+    "Display Preferences": "Mga Kagustuhan sa Display",
+    "System Time Format": "Format ng Oras ng System",
+    "12-Hour (hh:mm A) (e.g. 01:45 PM)": "12-Oras (hh:mm A) (hal. 01:45 PM)",
+    "Security & Authentication": "Seguridad at Pagpapatunay",
+    "Admin Master Control": "Pangunahing Kontrol ng Admin",
+    "Enforce 2FA for All Accounts": "Ipatupad ang 2FA sa Lahat ng Account",
+    "Require Two-Factor Authentication across all roles during login.": "Hilingin ang Two-Factor Authentication sa lahat ng papel sa pag-login.",
+    "Session Inactivity Auto-Logout (2 Hours)": "Awtomatikong Pag-logout kapag Walang Gawain (2 Oras)",
+    "Automatically logs out inactive users after 120 minutes of inactivity.": "Awtomatikong nilog-out ang mga user na walang activity pagkaraan ng 120 minuto.",
+    "Policy Thresholds & Password Rules": "Mga Patakaran at Tuntunin sa Password",
+    "Inactivity Timeout Duration (minutes)": "Tagal bago i-Logout kapag walang Gawain (minuto)",
+    "Default: 120 minutes (2 hours).": "Default: 120 minuto (2 oras).",
+    "Max Failed Login Attempts": "Pinakamataas na Subok ng Maling Login",
+    "Minimum Password Length": "Pinakamaikling Haba ng Password",
+    "Password Expiry (days)": "Pagpasa ng Password (araw)",
+    "Data Privacy": "Privacy ng Data",
+    "Audit Trail Logging": "Pagtatala ng Audit Trail",
+    "Log all data changes, logins, and report exports": "Itala ang lahat ng pagbabago sa data, pag-login, at pag-export ng ulat",
+    "Data Subject Rights Module": "Module para sa Karapatan sa Data Privacy",
+    "Allow data access/correction requests from data subjects": "Payagan ang kahilingan sa pag-access o pagwawasto ng data mula sa mga indibidwal",
+
+    // [BACKUP & RECOVERY]
+    "Automated Backup": "Awtomatikong Backup",
+    "Backup Frequency": "Dalas ng Backup",
+    "Backup Time": "Oras ng Backup",
+    "Backup Destination": "Pupuntahan ng Backup",
+    "Retain Backups For (days)": "Itabi ang Backup ng (mga araw)",
+    "Backups are scheduled and executed autonomously by the backend server worker in Asia/Manila standard time (UTC+8).": "Ang mga backup ay naka-iskedyul at awtomatikong isinasagawa ng backend server worker batay sa Asia/Manila standard time (UTC+8).",
+    "Perform Backup Now": "Magsagawa ng Backup Ngayon",
+    "Run Backup Now": "Magsagawa ng Backup Ngayon",
+    "Recovery Objectives": "Mga Layunin sa Pagbawi (Recovery)",
+    "Recovery Time Objective (RTO)": "Target na Oras ng Pagbawi (RTO)",
+    "Maximum acceptable downtime after failure.": "Pinakamatagal na katanggap-tanggap na pagtigil ng system pagkatapos ng pagkasira.",
+    "Recovery Point Objective (RPO)": "Target na Halaga ng Nawalang Data (RPO)",
+    "Maximum acceptable data loss window.": "Pinakamataas na katanggap-tanggap na saklaw ng nawalang data.",
+    "Backup History": "Kasaysayan ng Backup",
+
+    // [MODALS & DIALOGS]
+    "Log Out": "Mag-log Out",
+    "Are you sure you want to log out?": "Sigurado ka bang gusto mong mag-log out?",
+    "Cancel": "Kanselahin",
+
+    // Categories
+    "Theft": "Pagnanakaw",
+    "Public Disturbance": "Pambubulahaw sa Publiko",
+    "Physical Assault": "Pananakit / Pag-atake",
+    "Vandalism": "Pambaboy ng Ari-arian (Vandalism)",
+    "Trespassing": "Panghihimasok (Trespassing)",
+    "Domestic Dispute": "Alitan sa Pamamahay (Domestic Dispute)",
+    "Vehicular Accident": "Aksidente sa Sasakyan",
+    "Drug-Related Activity": "Aktibidad Kaugnay ng Droga"
   }
 };
 
 const i18n = {
   en: {
-    // General Actions & Controls
+    // Common Actions
     cancel: "Cancel",
+    import_data: "Import Data",
+    export_excel: "Export to Excel",
+    download: "Download",
+    view_edit: "View & Edit",
+    delete: "Delete",
     close: "Close",
     save: "Save",
     save_changes: "Save Changes",
     confirm: "Confirm",
     submit: "Submit",
-    delete: "Delete",
     permanent_delete: "Permanent Delete",
     back: "Back",
     next: "Next",
@@ -450,11 +994,50 @@ const i18n = {
     replace: "Replace",
     browse_files: "Browse files",
     browse_files_cap: "Browse Files",
-    import_data: "Import Data",
     upload_import: "Upload & Import",
     processing: "Processing...",
     please_wait: "Please wait...",
     done: "Done",
+
+    // Modal Headers & Labels
+    import_resident_title: "Import Resident Data",
+    export_blotter_title: "Export Blotter Records",
+    period_label: "Period",
+    year_label: "Year",
+    month_label: "Month",
+
+    // Dropdown Options
+    period_all: "All Records",
+    period_year: "Specific Year",
+    period_month: "Specific Month",
+
+    month_jan: "January",
+    month_feb: "February",
+    month_mar: "March",
+    month_apr: "April",
+    month_may: "May",
+    month_jun: "June",
+    month_jul: "July",
+    month_aug: "August",
+    month_sep: "September",
+    month_oct: "October",
+    month_nov: "November",
+    month_dec: "December",
+
+    months: {
+      jan: "January",
+      feb: "February",
+      mar: "March",
+      apr: "April",
+      may: "May",
+      jun: "June",
+      jul: "July",
+      aug: "August",
+      sep: "September",
+      oct: "October",
+      nov: "November",
+      dec: "December"
+    },
 
     // Census Import Modal
     import_resident_title: "Import Resident Data",
@@ -666,7 +1249,7 @@ const i18n = {
     destructive_removal: "Destructive Account Removal",
     type_delete_confirm: "TYPE DELETE TO CONFIRM",
 
-    // Reports Modal
+    // Reports Modal & Page Controls
     generate_report_title: "Generate Report",
     date_from: "Date From",
     date_to: "Date To",
@@ -675,17 +1258,349 @@ const i18n = {
     export_format: "Export Format",
     pdf_document: "PDF Document",
     preview: "Preview",
-    generate: "Generate"
+    generate: "Generate",
+    scheduled_reports_title: "Scheduled Reports",
+    recent_generated_reports_title: "Recent Generated Reports",
+    badge_pdf_only: "PDF Only",
+    report_card_incident_summary_title: "Incident Summary Report",
+    report_card_incident_summary_desc: "All incidents in a selected date range with category and status breakdown.",
+    report_card_predictive_risk_title: "Predictive Risk Assessment",
+    report_card_predictive_risk_desc: "Zone-level risk forecast with patrol deployment recommendations.",
+    report_card_patrol_deployment_title: "Patrol Deployment Plan",
+    report_card_patrol_deployment_desc: "Recommended patrol schedules by zone, time, and risk level.",
+    report_card_trend_analysis_title: "Trend Analysis Report",
+    report_card_trend_analysis_desc: "Historical patterns, seasonal trends, and category comparisons.",
+    report_card_settlement_compliance_title: "Settlement Compliance Report",
+    report_card_settlement_compliance_desc: "Status of all active settlement agreements and compliance tracking.",
+    report_card_comparative_period_title: "Comparative Period Report",
+    report_card_comparative_period_desc: "Side-by-side comparison of two date ranges (e.g. Q1 vs Q2).",
+    th_report: "Report",
+    th_frequency: "Frequency",
+    th_next_run: "Next Run",
+    th_recipients: "Recipients",
+    th_format: "Format",
+    th_enabled: "Enabled",
+    th_report_name: "Report Name",
+    th_generated_by: "Generated By",
+    th_date: "Date",
+    th_period: "Period",
+    th_actions: "Actions",
+    all_statuses: "All Statuses",
+    view_archived: "View Archived",
+    view_active: "View Active",
+    prev_label: "‹ Prev",
+    next_label: "Next ›",
+    action: "Action",
+    actions: "Actions",
+    th_timestamp: "Timestamp",
+    th_user: "User",
+    th_module: "Module",
+    th_details: "Details",
+    created_action: "CREATED",
+    deleted_action: "DELETED",
+    updated_action: "UPDATED",
+    login_action: "LOGIN",
+
+    // Dashboard & Global Headers
+    search_records_placeholder: "Search records (Case ID, name, date)…",
+    search_users_placeholder: "Search users…",
+    welcome_overview: "Welcome back! Here's today's overview.",
+
+    // Card Metrics & Sub-labels
+    total_blotters: "Total Blotters",
+    blotter_entries_on_file: "blotter entries on file",
+    incident_reports: "Incident Reports",
+    new_this_week: "New this week",
+    pending_settlement: "Pending Settlement",
+    awaiting_settlement: "awaiting settlement",
+    awaiting_settlement_cap: "Awaiting settlement",
+    resolved_cases: "Resolved Cases",
+    resolved_lowercase: "resolved",
+    risk_forecast: "RISK FORECAST",
+    risk_rankings_title: "View This Week's Zone Risk Rankings",
+    risk_hotspots_desc: "Model-predicted hotspots by zone →",
+
+    // Quick Actions & Section Headers
+    manage_blotter_records: "Manage all barangay blotter records",
+    recent_blotter_entries: "Recent Blotter Entries",
+    resolution_rate: "Resolution Rate",
+    view_all_arrow: "View All →",
+    quick_actions: "Quick Actions",
+    quick_blotter_records: "Blotter Records",
+    quick_new_incident: "New Incident Report",
+    quick_monitor_settlement: "Monitor Settlement",
+    quick_generate_report: "Generate Report",
+    quick_import_census: "Import Census CSV",
+    quick_users_roles: "Users & Roles",
+
+    // Role Permission Matrix
+    role_permission_matrix: "Role Permission Matrix",
+    th_permission: "Permission",
+    role_col_admin: "SYSTEM ADMIN",
+    role_col_captain: "BARANGAY CAPTAIN",
+    role_col_officer: "DESK OFFICER",
+    role_col_encoder: "DATA ENCODER",
+    perm_view_all_records: "View All Records",
+    perm_add_blotter_entry: "Add Blotter Entry",
+    perm_edit_any_record: "Edit Any Record",
+    perm_delete_records: "Delete Records",
+    perm_archive_records: "Archive Records",
+    perm_generate_reports: "Generate Reports",
+    perm_view_analytics: "View Analytics",
+    perm_manage_users: "Manage Users",
+    perm_retrain_ml_model: "Retrain ML Model",
+    perm_import_csv_excel: "Import CSV/Excel",
+    perm_system_settings: "System Settings",
+
+    // Badges & Headings
+    protected: "Protected",
+    system_users: "System Users",
+
+    // Barangay Census
+    barangay_census: "Barangay Census",
+    census_description: "Official list of registered residents of Barangay Mapulang Lupa",
+    add_resident: "+ Add Resident",
+    total_residents: "Total Residents",
+    registered_in_barangay: "registered in barangay",
+    total_households: "Total Households",
+    indexed_residences: "indexed residences",
+    registered_voters: "Registered Voters",
+    active_precinct_voters: "active precinct voters",
+    senior_citizens: "Senior Citizens",
+    senior_care_sub: "60+ years & special care",
+    resident_records: "Resident Records",
+    search_name_address_placeholder: "Search name, address…",
+
+    // Incident Reports
+    incident_description: "Log and track all reported incidents in the barangay",
+    total_reports: "Total Reports",
+    incident_logs_on_record: "incident logs on record",
+    high_priority: "High Priority",
+    urgent_attention_required: "urgent attention required",
+    under_investigation: "Under Investigation",
+    in_progress_by_officers: "in progress by officers",
+    referred_status: "Referred",
+    referred_to_blotter_lupon: "referred to blotter & lupon",
+    search_incident_placeholder: "Search report no., location, reporter…",
+
+    // Settlement / Compliance Monitoring
+    settlement_monitoring_title: "Monitoring of Compliance to Settlement or Award",
+    settlement_monitoring_desc: "Track and manage settlement agreements and compliance status",
+    total_cases: "Total Cases",
+    status_pending: "Pending",
+    status_complied: "Complied",
+    status_not_complied: "Not Complied",
+    add_settlement_record: "+ Add Settlement Record",
+    settlement_records: "Settlement Records",
+    search_settlement_placeholder: "Search case no., title…",
+
+    // Barangay Clearance
+    barangay_clearance: "Barangay Clearance",
+    clearance_description: "Issue and manage barangay clearance certificates",
+    issue_new_clearance: "+ Issue New Clearance",
+    issued_this_month: "Issued This Month",
+    total_this_year: "Total This Year",
+    revenue_fees: "Revenue (Fees)",
+    issuance_log: "Issuance Log",
+    certificate_preview: "Certificate Preview",
+    print: "Print",
+    search_clearance_placeholder: "Search…",
+
+    // Other Certificates
+    certificate_of_residency: "Certificate of Residency",
+    residency_description: "Issue and manage certificates of residency",
+    issue_new_certificate: "+ Issue New Certificate",
+    search_residency_placeholder: "Search…",
+    certificate_of_non_residency: "Certificate of Non-Residency",
+    non_residency_description: "Issue and manage certificates of non-residency",
+    search_non_residency_placeholder: "Search…",
+    certificate_of_indigency: "Certificate of Indigency",
+    indigency_description: "Issue certificates for financially indigent residents",
+    issue_certificate: "+ Issue Certificate",
+    common_purpose: "Common Purpose",
+    search_indigency_placeholder: "Search…",
+
+    // Heat Map
+    incident_heat_map: "Incident Heat Map",
+    heatmap_subtitle: "Map boundary overlay of Mapulang Lupa, Pandi, Bulacan",
+    period_all_time: "All Time",
+    period_this_month: "This Month",
+    period_this_week: "This Week",
+    show_incident_markers: "Show Incident Markers",
+    mapulang_lupa_heat_map: "Mapulang Lupa Heat Map",
+    visual_density_desc: "Visual density of reported incidents across Barangay Mapulang Lupa zones",
+    zone_density_label: "Zone Density:",
+    density_low: "Low",
+    density_medium: "Medium",
+    density_elevated: "Elevated",
+    density_high: "High",
+    badge_barangay: "Barangay:",
+    badge_municipality: "Municipality:",
+    badge_source: "Source:",
+    badge_boundary_file: "Boundary file:",
+    summary: "Summary",
+    visible_incidents: "Visible Incidents",
+    top_category: "Top Category",
+    category_breakdown: "Category Breakdown",
+    incident_location_summary: "Incident Location Summary",
+    incident_location_summary_desc: "Only incidents inside the loaded barangay boundary are displayed on the map canvas",
+    search_heatmap_placeholder: "Search by ID, location, category, or reporter...",
+    all_zones: "All Zones (7 Zones)",
+    all_categories: "All Categories",
+
+    notifications: "Notifications",
+    mark_all_read: "Mark all read",
+    loading_notifications: "Loading notifications…",
+    no_notifications: "No notifications yet.",
+    notif_error: "Could not load notifications.",
+
+    // Pagination
+    showing_zero_incidents: "Showing 0 to 0 of 0 incidents",
+
+    // Trends & Comparative Analytics
+    trends_comparative_analytics: "Trends & Comparative Analytics",
+    trends_subtitle: "Incident-to-blotter elevation, Lupon settlement rates, and spatial performance",
+    total_incidents_metric: "Total Incidents",
+    peak_month: "Peak Month",
+    highest_incident_volume: "Highest incident volume",
+    all_field_incident_logs: "All field incident logs",
+    settlement_rate: "Settlement Rate",
+    amicably_resolved_cases: "Amicably resolved cases",
+    elevated_to_blotter: "Elevated to Blotter",
+    official_docketed_cases: "Official docketed cases",
+    monthly_comparative_pipeline: "Monthly Comparative Pipeline",
+    monthly_pipeline_desc: "Field Incidents vs. Elevated Blotter Cases vs. Resolved",
+    elevated_blotters: "Elevated Blotters",
+    category_severity: "Category Severity",
+    category_distribution: "Incidents & Elevation Distribution",
+    zonal_matrix_title: "Zonal Elevation & Settlement Matrix",
+    zonal_matrix_subtitle: "Administrative Zone 1 to Zone 7 comparative performance",
+    official_admin_zones: "7 Official Administrative Zones",
+    th_zone_substation: "ZONE / SUBSTATION",
+    th_total_incidents: "TOTAL INCIDENTS",
+    th_elevated_to_blotter: "ELEVATED TO BLOTTER",
+    th_elevation_rate: "ELEVATION RATE",
+    th_resolved_cases: "RESOLVED CASES",
+    th_status_col: "STATUS",
+    incidents_by_day_of_week: "Incidents by Day of Week",
+    weekly_occurrence_distribution: "Weekly occurrence distribution",
+    top_incident_categories: "Top Incident Categories",
+    ranked_by_volume: "Ranked by volume",
+    stable_control: "STABLE CONTROL",
+    high_elevation: "HIGH ELEVATION",
+
+    // Predictive Insights
+    predictive_insights: "Predictive Insights",
+    predictive_insights_desc: "ML-based incident risk forecasting by zone, time, and category",
+    loading_latest_insights: "Loading latest insights...",
+    retrain_model_btn: "Retrain Model",
+    incident_occurrence_task: "INCIDENT OCCURRENCE",
+    incident_type_task: "INCIDENT TYPE",
+    hotspot_risk_task: "HOTSPOT RISK",
+    accuracy_metric: "Accuracy",
+    f1_score_metric: "F1 Score",
+    forecast_expected_incidents: "7-Day Forecast — Expected Incidents",
+    high_risk_zones: "High Risk Zones",
+    moderate_risk_zones: "Moderate Risk Zones",
+    low_risk_zones: "Low Risk Zones",
+    all_zones_1_7: "All Zones (1 - 7)",
+    next_7_days: "Next 7 Days",
+    next_14_days: "Next 14 Days",
+    patrol_recommendations: "Patrol Recommendations",
+    category_forecast_by_zone: "Category Forecast by Zone",
+    category_forecast_desc: "Expected incidents per day, broken down by category, for the selected zone",
+    predicted_risk_by_zone: "Predicted Incident Risk by Zone",
+    th_pred_zone: "SONA",
+    th_pred_hotspot: "PROBABILIDAD NG HOTSPOT",
+    th_pred_expected: "EXPECTED INCIDENTS (7D)",
+    th_pred_risk: "ANTAS NG PANGANIB",
+    th_pred_top_cat: "INAASAHANG PANGUNAHING KATEGORYA",
+    th_pred_peak_time: "ORAS NG PINAKAMATAAS NA INSIDENTE",
+    th_pred_trend: "14-DAY TREND",
+
+    // System & Audit Settings
+    manage_personnel_accounts: "Manage personnel accounts, roles, and access permissions",
+    recent_audit_log: "Recent Audit Log",
+    generate_reports_subtitle: "Generate, schedule, and download formatted reports",
+
+    // [DATA MANAGEMENT & EXPORT]
+    data_management: "Data Management",
+    data_management_desc: "All records are stored in the PostgreSQL blottercast database. Records added on the Blotter and Incident pages automatically feed the Heat Map, Trends, and the Python ML Predictions module.",
+    reset_demo_dataset: "Reset Demo Dataset",
+    export_records_json: "Export Records (JSON)",
+
+    // [ALERTS & NOTIFICATIONS]
+    trigger_alert_risk_desc: "Trigger alert when predicted risk exceeds this value.",
+    alert_spike_desc: "Alert when new incidents exceed this count in 24 hours.",
+    in_app_notifications: "In-App Notifications",
+    show_alerts_desc: "Show alerts in the notification center",
+    model_retraining_alerts: "Model Retraining Alerts",
+    notify_retrain_desc: "Notify when ML model retraining completes",
+
+    // [SECURITY & PASSWORD RULES]
+    password_must_contain: "PASSWORD MUST CONTAIN:",
+    rule_len: "At least 6 characters long",
+    rule_upper: "At least 1 uppercase letter (A–Z)",
+    rule_lower: "At least 1 lowercase letter (a–z)",
+    rule_num: "At least 1 number (0–9)",
+    rule_special: "At least 1 special character (e.g., !@#$%^&*)",
+    security_tip: "Security Tip",
+    security_tip_desc: "NEVER REUSE PASSWORDS ACROSS MULTIPLE SYSTEMS",
+
+    // [DISPLAY & AUTHENTICATION SETTINGS]
+    display_preferences: "Display Preferences",
+    system_time_format: "System Time Format",
+    time_format_12h: "12-Hour (hh:mm A) (e.g. 01:45 PM)",
+    security_and_authentication: "Security & Authentication",
+    admin_master_control: "Admin Master Control",
+    enforce_2fa_all_accounts: "Enforce 2FA for All Accounts",
+    require_2fa_desc: "Require Two-Factor Authentication across all roles during login.",
+    session_inactivity_auto_logout: "Session Inactivity Auto-Logout (2 Hours)",
+    auto_logout_desc: "Automatically logs out inactive users after 120 minutes of inactivity.",
+    policy_thresholds_password_rules: "Policy Thresholds & Password Rules",
+    inactivity_timeout_duration: "Inactivity Timeout Duration (minutes)",
+    default_timeout_desc: "Default: 120 minutes (2 hours).",
+    max_failed_logins: "Max Failed Login Attempts",
+    min_password_length: "Minimum Password Length",
+    password_expiry_days: "Password Expiry (days)",
+    data_privacy: "Data Privacy",
+    audit_trail_logging: "Audit Trail Logging",
+    log_data_changes_desc: "Log all data changes, logins, and report exports",
+    data_subject_rights_module: "Data Subject Rights Module",
+    data_subject_rights_desc: "Allow data access/correction requests from data subjects",
+
+    // [BACKUP & RECOVERY]
+    automated_backup: "Automated Backup",
+    backup_frequency: "Backup Frequency",
+    backup_time: "Backup Time",
+    backup_destination: "Backup Destination",
+    retain_backups_days: "Retain Backups For (days)",
+    backups_scheduled_desc: "Backups are scheduled and executed autonomously by the backend server worker in Asia/Manila standard time (UTC+8).",
+    perform_backup_now: "Perform Backup Now",
+    recovery_objectives: "Recovery Objectives",
+    recovery_time_objective: "Recovery Time Objective (RTO)",
+    rto_desc: "Maximum acceptable downtime after failure.",
+    recovery_point_objective: "Recovery Point Objective (RPO)",
+    rpo_desc: "Maximum acceptable data loss window.",
+    backup_history: "Backup History",
+
+    // [MODALS & DIALOGS]
+    log_out: "Log Out",
+    confirm_logout_message: "Are you sure you want to log out?"
   },
   tl: {
-    // General Actions & Controls
+    // Common Actions
     cancel: "Kanselahin",
+    import_data: "Mag-import",
+    export_excel: "I-export sa Excel",
+    download: "I-download",
+    view_edit: "Tignan at Baguhin",
+    delete: "Burahin",
     close: "Isara",
     save: "I-save",
     save_changes: "I-save ang mga Pagbabago",
     confirm: "Kumpirmahin",
     submit: "Isumite",
-    delete: "Burahin",
     permanent_delete: "Permanenteng Burahin",
     back: "Bumalik",
     next: "Susunod",
@@ -695,11 +1610,50 @@ const i18n = {
     replace: "Palitan",
     browse_files: "Mag-browse ng mga file",
     browse_files_cap: "Mag-browse ng mga File",
-    import_data: "I-import ang Datos",
     upload_import: "I-upload at I-import",
     processing: "Pinoproseso...",
     please_wait: "Mangyaring maghintay...",
     done: "Tapos na",
+
+    // Modal Headers & Labels
+    import_resident_title: "Mag-import ng Datos ng Residente",
+    export_blotter_title: "I-export ang Tala ng Blotter",
+    period_label: "Panahon",
+    year_label: "Taon",
+    month_label: "Buwan",
+
+    // Dropdown Options
+    period_all: "Lahat ng Tala",
+    period_year: "Tiyak na Taon",
+    period_month: "Tiyak na Buwan",
+
+    month_jan: "Enero",
+    month_feb: "Pebreo",
+    month_mar: "Marso",
+    month_apr: "Abril",
+    month_may: "Mayo",
+    month_jun: "Hunyo",
+    month_jul: "Hulyo",
+    month_aug: "Agosto",
+    month_sep: "Setyembre",
+    month_oct: "Oktubre",
+    month_nov: "Nobyembre",
+    month_dec: "Disyembre",
+
+    months: {
+      jan: "Enero",
+      feb: "Pebreo",
+      mar: "Marso",
+      apr: "Abril",
+      may: "Mayo",
+      jun: "Hunyo",
+      jul: "Hulyo",
+      aug: "Agosto",
+      sep: "Setyembre",
+      oct: "Oktubre",
+      nov: "Nobyembre",
+      dec: "Disyembre"
+    },
 
     // Census Import Modal
     import_resident_title: "Mag-import ng Datos ng Residente",
@@ -911,8 +1865,8 @@ const i18n = {
     destructive_removal: "Mapangwasak na Pag-alis ng Account",
     type_delete_confirm: "I-TYPE ANG DELETE PARA KUMFIRMAHIN",
 
-    // Reports Modal
-    generate_report_title: "Bumuo ng Ulat",
+    // Reports Modal & Page Controls
+    generate_report_title: "Gumawa ng Ulat",
     date_from: "Mula sa Petsa",
     date_to: "Hanggang sa Petsa",
     zone_filter: "Salain ayon sa Sona",
@@ -920,7 +1874,335 @@ const i18n = {
     export_format: "Format ng Pag-export",
     pdf_document: "Dokumentong PDF",
     preview: "Silipin",
-    generate: "Bumuo"
+    generate: "Bumuo",
+    scheduled_reports_title: "Naka-iskedyul na mga Ulat",
+    recent_generated_reports_title: "Kamakailang Nabuo na mga Ulat",
+    badge_pdf_only: "PDF LAMANG",
+    report_card_incident_summary_title: "Ulat sa Buod ng Insidente",
+    report_card_incident_summary_desc: "Lahat ng insidente sa napiling saklaw ng petsa na may breakdown ng kategorya at katayuan.",
+    report_card_predictive_risk_title: "Pagtatasa ng Inaasahang Panganib",
+    report_card_predictive_risk_desc: "Pagtataya ng panganib sa antas ng sona na may mga rekomendasyon sa pagpapakalat ng patrolya.",
+    report_card_patrol_deployment_title: "Plano ng Pagpapakalat ng Patrolya",
+    report_card_patrol_deployment_desc: "Inirerekomendang mga iskedyul ng patrolya ayon sa sona, oras, at antas ng panganib.",
+    report_card_trend_analysis_title: "Ulat sa Pagsusuri ng Trend",
+    report_card_trend_analysis_desc: "Mga historikal na pattern, pana-panahong trend, at paghahambing ng kategorya.",
+    report_card_settlement_compliance_title: "Ulat sa Pagtupad sa Kasunduan",
+    report_card_settlement_compliance_desc: "Katayuan ng lahat ng aktibong kasunduan sa settlement at pagsubaybay sa pagsunod.",
+    report_card_comparative_period_title: "Ulat sa Paghahambing ng Panahon",
+    report_card_comparative_period_desc: "Paghahambing ng dalawang saklaw ng petsa (hal. Q1 laban sa Q2).",
+    th_report: "Ulat",
+    th_frequency: "Dalas",
+    th_next_run: "Susunod na Pagsasagawa",
+    th_recipients: "Mga Tagatanggap",
+    th_format: "Format",
+    th_enabled: "Pinagana",
+    th_report_name: "Pangalan ng Ulat",
+    th_generated_by: "Binuo Ni",
+    th_date: "Petsa",
+    th_period: "Panahon",
+    th_actions: "Mga Aksyon",
+    all_statuses: "Lahat ng Status",
+    view_archived: "Tignan ang Naka-arkibo",
+    view_active: "Tignan ang Aktibo",
+    prev_label: "‹ Nakalipas",
+    next_label: "Susunod ›",
+    action: "KILOS",
+    actions: "Mga Aksyon",
+    th_timestamp: "Petsa at Oras",
+    th_user: "Gumagamit",
+    th_module: "Modyul",
+    th_details: "Mga Detalye",
+    created_action: "GINAWA",
+    deleted_action: "BINURA",
+    updated_action: "INUPDATE",
+    login_action: "NAG-LOGIN",
+
+    // Dashboard & Global Headers
+    search_records_placeholder: "Maghanap ng tala (Case ID, pangalan, petsa...)",
+    search_users_placeholder: "Maghanap ng guma-gamit...",
+    welcome_overview: "Maligayang pagbabalik! Narito ang buod ngayong araw.",
+
+    // Card Metrics & Sub-labels
+    total_blotters: "Kabuuan ng Blotter",
+    blotter_entries_on_file: "mga tala ng blotter sa file",
+    incident_reports: "Mga Ulat ng Insidente",
+    new_this_week: "Bago ngayong linggo",
+    pending_settlement: "Nakahimlay sa Pag-aayos",
+    awaiting_settlement: "naghihintay ng pag-aayos",
+    awaiting_settlement_cap: "Naghihintay ng pag-aayos",
+    resolved_cases: "Mga Resolbadong Kaso",
+    resolved_lowercase: "resolbado",
+    risk_forecast: "PREDIKSYON NG PANGANIB",
+    risk_rankings_title: "Tignan ang Antas ng Panganib sa Bawat Zone Ngayong Linggo",
+    risk_hotspots_desc: "Mga inaasahang hotspot ayon sa zone →",
+
+    // Quick Actions & Section Headers
+    manage_blotter_records: "Pamahalaan ang lahat ng tala ng blotter sa barangay",
+    recent_blotter_entries: "Mga Huling Tala ng Blotter",
+    resolution_rate: "Antas ng Pagresolba",
+    view_all_arrow: "Tignan Lahat →",
+    quick_actions: "Mabilis na Aksyon",
+    quick_blotter_records: "Mga Tala ng Blotter",
+    quick_new_incident: "Bagong Ulat ng Insidente",
+    quick_monitor_settlement: "Subaybayan ang Pag-aayos",
+    quick_generate_report: "Gumawa ng Ulat",
+    quick_import_census: "Mag-import ng Census CSV",
+    quick_users_roles: "Mga Gumagamit at Tungkulin",
+
+    // Role Permission Matrix
+    role_permission_matrix: "Talahanayan ng Pahintulot ng Tungkulin",
+    th_permission: "Pahintulot",
+    role_col_admin: "TAGAPAMAHALA NG SISTEMA",
+    role_col_captain: "PUNONG BARANGAY",
+    role_col_officer: "DESK OFFICER",
+    role_col_encoder: "DATA ENCODER",
+    perm_view_all_records: "Tignan ang Lahat ng Tala",
+    perm_add_blotter_entry: "Magdagdag ng Entry sa Blotter",
+    perm_edit_any_record: "Baguhin ang Anumang Tala",
+    perm_delete_records: "Burahin ang mga Tala",
+    perm_archive_records: "I-arkibo ang mga Tala",
+    perm_generate_reports: "Gumawa ng mga Ulat",
+    perm_view_analytics: "Tignan ang Analytics",
+    perm_manage_users: "Pamahalaan ang mga Gumagamit",
+    perm_retrain_ml_model: "I-retrain ang Modelong ML",
+    perm_import_csv_excel: "Mag-import ng CSV/Excel",
+    perm_system_settings: "Mga Setting ng Sistema",
+
+    // Badges & Headings
+    protected: "Protektado",
+    system_users: "Mga Gumagamit ng Sistema",
+
+    // Barangay Census
+    barangay_census: "Sensus ng Barangay",
+    census_description: "Opisyal na talaan ng mga nakatatalang residente ng Barangay Mapulang Lupa",
+    add_resident: "+ Magdagdag ng Residente",
+    total_residents: "Kabuuan ng Residente",
+    registered_in_barangay: "nakatala sa barangay",
+    total_households: "Kabuuan ng Kaya-bahayan",
+    indexed_residences: "nakatalang mga tahanan",
+    registered_voters: "Rehistradong Botante",
+    active_precinct_voters: "mga aktibong botante sa presinto",
+    senior_citizens: "Mga Senior Citizen",
+    senior_care_sub: "60+ taong gulang at nangangailangan ng tanging pangangalaga",
+    resident_records: "Mga Tala ng Residente",
+    search_name_address_placeholder: "Maghanap ng pangalan, tirahan...",
+
+    // Incident Reports
+    incident_description: "I-tala at subaybayan ang lahat ng inulat na insidente sa barangay",
+    total_reports: "Kabuuan ng Ulat",
+    incident_logs_on_record: "mga tala ng insidente sa rekord",
+    high_priority: "Mataas na Priyoridad",
+    urgent_attention_required: "kailangang aksyunan agad",
+    under_investigation: "Kasalukuyang Inimbestigahan",
+    in_progress_by_officers: "inaaksyunan ng mga opisyal",
+    referred_status: "Isinangguni / Naireselba",
+    referred_to_blotter_lupon: "isinangguni sa blotter at lupon",
+    search_incident_placeholder: "Maghanap ng no. ng ulat, lokasyon, nag-ulat...",
+
+    // Settlement / Compliance Monitoring
+    settlement_monitoring_title: "Pagsubaybay sa Pagtupad sa Pag-aayos o Gawad",
+    settlement_monitoring_desc: "Subaybayan at pamahalaan ang mga kasunduan sa pag-aayos at katayuan ng pagtupad",
+    total_cases: "Kabuuan ng Kaso",
+    status_pending: "Naghihintay",
+    status_complied: "Nakatupad",
+    status_not_complied: "Hindi Nakatupad",
+    add_settlement_record: "+ Magdagdag ng Tala ng Pag-aayos",
+    settlement_records: "Mga Tala ng Pag-aayos",
+    search_settlement_placeholder: "Maghanap ng no. ng kaso, pamagat...",
+
+    // Barangay Clearance
+    barangay_clearance: "Barangay Clearance",
+    clearance_description: "Mag-isyu at pamahalaan ang mga sertipiko ng barangay clearance",
+    issue_new_clearance: "+ Mag-isyu ng Bagong Clearance",
+    issued_this_month: "Nai-isyu Ngayong Buwan",
+    total_this_year: "Kabuuan Ngayong Taon",
+    revenue_fees: "Kikita / Halaga (Bayad)",
+    issuance_log: "Talaan ng Pag-iisyu",
+    certificate_preview: "Pasilip sa Sertipiko",
+    print: "I-print",
+    search_clearance_placeholder: "Maghanap…",
+
+    // Other Certificates
+    certificate_of_residency: "Katibayan ng Paninirahan",
+    residency_description: "Mag-isyu at pamahalaan ang mga katibayan ng paninirahan",
+    issue_new_certificate: "+ Mag-isyu ng Bagong Sertipiko",
+    search_residency_placeholder: "Maghanap…",
+    certificate_of_non_residency: "Katibayan ng Di-Paninirahan",
+    non_residency_description: "Mag-isyu at pamahalaan ang mga katibayan ng di-paninirahan",
+    search_non_residency_placeholder: "Maghanap…",
+    certificate_of_indigency: "Katibayan ng Kawalan ng Sapat na Kita",
+    indigency_description: "Mag-isyu ng mga katibayan para sa kapus-palad na mga residente",
+    issue_certificate: "+ Mag-isyu ng Sertipiko",
+    common_purpose: "Karaniwang Layunin",
+    search_indigency_placeholder: "Maghanap…",
+
+    // Heat Map
+    incident_heat_map: "Mapa ng Insidente",
+    heatmap_subtitle: "Overlay ng hangganan ng mapa ng Mapulang Lupa, Pandi, Bulacan",
+    period_all_time: "Lahat ng Panahon",
+    period_this_month: "Ngayong Buwan",
+    period_this_week: "Ngayong Linggo",
+    show_incident_markers: "Ipakita ang mga Marker ng Insidente",
+    mapulang_lupa_heat_map: "Heat Map ng Mapulang Lupa",
+    visual_density_desc: "Bísuwal na densidad ng mga inulat na insidente sa mga zone ng Barangay Mapulang Lupa",
+    zone_density_label: "Densidad ng Zone:",
+    density_low: "Mababa",
+    density_medium: "Katamtaman",
+    density_elevated: "Mataas-taas",
+    density_high: "Mataas",
+    badge_barangay: "Barangay:",
+    badge_municipality: "Bayan:",
+    badge_source: "Pinagmulan:",
+    badge_boundary_file: "File ng Hangganan:",
+    summary: "Buod",
+    visible_incidents: "Nakikitang mga Insidente",
+    top_category: "Nangungunang Kategorya",
+    category_breakdown: "Paghahati ng Kategorya",
+    incident_location_summary: "Buod ng Lokasyon ng Insidente",
+    incident_location_summary_desc: "Tanging ang mga insidente sa loob ng hangganan ng barangay ang ipinapakita sa mapa",
+    search_heatmap_placeholder: "Maghanap gamit ang ID, lokasyon, kategorya, o nag-ulat...",
+    all_zones: "Lahat ng Zone (7 Zones)",
+    all_categories: "Lahat ng Kategorya",
+
+    notifications: "Mga Abiso",
+    mark_all_read: "Markahan lahat na nabasa",
+    loading_notifications: "Kinakarga ang mga abiso…",
+    no_notifications: "Wala pang mga abiso.",
+    notif_error: "Hindi maikarga ang mga abiso.",
+
+    // Pagination
+    showing_zero_incidents: "Ipinapakita ang 0 hanggang 0 sa 0 na insidente",
+
+    // Trends & Comparative Analytics
+    trends_comparative_analytics: "Mga Trend at Paghahambing ng Analitika",
+    trends_subtitle: "Pagtataas mula insidente patungong blotter, antas ng pag-aayos sa Lupon, at pagganap ng bawat lugar",
+    total_incidents_metric: "Kabuuan ng mga Insidente",
+    peak_month: "Buwan na may Pinakamataas na Bilang",
+    highest_incident_volume: "May pinakamataas na bilang ng insidente",
+    all_field_incident_logs: "Lahat ng tala ng insidente sa larangan",
+    settlement_rate: "Antas ng Pagkakasundo / Pag-aayos",
+    amicably_resolved_cases: "Mapayapang naresolbang mga kaso",
+    elevated_to_blotter: "Iniakyat sa Blotter",
+    official_docketed_cases: "Opisyal na naitalang mga kaso",
+    monthly_comparative_pipeline: "Paghahambing ng Daloy Kada Buwan",
+    monthly_pipeline_desc: "Mga Insidente sa Larangan vs. Iniakyat sa Blotter vs. Naresolba",
+    elevated_blotters: "Iniakyat sa Blotter",
+    category_severity: "Antas ng Lahi/Kategorya ng Insidente",
+    category_distribution: "Pamamahagi ng mga Insidente at Pag-aakyat ng Kaso",
+    zonal_matrix_title: "Matris ng Pag-aakyat at Pagkakasundo Bawat Sona",
+    zonal_matrix_subtitle: "Paghahambing ng pagganap ng Sona 1 hanggang Sona 7",
+    official_admin_zones: "7 Opisyal na Sonang Pampangasiwaan",
+    th_zone_substation: "SONA / SUBSTATION",
+    th_total_incidents: "KABUAN NG INSIDENTE",
+    th_elevated_to_blotter: "INIAKYAT SA BLOTTER",
+    th_elevation_rate: "ANTAS NG PAG-AAKYAT SA BLOTTER",
+    th_resolved_cases: "NARESOLBANG MGA KASO",
+    th_status_col: "KALAGAYAN / STATUS",
+    incidents_by_day_of_week: "Mga Insidente Ayon sa Araw ng Linggo",
+    weekly_occurrence_distribution: "Pamamahagi ng paglitaw kada linggo",
+    top_incident_categories: "Mga Nangungunang Kategorya ng Insidente",
+    ranked_by_volume: "PinaSunod-sunod ayon sa dami",
+    stable_control: "MAAYOS NA KONTROL",
+    high_elevation: "MATAAS NA PAG-AAKYAT",
+
+    // Predictive Insights
+    predictive_insights: "Mga Pahiwatig at Hula ng AI",
+    predictive_insights_desc: "Paghula ng panganib ng insidente gamit ang Machine Learning batay sa sona, oras, at kategorya",
+    loading_latest_insights: "Ikinakarga ang pinakabagong pahiwatig...",
+    retrain_model_btn: "Muling Sanayin ang Modelo (Retrain)",
+    incident_occurrence_task: "Pagkakaroon ng Insidente",
+    incident_type_task: "Uri ng Insidente",
+    hotspot_risk_task: "Panganib sa Hotspot",
+    accuracy_metric: "Katumpakan",
+    f1_score_metric: "F1 Score",
+    forecast_expected_incidents: "Hula para sa 7 Araw — Inaasahang mga Insidente",
+    high_risk_zones: "Mga Sonang Mataas ang Panganib",
+    moderate_risk_zones: "Mga Sonang Katamtaman ang Panganib",
+    low_risk_zones: "Mga Sonang Mababa ang Panganib",
+    all_zones_1_7: "Lahat ng Sona (1 - 7)",
+    next_7_days: "Susunod na 7 Araw",
+    next_14_days: "Susunod na 14 Araw",
+    patrol_recommendations: "Mga Inirerekomendang Pagpapatrolya",
+    category_forecast_by_zone: "Hula ng Kategorya Bawat Sona",
+    category_forecast_desc: "Inaasahang insidente bawat araw, na nakahimay ayon sa kategorya, para sa napiling sona",
+    predicted_risk_by_zone: "Inaasahang Panganib ng Insidente Bawat Sona",
+    th_pred_zone: "SONA",
+    th_pred_hotspot: "PROBABILIDAD NG HOTSPOT",
+    th_pred_expected: "INAASAHANG MGA INSIDENTE (7 ARAW)",
+    th_pred_risk: "ANTAS NG PANGANIB",
+    th_pred_top_cat: "INAASAHANG PANGUNAHING KATEGORYA",
+    th_pred_peak_time: "ORAS NG PINAKAMATAAS NA INSIDENTE",
+    th_pred_trend: "TREND SA LOOB NG 14 ARAW",
+
+    // System & Audit Settings
+    manage_personnel_accounts: "Pamahalaan ang mga account ng tauhan, papel (roles), at pahintulot sa pag-access",
+    recent_audit_log: "Kamakailang Talaan ng Pagsusuri (Audit Log)",
+    generate_reports_subtitle: "Gumawa, mag-iskedyul, at mag-download ng mga naka-pormat na ulat",
+
+    // [DATA MANAGEMENT & EXPORT]
+    data_management: "Pamamahala ng Data",
+    data_management_desc: "Ang lahat ng tala ay nakaimbak sa PostgreSQL blottercast database. Ang mga talang idinadagdag sa mga pahina ng Blotter at Incident ay awtomatikong nagpapakain sa Heat Map, Trends, at Python ML Predictions module.",
+    reset_demo_dataset: "I-reset ang Sample na Data",
+    export_records_json: "I-export ang mga Tala (JSON)",
+
+    // [ALERTS & NOTIFICATIONS]
+    trigger_alert_risk_desc: "Magpadala ng babala kapag ang inaasahang panganib ay lumampas sa halagang ito.",
+    alert_spike_desc: "Magpadala ng babala kapag ang mga bagong insidente ay lumampas sa bilang na ito sa loob ng 24 oras.",
+    in_app_notifications: "Mga Notification sa App",
+    show_alerts_desc: "Ipakita ang mga babala sa notification center",
+    model_retraining_alerts: "Mga Babala sa Muling Pagsasanay ng Modelo",
+    notify_retrain_desc: "Magbigay-alam kapag natapos ang muling pagsasanay ng ML model",
+
+    // [SECURITY & PASSWORD RULES]
+    password_must_contain: "ANG PASSWORD AY DAPAT NAGLALAMAN NG:",
+    rule_len: "Hindi bababa sa 6 na character",
+    rule_upper: "Hindi bababa sa 1 malaking titik (A–Z)",
+    rule_lower: "Hindi bababa sa 1 maliit na titik (a–z)",
+    rule_num: "Hindi bababa sa 1 numero (0–9)",
+    rule_special: "Hindi bababa sa 1 espesyal na karakter (hal. !@#$%^&*)",
+    security_tip: "Tip sa Seguridad",
+    security_tip_desc: "HUWAG KAILANMAN GAMITIN ANG PAREHONG PASSWORD SA IBANG SYSTEM",
+
+    // [DISPLAY & AUTHENTICATION SETTINGS]
+    display_preferences: "Mga Kagustuhan sa Display",
+    system_time_format: "Format ng Oras ng System",
+    time_format_12h: "12-Oras (hh:mm A) (hal. 01:45 PM)",
+    security_and_authentication: "Seguridad at Pagpapatunay",
+    admin_master_control: "Pangunahing Kontrol ng Admin",
+    enforce_2fa_all_accounts: "Ipatupad ang 2FA sa Lahat ng Account",
+    require_2fa_desc: "Hilingin ang Two-Factor Authentication sa lahat ng papel sa pag-login.",
+    session_inactivity_auto_logout: "Awtomatikong Pag-logout kapag Walang Gawain (2 Oras)",
+    auto_logout_desc: "Awtomatikong nilog-out ang mga user na walang activity pagkaraan ng 120 minuto.",
+    policy_thresholds_password_rules: "Mga Patakaran at Tuntunin sa Password",
+    inactivity_timeout_duration: "Tagal bago i-Logout kapag walang Gawain (minuto)",
+    default_timeout_desc: "Default: 120 minuto (2 oras).",
+    max_failed_logins: "Pinakamataas na Subok ng Maling Login",
+    min_password_length: "Pinakamaikling Haba ng Password",
+    password_expiry_days: "Pagpasa ng Password (araw)",
+    data_privacy: "Privacy ng Data",
+    audit_trail_logging: "Pagtatala ng Audit Trail",
+    log_data_changes_desc: "Itala ang lahat ng pagbabago sa data, pag-login, at pag-export ng ulat",
+    data_subject_rights_module: "Module para sa Karapatan sa Data Privacy",
+    data_subject_rights_desc: "Payagan ang kahilingan sa pag-access o pagwawasto ng data mula sa mga indibidwal",
+
+    // [BACKUP & RECOVERY]
+    automated_backup: "Awtomatikong Backup",
+    backup_frequency: "Dalas ng Backup",
+    backup_time: "Oras ng Backup",
+    backup_destination: "Pupuntahan ng Backup",
+    retain_backups_days: "Itabi ang Backup ng (mga araw)",
+    backups_scheduled_desc: "Ang mga backup ay naka-iskedyul at awtomatikong isinasagawa ng backend server worker batay sa Asia/Manila standard time (UTC+8).",
+    perform_backup_now: "Magsagawa ng Backup Ngayon",
+    recovery_objectives: "Mga Layunin sa Pagbawi (Recovery)",
+    recovery_time_objective: "Target na Oras ng Pagbawi (RTO)",
+    rto_desc: "Pinakamatagal na katanggap-tanggap na pagtigil ng system pagkatapos ng pagkasira.",
+    recovery_point_objective: "Target na Halaga ng Nawalang Data (RPO)",
+    rpo_desc: "Pinakamataas na katanggap-tanggap na saklaw ng nawalang data.",
+    backup_history: "Kasaysayan ng Backup",
+
+    // [MODALS & DIALOGS]
+    log_out: "Mag-log Out",
+    confirm_logout_message: "Sigurado ka bang gusto mong mag-log out?"
   }
 };
 
@@ -987,8 +2269,24 @@ function applyLanguageTranslation(lang) {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (key && dict[key] !== undefined) {
+      if (key === 'showing_zero_incidents') {
+        const curText = el.textContent.trim();
+        const numMatch = curText.match(/(\d+)\s+(?:to|hanggang)\s+(\d+)\s+(?:of|sa)\s+(\d+)/i);
+        if (numMatch && Number(numMatch[3]) > 0) {
+          const from = numMatch[1];
+          const to = numMatch[2];
+          const total = numMatch[3];
+          el.textContent = targetLang === 'tl'
+            ? `Ipinapakita ang ${from} hanggang ${to} sa ${total} na insidente`
+            : `Showing ${from} to ${to} of ${total} incident${total !== '1' ? 's' : ''}`;
+          return;
+        }
+      }
+      const textSpan = el.querySelector('span:not([data-icon])');
       const icon = el.querySelector('svg, [data-icon], i');
-      if (icon && el.childNodes.length > 1) {
+      if (textSpan && (el.tagName === 'BUTTON' || el.tagName === 'A')) {
+        textSpan.textContent = dict[key];
+      } else if (icon && el.childNodes.length > 1) {
         let textFound = false;
         el.childNodes.forEach(node => {
           if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim().length > 0) {
@@ -1022,12 +2320,165 @@ function applyLanguageTranslation(lang) {
   });
 }
 
+function isProperNounOrName(text) {
+  if (!text || typeof text !== 'string') return false;
+  const t = text.trim();
+  if (!t) return false;
+
+  // System brand name
+  if (t === 'BlotterCast' || t.includes('BlotterCast')) return true;
+
+  // Recipient accounts / usernames (e.g., kapitan, admin)
+  if (/^(kapitan|admin)(,\s*(kapitan|admin))*$/i.test(t)) return true;
+  if (t.toLowerCase() === 'kapitan' || t.toLowerCase() === 'admin' || t.toLowerCase() === 'kapitan, admin' || t.toLowerCase() === 'admin, kapitan') return true;
+
+  // Zone or Purok names (e.g., Zone 1, Zone 2, Purok 1, etc.)
+  if (/^Zone\s+\d+$/i.test(t) || /^Purok\s+\d+$/i.test(t)) return true;
+
+  // House / Street address patterns
+  if (/^(Blk|Lot|Phase|Ph\d)\s+/i.test(t)) return true;
+
+  // Check against stored barangay configuration
+  try {
+    const raw = localStorage.getItem('barangayConfig');
+    if (raw) {
+      const cfg = JSON.parse(raw);
+      if (cfg.barangay_name && t.toLowerCase() === cfg.barangay_name.trim().toLowerCase()) return true;
+      if (cfg.captain_name && t.toLowerCase() === cfg.captain_name.trim().toLowerCase()) return true;
+      if (cfg.municipality && t.toLowerCase() === cfg.municipality.trim().toLowerCase()) return true;
+      if (cfg.province && t.toLowerCase() === cfg.province.trim().toLowerCase()) return true;
+    }
+  } catch (_) {}
+
+  return false;
+}
+window.isProperNounOrName = isProperNounOrName;
+
+function bcTranslateAuditAction(action) {
+  if (!action) return '';
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const act = String(action).trim();
+  const actUpper = act.toUpperCase();
+
+  if (isTl) {
+    if (actUpper === 'CREATED') return 'GINAWA';
+    if (actUpper === 'DELETED') return 'BINURA';
+    if (actUpper === 'UPDATED') return 'INUPDATE';
+    if (actUpper === 'LOGIN') return 'NAG-LOGIN';
+    if (actUpper === 'LOGOUT') return 'NAG-LOGOUT';
+    if (actUpper === 'BATCH_ARCHIVE' || actUpper === 'ARCHIVED') return 'INARKIBO';
+    if (actUpper === 'BATCH_RESTORE' || actUpper === 'RESTORED') return 'IBINALIK';
+    if (actUpper === 'BATCH_PERMANENT_DELETE' || actUpper === 'PERMANENT_DELETE') return 'BINURA';
+    if (typeof bcT === 'function') return bcT(act, actUpper);
+    return actUpper;
+  }
+  return act;
+}
+window.bcTranslateAuditAction = bcTranslateAuditAction;
+
+function bcTranslateAuditDetails(details) {
+  if (!details) return '';
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const str = String(details).trim();
+  if (!isTl) return str;
+
+  // 1. "Account created: {user}" -> "Nakalikha ng account: {user}"
+  let m = str.match(/^Account\s+created:\s*(.+)$/i);
+  if (m) {
+    return `Nakalikha ng account: ${m[1]}`;
+  }
+
+  // 2. "Account removed: {user}" -> "Nabura ang account: {user}"
+  m = str.match(/^Account\s+(?:removed|deleted):\s*(.+)$/i);
+  if (m) {
+    return `Nabura ang account: ${m[1]}`;
+  }
+
+  // "Account updated: {user}" -> "Na-update ang account: {user}"
+  m = str.match(/^Account\s+updated:\s*(.+)$/i);
+  if (m) {
+    return `Na-update ang account: ${m[1]}`;
+  }
+
+  // 3. "Successful login (Master 2FA Switch OFF)" -> "Matagumpay na pag-login (Naka-OFF ang Master 2FA)"
+  m = str.match(/^Successful\s+login\s*\(Master\s+2FA\s+Switch\s+(OFF|ON)\)$/i);
+  if (m) {
+    return `Matagumpay na pag-login (Naka-${m[1].toUpperCase()} ang Master 2FA)`;
+  }
+
+  // 4. "Updated their own account details" -> "Inupdate ang sariling detalye ng account"
+  if (/^Updated\s+their\s+own\s+account\s+details$/i.test(str)) {
+    return "Inupdate ang sariling detalye ng account";
+  }
+
+  // 5. "System settings saved" -> "Naisave ang mga setting ng sistema"
+  if (/^System\s+settings\s+saved$/i.test(str)) {
+    return "Naisave ang mga setting ng sistema";
+  }
+
+  // Additional common system audit strings:
+  if (/^Barangay\s+general\s+settings\s+updated$/i.test(str)) {
+    return "Na-update ang mga pangkalahatang setting ng barangay";
+  }
+  if (/^Security\s+and\s+authentication\s+settings\s+updated$/i.test(str)) {
+    return "Na-update ang mga setting ng seguridad at pagpapatunay";
+  }
+  if (/^User\s+logged\s+out$/i.test(str)) {
+    return "Nag-log out ang gumagamit";
+  }
+  if (/^Password\s+changed$/i.test(str)) {
+    return "Napalitan ang password";
+  }
+  if (/^Profile\s+photo\s+uploaded$/i.test(str)) {
+    return "Na-upload ang larawan sa profile";
+  }
+  if (/^Profile\s+photo\s+removed$/i.test(str)) {
+    return "Naalis ang larawan sa profile";
+  }
+
+  return str;
+}
+window.bcTranslateAuditDetails = bcTranslateAuditDetails;
+
+function bcFormatThisWeekCount(count) {
+  const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  return isTl ? `↑ ${count} ngayong linggo` : `↑ ${count} this week`;
+}
+window.bcFormatThisWeekCount = bcFormatThisWeekCount;
+
+function bcFormatResolutionRate(rate) {
+  const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  return isTl ? `${rate}% antas ng pagresolba` : `${rate}% resolution rate`;
+}
+window.bcFormatResolutionRate = bcFormatResolutionRate;
+
+function bcFormatDateLocale(date) {
+  const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const d = date instanceof Date ? date : new Date(date || Date.now());
+  return d.toLocaleDateString(isTl ? 'tl-PH' : 'en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+window.bcFormatDateLocale = bcFormatDateLocale;
+
+function bcFormatUserGreeting(firstName) {
+  const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  if (firstName) {
+    return isTl ? `Maligayang pagbabalik, ${firstName}. Narito ang buod ngayong araw.` : `Welcome back, ${firstName}. Here's today's overview.`;
+  }
+  return isTl ? "Maligayang pagbabalik! Narito ang buod ngayong araw." : "Welcome back! Here's today's overview.";
+}
+window.bcFormatUserGreeting = bcFormatUserGreeting;
+
 function bcApplyLanguage(lang) {
   const normalized = (String(lang || '')).toLowerCase().startsWith('fil') || (String(lang || '')).toLowerCase().startsWith('tag') || (String(lang || '')).toLowerCase() === 'tl' ? 'Filipino' : 'English';
   const isFil = normalized === 'Filipino';
   document.documentElement.lang = isFil ? 'fil' : 'en';
 
-  const dict = BC_TRANSLATIONS.fil;
+  const dict = BC_TRANSLATIONS.fil || {};
+  const getTrans = (orig) => {
+    if (!orig) return orig;
+    const trimmed = orig.trim();
+    return dict[trimmed] || dict[trimmed.toLowerCase()] || dict[trimmed.toUpperCase()] || orig;
+  };
 
   // 1. Sidebar Navigation links: replace text node, keep svg icon
   document.querySelectorAll('aside nav a.nav-link').forEach(link => {
@@ -1043,7 +2494,7 @@ function bcApplyLanguage(lang) {
       link.dataset.bcOrigNav = textNode.nodeValue.trim();
     }
     const orig = link.dataset.bcOrigNav;
-    const translated = isFil ? (dict[orig] || orig) : orig;
+    const translated = isFil ? getTrans(orig) : orig;
     textNode.nodeValue = ' ' + translated;
   });
 
@@ -1051,7 +2502,7 @@ function bcApplyLanguage(lang) {
   document.querySelectorAll('.nav-section-label').forEach(el => {
     if (!el.dataset.bcOrigText) el.dataset.bcOrigText = el.textContent.trim();
     const orig = el.dataset.bcOrigText;
-    el.textContent = isFil ? (dict[orig] || orig) : orig;
+    el.textContent = isFil ? getTrans(orig) : orig;
   });
 
   // 3. Settings Tabs
@@ -1066,12 +2517,13 @@ function bcApplyLanguage(lang) {
     if (textNode) {
       if (!btn.dataset.bcOrigTab) btn.dataset.bcOrigTab = textNode.nodeValue.trim();
       const orig = btn.dataset.bcOrigTab;
-      textNode.nodeValue = ' ' + (isFil ? (dict[orig] || orig) : orig);
+      textNode.nodeValue = ' ' + (isFil ? getTrans(orig) : orig);
     }
   });
 
   // 4. Form Labels
-  document.querySelectorAll('label.form-label').forEach(label => {
+  document.querySelectorAll('label.form-label, label').forEach(label => {
+    if (label.closest('.sidebar-header') || label.hasAttribute('data-no-translate')) return;
     let textNode = null;
     for (let node of label.childNodes) {
       if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
@@ -1082,51 +2534,269 @@ function bcApplyLanguage(lang) {
     if (textNode) {
       if (!label.dataset.bcOrigLabel) label.dataset.bcOrigLabel = textNode.nodeValue.trim();
       const orig = label.dataset.bcOrigLabel;
-      const trans = isFil ? (dict[orig] || orig) : orig;
-      textNode.nodeValue = trans + ' ';
+      if (!isProperNounOrName(orig)) {
+        const trans = isFil ? getTrans(orig) : orig;
+        textNode.nodeValue = trans + (textNode.nodeValue.endsWith(' ') ? ' ' : '');
+      }
     }
   });
 
   // 5. Headings and Page Subtitles
-  document.querySelectorAll('h1, h2, h3, .page-header p').forEach(el => {
+  document.querySelectorAll('h1, h2, h3, h4, .page-header p, .modal-box h2, .modal-box h3').forEach(el => {
     if (el.closest('.sidebar-header') || el.classList.contains('sidebar-brand-title') || el.classList.contains('sidebar-brand-subtitle')) return;
     const t = el.textContent.trim();
     if (!el.dataset.bcOrigHeading) {
       el.dataset.bcOrigHeading = t;
     }
     const orig = el.dataset.bcOrigHeading;
-    if (isFil && dict[orig]) {
-      el.textContent = dict[orig];
-    } else if (!isFil && el.dataset.bcOrigHeading) {
-      el.textContent = el.dataset.bcOrigHeading;
+    if (!isProperNounOrName(orig)) {
+      if (isFil && (dict[orig] || getTrans(orig) !== orig)) {
+        el.textContent = getTrans(orig);
+      } else if (!isFil && el.dataset.bcOrigHeading) {
+        el.textContent = el.dataset.bcOrigHeading;
+      }
     }
   });
 
-  // 6. Action buttons
-  document.querySelectorAll('button.btn-primary, button.btn-secondary, button[onclick*="save"], button[onclick*="Save"]').forEach(btn => {
+  // 6. Action buttons & button titles
+  document.querySelectorAll('button, a.btn, a.btn-primary, a.btn-secondary, button[onclick*="save"], button[onclick*="Save"]').forEach(btn => {
+    if (btn.closest('.sidebar-header') || btn.classList.contains('sidebar-brand-title')) return;
+
+    // Check title attribute (e.g. View Details, Edit, Delete, Archive, Restore)
+    if (btn.title) {
+      if (!btn.dataset.bcOrigTitle) btn.dataset.bcOrigTitle = btn.title.trim();
+      const origTitle = btn.dataset.bcOrigTitle;
+      if (!isProperNounOrName(origTitle)) {
+        btn.title = isFil ? getTrans(origTitle) : origTitle;
+      }
+    }
+
+    if (btn.hasAttribute('data-i18n')) return;
+
+    const textSpan = btn.querySelector('span:not([data-icon]):not([class*="icon"]):not(.badge)');
+    if (textSpan && textSpan.textContent.trim()) {
+      if (!textSpan.dataset.bcOrigText) textSpan.dataset.bcOrigText = textSpan.textContent.trim();
+      const orig = textSpan.dataset.bcOrigText;
+      if (!isProperNounOrName(orig)) {
+        textSpan.textContent = isFil ? getTrans(orig) : orig;
+      }
+    } else {
+      let textNode = null;
+      for (let node of btn.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+          textNode = node;
+          break;
+        }
+      }
+      if (textNode) {
+        if (!btn.dataset.bcOrigBtn) btn.dataset.bcOrigBtn = textNode.nodeValue.trim();
+        const orig = btn.dataset.bcOrigBtn;
+        if (!isProperNounOrName(orig)) {
+          const trans = isFil ? getTrans(orig) : orig;
+          textNode.nodeValue = ' ' + trans;
+        }
+      }
+    }
+  });
+
+  // 7. Table column headers (th)
+  document.querySelectorAll('table th').forEach(th => {
     let textNode = null;
-    for (let node of btn.childNodes) {
+    for (let node of th.childNodes) {
       if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
         textNode = node;
         break;
       }
     }
     if (textNode) {
-      if (!btn.dataset.bcOrigBtn) btn.dataset.bcOrigBtn = textNode.nodeValue.trim();
-      const orig = btn.dataset.bcOrigBtn;
-      const trans = isFil ? (dict[orig] || orig) : orig;
-      textNode.nodeValue = ' ' + trans;
+      if (!th.dataset.bcOrigTh) th.dataset.bcOrigTh = textNode.nodeValue.trim();
+      const orig = th.dataset.bcOrigTh;
+      if (!isProperNounOrName(orig)) {
+        textNode.nodeValue = isFil ? getTrans(orig) : orig;
+      }
+    } else if (th.textContent.trim()) {
+      if (!th.dataset.bcOrigTh) th.dataset.bcOrigTh = th.textContent.trim();
+      const orig = th.dataset.bcOrigTh;
+      if (!isProperNounOrName(orig)) {
+        th.textContent = isFil ? getTrans(orig) : orig;
+      }
     }
   });
 
-  // 7. Sync select dropdown if on settings page
+  // 8. Status Badges (.badge, [class*="badge"], .status-badge)
+  document.querySelectorAll('.badge, span[class*="badge"], .status-badge').forEach(badge => {
+    if (badge.hasAttribute('data-no-translate') || badge.closest('.sidebar-header')) return;
+    let textNode = null;
+    for (let node of badge.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+        textNode = node;
+        break;
+      }
+    }
+    if (textNode) {
+      if (!badge.dataset.bcOrigBadge) badge.dataset.bcOrigBadge = textNode.nodeValue.trim();
+      const orig = badge.dataset.bcOrigBadge;
+      if (!isProperNounOrName(orig)) {
+        textNode.nodeValue = isFil ? getTrans(orig) : orig;
+      }
+    } else if (badge.textContent.trim()) {
+      if (!badge.dataset.bcOrigBadge) badge.dataset.bcOrigBadge = badge.textContent.trim();
+      const orig = badge.dataset.bcOrigBadge;
+      if (!isProperNounOrName(orig)) {
+        badge.textContent = isFil ? getTrans(orig) : orig;
+      }
+    }
+  });
+
+  // 9. Drop-down option lists (select option)
+  document.querySelectorAll('select').forEach(sel => {
+    const selId = (sel.id || '').toLowerCase();
+    const selName = (sel.name || '').toLowerCase();
+    // Exclude selects for resident names, user accounts, and officials
+    if (selId.includes('resident') && !selId.includes('status') && !selId.includes('sex') && !selId.includes('civil')) return;
+    if (selId.includes('official') || selId.includes('officer') || selId.includes('user') || selId.includes('captain')) return;
+    if (selName.includes('resident') || selName.includes('official') || selName.includes('user')) return;
+
+    sel.querySelectorAll('option').forEach(opt => {
+      const t = opt.textContent.trim();
+      if (!t) return;
+      if (!opt.dataset.bcOrigOpt) opt.dataset.bcOrigOpt = t;
+      const orig = opt.dataset.bcOrigOpt;
+      if (isProperNounOrName(orig)) return; // Strictly exclude proper nouns like Zone 1, Zone 2...
+      const trans = isFil ? getTrans(orig) : orig;
+      opt.textContent = trans;
+    });
+  });
+
+  // 10. Sync select dropdown if on settings page
   const langSelect = document.querySelector('select[data-setting="default_language"]');
   if (langSelect && langSelect.value !== normalized) {
     langSelect.value = normalized;
   }
 
-  // 8. Run modal / data-i18n translations
+  // 11. Run modal / data-i18n translations
   applyLanguageTranslation(isFil ? 'tl' : 'en');
+
+  // 12. Dynamic pagination text and record counts across tables
+  document.querySelectorAll('[id*="PaginationInfo"], [id*="paginationInfo"], [id*="PagInfo"], [id*="pagInfo"], .pagination-info, [id*="recordCount"], [id*="RecordCount"]').forEach(el => {
+    const text = el.textContent.trim();
+    if (isFil) {
+      const incMatch = text.match(/Showing\s+(\d+)\s+to\s+(\d+)\s+of\s+(\d+)\s+incidents?/i);
+      if (incMatch) {
+        el.textContent = `Ipinapakita ang ${incMatch[1]} hanggang ${incMatch[2]} sa ${incMatch[3]} na insidente`;
+        return;
+      }
+      const match = text.match(/Showing\s+(\d+)\s*[–\-]\s*(\d+)\s+of\s+(\d+)/i);
+      if (match) {
+        el.textContent = `Ipinapakita ang ${match[1]}–${match[2]} ng ${match[3]}`;
+        return;
+      }
+      const recMatch = text.match(/^(\d+)\s+records$/i);
+      if (recMatch) {
+        el.textContent = `${recMatch[1]} mga tala`;
+        return;
+      }
+    } else {
+      const incMatch = text.match(/Ipinapakita\s+ang\s+(\d+)\s+hanggang\s+(\d+)\s+sa\s+(\d+)\s+(?:(?:na|\(na\))\s+)?insidente/i);
+      if (incMatch) {
+        el.textContent = `Showing ${incMatch[1]} to ${incMatch[2]} of ${incMatch[3]} incidents`;
+        return;
+      }
+      const match = text.match(/Ipinapakita\s+ang\s+(\d+)\s*[–\-]\s*(\d+)\s+ng\s+(\d+)/i);
+      if (match) {
+        el.textContent = `Showing ${match[1]}–${match[2]} of ${match[3]}`;
+        return;
+      }
+      const recMatch = text.match(/^(\d+)\s+mga\s+tala$/i);
+      if (recMatch) {
+        el.textContent = `${recMatch[1]} records`;
+        return;
+      }
+    }
+  });
+
+  // 13. Pagination buttons
+  document.querySelectorAll('button.pagination-btn').forEach(btn => {
+    const t = btn.textContent.trim();
+    if (isFil) {
+      if (t === '‹ Prev' || t === '‹ Previous') btn.textContent = '‹ Nakalipas';
+      if (t === 'Next ›') btn.textContent = 'Susunod ›';
+    } else {
+      if (t === '‹ Nakalipas') btn.textContent = '‹ Prev';
+      if (t === 'Susunod ›') btn.textContent = 'Next ›';
+    }
+  });
+
+  // 14. If scheduled reports table is present, re-render to reflect language
+  if (typeof renderScheduledReports === 'function') {
+    renderScheduledReports();
+  }
+
+  // 15. If audit log is present, re-render to reflect language
+  if (typeof loadAuditLog === 'function') {
+    loadAuditLog(true).catch(() => {});
+  }
+
+  // 16. Current date formatting on header
+  const curDateEl = document.getElementById('currentDate');
+  if (curDateEl) {
+    curDateEl.textContent = typeof bcFormatDateLocale === 'function' ? bcFormatDateLocale(new Date()) : new Date().toLocaleDateString(isFil ? 'tl-PH' : 'en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // 17. User Greeting
+  document.querySelectorAll('[data-user-greeting]').forEach(el => {
+    let name = '';
+    try {
+      const u = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('bc_user') || '{}');
+      name = u.full_name || u.firstName || u.first_name || '';
+    } catch (_) {}
+    const firstName = name ? (typeof bcFirstName === 'function' ? bcFirstName(name) : name.split(' ')[0]) : '';
+    el.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting(firstName) : (firstName ? `Welcome back, ${firstName}. Here's today's overview.` : "Welcome back! Here's today's overview.");
+  });
+  const greetingEl = document.getElementById('dashboardGreeting');
+  if (greetingEl) {
+    let name = '';
+    try {
+      const u = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('bc_user') || '{}');
+      name = u.full_name || u.firstName || u.first_name || '';
+    } catch (_) {}
+    const firstName = name ? (typeof bcFirstName === 'function' ? bcFirstName(name) : name.split(' ')[0]) : '';
+    greetingEl.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting(firstName) : (firstName ? `Welcome back, ${firstName}. Here's today's overview.` : "Welcome back! Here's today's overview.");
+  }
+
+  // 18. Stat cards sub-labels
+  const blSub = document.getElementById('statBlottersSub') || document.getElementById('blTotalSub');
+  if (blSub) {
+    blSub.textContent = isFil ? 'mga tala ng blotter sa file' : 'blotter entries on file';
+  }
+  const pendSub = document.getElementById('blPendingSub');
+  if (pendSub) {
+    pendSub.textContent = isFil ? 'naghihintay ng pag-aayos' : 'awaiting settlement';
+  }
+  const incSub = document.getElementById('statIncidentsSub') || document.getElementById('blOngoingSub');
+  if (incSub && incSub.textContent) {
+    const numMatch = incSub.textContent.match(/(\d+)/);
+    if (numMatch) {
+      incSub.textContent = `↑ ${numMatch[1]} ${isFil ? 'ngayong linggo' : 'this week'}`;
+    }
+  }
+  const resSub = document.getElementById('statResolvedSub') || document.getElementById('blResolvedRateSub');
+  if (resSub && resSub.textContent) {
+    const pctMatch = resSub.textContent.match(/(\d+)%/);
+    if (pctMatch) {
+      resSub.textContent = `${pctMatch[1]}% ${isFil ? 'antas ng pagresolba' : 'resolution rate'}`;
+    }
+  }
+
+  // 19. Role permission matrix
+  if (typeof renderPermMatrix === 'function') {
+    renderPermMatrix();
+  }
+
+  // 20. Users table (to update protected badge & statuses)
+  if (typeof renderUsers === 'function') {
+    renderUsers();
+  }
 }
 
 let _bcI18nObserver = null;
@@ -1309,13 +2979,19 @@ function hydrateGlobalState() {
   document.querySelectorAll('[data-user-greeting]').forEach(el => {
     if (fullName) {
       const firstName = typeof bcFirstName === 'function' ? bcFirstName(fullName) : fullName.split(' ')[0];
-      el.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+      el.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting(firstName) : `Welcome back, ${firstName}. Here's today's overview.`;
+    } else {
+      el.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting() : "Welcome back! Here's today's overview.";
     }
   });
   const greetingEl = document.getElementById('dashboardGreeting');
-  if (greetingEl && fullName) {
-    const firstName = typeof bcFirstName === 'function' ? bcFirstName(fullName) : fullName.split(' ')[0];
-    greetingEl.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+  if (greetingEl) {
+    if (fullName) {
+      const firstName = typeof bcFirstName === 'function' ? bcFirstName(fullName) : fullName.split(' ')[0];
+      greetingEl.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting(firstName) : `Welcome back, ${firstName}. Here's today's overview.`;
+    } else {
+      greetingEl.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting() : "Welcome back! Here's today's overview.";
+    }
   }
   if (role && typeof applyNavPermissions === 'function') {
     applyNavPermissions(role);
@@ -1856,6 +3532,12 @@ async function navigateTo(url, pushState = true) {
     }
 
     window.dispatchEvent(new CustomEvent('bc:page-loaded', { detail: { url } }));
+    if (typeof fitCertificatePreview === 'function') {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        fitCertificatePreview();
+      }, 150);
+    }
   } catch (err) {
     console.error('Navigation error:', err);
     contentContainer.innerHTML = `
@@ -2234,7 +3916,12 @@ function bcBroadcastUserPresence(status = 'Active', userId = null) {
 }
 
 async function doLogout() {
-  if (!(await bcConfirm('Are you sure you want to log out?', { title: 'Log Out', okLabel: 'Log Out' }))) return;
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const msg = isTl ? 'Sigurado ka bang gusto mong mag-log out?' : 'Are you sure you want to log out?';
+  const title = isTl ? 'Mag-log Out' : 'Log Out';
+  const okLabel = isTl ? 'Mag-log Out' : 'Log Out';
+  const cancelLabel = isTl ? 'Kanselahin' : 'Cancel';
+  if (!(await bcConfirm(msg, { title, okLabel, cancelLabel }))) return;
   return handleLogout();
 }
 
@@ -2784,14 +4471,14 @@ function bcShowForcedPasswordChange() {
           </div>
           <div class="password-requirements-box mt-2" id="bcPw_req_box">
             <div class="req-title">
-              <span>Password must contain:</span>
+              <span data-i18n="password_must_contain">Password must contain:</span>
             </div>
             <ul class="space-y-1">
-              <li class="rule-item" data-rule="len"><span class="rule-icon">•</span><span class="rule-text">At least 6 characters long</span></li>
-              <li class="rule-item" data-rule="upper"><span class="rule-icon">•</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
-              <li class="rule-item" data-rule="lower"><span class="rule-icon">•</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
-              <li class="rule-item" data-rule="num"><span class="rule-icon">•</span><span class="rule-text">At least 1 number (0-9)</span></li>
-              <li class="rule-item" data-rule="special"><span class="rule-icon">•</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
+              <li class="rule-item" data-rule="len"><span class="rule-icon">•</span><span class="rule-text" data-i18n="rule_len">At least 6 characters long</span></li>
+              <li class="rule-item" data-rule="upper"><span class="rule-icon">•</span><span class="rule-text" data-i18n="rule_upper">At least 1 uppercase letter (A–Z)</span></li>
+              <li class="rule-item" data-rule="lower"><span class="rule-icon">•</span><span class="rule-text" data-i18n="rule_lower">At least 1 lowercase letter (a–z)</span></li>
+              <li class="rule-item" data-rule="num"><span class="rule-icon">•</span><span class="rule-text" data-i18n="rule_num">At least 1 number (0–9)</span></li>
+              <li class="rule-item" data-rule="special"><span class="rule-icon">•</span><span class="rule-text" data-i18n="rule_special">At least 1 special character (e.g., !@#$%^&*)</span></li>
             </ul>
           </div>
         </div>
@@ -2804,6 +4491,7 @@ function bcShowForcedPasswordChange() {
     </div>`;
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
+  if (typeof applyLanguageTranslation === 'function') applyLanguageTranslation();
 
   bcWatchPasswordInput('bcPw_new', 'bcPw_strength_wrap', 'bcPw_req_box');
 
@@ -2945,11 +4633,70 @@ window.saveMyPassword = async function saveMyPassword() {
 // the whole table. First/last/current-neighbors are always one click
 // away either way.
 // onPageChange(page) is called with the 1-based page number clicked.
+function bcFormatRecordCount(total) {
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const count = Number(total) || 0;
+  return isTl ? `${count} mga tala` : `${count} records`;
+}
+window.bcFormatRecordCount = bcFormatRecordCount;
+
+function bcInterpolatePagination(template, vars = {}) {
+  const from = vars.from !== undefined ? vars.from : (vars.start !== undefined ? vars.start : 0);
+  const to = vars.to !== undefined ? vars.to : (vars.end !== undefined ? vars.end : 0);
+  const total = vars.total !== undefined ? vars.total : 0;
+  return (template || '')
+    .replace(/\{from\}/g, from)
+    .replace(/\{to\}/g, to)
+    .replace(/\{total\}/g, total);
+}
+window.bcInterpolatePagination = bcInterpolatePagination;
+
+function bcFormatPaginationInfo(start, end, total, unit = '') {
+  let from = start;
+  let to = end;
+  let tot = total;
+  let u = unit;
+
+  if (typeof start === 'object' && start !== null) {
+    from = start.from !== undefined ? start.from : (start.start !== undefined ? start.start : 0);
+    to = start.to !== undefined ? start.to : (start.end !== undefined ? start.end : 0);
+    tot = start.total !== undefined ? start.total : 0;
+    u = start.unit || end || '';
+  }
+
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const normalizedUnit = (String(u || '')).toLowerCase();
+  from = Number(from) || 0;
+  to = Number(to) || 0;
+  tot = Number(tot) || 0;
+  if (tot === 0) {
+    from = 0;
+    to = 0;
+  }
+
+  if (isTl) {
+    if (normalizedUnit === 'incidents' || normalizedUnit === 'insidente') {
+      return `Ipinapakita ang ${from} hanggang ${to} sa ${tot} na insidente`;
+    }
+    return `Ipinapakita ang ${from}–${to} ng ${tot}`;
+  }
+  if (normalizedUnit === 'incidents' || normalizedUnit === 'insidente') {
+    if (tot === 0) return 'Showing 0 to 0 of 0 incidents';
+    return `Showing ${from} to ${to} of ${tot} incident${tot !== 1 ? 's' : ''}`;
+  }
+  return `Showing ${from}–${to} of ${tot}`;
+}
+window.bcFormatPaginationInfo = bcFormatPaginationInfo;
+
 function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
   if (!container) return;
   container.innerHTML = '';
   totalPages = Math.max(1, totalPages);
   currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const prevLabel = isTl ? '‹ Nakalipas' : '‹ Prev';
+  const nextLabel = isTl ? 'Susunod ›' : 'Next ›';
 
   const addBtn = (label, opts = {}) => {
     const b = document.createElement('button');
@@ -2961,7 +4708,7 @@ function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
     container.appendChild(b);
   };
 
-  addBtn('‹ Prev', { disabled: currentPage === 1, onClick: () => onPageChange(currentPage - 1) });
+  addBtn(prevLabel, { disabled: currentPage === 1, onClick: () => onPageChange(currentPage - 1) });
 
   // Always show page 1, the last page, and a window around the current
   // page; everything in between collapses to a single "…".
@@ -2975,8 +4722,9 @@ function bcRenderPagination(container, currentPage, totalPages, onPageChange) {
     last = p;
   }
 
-  addBtn('Next ›', { disabled: currentPage === totalPages, onClick: () => onPageChange(currentPage + 1) });
+  addBtn(nextLabel, { disabled: currentPage === totalPages, onClick: () => onPageChange(currentPage + 1) });
 }
+window.bcRenderPagination = bcRenderPagination;
 
 // ── Modal helpers & Lifecycle Teardown ──────────────────────
 function dismissModal(modalEl, backdropEl) {
@@ -3047,6 +4795,11 @@ function openModal(id) {
 
     if (typeof fitCertificatePreview === 'function') {
       setTimeout(fitCertificatePreview, 50);
+      setTimeout(fitCertificatePreview, 150);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        fitCertificatePreview();
+      }, 300);
     }
   }
 }
@@ -3061,6 +4814,11 @@ function closeModal(id) {
     dismissModal(card || el, el);
     if (typeof fitCertificatePreview === 'function') {
       setTimeout(fitCertificatePreview, 50);
+      setTimeout(fitCertificatePreview, 150);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        fitCertificatePreview();
+      }, 300);
     }
   }
 }
@@ -3394,11 +5152,12 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   document.getElementById('bcDialogMessage').textContent = message;
   const cancelBtn = document.getElementById('bcDialogCancelBtn');
   const okBtn = document.getElementById('bcDialogOkBtn');
+  const isDialogTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
   cancelBtn.style.display = isConfirm ? '' : 'none';
-  cancelBtn.textContent = cancelLabel || 'Cancel';
+  cancelBtn.textContent = cancelLabel || (isDialogTl ? 'Kanselahin' : 'Cancel');
   cancelBtn.className = 'bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer';
 
-  okBtn.textContent = okLabel || (isConfirm ? 'Confirm' : 'OK');
+  okBtn.textContent = okLabel || (isConfirm ? (isDialogTl ? 'Kumpirmahin' : 'Confirm') : 'OK');
   if (danger) {
     okBtn.className = 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm transition-all cursor-pointer border border-rose-700 px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2';
   } else {
@@ -3424,13 +5183,15 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
 
 /** Drop-in async replacement for window.alert(). Always resolves (no return value needed). */
 function bcAlert(message, opts = {}) {
-  return _bcOpenDialog({ title: opts.title || 'Notice', message, isConfirm: false, okLabel: opts.okLabel, danger: opts.danger });
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  return _bcOpenDialog({ title: opts.title || (isTl ? 'Paunawa' : 'Notice'), message, isConfirm: false, okLabel: opts.okLabel, danger: opts.danger });
 }
 
 /** Drop-in async replacement for window.confirm() — resolves to true (OK/Confirm) or false (Cancel/Esc). */
 function bcConfirm(message, opts = {}) {
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
   return _bcOpenDialog({
-    title: opts.title || 'Please Confirm', message, isConfirm: true,
+    title: opts.title || (isTl ? 'Mangyaring Kumpirmahin' : 'Please Confirm'), message, isConfirm: true,
     okLabel: opts.okLabel, cancelLabel: opts.cancelLabel, danger: opts.danger,
   });
 }
@@ -3644,7 +5405,9 @@ function bcConfirmPermanentDelete(message, opts = {}) {
 }
 
 // ── Report Preview & Tab Management Helpers (Method A) ──
-const BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+if (typeof window !== 'undefined' && typeof window.BC_REPORT_FAVICON === 'undefined') {
+  window.BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+}
 
 function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Report', autoPrint = false) {
   const printWindow = window.open('', '_blank');
@@ -3655,6 +5418,10 @@ function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Re
     return null;
   }
 
+  const faviconUrl = (typeof window !== 'undefined' && window.BC_REPORT_FAVICON)
+    ? window.BC_REPORT_FAVICON
+    : "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+
   printWindow.document.write(`
     <!DOCTYPE html>
     <html lang="en">
@@ -3663,7 +5430,7 @@ function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Re
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${reportTitle}</title>
       <!-- Sets the PDF / App Icon in browser tab -->
-      <link rel="icon" type="image/svg+xml" href="${BC_REPORT_FAVICON}">
+      <link rel="icon" type="image/svg+xml" href="${faviconUrl}">
       <style>
         /* Report base styling */
         @page { size: letter portrait; margin: 0.5in; }
@@ -3776,7 +5543,9 @@ function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Re
   return printWindow;
 }
 if (typeof window !== 'undefined') {
-  window.BC_REPORT_FAVICON = BC_REPORT_FAVICON;
+  if (typeof window.BC_REPORT_FAVICON === 'undefined') {
+    window.BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+  }
   window.openReportPrintTab = openReportPrintTab;
 }
 
@@ -4494,36 +6263,36 @@ function _ensureExportFilterModal() {
     <div class="modal-overlay" id="bcExportFilterModal">
       <div class="modal-box" style="width:420px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-display text-lg text-forest-800" id="bcExportFilterTitle">Export to Excel</h2>
+          <h2 class="font-display text-lg text-forest-800" id="bcExportFilterTitle" data-i18n="export_blotter_title">Export Blotter Records</h2>
           <button onclick="closeModal('bcExportFilterModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
         </div>
         <div class="space-y-4">
           <div>
-            <label class="form-label">Period</label>
+            <label class="form-label" data-i18n="period_label">Period</label>
             <select id="bcExportPeriod" class="form-input" onchange="_updateExportFilterFields()">
-              <option value="all">All Records</option>
-              <option value="year">Specific Year</option>
-              <option value="month">Specific Month</option>
+              <option value="all" data-i18n="period_all">All Records</option>
+              <option value="year" data-i18n="period_year">Specific Year</option>
+              <option value="month" data-i18n="period_month">Specific Month</option>
             </select>
           </div>
           <div id="bcExportYearWrap" class="hidden">
-            <label class="form-label">Year</label>
+            <label class="form-label" data-i18n="year_label">Year</label>
             <select id="bcExportYear" class="form-input"></select>
           </div>
           <div id="bcExportMonthWrap" class="hidden">
-            <label class="form-label">Month</label>
+            <label class="form-label" data-i18n="month_label">Month</label>
             <select id="bcExportMonth" class="form-input">
-              <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-              <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-              <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+              <option value="1" data-i18n="month_jan">January</option><option value="2" data-i18n="month_feb">February</option><option value="3" data-i18n="month_mar">March</option>
+              <option value="4" data-i18n="month_apr">April</option><option value="5" data-i18n="month_may">May</option><option value="6" data-i18n="month_jun">June</option>
+              <option value="7" data-i18n="month_jul">July</option><option value="8" data-i18n="month_aug">August</option><option value="9" data-i18n="month_sep">September</option>
+              <option value="10" data-i18n="month_oct">October</option><option value="11" data-i18n="month_nov">November</option><option value="12" data-i18n="month_dec">December</option>
             </select>
           </div>
         </div>
         <div class="flex justify-end gap-3 pt-5">
-          <button type="button" onclick="closeModal('bcExportFilterModal')" class="btn-secondary">Cancel</button>
+          <button type="button" onclick="closeModal('bcExportFilterModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
           <button type="button" onclick="_confirmExportFilter()" class="btn-primary flex items-center gap-2">
-            <span data-icon="download" data-icon-size="16"></span> Download
+            <span data-icon="download" data-icon-size="16"></span> <span data-i18n="download">Download</span>
           </button>
         </div>
       </div>
@@ -4545,9 +6314,25 @@ function _updateExportFilterFields() {
 function openExportFilter(exportUrl, title) {
   _ensureExportFilterModal();
   _exportFilterUrl = exportUrl;
-  document.getElementById('bcExportFilterTitle').textContent = title || 'Export to Excel';
+  const titleEl = document.getElementById('bcExportFilterTitle');
+  if (title) {
+    if (title === 'Export Blotter Records') {
+      titleEl.setAttribute('data-i18n', 'export_blotter_title');
+    } else {
+      titleEl.removeAttribute('data-i18n');
+      titleEl.textContent = typeof bcT === 'function' ? bcT(title, title) : title;
+    }
+  } else {
+    titleEl.setAttribute('data-i18n', 'export_blotter_title');
+  }
   document.getElementById('bcExportPeriod').value = 'all';
   _updateExportFilterFields();
+  if (typeof applyLanguageTranslation === 'function') {
+    applyLanguageTranslation();
+  }
+  if (typeof bcApplyLanguage === 'function') {
+    bcApplyLanguage(typeof bcGetLanguage === 'function' ? bcGetLanguage() : 'English');
+  }
   openModal('bcExportFilterModal');
 }
 function _confirmExportFilter() {
@@ -4761,23 +6546,24 @@ window.getStatusBadge = getStatusBadge;
 // Only does anything on pages that actually have #notifPanel in the DOM
 // (currently the Dashboard); harmless no-op calls elsewhere.
 const NOTIF_TYPE_CONFIG = {
-  incident_crud: { icon: 'incident', color: '#16a34a', badge: 'INCIDENT', bg: '#f0fdf4' },
-  incident_elevated: { icon: 'blotter', color: '#ea580c', badge: 'ELEVATED TO BLOTTER', bg: '#fff7ed' },
-  settlement_updated: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', bg: '#f0f9ff' },
-  settlement_created: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', bg: '#f0f9ff' },
-  new_incident: { icon: 'warning', color: '#dc2626', badge: 'HIGH PRIORITY', bg: '#fef2f2' },
-  heatmap_hotspot: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', bg: '#fffbeb' },
-  heatmap_alert: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', bg: '#fffbeb' },
-  predictive_risk: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
-  prediction_alert: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTION ALERT', bg: '#f5f3ff' },
-  high_risk_zone: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', bg: '#f5f3ff' },
-  trend_spike: { icon: 'trends', color: '#2563eb', badge: 'TREND SURGE', bg: '#eff6ff' },
-  trend_alert: { icon: 'trends', color: '#2563eb', badge: 'TREND ALERT', bg: '#eff6ff' },
-  settlement_overdue: { icon: 'clock', color: '#d97706', badge: 'SETTLEMENT', bg: '#fffbeb' },
+  incident_crud: { icon: 'incident', color: '#16a34a', badge: 'INCIDENT', badge_tl: 'INSIDENTE', bg: '#f0fdf4' },
+  incident_elevated: { icon: 'blotter', color: '#ea580c', badge: 'ELEVATED TO BLOTTER', badge_tl: 'NAITAAS SA BLOTTER', bg: '#fff7ed' },
+  settlement_updated: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', badge_tl: 'PAG-AAYOS', bg: '#f0f9ff' },
+  settlement_created: { icon: 'settlement', color: '#0284c7', badge: 'SETTLEMENT', badge_tl: 'PAG-AAYOS', bg: '#f0f9ff' },
+  new_incident: { icon: 'warning', color: '#dc2626', badge: 'HIGH PRIORITY', badge_tl: 'MATAAS NA PRIYORIDAD', bg: '#fef2f2' },
+  heatmap_hotspot: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', badge_tl: 'HEOGRAPIKO', bg: '#fffbeb' },
+  heatmap_alert: { icon: 'heatmap', color: '#d97706', badge: 'GEOSPATIAL', badge_tl: 'HEOGRAPIKO', bg: '#fffbeb' },
+  predictive_risk: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', badge_tl: 'PREDIKSYON ML', bg: '#f5f3ff' },
+  prediction_alert: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTION ALERT', badge_tl: 'BABALA SA PREDIKSYON', bg: '#f5f3ff' },
+  high_risk_zone: { icon: 'predictions', color: '#7c3aed', badge: 'PREDICTIVE ML', badge_tl: 'PREDIKSYON ML', bg: '#f5f3ff' },
+  trend_spike: { icon: 'trends', color: '#2563eb', badge: 'TREND SURGE', badge_tl: 'PAGTAAS NG TREND', bg: '#eff6ff' },
+  trend_alert: { icon: 'trends', color: '#2563eb', badge: 'TREND ALERT', badge_tl: 'BABALA SA TREND', bg: '#eff6ff' },
+  settlement_overdue: { icon: 'clock', color: '#d97706', badge: 'SETTLEMENT', badge_tl: 'PAG-AAYOS', bg: '#fffbeb' },
 };
 
 function timeAgo(dateStr) {
-  if (!dateStr) return 'just now';
+  const isFil = typeof bcGetLanguage === 'function' && (bcGetLanguage().toLowerCase().startsWith('fil') || bcGetLanguage().toLowerCase().startsWith('tag') || bcGetLanguage().toLowerCase() === 'tl');
+  if (!dateStr) return isFil ? 'ngayon lang' : 'just now';
   let parsed;
   if (typeof dateStr === 'string') {
     const s = dateStr.trim();
@@ -4790,13 +6576,13 @@ function timeAgo(dateStr) {
     parsed = new Date(dateStr);
   }
   const seconds = Math.floor((Date.now() - parsed) / 1000);
-  if (isNaN(seconds) || seconds < 60) return 'just now';
+  if (isNaN(seconds) || seconds < 60) return isFil ? 'ngayon lang' : 'just now';
   const mins = Math.floor(seconds / 60);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return isFil ? `${mins}m nakalipas` : `${mins}m ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return isFil ? `${hours}h nakalipas` : `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return isFil ? `${days}d nakalipas` : `${days}d ago`;
 }
 
 const ANALYTICS_NOTIF_TYPES = [
@@ -4930,18 +6716,20 @@ async function toggleNotifPanel() {
   panel.classList.toggle('hidden');
   if (!opening) return;
 
+  const isFil = typeof bcGetLanguage === 'function' && (bcGetLanguage().toLowerCase().startsWith('fil') || bcGetLanguage().toLowerCase().startsWith('tag') || bcGetLanguage().toLowerCase() === 'tl');
   const list = document.getElementById('notifList');
-  list.innerHTML = '<div class="px-4 py-6 text-center text-forest-400 text-sm">Loading notifications…</div>';
+  list.innerHTML = `<div class="px-4 py-6 text-center text-forest-400 text-sm">${isFil ? 'Kinakarga ang mga abiso…' : 'Loading notifications…'}</div>`;
   try {
     const rawItems = await BCApi.notifList(25);
     const items = (isCurrentUserEncoder() && Array.isArray(rawItems))
       ? rawItems.filter(n => !ANALYTICS_NOTIF_TYPES.includes(n.type))
       : rawItems;
     if (!items || items.length === 0) {
-      list.innerHTML = '<div class="px-4 py-8 text-center text-forest-400 text-sm">No notifications yet.</div>';
+      list.innerHTML = `<div class="px-4 py-8 text-center text-forest-400 text-sm">${isFil ? 'Wala pang mga abiso.' : 'No notifications yet.'}</div>`;
     } else {
       list.innerHTML = items.map(n => {
-        const cfg = NOTIF_TYPE_CONFIG[n.type] || { icon: 'bell', color: '#23703c', badge: 'ALERT', bg: '#f0f9f2' };
+        const cfg = NOTIF_TYPE_CONFIG[n.type] || { icon: 'bell', color: '#23703c', badge: 'ALERT', badge_tl: 'ALERTO', bg: '#f0f9f2' };
+        const badgeLabel = (isFil && cfg.badge_tl) ? cfg.badge_tl : cfg.badge;
         const destLink = resolveNotifLink(n);
         return `
           <a href="${destLink}" onclick="handleNotifClick(event, ${n.id}, '${destLink}')"
@@ -4951,7 +6739,7 @@ async function toggleNotifPanel() {
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-0.5">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider" style="background:${cfg.bg}; color:${cfg.color};">${cfg.badge}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider" style="background:${cfg.bg}; color:${cfg.color};">${badgeLabel}</span>
                 <span class="text-[11px] text-forest-400 font-medium">${timeAgo(n.created_at)}</span>
               </div>
               <span class="block text-sm font-semibold text-forest-800 leading-snug">${n.title}</span>
@@ -4962,7 +6750,7 @@ async function toggleNotifPanel() {
       }).join('');
     }
   } catch (e) {
-    list.innerHTML = '<div class="px-4 py-6 text-center text-red-500 text-sm">Could not load notifications.</div>';
+    list.innerHTML = `<div class="px-4 py-6 text-center text-red-500 text-sm">${isFil ? 'Hindi maikarga ang mga abiso.' : 'Could not load notifications.'}</div>`;
   }
   refreshNotifBadge();
 }

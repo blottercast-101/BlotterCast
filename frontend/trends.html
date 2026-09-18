@@ -103,8 +103,8 @@
         </svg>
       </button>
       <div>
-        <h1 class="font-display text-xl md:text-2xl text-forest-800">Trends &amp; Comparative Analytics</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Incident-to-blotter elevation, Lupon settlement rates, and spatial performance</p>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="trends_comparative_analytics">Trends &amp; Comparative Analytics</h1>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="trends_subtitle">Incident-to-blotter elevation, Lupon settlement rates, and spatial performance</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -118,48 +118,48 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d] cursor-default">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Total Incidents</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="total_incidents_metric">Total Incidents</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="incident" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="kpiTotal">—</div>
-          <div class="text-xs text-white/70 mt-1" id="kpiTotalSub">All field incident logs</div>
+          <div class="text-xs text-white/70 mt-1" id="kpiTotalSub" data-i18n="all_field_incident_logs">All field incident logs</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
 
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982] cursor-default">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Peak Month</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="peak_month">Peak Month</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="calendar" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-2xl sm:text-3xl truncate mt-3" id="kpiPeakMonth">—</div>
-          <div class="text-xs text-white/70 mt-1" id="kpiPeakMonthSub">Highest incident volume</div>
+          <div class="text-xs text-white/70 mt-1" id="kpiPeakMonthSub" data-i18n="highest_incident_volume">Highest incident volume</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
 
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a] cursor-default">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Settlement Rate</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="settlement_rate">Settlement Rate</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="kpiSettlementRate">—</div>
-          <div class="text-xs text-white/70 mt-1" id="kpiSettlementSub">Amicably resolved cases</div>
+          <div class="text-xs text-white/70 mt-1" id="kpiSettlementSub" data-i18n="amicably_resolved_cases">Amicably resolved cases</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
 
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b] cursor-default">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Elevated to Blotter</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="elevated_to_blotter">Elevated to Blotter</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="blotter" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="kpiElevated">—</div>
-          <div class="text-xs text-white/70 mt-1" id="kpiElevatedSub">Official docketed cases</div>
+          <div class="text-xs text-white/70 mt-1" id="kpiElevatedSub" data-i18n="official_docketed_cases">Official docketed cases</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
@@ -172,19 +172,19 @@
           <div class="flex items-center gap-3">
             <div class="stat-icon-badge" data-icon="trends" data-icon-size="17"></div>
             <div>
-              <h2 class="font-display text-lg text-forest-800" id="lineTitle">Monthly Comparative Pipeline</h2>
-              <p class="text-xs text-forest-500">Field Incidents vs. Elevated Blotter Cases vs. Resolved</p>
+              <h2 class="font-display text-lg text-forest-800" id="lineTitle" data-i18n="monthly_comparative_pipeline">Monthly Comparative Pipeline</h2>
+              <p class="text-xs text-forest-500" data-i18n="monthly_pipeline_desc">Field Incidents vs. Elevated Blotter Cases vs. Resolved</p>
             </div>
           </div>
           <div class="flex items-center gap-4 text-xs">
             <div class="flex items-center gap-1.5 font-medium text-forest-700">
-              <span class="w-3 h-3 rounded-full bg-forest-600 inline-block"></span> Total Incidents
+              <span class="w-3 h-3 rounded-full bg-forest-600 inline-block"></span> <span data-i18n="total_incidents">Total Incidents</span>
             </div>
             <div class="flex items-center gap-1.5 font-medium text-amber-600">
-              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Elevated Blotters
+              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> <span data-i18n="elevated_blotters">Elevated Blotters</span>
             </div>
             <div class="flex items-center gap-1.5 font-medium text-teal-600">
-              <span class="w-3 h-3 rounded-full bg-teal-600 inline-block"></span> Resolved
+              <span class="w-3 h-3 rounded-full bg-teal-600 inline-block"></span> <span data-i18n="resolved">Resolved</span>
             </div>
           </div>
         </div>
@@ -195,8 +195,8 @@
         <div class="flex items-center gap-3 mb-4">
           <div class="stat-icon-badge" data-icon="incident" data-icon-size="17"></div>
           <div>
-            <h2 class="font-display text-lg text-forest-800">Category Severity</h2>
-            <p class="text-xs text-forest-500">Incidents &amp; Elevation Distribution</p>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="category_severity">Category Severity</h2>
+            <p class="text-xs text-forest-500" data-i18n="category_distribution">Incidents &amp; Elevation Distribution</p>
           </div>
         </div>
         <canvas id="doughnutChart" height="160"></canvas>
@@ -210,11 +210,11 @@
         <div class="flex items-center gap-3">
           <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
           <div>
-            <h2 class="font-display text-lg text-forest-800">Zonal Elevation &amp; Settlement Matrix</h2>
-            <p class="text-xs text-forest-500">Administrative Zone 1 to Zone 7 comparative performance</p>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="zonal_matrix_title">Zonal Elevation &amp; Settlement Matrix</h2>
+            <p class="text-xs text-forest-500" data-i18n="zonal_matrix_subtitle">Administrative Zone 1 to Zone 7 comparative performance</p>
           </div>
         </div>
-        <span class="text-xs font-semibold text-forest-600 bg-forest-50 px-3 py-1.5 rounded-full border border-forest-100">
+        <span class="text-xs font-semibold text-forest-600 bg-forest-50 px-3 py-1.5 rounded-full border border-forest-100" data-i18n="official_admin_zones">
           7 Official Administrative Zones
         </span>
       </div>
@@ -223,12 +223,12 @@
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-b border-forest-100 text-xs font-bold text-forest-600 uppercase tracking-wider">
-              <th class="py-3 px-3">Zone / Substation</th>
-              <th class="py-3 px-3 text-center">Total Incidents</th>
-              <th class="py-3 px-3 text-center">Elevated to Blotter</th>
-              <th class="py-3 px-3">Elevation Rate</th>
-              <th class="py-3 px-3 text-center">Resolved Cases</th>
-              <th class="py-3 px-3 text-center">Status</th>
+              <th class="py-3 px-3" data-i18n="th_zone_substation">Zone / Substation</th>
+              <th class="py-3 px-3 text-center" data-i18n="th_total_incidents">Total Incidents</th>
+              <th class="py-3 px-3 text-center" data-i18n="th_elevated_to_blotter">Elevated to Blotter</th>
+              <th class="py-3 px-3" data-i18n="th_elevation_rate">Elevation Rate</th>
+              <th class="py-3 px-3 text-center" data-i18n="th_resolved_cases">Resolved Cases</th>
+              <th class="py-3 px-3 text-center" data-i18n="th_status_col">Status</th>
             </tr>
           </thead>
           <tbody id="zonalMatrixBody" class="divide-y divide-forest-50">
@@ -244,8 +244,8 @@
         <div class="flex items-center gap-3 mb-5">
           <div class="stat-icon-badge" data-icon="clock" data-icon-size="17"></div>
           <div>
-            <h2 class="font-display text-lg text-forest-800">Incidents by Day of Week</h2>
-            <p class="text-xs text-forest-500">Weekly occurrence distribution</p>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="incidents_by_day_of_week">Incidents by Day of Week</h2>
+            <p class="text-xs text-forest-500" data-i18n="weekly_occurrence_distribution">Weekly occurrence distribution</p>
           </div>
         </div>
         <canvas id="barDayChart" height="120"></canvas>
@@ -255,8 +255,8 @@
         <div class="flex items-center gap-3 mb-5">
           <div class="stat-icon-badge" data-icon="predictions" data-icon-size="17"></div>
           <div>
-            <h2 class="font-display text-lg text-forest-800">Top Incident Categories</h2>
-            <p class="text-xs text-forest-500">Ranked by volume</p>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="top_incident_categories">Top Incident Categories</h2>
+            <p class="text-xs text-forest-500" data-i18n="ranked_by_volume">Ranked by volume</p>
           </div>
         </div>
         <canvas id="hBarChart" height="120"></canvas>
@@ -271,9 +271,34 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
 <script>
-var MONTHS = window.BC_SHORT_MONTHS || ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function isFilipino() {
+  const lang = localStorage.getItem('app_language') || localStorage.getItem('preferred_language') || document.documentElement.lang;
+  return lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+}
+var MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONTHS_TL = ['Ene','Peb','Mar','Abr','May','Hun','Hul','Ago','Set','Okt','Nob','Dis'];
+var DAYS_EN   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var DAYS_TL   = ['Ling','Lunes','Marten','Miyer','Hueb','Biyer','Sab'];
 var COLORS = ['#1a5730','#2f8a4c','#4fa868','#c9a84c','#0e7c86','#86c895','#8a6a2e','#94a3b8'];
+
+var CATEGORY_TL = {
+  'Theft': 'Pagnanakaw',
+  'Public Disturbance': 'Pambubulahaw sa Publiko',
+  'Physical Assault': 'Pananakit / Pag-atake',
+  'Vandalism': 'Pambaboy ng Ari-arian (Vandalism)',
+  'Trespassing': 'Panghihimasok (Trespassing)',
+  'Domestic Dispute': 'Alitan sa Pamamahay (Domestic Dispute)',
+  'Vehicular Accident': 'Aksidente sa Sasakyan',
+  'Drug-Related Activity': 'Aktibidad Kaugnay ng Droga',
+  'Other': 'Iba pa'
+};
+
+function getCategoryDisplayName(cat) {
+  if (isFilipino()) {
+    return CATEGORY_TL[cat] || cat;
+  }
+  return cat;
+}
 
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.color = '#5a7a64';
@@ -375,6 +400,9 @@ async function updateCharts() {
 }
 
 function renderFromData(data) {
+  const isFil = isFilipino();
+  const MONTHS = isFil ? MONTHS_TL : MONTHS_EN;
+  const DAYS = isFil ? DAYS_TL : DAYS_EN;
   const year = data?.year ?? new Date().getFullYear();
   const summary = data?.summary || {};
   
@@ -385,7 +413,10 @@ function renderFromData(data) {
   const totalBlotters = summary.total_blotter_cases ?? totalBlottered;
 
   // 1. Comparative Dual-Line / Area Chart & Monthly Aggregation
-  document.getElementById('lineTitle').textContent = `Monthly Comparative Pipeline (${year})`;
+  const lineTitleEl = document.getElementById('lineTitle');
+  if (lineTitleEl) {
+    lineTitleEl.textContent = isFil ? `Paghahambing ng Daloy Kada Buwan (${year})` : `Monthly Comparative Pipeline (${year})`;
+  }
   const timeline = data?.timeline || [];
   const monthlyIncidents = new Array(12).fill(0);
   const monthlyBlottered = new Array(12).fill(0);
@@ -408,7 +439,9 @@ function renderFromData(data) {
   }
 
   // 2. Peak Month Calculation
-  const FULL_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const FULL_MONTH_NAMES = isFil
+    ? ['Enero', 'Pebreo', 'Marso', 'Abril', 'Mayo', 'Hunyo', 'Hulyo', 'Agosto', 'Setyembre', 'Oktubre', 'Nobyembre', 'Disyembre']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   let peakMonthName = 'N/A';
   let peakCount = 0;
   
@@ -431,20 +464,24 @@ function renderFromData(data) {
   }
   if (peakMonthSubEl) {
     peakMonthSubEl.textContent = peakCount > 0
-      ? `${peakCount} recorded incident${peakCount !== 1 ? 's' : ''}`
-      : '0 incidents';
+      ? (isFil ? `${peakCount} naisulat na insidente` : `${peakCount} recorded incident${peakCount !== 1 ? 's' : ''}`)
+      : (isFil ? '0 naisulat na insidente' : '0 incidents');
   }
 
   document.getElementById('kpiSettlementRate').textContent = `${Number(settlementRate).toFixed(1)}%`;
-  document.getElementById('kpiSettlementSub').textContent = `${totalSettled} of ${totalBlotters} cases resolved`;
+  document.getElementById('kpiSettlementSub').textContent = isFil
+    ? `${totalSettled} sa ${totalBlotters} na kaso ang naresolba`
+    : `${totalSettled} of ${totalBlotters} cases resolved`;
 
   const prevYearTotal = summary.prevYearTotal ?? data?.prevYearTotal ?? 0;
   if (prevYearTotal > 0) {
     const diffPct = Math.abs(Math.round(((totalIncidents - prevYearTotal) / prevYearTotal) * 100));
     const icon = totalIncidents >= prevYearTotal ? '↑' : '↓';
-    document.getElementById('kpiTotalSub').textContent = `${icon} ${diffPct}% vs ${Number(year) - 1}`;
+    document.getElementById('kpiTotalSub').textContent = isFil
+      ? `${icon} ${diffPct}% kumpara noong ${Number(year) - 1}`
+      : `${icon} ${diffPct}% vs ${Number(year) - 1}`;
   } else {
-    document.getElementById('kpiTotalSub').textContent = 'All field incident logs';
+    document.getElementById('kpiTotalSub').textContent = isFil ? 'Lahat ng tala ng insidente sa larangan' : 'All field incident logs';
   }
 
   const lineCanvas = document.getElementById('lineChart');
@@ -452,8 +489,11 @@ function renderFromData(data) {
     if (lineChart && lineChart.canvas === lineCanvas) {
       lineChart.data.labels = MONTHS;
       lineChart.data.datasets[0].data = monthlyIncidents;
+      lineChart.data.datasets[0].label = isFil ? 'Kabuuan ng Insidente' : 'Total Incidents';
       lineChart.data.datasets[1].data = monthlyBlottered;
+      lineChart.data.datasets[1].label = isFil ? 'Iniakyat sa Blotter' : 'Elevated Blotters';
       lineChart.data.datasets[2].data = monthlyResolved;
+      lineChart.data.datasets[2].label = isFil ? 'Naresolba' : 'Resolved Cases';
       lineChart.update();
     } else {
       if (lineChart) lineChart.destroy();
@@ -473,7 +513,7 @@ function renderFromData(data) {
           labels: MONTHS,
           datasets: [
             {
-              label: 'Total Incidents',
+              label: isFil ? 'Kabuuan ng Insidente' : 'Total Incidents',
               data: monthlyIncidents,
               borderColor: '#23703c',
               backgroundColor: grad1,
@@ -486,7 +526,7 @@ function renderFromData(data) {
               pointRadius: 4,
             },
             {
-              label: 'Elevated Blotters',
+              label: isFil ? 'Iniakyat sa Blotter' : 'Elevated Blotters',
               data: monthlyBlottered,
               borderColor: '#d97706',
               backgroundColor: grad2,
@@ -499,7 +539,7 @@ function renderFromData(data) {
               pointRadius: 4,
             },
             {
-              label: 'Resolved Cases',
+              label: isFil ? 'Naresolba' : 'Resolved Cases',
               data: monthlyResolved,
               borderColor: '#0e7c86',
               borderWidth: 2,
@@ -541,7 +581,7 @@ function renderFromData(data) {
   const doughnutCanvas = document.getElementById('doughnutChart');
   if (doughnutCanvas) {
     if (doughnutChart && doughnutChart.canvas === doughnutCanvas) {
-      doughnutChart.data.labels = catNames;
+      doughnutChart.data.labels = catNames.map(getCategoryDisplayName);
       doughnutChart.data.datasets[0].data = catCounts;
       doughnutChart.update();
     } else {
@@ -549,7 +589,7 @@ function renderFromData(data) {
       doughnutChart = new Chart(doughnutCanvas, {
         type: 'doughnut',
         data: {
-          labels: catNames,
+          labels: catNames.map(getCategoryDisplayName),
           datasets: [{
             data: catCounts,
             backgroundColor: COLORS,
@@ -570,11 +610,13 @@ function renderFromData(data) {
   }
 
   document.getElementById('doughnutLegend').innerHTML = categories.map((cat, i) => {
-    const name = cat.category || 'Other';
+    const rawName = cat.category || 'Other';
+    const name = getCategoryDisplayName(rawName);
     const count = cat.count ?? cat.c ?? 0;
     const elevated = cat.elevated_count ?? 0;
     const rate = cat.category_elevation_rate ?? (count > 0 ? ((elevated / count) * 100).toFixed(0) : 0);
     const color = COLORS[i % COLORS.length];
+    const badgeText = isFil ? `${rate}% INIAKYAT SA BLOTTER (${elevated}/${count})` : `${rate}% Elevated (${elevated}/${count})`;
 
     return `
       <div class="flex items-center justify-between py-1 border-b border-forest-50 last:border-0">
@@ -584,7 +626,7 @@ function renderFromData(data) {
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
           <span class="badge ${Number(rate) >= 50 ? 'badge-not-complied' : Number(rate) >= 25 ? 'badge-ongoing' : 'badge-resolved'} text-[10px] font-bold">
-            ${rate}% Elevated (${elevated}/${count})
+            ${badgeText}
           </span>
         </div>
       </div>`;
@@ -600,12 +642,17 @@ function renderFromData(data) {
       const res = z.resolved_count ?? 0;
       const rate = Number(z.elevation_rate ?? (tot > 0 ? (elev / tot * 100) : 0)).toFixed(1);
       const isHighElev = Number(rate) >= 50;
+      const rawSub = z.label || 'Barangay Substation';
+      const substationLabel = isFil ? rawSub.replace(/Residence/g, 'Tirahan') : rawSub;
+      const statusLabel = isHighElev
+        ? (isFil ? 'MATAAS NA PAG-AAKYAT' : 'High Elevation')
+        : (isFil ? 'MAAYOS NA KONTROL' : 'Stable Control');
 
       return `
         <tr class="hover:bg-forest-50/60 transition-colors">
           <td class="py-3 px-3">
             <div class="font-bold text-forest-800">${z.zone_id}</div>
-            <div class="text-xs text-forest-400">${z.label || 'Barangay Substation'}</div>
+            <div class="text-xs text-forest-400">${substationLabel}</div>
           </td>
           <td class="py-3 px-3 text-center font-bold text-forest-700">${tot}</td>
           <td class="py-3 px-3 text-center">
@@ -622,13 +669,15 @@ function renderFromData(data) {
           <td class="py-3 px-3 text-center font-semibold text-teal-700">${res}</td>
           <td class="py-3 px-3 text-center">
             <span class="badge ${isHighElev ? 'badge-ongoing' : 'badge-resolved'} text-[11px] font-semibold">
-              ${isHighElev ? 'High Elevation' : 'Stable Control'}
+              ${statusLabel}
             </span>
           </td>
         </tr>`;
     }).join('');
   } else {
-    matrixBody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-forest-400">No zonal data available for this year</td></tr>';
+    matrixBody.innerHTML = isFil
+      ? '<tr><td colspan="6" class="py-6 text-center text-forest-400">Walang datos sa sona para sa taong ito</td></tr>'
+      : '<tr><td colspan="6" class="py-6 text-center text-forest-400">No zonal data available for this year</td></tr>';
   }
 
   // 5. Day of Week Chart
@@ -644,7 +693,7 @@ function renderFromData(data) {
     data: {
       labels: DAYS,
       datasets: [{
-        label: 'Incidents',
+        label: isFil ? 'Mga Insidente' : 'Incidents',
         data: dayData,
         backgroundColor: '#2f8a4c',
         hoverBackgroundColor: '#1a5730',
@@ -671,9 +720,9 @@ function renderFromData(data) {
   hBarChart = new Chart(document.getElementById('hBarChart'), {
     type: 'bar',
     data: {
-      labels: top5.map(c => c.category || 'Other'),
+      labels: top5.map(c => getCategoryDisplayName(c.category || 'Other')),
       datasets: [{
-        label: 'Count',
+        label: isFil ? 'Bilang' : 'Count',
         data: top5.map(c => c.count ?? c.c ?? 0),
         backgroundColor: top5.map((_, i) => COLORS[i % COLORS.length]),
         borderRadius: 8,
@@ -698,6 +747,9 @@ function renderFromData(data) {
 window.initTrends = async function () {
   try {
     await requireAuth();
+    if (typeof applyLanguageTranslation === 'function') {
+      applyLanguageTranslation();
+    }
     try {
       await initYears();
     } catch (err) {
@@ -707,6 +759,12 @@ window.initTrends = async function () {
     console.error('initTrends error:', initErr);
   }
 };
+window.addEventListener('bc:language-changed', () => {
+  if (typeof applyLanguageTranslation === 'function') {
+    applyLanguageTranslation();
+  }
+  updateCharts();
+});
 if (!window._bcSpaNavActive) { initTrends(); }
 
 </script>

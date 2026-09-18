@@ -40,6 +40,14 @@ class TestModalI18nTranslation(unittest.TestCase):
         # Test essential modal keys
         required_keys = [
             "import_resident_title",
+            "export_blotter_title",
+            "period_label",
+            "year_label",
+            "month_label",
+            "period_all",
+            "period_year",
+            "period_month",
+            "download",
             "drag_drop_text",
             "browse_files",
             "upload_import",
@@ -65,6 +73,21 @@ class TestModalI18nTranslation(unittest.TestCase):
             "full_name",
             "address",
             "save",
+            "export_excel",
+            "view_edit",
+            "delete",
+            "jan",
+            "feb",
+            "mar",
+            "apr",
+            "may",
+            "jun",
+            "jul",
+            "aug",
+            "sep",
+            "oct",
+            "nov",
+            "dec",
         ]
         for k in required_keys:
             self.assertIn(k, en_keys, f"Missing {k} in en dictionary")
@@ -133,6 +156,9 @@ class TestModalI18nTranslation(unittest.TestCase):
         self.assertIn('data-i18n="new_blotter_entry"', content)
         self.assertIn('data-i18n="blotter_record_details"', content)
         self.assertIn('data-i18n-placeholder="search_census_ph"', content)
+        self.assertIn('id="exportExcelBtn"', content)
+        self.assertIn('data-i18n="export_excel"', content)
+        self.assertIn('onclick="toggleExportMenu()"', content)
 
     def test_incident_html_modals_i18n(self):
         """Verify incident.html has data-i18n attributes on incidentModal, incViewModal, and elevateConfirmModal."""
@@ -197,6 +223,92 @@ class TestModalI18nTranslation(unittest.TestCase):
         self.assertIn('data-i18n="zone_filter"', content)
         self.assertIn('data-i18n="export_format"', content)
 
+    def test_blotter_export_excel_button_structure_and_translation(self):
+        """Verify blotter.html export button matches specifications and dictionary contains accurate translations."""
+        blotter_path = os.path.join(FRONTEND_DIR, "blotter.html")
+        with open(blotter_path, "r", encoding="utf-8") as f:
+            blotter_html = f.read()
+
+        # Check export button attributes
+        self.assertIn('id="exportExcelBtn"', blotter_html)
+        self.assertIn('onclick="toggleExportMenu()"', blotter_html)
+        self.assertIn('data-i18n="export_excel"', blotter_html)
+
+        # Check SVG icon
+        self.assertIn('<svg class="w-4 h-4 text-[#1e3a2b]"', blotter_html)
+        self.assertIn('d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"', blotter_html)
+
+        # Check span with data-i18n
+        self.assertIn('<span data-i18n="export_excel">Export to Excel</span>', blotter_html)
+
+        # Check dictionary translations in app.js
+        self.assertIn('export_excel: "Export to Excel"', self.app_js)
+        self.assertIn('export_excel: "I-export sa Excel"', self.app_js)
+        self.assertIn('"Export to Excel": "I-export sa Excel"', self.app_js)
+
+    def test_export_filter_modal_i18n_attributes(self):
+        """Verify _ensureExportFilterModal provides data-i18n attributes on title, labels, options, and actions."""
+        self.assertIn('id="bcExportFilterTitle" data-i18n="export_blotter_title"', self.app_js)
+        self.assertIn('data-i18n="period_label"', self.app_js)
+        self.assertIn('data-i18n="year_label"', self.app_js)
+        self.assertIn('data-i18n="month_label"', self.app_js)
+        self.assertIn('data-i18n="period_all"', self.app_js)
+        self.assertIn('data-i18n="period_year"', self.app_js)
+        self.assertIn('data-i18n="period_month"', self.app_js)
+        self.assertIn('data-i18n="month_jan"', self.app_js)
+        self.assertIn('data-i18n="month_feb"', self.app_js)
+        self.assertIn('data-i18n="month_dec"', self.app_js)
+        self.assertIn('data-i18n="download"', self.app_js)
+
+    def test_i18n_standalone_file_content_and_exact_translations(self):
+        """Verify frontend/i18n.js contains exact required Tagalog translations."""
+        i18n_path = os.path.join(FRONTEND_DIR, "i18n.js")
+        self.assertTrue(os.path.exists(i18n_path), "frontend/i18n.js must exist")
+        with open(i18n_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('window.i18n = i18n;', content)
+        self.assertIn('cancel: "Kanselahin"', content)
+        self.assertTrue('import_data: "Mag-import"' in content or 'import_data: "I-import ang Datos"' in content)
+        self.assertIn('export_excel: "I-export sa Excel"', content)
+        self.assertIn('download: "I-download"', content)
+        self.assertIn('view_edit: "Tignan at Baguhin"', content)
+        self.assertIn('delete: "Burahin"', content)
+        self.assertIn('import_resident_title: "Mag-import ng Datos ng Residente"', content)
+        self.assertIn('export_blotter_title: "I-export ang Tala ng Blotter"', content)
+        self.assertIn('period_label: "Panahon"', content)
+        self.assertIn('year_label: "Taon"', content)
+        self.assertIn('month_label: "Buwan"', content)
+        self.assertIn('period_all: "Lahat ng Tala"', content)
+        self.assertIn('period_year: "Tiyak na Taon"', content)
+        self.assertIn('period_month: "Tiyak na Buwan"', content)
+        self.assertIn('jan: "Enero"', content)
+        self.assertIn('feb: "Pebreo"', content)
+        self.assertIn('mar: "Marso"', content)
+        self.assertIn('apr: "Abril"', content)
+        self.assertIn('may: "Mayo"', content)
+        self.assertIn('jun: "Hunyo"', content)
+        self.assertIn('jul: "Hulyo"', content)
+        self.assertIn('aug: "Agosto"', content)
+        self.assertIn('sep: "Setyembre"', content)
+        self.assertIn('oct: "Oktubre"', content)
+        self.assertIn('nov: "Nobyembre"', content)
+        self.assertIn('dec: "Disyembre"', content)
+
+    def test_proper_noun_preservation_and_system_translation_coverage(self):
+        """Verify isProperNounOrName and bcApplyLanguage cover table headers, badges, and option lists."""
+        self.assertIn("function isProperNounOrName(text)", self.app_js)
+        self.assertIn("/^Zone\\s+\\d+$/i", self.app_js)
+        self.assertIn("BlotterCast", self.app_js)
+        # Verify table header query in bcApplyLanguage
+        self.assertIn("document.querySelectorAll('table th')", self.app_js)
+        # Verify badge query in bcApplyLanguage
+        self.assertIn("document.querySelectorAll('.badge, span[class*=\"badge\"], .status-badge')", self.app_js)
+        # Verify select options query in bcApplyLanguage
+        self.assertIn("sel.querySelectorAll('option')", self.app_js)
+
 
 if __name__ == "__main__":
     unittest.main()
+
+

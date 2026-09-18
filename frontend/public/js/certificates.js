@@ -341,6 +341,17 @@ function fitCertificatePreview() {
     const baseWidth = parseFloat(sheet.dataset.baseWidth) || 794;
     const style = window.getComputedStyle ? window.getComputedStyle(viewport) : null;
     const padX = style ? ((parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)) : 16;
+    
+    // If viewport or parent is not yet laid out (clientWidth === 0), schedule a retry
+    if (viewport.clientWidth <= 0) {
+      if (!viewport._retryCount || viewport._retryCount < 5) {
+        viewport._retryCount = (viewport._retryCount || 0) + 1;
+        setTimeout(fitCertificatePreview, 60);
+      }
+      return;
+    }
+    viewport._retryCount = 0;
+
     const availableWidth = viewport.clientWidth - (padX || 16);
 
     if (availableWidth > 0 && availableWidth < baseWidth) {
@@ -391,17 +402,30 @@ function initCertificateScaling() {
   enforceCenteredFields();
   fitCertificatePreview();
 
+  // Multi-stage timers after DOM mount to guarantee accurate scale
+  [50, 150, 300, 600].forEach(delay => {
+    setTimeout(() => {
+      fitCertificatePreview();
+      window.dispatchEvent(new Event('resize'));
+    }, delay);
+  });
+
   if (typeof ResizeObserver !== 'undefined') {
     if (!window._certResizeObserver) {
       window._certResizeObserver = new ResizeObserver(() => {
         fitCertificatePreview();
       });
     }
-    document.querySelectorAll('.certificate-preview-viewport').forEach(vp => {
+    document.querySelectorAll('.certificate-preview-viewport, .certificate-preview-wrapper, #certPrint, #printableCertificate').forEach(vp => {
       window._certResizeObserver.observe(vp);
     });
   }
 }
+
+// React to SPA navigation & custom component mounts
+window.addEventListener('bc:page-loaded', () => {
+  initCertificateScaling();
+});
 
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {

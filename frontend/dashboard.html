@@ -137,12 +137,13 @@
         </button>
         <div>
           <h1 class="font-display text-xl md:text-2xl text-forest-800">Dashboard</h1>
-          <p id="dashboardGreeting" data-user-greeting class="text-forest-500 text-xs md:text-sm">Welcome back! Here's today's overview.</p>
+          <p id="dashboardGreeting" data-user-greeting data-i18n="welcome_overview" class="text-forest-500 text-xs md:text-sm">Welcome back! Here's today's overview.</p>
         </div>
       </div>
       <div class="flex items-center gap-2 md:gap-4">
         <div class="relative" id="dashboardSearchWrap">
           <input type="text" id="dashboardGlobalSearch" placeholder="Search records (Case ID, name, date)…"
+                 data-i18n-placeholder="search_records_placeholder"
                  oninput="handleDashboardSearch(this.value)"
                  onfocus="if(this.value.trim()) handleDashboardSearch(this.value)"
                  class="pl-9 pr-8 py-2 rounded-full border border-forest-200 bg-forest-50 text-sm text-forest-700 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400 focus:bg-white w-48 sm:w-60 md:w-72 transition-all"
@@ -168,8 +169,8 @@
           </button>
           <div id="notifPanel" class="hidden absolute right-0 top-full mt-2 w-80 bg-white border border-forest-100 rounded-xl shadow-lg z-30 overflow-hidden">
             <div class="flex items-center justify-between px-4 py-3 border-b border-forest-50">
-              <span class="text-sm font-semibold text-forest-800">Notifications</span>
-              <button onclick="markAllNotifsRead()" class="text-xs text-forest-500 hover:text-forest-700">Mark all read</button>
+              <span class="text-sm font-semibold text-forest-800" data-i18n="notifications">Notifications</span>
+              <button onclick="markAllNotifsRead()" class="text-xs text-forest-500 hover:text-forest-700" data-i18n="mark_all_read">Mark all read</button>
             </div>
             <div id="notifList" class="max-h-96 overflow-y-auto"></div>
           </div>
@@ -185,15 +186,15 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="stat-card-grad plum cursor-default">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white/80 text-sm font-medium">Total Blotters</span>
+            <span class="text-white/80 text-sm font-medium" data-i18n="total_blotters">Total Blotters</span>
             <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="blotter" data-icon-size="18"></div>
           </div>
           <div class="font-display text-3xl" id="statBlotters">—</div>
-          <div class="text-xs text-white/70 mt-1" id="statBlottersSub"></div>
+          <div class="text-xs text-white/70 mt-1" id="statBlottersSub" data-i18n="blotter_entries_on_file">blotter entries on file</div>
         </div>
         <div class="stat-card-grad moss cursor-default">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white/80 text-sm font-medium">Incident Reports</span>
+            <span class="text-white/80 text-sm font-medium" data-i18n="incident_reports">Incident Reports</span>
             <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="incident" data-icon-size="18"></div>
           </div>
           <div class="font-display text-3xl" id="statIncidents">—</div>
@@ -201,15 +202,15 @@
         </div>
         <div class="stat-card-grad sunset cursor-default">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white/80 text-sm font-medium">Pending Settlement</span>
+            <span class="text-white/80 text-sm font-medium" data-i18n="pending_settlement">Pending Settlement</span>
             <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clock" data-icon-size="18"></div>
           </div>
           <div class="font-display text-3xl" id="statPending">—</div>
-          <div class="text-xs text-white/70 mt-1">awaiting settlement</div>
+          <div class="text-xs text-white/70 mt-1" id="statPendingSub" data-i18n="awaiting_settlement">awaiting settlement</div>
         </div>
         <div class="stat-card-grad dark cursor-default">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-white/70 text-sm font-medium">Resolved Cases</span>
+            <span class="text-white/70 text-sm font-medium" data-i18n="resolved_cases">Resolved Cases</span>
             <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="check" data-icon-size="18"></div>
           </div>
           <div class="font-display text-3xl text-white" id="statResolved">—</div>
@@ -223,8 +224,8 @@
         <!-- Recent Blotter -->
         <div class="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between">
-            <h2 class="font-display text-lg text-forest-800">Recent Blotter Entries</h2>
-            <a href="blotter.html" class="text-forest-600 text-sm hover:text-forest-800 font-medium transition-colors">View All →</a>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="recent_blotter_entries">Recent Blotter Entries</h2>
+            <a href="blotter.html" class="text-forest-600 text-sm hover:text-forest-800 font-medium transition-colors" data-i18n="view_all_arrow">View All →</a>
           </div>
           <div class="overflow-x-auto table-responsive">
             <table class="data-table">
@@ -243,7 +244,7 @@
 
         <!-- Resolution Rate donut + This Week -->
         <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
-          <h2 class="font-display text-lg text-forest-800 mb-4">Resolution Rate</h2>
+          <h2 class="font-display text-lg text-forest-800 mb-4" data-i18n="resolution_rate">Resolution Rate</h2>
           <div class="donut-wrap">
             <svg viewBox="0 0 128 128" width="128" height="128">
               <defs>
@@ -257,21 +258,21 @@
             </svg>
             <div class="donut-center">
               <div class="donut-value" id="statResolutionPct">—</div>
-              <div class="donut-label">resolved</div>
+              <div class="donut-label" data-i18n="resolved_lowercase">resolved</div>
             </div>
           </div>
           <div class="mt-5 pt-1">
             <div class="mini-metric-row">
               <div class="flex items-center gap-3">
                 <div class="mini-metric-icon bg-sage-100 text-sage-600" data-icon="incident" data-icon-size="16"></div>
-                <span class="text-sm text-forest-600">New this week</span>
+                <span class="text-sm text-forest-600" data-i18n="new_this_week">New this week</span>
               </div>
               <span class="font-display text-lg text-forest-800" id="statWeekCount">—</span>
             </div>
             <div class="mini-metric-row">
               <div class="flex items-center gap-3">
                 <div class="mini-metric-icon bg-forest-100 text-forest-600" data-icon="clock" data-icon-size="16"></div>
-                <span class="text-sm text-forest-600">Awaiting settlement</span>
+                <span class="text-sm text-forest-600" data-i18n="awaiting_settlement_cap">Awaiting settlement</span>
               </div>
               <span class="font-display text-lg text-forest-800" id="statPendingMini">—</span>
             </div>
@@ -282,31 +283,31 @@
       <!-- Quick Actions tile grid + Risk Forecast -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="col-span-1 lg:col-span-2 bg-white rounded-2xl border border-forest-100 shadow-sm p-6">
-          <h2 class="font-display text-lg text-forest-800 mb-4">Quick Actions</h2>
+          <h2 class="font-display text-lg text-forest-800 mb-4" data-i18n="quick_actions">Quick Actions</h2>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
             <a href="blotter.html" class="tile-action tile-plum">
               <div class="tile-icon" data-icon="blotter" data-icon-size="18"></div>
-              <div class="tile-label">Blotter<br/>Records</div>
+              <div class="tile-label" data-i18n="quick_blotter_records">Blotter<br/>Records</div>
             </a>
             <a href="incident.html?new=1" class="tile-action tile-dark">
               <div class="tile-icon" data-icon="incident" data-icon-size="18"></div>
-              <div class="tile-label">New Incident<br/>Report</div>
+              <div class="tile-label" data-i18n="quick_new_incident">New Incident<br/>Report</div>
             </a>
             <a href="settlement.html" class="tile-action tile-sunset">
               <div class="tile-icon" data-icon="settlement" data-icon-size="18"></div>
-              <div class="tile-label">Monitor<br/>Settlement</div>
+              <div class="tile-label" data-i18n="quick_monitor_settlement">Monitor<br/>Settlement</div>
             </a>
             <a href="reports.html" class="tile-action tile-outline">
               <div class="tile-icon" data-icon="reports" data-icon-size="18"></div>
-              <div class="tile-label">Generate<br/>Report</div>
+              <div class="tile-label" data-i18n="quick_generate_report">Generate<br/>Report</div>
             </a>
             <a href="census.html" class="tile-action tile-outline">
               <div class="tile-icon" data-icon="folder" data-icon-size="18"></div>
-              <div class="tile-label">Import<br/>Census CSV</div>
+              <div class="tile-label" data-i18n="quick_import_census">Import<br/>Census CSV</div>
             </a>
             <a href="users.html" class="tile-action tile-outline">
               <div class="tile-icon" data-icon="users" data-icon-size="18"></div>
-              <div class="tile-label">Users &amp;<br/>Roles</div>
+              <div class="tile-label" data-i18n="quick_users_roles">Users &amp;<br/>Roles</div>
             </a>
           </div>
         </div>
@@ -318,9 +319,9 @@
             <span data-icon="play" data-icon-size="16" class="text-white/70"></span>
           </div>
           <div class="mt-4">
-            <div class="text-white/80 text-xs uppercase tracking-wide font-semibold mb-1">Risk Forecast</div>
-            <div class="font-display text-xl text-white leading-snug">View This Week's<br/>Zone Risk Rankings</div>
-            <div class="text-white/70 text-xs mt-2">Model-predicted hotspots by zone →</div>
+            <div class="text-white/80 text-xs uppercase tracking-wide font-semibold mb-1" data-i18n="risk_forecast">Risk Forecast</div>
+            <div class="font-display text-xl text-white leading-snug" data-i18n="risk_rankings_title">View This Week's<br/>Zone Risk Rankings</div>
+            <div class="text-white/70 text-xs mt-2" data-i18n="risk_hotspots_desc">Model-predicted hotspots by zone →</div>
           </div>
         </a>
       </div>
@@ -334,7 +335,7 @@
 <script src="icons.js"></script>
 <script src="custom-controls.js"></script>
   <script>
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('currentDate').textContent = typeof bcFormatDateLocale === 'function' ? bcFormatDateLocale(new Date()) : new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
     var dashRecentBlotter = [];
     var dashAllBlotter = [];
@@ -491,15 +492,15 @@
         const stats = await BCApi.dashboard();
 
         document.getElementById('statBlotters').textContent = stats.blotterCount ?? 0;
-        document.getElementById('statBlottersSub').textContent = 'blotter entries on file';
+        document.getElementById('statBlottersSub').textContent = (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino') ? 'mga tala ng blotter sa file' : 'blotter entries on file';
 
         document.getElementById('statIncidents').textContent = stats.incidentCount ?? 0;
-        document.getElementById('statIncidentsSub').textContent = '↑ ' + (stats.weekCount ?? 0) + ' this week';
+        document.getElementById('statIncidentsSub').textContent = typeof bcFormatThisWeekCount === 'function' ? bcFormatThisWeekCount(stats.weekCount ?? 0) : ('↑ ' + (stats.weekCount ?? 0) + ' this week');
 
         document.getElementById('statPending').textContent = stats.pendingSettlements ?? 0;
 
         document.getElementById('statResolved').textContent = stats.resolvedCount ?? 0;
-        document.getElementById('statResolvedSub').textContent = (stats.resolutionRate ?? 0) + '% resolution rate';
+        document.getElementById('statResolvedSub').textContent = typeof bcFormatResolutionRate === 'function' ? bcFormatResolutionRate(stats.resolutionRate ?? 0) : ((stats.resolutionRate ?? 0) + '% resolution rate');
 
         const circumference = 326.7;
         const pct = Math.max(0, Math.min(100, stats.resolutionRate ?? 0));
@@ -530,7 +531,7 @@
           const firstName = bcFirstName(user.full_name || user.firstName || user.first_name);
           const greeting = document.getElementById('dashboardGreeting');
           if (greeting) {
-            greeting.textContent = `Welcome back, ${firstName}. Here's today's overview.`;
+            greeting.textContent = typeof bcFormatUserGreeting === 'function' ? bcFormatUserGreeting(firstName) : `Welcome back, ${firstName}. Here's today's overview.`;
           }
         }
         if (typeof refreshNotifBadge === 'function') refreshNotifBadge();

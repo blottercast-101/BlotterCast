@@ -95,7 +95,7 @@
   </aside>
 
 <div id="app-content" class="ml-64 flex flex-col min-h-screen">
-  <header class="page-header">
+  <header class="page-header flex items-center justify-between w-full">
     <div class="flex items-center gap-3">
       <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,13 +103,18 @@
         </svg>
       </button>
       <div>
-        <h1 class="font-display text-xl md:text-2xl text-forest-800">Barangay Census</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Official list of registered residents of Barangay Mapulang Lupa</p>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="barangay_census">Barangay Census</h1>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="census_description">Official list of registered residents of Barangay Mapulang Lupa</p>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <button onclick="openCensusImportModal()" class="btn-secondary" id="importBtn"><span data-icon="folder" data-icon-size="16"></span> Import</button>
-      <button onclick="openAddResident()" class="btn-primary"><span data-icon="plus" data-icon-size="16"></span> Add Resident</button>
+    <div class="flex items-center gap-3 ml-auto">
+      <button type="button" onclick="openCensusImportModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors" id="importBtn">
+        <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+        <span data-i18n="import_data">Mag-import</span>
+      </button>
+      <button onclick="openAddResident()" class="btn-primary flex items-center gap-2" data-i18n="add_resident"><span data-icon="plus" data-icon-size="16"></span> <span data-i18n="add_resident">+ Add Resident</span></button>
     </div>
   </header>
 
@@ -118,45 +123,45 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Total Residents</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="total_residents">Total Residents</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="census" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="cTotal">0</div>
-          <div class="text-xs text-white/70 mt-1" id="cTotalSub">registered in barangay</div>
+          <div class="text-xs text-white/70 mt-1" id="cTotalSub" data-i18n="registered_in_barangay">registered in barangay</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Total Households</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="total_households">Total Households</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="building" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="cHousehold">0</div>
-          <div class="text-xs text-white/70 mt-1" id="cHouseholdSub">indexed residences</div>
+          <div class="text-xs text-white/70 mt-1" id="cHouseholdSub" data-i18n="indexed_residences">indexed residences</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Registered Voters</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="registered_voters">Registered Voters</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="idCard" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="cVoters">0</div>
-          <div class="text-xs text-white/70 mt-1" id="cVotersSub">active precinct voters</div>
+          <div class="text-xs text-white/70 mt-1" id="cVotersSub" data-i18n="active_precinct_voters">active precinct voters</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Senior Citizens</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="senior_citizens">Senior Citizens</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="shield" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl text-white mt-3" id="cSenior">0</div>
-          <div class="text-xs text-white/70 mt-1" id="cSeniorSub">60+ years &amp; special care</div>
+          <div class="text-xs text-white/70 mt-1" id="cSeniorSub" data-i18n="senior_care_sub">60+ years &amp; special care</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
@@ -165,9 +170,9 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="census" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800" id="resTitle">Resident Records</h2>
-        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
-          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        <h2 class="font-display text-lg text-forest-800" id="resTitle" data-i18n="resident_records">Resident Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2" data-i18n="view_archived">
+          <span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">View Archived</span>
         </button>
       </div>
       <script>
@@ -186,7 +191,7 @@
         })();
       </script>
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="resSearch" placeholder="Search name, address…" class="filter-input w-full pl-8" oninput="renderResidents()"/></span>
+        <span class="relative flex-1 min-w-52"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="resSearch" placeholder="Search name, address…" data-i18n-placeholder="search_name_address_placeholder" class="filter-input w-full pl-8" oninput="renderResidents()"/></span>
         <select id="resZone" class="filter-input" onchange="renderResidents()">
           <option value="">All Zones</option>
           <option value="Zone 1">Zone 1</option><option value="Zone 2">Zone 2</option>
@@ -535,13 +540,17 @@ async function toggleArchivedView(explicitState = null) {
   }
   curPage = 1;
   if (resBatchManager?.clearSelection) resBatchManager.clearSelection();
+  const lang = (typeof localStorage !== 'undefined' && (localStorage.getItem('app_language') || localStorage.getItem('bc_language'))) || 'en';
+  const isTl = (String(lang)).toLowerCase().startsWith('fil') || (String(lang)).toLowerCase().startsWith('tag') || (String(lang)).toLowerCase() === 'tl';
   const titleEl = document.getElementById('resTitle');
-  if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Resident Records' : 'Resident Records';
+  if (titleEl) titleEl.textContent = viewingArchived ? (isTl ? 'Naka-arkibong mga Tala ng Residente' : 'Archived Resident Records') : (isTl ? 'Mga Tala ng Residente' : 'Resident Records');
   const toggleBtn = document.getElementById('archiveToggleBtn');
   if (toggleBtn) {
+    const backLabel = isTl ? 'Bumalik sa Aktibo' : 'Back to Active';
+    const viewLabel = isTl ? 'Tignan ang Naka-arkibo' : 'View Archived';
     toggleBtn.innerHTML = viewingArchived
-      ? '<span data-icon="census" data-icon-size="14"></span> Back to Active'
-      : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+      ? `<span data-icon="census" data-icon-size="14"></span> <span data-i18n="back_to_active">${backLabel}</span>`
+      : `<span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">${viewLabel}</span>`;
     if (typeof renderIcons === 'function') renderIcons();
   }
   try {
@@ -692,7 +701,7 @@ function renderResidents(){
   }
 
   const pagInfo = document.getElementById('resPagInfo');
-  if (pagInfo) pagInfo.textContent = `Showing ${Math.min(start + 1, total) || 0}–${Math.min(start + ROWS, total)} of ${total}`;
+  if (pagInfo) pagInfo.textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(Math.min(start + 1, total) || 0, Math.min(start + ROWS, total), total) : `Showing ${Math.min(start + 1, total) || 0}–${Math.min(start + ROWS, total)} of ${total}`;
   const pagCtrl = document.getElementById('resPagCtrl');
   if (pagCtrl) bcRenderPagination(pagCtrl, curPage, tp, (p) => { curPage = p; renderResidents(); });
   if (window.resBatchManager && typeof resBatchManager.updateUI === 'function') resBatchManager.updateUI();

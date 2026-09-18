@@ -168,9 +168,9 @@
             <select class="form-input" data-setting="date_format"><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option><option>YYYY-MM-DD</option></select>
           </div>
           <div>
-            <label class="form-label">Time Format</label>
+            <label class="form-label" data-i18n="system_time_format">System Time Format</label>
             <select class="form-input" data-setting="time_format" id="pref_time_format" onchange="onTimeFormatSelectChange(this.value)">
-              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="12" data-i18n="time_format_12h">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
               <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
             </select>
           </div>
@@ -195,12 +195,12 @@
           <div>
             <label class="form-label">Risk Score Threshold (0–100)</label>
             <input type="number" class="form-input" data-setting="risk_threshold" value="75" min="0" max="100"/>
-            <p class="text-xs text-forest-400 mt-1">Trigger alert when predicted risk exceeds this value.</p>
+            <p class="text-xs text-forest-400 mt-1" data-i18n="trigger_alert_risk_desc">Trigger alert when predicted risk exceeds this value.</p>
           </div>
           <div>
             <label class="form-label">Incident Spike Threshold</label>
             <input type="number" class="form-input" data-setting="spike_threshold" value="5" min="1"/>
-            <p class="text-xs text-forest-400 mt-1">Alert when new incidents exceed this count in 24 hours.</p>
+            <p class="text-xs text-forest-400 mt-1" data-i18n="alert_spike_desc">Alert when new incidents exceed this count in 24 hours.</p>
           </div>
         </div>
       </div>
@@ -208,11 +208,11 @@
         <h3>Notification Channels</h3>
         <div class="space-y-0">
           <div class="toggle-row">
-            <div><div class="toggle-label">In-App Notifications</div><div class="toggle-desc">Show alerts in the notification center</div></div>
+            <div><div class="toggle-label" data-i18n="in_app_notifications">In-App Notifications</div><div class="toggle-desc" data-i18n="show_alerts_desc">Show alerts in the notification center</div></div>
             <button class="toggle-switch on" data-setting="notif_inapp" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
           <div class="toggle-row">
-            <div><div class="toggle-label">Model Retraining Alerts</div><div class="toggle-desc">Notify when ML model retraining completes</div></div>
+            <div><div class="toggle-label" data-i18n="model_retraining_alerts">Model Retraining Alerts</div><div class="toggle-desc" data-i18n="notify_retrain_desc">Notify when ML model retraining completes</div></div>
             <button class="toggle-switch on" data-setting="notif_retrain" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
           </div>
         </div>
@@ -407,14 +407,14 @@
             <!-- Top Card: Password Requirements Checklist -->
             <div class="password-requirements-box bg-[#eaf6ee] rounded-2xl p-6 border border-forest-100/70 shadow-xs" id="acct_req_box">
               <div class="req-title text-xs font-bold uppercase tracking-wider text-[#1b4332] mb-4 flex items-center gap-1.5">
-                <span>PASSWORD MUST CONTAIN:</span>
+                <span data-i18n="password_must_contain">PASSWORD MUST CONTAIN:</span>
               </div>
               <ul class="space-y-3">
-                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="len"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 6 characters long</span></li>
-                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="upper"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 uppercase letter (A-Z)</span></li>
-                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="lower"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 lowercase letter (a-z)</span></li>
-                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="num"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 number (0-9)</span></li>
-                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="special"><span class="rule-icon text-sm">✓</span><span class="rule-text">At least 1 special character (e.g., !@#$%^&*)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="len"><span class="rule-icon text-sm">✓</span><span class="rule-text" data-i18n="rule_len">At least 6 characters long</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="upper"><span class="rule-icon text-sm">✓</span><span class="rule-text" data-i18n="rule_upper">At least 1 uppercase letter (A–Z)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="lower"><span class="rule-icon text-sm">✓</span><span class="rule-text" data-i18n="rule_lower">At least 1 lowercase letter (a–z)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="num"><span class="rule-icon text-sm">✓</span><span class="rule-text" data-i18n="rule_num">At least 1 number (0–9)</span></li>
+                <li class="rule-item flex items-center gap-2.5 text-xs text-forest-700" data-rule="special"><span class="rule-icon text-sm">✓</span><span class="rule-text" data-i18n="rule_special">At least 1 special character (e.g., !@#$%^&*)</span></li>
               </ul>
             </div>
 
@@ -422,9 +422,9 @@
             <div class="bg-[#eaf6ee] rounded-2xl p-5 border border-forest-100/70 shadow-xs">
               <div class="text-xs font-bold text-[#1b4332] mb-1.5 flex items-center gap-2">
                 <span data-icon="shield" data-icon-size="16" class="text-[#1b4332]"></span>
-                <span>Security Tip</span>
+                <span data-i18n="security_tip">Security Tip</span>
               </div>
-              <p class="text-[11px] font-bold tracking-wide uppercase text-[#1b4332]/90 leading-relaxed">
+              <p class="text-[11px] font-bold tracking-wide uppercase text-[#1b4332]/90 leading-relaxed" data-i18n="security_tip_desc">
                 NEVER REUSE PASSWORDS ACROSS MULTIPLE SYSTEMS
               </p>
             </div>
@@ -433,12 +433,12 @@
       </div>
 
       <div class="settings-section">
-        <h3>Display Preferences</h3>
+        <h3 data-i18n="display_preferences">Display Preferences</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="form-label">System Time Format</label>
+            <label class="form-label" data-i18n="system_time_format">System Time Format</label>
             <select id="user_time_format" class="form-input" onchange="onTimeFormatSelectChange(this.value)">
-              <option value="12">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
+              <option value="12" data-i18n="time_format_12h">12-Hour (hh:mm A) (e.g. 01:45 PM)</option>
               <option value="24">24-Hour (HH:mm) (e.g. 13:45)</option>
             </select>
           </div>
@@ -449,8 +449,8 @@
         <div class="settings-section space-y-6">
           <!-- Header with Aligned Badge -->
           <h3>
-            <span>Security &amp; Authentication</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 font-body">
+            <span data-i18n="security_and_authentication">Security &amp; Authentication</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 font-body" data-i18n="admin_master_control">
               Admin Master Control
             </span>
           </h3>
@@ -459,10 +459,10 @@
             <!-- Master 2FA Toggle Card -->
             <div class="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
               <div class="space-y-0.5">
-                <p class="text-sm font-semibold text-gray-800 m-0">
+                <p class="text-sm font-semibold text-gray-800 m-0" data-i18n="enforce_2fa_all_accounts">
                   Enforce 2FA for All Accounts
                 </p>
-                <p class="text-xs text-gray-500 m-0">
+                <p class="text-xs text-gray-500 m-0" data-i18n="require_2fa_desc">
                   Require Two-Factor Authentication across all roles during login.
                 </p>
               </div>
@@ -483,10 +483,10 @@
             <!-- Master Idle Timeout Toggle Card -->
             <div class="flex items-center justify-between p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 transition-colors">
               <div class="space-y-0.5">
-                <p class="text-sm font-semibold text-gray-800 m-0">
+                <p class="text-sm font-semibold text-gray-800 m-0" data-i18n="session_inactivity_auto_logout">
                   Session Inactivity Auto-Logout (2 Hours)
                 </p>
-                <p class="text-xs text-gray-500 m-0">
+                <p class="text-xs text-gray-500 m-0" data-i18n="auto_logout_desc">
                   Automatically logs out inactive users after 120 minutes of inactivity.
                 </p>
               </div>
@@ -506,23 +506,23 @@
           </div>
 
           <div class="pt-4 border-t border-forest-100/70">
-            <h3 class="text-sm font-normal text-forest-800 mb-3">Policy Thresholds &amp; Password Rules</h3>
+            <h3 class="text-sm font-normal text-forest-800 mb-3" data-i18n="policy_thresholds_password_rules">Policy Thresholds &amp; Password Rules</h3>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="form-label">Inactivity Timeout Duration (minutes)</label>
+                <label class="form-label" data-i18n="inactivity_timeout_duration">Inactivity Timeout Duration (minutes)</label>
                 <input type="number" class="form-input" data-setting="idle_timeout_duration_minutes" value="120" min="5" max="1440"/>
-                <p class="text-xs text-forest-400 mt-1">Default: 120 minutes (2 hours).</p>
+                <p class="text-xs text-forest-400 mt-1" data-i18n="default_timeout_desc">Default: 120 minutes (2 hours).</p>
               </div>
               <div>
-                <label class="form-label">Max Failed Login Attempts</label>
+                <label class="form-label" data-i18n="max_failed_logins">Max Failed Login Attempts</label>
                 <input type="number" class="form-input" data-setting="max_failed_logins" value="5" min="1" max="20"/>
               </div>
               <div>
-                <label class="form-label">Minimum Password Length</label>
+                <label class="form-label" data-i18n="min_password_length">Minimum Password Length</label>
                 <input type="number" class="form-input" data-setting="min_password_length" value="8" min="6" max="32"/>
               </div>
               <div>
-                <label class="form-label">Password Expiry (days)</label>
+                <label class="form-label" data-i18n="password_expiry_days">Password Expiry (days)</label>
                 <input type="number" class="form-input" data-setting="password_expiry_days" value="90" min="0" max="365"/>
               </div>
             </div>
@@ -530,14 +530,14 @@
         </div>
 
         <div class="settings-section">
-          <h3>Data Privacy</h3>
+          <h3 data-i18n="data_privacy">Data Privacy</h3>
           <div class="space-y-0">
             <div class="toggle-row">
-              <div><div class="toggle-label">Audit Trail Logging</div><div class="toggle-desc">Log all data changes, logins, and report exports</div></div>
+              <div><div class="toggle-label" data-i18n="audit_trail_logging">Audit Trail Logging</div><div class="toggle-desc" data-i18n="log_data_changes_desc">Log all data changes, logins, and report exports</div></div>
               <button class="toggle-switch on" data-setting="audit_trail" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
             </div>
             <div class="toggle-row">
-              <div><div class="toggle-label">Data Subject Rights Module</div><div class="toggle-desc">Allow data access/correction requests from data subjects</div></div>
+              <div><div class="toggle-label" data-i18n="data_subject_rights_module">Data Subject Rights Module</div><div class="toggle-desc" data-i18n="data_subject_rights_desc">Allow data access/correction requests from data subjects</div></div>
               <button class="toggle-switch on" data-setting="data_subject_rights" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
             </div>
           </div>
@@ -548,51 +548,51 @@
     <!-- BACKUP -->
     <div id="tab-backup" class="settings-tab-panel space-y-5 hidden">
       <div class="settings-section">
-        <h3>Automated Backup</h3>
+        <h3 data-i18n="automated_backup">Automated Backup</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Backup Frequency</label>
+            <label class="form-label" data-i18n="backup_frequency">Backup Frequency</label>
             <select class="form-input" data-setting="backup_frequency"><option selected>Daily</option><option>Every 12 hours</option><option>Weekly</option></select>
           </div>
           <div>
-            <label class="form-label">Backup Time</label>
+            <label class="form-label" data-i18n="backup_time">Backup Time</label>
             <input type="time" class="form-input" data-setting="backup_time" value="02:00"/>
           </div>
           <div>
-            <label class="form-label">Backup Destination</label>
+            <label class="form-label" data-i18n="backup_destination">Backup Destination</label>
             <select class="form-input" data-setting="backup_destination"><option>Local Storage Device</option><option>External Drive</option><option>Both</option></select>
           </div>
           <div>
-            <label class="form-label">Retain Backups For (days)</label>
+            <label class="form-label" data-i18n="retain_backups_days">Retain Backups For (days)</label>
             <input type="number" class="form-input" data-setting="retain_backups_days" value="30"/>
           </div>
         </div>
-        <p class="text-xs text-forest-600 mt-2 flex items-center gap-1.5 font-medium"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Backups are scheduled and executed autonomously by the backend server worker in Asia/Manila standard time (UTC+8).</p>
+        <p class="text-xs text-forest-600 mt-2 flex items-center gap-1.5 font-medium"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="backups_scheduled_desc">Backups are scheduled and executed autonomously by the backend server worker in Asia/Manila standard time (UTC+8).</span></p>
         <div class="mt-4 flex gap-3">
-          <button onclick="runBackupNow()" class="btn-primary text-sm" id="backupBtn"><span data-icon="play" data-icon-size="14"></span> Run Backup Now</button>
+          <button onclick="runBackupNow()" class="btn-primary text-sm" id="backupBtn"><span data-icon="play" data-icon-size="14"></span> <span data-i18n="perform_backup_now">Perform Backup Now</span></button>
         </div>
       </div>
       <div class="settings-section">
-        <h3>Recovery Objectives</h3>
+        <h3 data-i18n="recovery_objectives">Recovery Objectives</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Recovery Time Objective (RTO)</label>
+            <label class="form-label" data-i18n="recovery_time_objective">Recovery Time Objective (RTO)</label>
             <input type="text" class="form-input" data-setting="rto_hours" value="4 hours"/>
-            <p class="text-xs text-forest-400 mt-1">Maximum acceptable downtime after failure.</p>
+            <p class="text-xs text-forest-400 mt-1" data-i18n="rto_desc">Maximum acceptable downtime after failure.</p>
           </div>
           <div>
-            <label class="form-label">Recovery Point Objective (RPO)</label>
+            <label class="form-label" data-i18n="recovery_point_objective">Recovery Point Objective (RPO)</label>
             <input type="text" class="form-input" data-setting="rpo_hours" value="24 hours"/>
-            <p class="text-xs text-forest-400 mt-1">Maximum acceptable data loss window.</p>
+            <p class="text-xs text-forest-400 mt-1" data-i18n="rpo_desc">Maximum acceptable data loss window.</p>
           </div>
         </div>
       </div>
       <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-forest-50">
-          <div class="font-semibold text-forest-700 text-sm">Backup History</div>
+          <div class="font-semibold text-forest-700 text-sm" data-i18n="backup_history">Backup History</div>
         </div>
         <table class="data-table">
-          <thead><tr><th>File</th><th>Size</th><th>Status</th><th>By</th><th>Date</th><th>Actions</th></tr></thead>
+          <thead><tr><th>File</th><th>Size</th><th>Status</th><th>By</th><th>Date</th><th data-i18n="actions">Actions</th></tr></thead>
           <tbody id="backupHistoryBody"><tr><td colspan="6" class="text-center py-6 text-forest-400">No backups yet.</td></tr></tbody>
         </table>
       </div>
@@ -601,11 +601,11 @@
     <!-- ML MODEL -->
   
       <div class="settings-section">
-        <h3><span data-icon="database" data-icon-size="18"></span> Data Management</h3>
-        <p class="text-sm text-forest-500 mb-4">All records are stored in the PostgreSQL <code>blottercast</code> database. Records added on the Blotter and Incident pages automatically feed the Heat Map, Trends, and the Python ML Predictions module.</p>
+        <h3><span data-icon="database" data-icon-size="18"></span> <span data-i18n="data_management">Data Management</span></h3>
+        <p class="text-sm text-forest-500 mb-4" data-i18n="data_management_desc">All records are stored in the PostgreSQL <code>blottercast</code> database. Records added on the Blotter and Incident pages automatically feed the Heat Map, Trends, and the Python ML Predictions module.</p>
         <div class="flex items-center gap-3">
-          <button onclick="resetDemoData()" class="btn-secondary"><span data-icon="refresh" data-icon-size="15"></span> Reset Demo Dataset</button>
-          <button onclick="downloadData()" class="btn-secondary"><span data-icon="download" data-icon-size="16"></span> Export Records (JSON)</button>
+          <button onclick="resetDemoData()" class="btn-secondary"><span data-icon="refresh" data-icon-size="15"></span> <span data-i18n="reset_demo_dataset">Reset Demo Dataset</span></button>
+          <button onclick="downloadData()" class="btn-secondary"><span data-icon="download" data-icon-size="16"></span> <span data-i18n="export_records_json">Export Records (JSON)</span></button>
         </div>
       </div>
 
@@ -856,11 +856,18 @@ async function loadBackupHistory() {
 }
 
 async function resetDemoData() {
-  if (!(await bcConfirm('Reset all records to a freshly seeded demo dataset? Records you added will be removed. This runs api/seed.php on the server.', { title: 'Reset Demo Data', okLabel: 'Reset', danger: true }))) return;
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  const confirmMsg = isTl 
+    ? 'I-reset ang lahat ng tala sa bagong seeded na sample na data? Ang mga idinagdag mong tala ay aalisin. Tatakbo nito ang api/seed.php sa server.' 
+    : 'Reset all records to a freshly seeded demo dataset? Records you added will be removed. This runs api/seed.php on the server.';
+  const title = isTl ? 'I-reset ang Sample na Data' : 'Reset Demo Data';
+  const okLabel = isTl ? 'I-reset' : 'Reset';
+  const cancelLabel = isTl ? 'Kanselahin' : 'Cancel';
+  if (!(await bcConfirm(confirmMsg, { title, okLabel, cancelLabel, danger: true }))) return;
   try {
     await BCApi._fetch('api/seed.php');
     if (typeof BCApi.invalidateCache === 'function') BCApi.invalidateCache();
-    showToast('Demo dataset reseeded successfully!');
+    showToast(isTl ? 'Matagumpay na na-reseed ang sample na dataset!' : 'Demo dataset reseeded successfully!');
     await Promise.all([loadSettings(), loadBackupHistory(), loadMyAccount()]);
   } catch (err) {
     showToast(err.message, 'error');
@@ -1608,10 +1615,18 @@ window.initSettings = async function () {
     } catch (err) {
       showToast('Could not load settings: ' + (err.message || err), 'error');
     }
+    if (typeof applyLanguageTranslation === 'function') {
+      applyLanguageTranslation();
+    }
   } catch (initErr) {
     console.error('initSettings error:', initErr);
   }
 };
+window.addEventListener('bc:language-changed', () => {
+  if (typeof applyLanguageTranslation === 'function') {
+    applyLanguageTranslation();
+  }
+});
 if (!window._bcSpaNavActive) { initSettings(); }
 
 </script>

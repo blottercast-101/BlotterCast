@@ -114,21 +114,31 @@
       </button>
       <div>
         <h1 class="font-display text-xl md:text-2xl text-forest-800">Blotter Records</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Manage all barangay blotter records</p>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="manage_blotter_records">Manage all barangay blotter records</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
       <div class="relative" data-perm="generate_reports">
-        <button onclick="toggleExportMenu()" class="btn-secondary flex items-center gap-2">
-          <span data-icon="download" data-icon-size="16"></span> Export to Excel
+        <button 
+          type="button" 
+          id="exportExcelBtn" 
+          onclick="toggleExportMenu()" 
+          data-i18n="export_excel" 
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors">
+          <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span data-i18n="export_excel">Export to Excel</span>
         </button>
         <div id="exportMenu" class="hidden absolute right-0 top-full mt-2 w-64 bg-white border border-forest-100 rounded-xl shadow-lg z-20 overflow-hidden">
           <a href="#" onclick="event.preventDefault(); toggleExportMenu(); openExportFilter('api/exports.php?action=blotter_record', 'Export Blotter Record')" class="block px-4 py-3 text-sm text-forest-700 hover:bg-forest-50 border-b border-forest-50">Blotter Record<br/><span class="text-xs text-forest-400">Wide form with settlement tracking</span></a>
           <a href="#" onclick="event.preventDefault(); toggleExportMenu(); openExportFilter('api/exports.php?action=blotter_entry_2025', 'Export Blotter Entry Record')" class="block px-4 py-3 text-sm text-forest-700 hover:bg-forest-50">Blotter Entry Record<br/><span class="text-xs text-forest-400">Docket-style logbook format</span></a>
         </div>
-      </div>
-      <button onclick="openModal('importModal')" class="btn-secondary flex items-center gap-2" data-perm="import_data">
-        <span data-icon="folder" data-icon-size="16"></span> Import
+      <button type="button" onclick="openModal('importModal')" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors" data-perm="import_data">
+        <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+        <span data-i18n="import_data">Mag-import</span>
       </button>
     </div>
   </header>
@@ -138,18 +148,18 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Total Blotters</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="total_blotters">Total Blotters</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="blotter" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="blTotalCount">0</div>
-          <div class="text-xs text-white/70 mt-1" id="blTotalSub">blotter entries on file</div>
+          <div class="text-xs text-white/70 mt-1" id="blTotalSub" data-i18n="blotter_entries_on_file">blotter entries on file</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Incident Reports</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="incident_reports">Incident Reports</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="incident" data-icon-size="18"></div>
         </div>
         <div>
@@ -160,18 +170,18 @@
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Pending Settlement</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="pending_settlement">Pending Settlement</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
         </div>
         <div>
           <div class="font-display text-3xl mt-3" id="blPendingCount">0</div>
-          <div class="text-xs text-white/70 mt-1" id="blPendingSub">awaiting settlement</div>
+          <div class="text-xs text-white/70 mt-1" id="blPendingSub" data-i18n="awaiting_settlement">awaiting settlement</div>
         </div>
         <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Resolved Cases</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="resolved_cases">Resolved Cases</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
         <div>
@@ -187,8 +197,8 @@
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="blotter" data-icon-size="17"></div>
         <h2 class="font-display text-lg text-forest-800" id="blTitle">Blotter Records</h2>
-        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
-          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2" data-i18n="view_archived">
+          <span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">View Archived</span>
         </button>
       </div>
       <script>
@@ -216,7 +226,7 @@
           <option value="CIVIL">Civil</option>
         </select>
         <select id="statusFilter" class="filter-input" onchange="currentPage=1; renderTable()">
-          <option value="">All Statuses</option>
+          <option value="" data-i18n="all_statuses">All Statuses</option>
           <option value="Pending">Pending</option>
           <option value="Resolved">Resolved</option>
         </select>
@@ -592,13 +602,17 @@
     }
     currentPage = 1;
     bltBatchManager.clearSelection();
+    const lang = (typeof localStorage !== 'undefined' && (localStorage.getItem('app_language') || localStorage.getItem('bc_language'))) || 'en';
+    const isTl = (String(lang)).toLowerCase().startsWith('fil') || (String(lang)).toLowerCase().startsWith('tag') || (String(lang)).toLowerCase() === 'tl';
     const titleEl = document.getElementById('blTitle');
-    if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Blotter Records' : 'Blotter Records';
+    if (titleEl) titleEl.textContent = viewingArchived ? (isTl ? 'Naka-arkibong mga Tala ng Blotter' : 'Archived Blotter Records') : (isTl ? 'Mga Tala ng Blotter' : 'Blotter Records');
     const toggleBtn = document.getElementById('archiveToggleBtn');
     if (toggleBtn) {
+      const backLabel = isTl ? 'Bumalik sa Aktibo' : 'Back to Active';
+      const viewLabel = isTl ? 'Tignan ang Naka-arkibo' : 'View Archived';
       toggleBtn.innerHTML = viewingArchived
-        ? '<span data-icon="blotter" data-icon-size="14"></span> Back to Active'
-        : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+        ? `<span data-icon="blotter" data-icon-size="14"></span> <span data-i18n="back_to_active">${backLabel}</span>`
+        : `<span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">${viewLabel}</span>`;
       if (typeof renderIcons === 'function') renderIcons();
     }
     try {
@@ -636,7 +650,21 @@
 
     if (resolvedRateSubEl) {
       const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
-      resolvedRateSubEl.textContent = `${rate}% resolution rate`;
+      resolvedRateSubEl.textContent = typeof bcFormatResolutionRate === 'function' ? bcFormatResolutionRate(rate) : `${rate}% resolution rate`;
+    }
+    const ongoingSubEl = document.getElementById('blOngoingSub');
+    if (ongoingSubEl) {
+      ongoingSubEl.textContent = typeof bcFormatThisWeekCount === 'function' ? bcFormatThisWeekCount(ongoing) : `↑ ${ongoing} this week`;
+    }
+    const totalSubEl = document.getElementById('blTotalSub');
+    if (totalSubEl) {
+      const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+      totalSubEl.textContent = isTl ? 'mga tala ng blotter sa file' : 'blotter entries on file';
+    }
+    const pendingSubEl = document.getElementById('blPendingSub');
+    if (pendingSubEl) {
+      const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+      pendingSubEl.textContent = isTl ? 'naghihintay ng pag-aayos' : 'awaiting settlement';
     }
   }
 
@@ -910,9 +938,9 @@
     }
 
     const countEl = document.getElementById('recordCount');
-    if (countEl) countEl.textContent = `${total} record${total!==1?'s':''}`;
+    if (countEl) countEl.textContent = typeof bcFormatRecordCount === 'function' ? bcFormatRecordCount(total) : `${total} record${total!==1?'s':''}`;
     const infoEl = document.getElementById('paginationInfo');
-    if (infoEl) infoEl.textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
+    if (infoEl) infoEl.textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(Math.min(start+1,total), Math.min(start+ROWS_PER_PAGE,total), total) : `Showing ${Math.min(start+1,total)}–${Math.min(start+ROWS_PER_PAGE,total)} of ${total}`;
 
     const ctrlEl = document.getElementById('paginationControls');
     if (ctrlEl) bcRenderPagination(ctrlEl, currentPage, totalPages, (p) => { currentPage = p; renderTable(); });
@@ -1586,7 +1614,7 @@
   document.addEventListener('click', (e) => {
     const menu = document.getElementById('exportMenu');
     if (!menu || menu.classList.contains('hidden')) return;
-    if (!e.target.closest('#exportMenu') && !e.target.closest('[onclick="toggleExportMenu()"]')) {
+    if (!e.target.closest('#exportMenu') && !e.target.closest('#exportExcelBtn') && !e.target.closest('[onclick="toggleExportMenu()"]')) {
       menu.classList.add('hidden');
     }
   });

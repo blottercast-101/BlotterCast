@@ -112,16 +112,18 @@
         </svg>
       </button>
       <div>
-        <h1 class="font-display text-xl md:text-2xl text-forest-800">Monitoring of Compliance to Settlement or Award</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Track and manage settlement agreements and compliance status</p>
+        <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="settlement_monitoring_title">Monitoring of Compliance to Settlement or Award</h1>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="settlement_monitoring_desc">Track and manage settlement agreements and compliance status</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
-      <button type="button" onclick="openExportFilter('api/exports.php?action=settlement_monitoring', 'Export Settlement Monitoring')" class="btn-secondary flex items-center gap-2" data-perm="generate_reports">
-        <span data-icon="download" data-icon-size="16"></span> Export to Excel
+      <button type="button" onclick="openExportFilter('api/exports.php?action=settlement_monitoring', 'Export Settlement Monitoring')" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors" data-perm="generate_reports" data-i18n="export_excel">
+        <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg> <span data-i18n="export_excel">Export to Excel</span>
       </button>
-      <button onclick="openAddSettlement()" class="btn-primary flex items-center gap-2">
-        <span data-icon="plus" data-icon-size="16"></span> Add Settlement Record
+      <button onclick="openAddSettlement()" class="btn-primary flex items-center gap-2" data-i18n="add_settlement_record">
+        <span data-icon="plus" data-icon-size="16"></span> <span data-i18n="add_settlement_record">+ Add Settlement Record</span>
       </button>
     </div>
   </header>
@@ -131,7 +133,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Total Cases</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="total_cases">Total Cases</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="settlement" data-icon-size="18"></div>
         </div>
         <div>
@@ -141,7 +143,7 @@
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Pending</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="status_pending">Pending</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
         </div>
         <div>
@@ -151,7 +153,7 @@
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Complied</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="status_complied">Complied</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
         </div>
         <div>
@@ -161,7 +163,7 @@
       </div>
       <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
         <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium">Not Complied</span>
+          <span class="text-white/80 text-sm font-medium" data-i18n="status_not_complied">Not Complied</span>
           <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="x" data-icon-size="18"></div>
         </div>
         <div>
@@ -175,9 +177,9 @@
       <!-- Table Title -->
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="settlement" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800" id="stlTitle">Settlement Records</h2>
-        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2">
-          <span data-icon="archive" data-icon-size="14"></span> View Archived
+        <h2 class="font-display text-lg text-forest-800" id="stlTitle" data-i18n="settlement_records">Settlement Records</h2>
+        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2" data-i18n="view_archived">
+          <span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">View Archived</span>
         </button>
       </div>
       <script>
@@ -198,14 +200,14 @@
 
       <!-- Filter Bar -->
       <div class="filter-bar">
-        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch" placeholder="Search case no., title…" class="filter-input w-full pl-8" oninput="stlPage=1; renderSettlements()"/></span>
+        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch" placeholder="Search case no., title…" class="filter-input w-full pl-8" oninput="stlPage=1; renderSettlements()" data-i18n-placeholder="search_settlement_placeholder"/></span>
         <select id="stlNatureFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
           <option value="">All Natures</option>
           <option>Criminal</option>
           <option>Civil</option>
         </select>
         <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
-          <option value="">All Statuses</option>
+          <option value="" data-i18n="all_statuses">All Statuses</option>
           <option value="Pending">Pending</option>
           <option value="Complied">Complied</option>
           <option value="Not Complied">Not Complied</option>
@@ -418,13 +420,17 @@
     }
     stlPage = 1;
     stlBatchManager.clearSelection();
+    const lang = (typeof localStorage !== 'undefined' && (localStorage.getItem('app_language') || localStorage.getItem('bc_language'))) || 'en';
+    const isTl = (String(lang)).toLowerCase().startsWith('fil') || (String(lang)).toLowerCase().startsWith('tag') || (String(lang)).toLowerCase() === 'tl';
     const titleEl = document.getElementById('stlTitle');
-    if (titleEl) titleEl.textContent = viewingArchived ? 'Archived Settlement Records' : 'Settlement Records';
+    if (titleEl) titleEl.textContent = viewingArchived ? (isTl ? 'Naka-arkibong mga Tala ng Settlement' : 'Archived Settlement Records') : (isTl ? 'Mga Tala ng Settlement' : 'Settlement Records');
     const toggleBtn = document.getElementById('archiveToggleBtn');
     if (toggleBtn) {
+      const backLabel = isTl ? 'Bumalik sa Aktibo' : 'Back to Active';
+      const viewLabel = isTl ? 'Tignan ang Naka-arkibo' : 'View Archived';
       toggleBtn.innerHTML = viewingArchived
-        ? '<span data-icon="settlement" data-icon-size="14"></span> Back to Active'
-        : '<span data-icon="archive" data-icon-size="14"></span> View Archived';
+        ? `<span data-icon="settlement" data-icon-size="14"></span> <span data-i18n="back_to_active">${backLabel}</span>`
+        : `<span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">${viewLabel}</span>`;
       if (typeof renderIcons === 'function') renderIcons();
     }
     try {
@@ -697,7 +703,7 @@
     }
 
     const infoEl = document.getElementById('stlPaginationInfo');
-    if (infoEl) infoEl.textContent = `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
+    if (infoEl) infoEl.textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(Math.min(start+1,total)||0, Math.min(start+STL_ROWS,total), total) : `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
     const ctrlEl = document.getElementById('stlPaginationControls');
     if (ctrlEl) bcRenderPagination(ctrlEl, stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
     stlBatchManager.updateUI();

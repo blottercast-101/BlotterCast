@@ -103,7 +103,7 @@
       </button>
       <div>
         <h1 class="font-display text-xl md:text-2xl text-forest-800">Users & Roles</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Manage personnel accounts, roles, and access permissions</p>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="manage_personnel_accounts">Manage personnel accounts, roles, and access permissions</p>
       </div>
     </div>
     <button onclick="openAddUser()" class="btn-primary"><span data-icon="plus" data-icon-size="16"></span> Add User</button>
@@ -115,17 +115,17 @@
     <div id="sec-permissions" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="key" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Role Permission Matrix</h2>
+        <h2 class="font-display text-lg text-forest-800" data-i18n="role_permission_matrix">Role Permission Matrix</h2>
       </div>
       <div class="overflow-x-auto">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Permission</th>
-              <th class="text-center">System Admin</th>
-              <th class="text-center">Barangay Captain</th>
-              <th class="text-center">Desk Officer</th>
-              <th class="text-center">Data Encoder</th>
+              <th data-i18n="th_permission">Permission</th>
+              <th class="text-center" data-i18n="role_col_admin">System Admin</th>
+              <th class="text-center" data-i18n="role_col_captain">Barangay Captain</th>
+              <th class="text-center" data-i18n="role_col_officer">Desk Officer</th>
+              <th class="text-center" data-i18n="role_col_encoder">Data Encoder</th>
             </tr>
           </thead>
           <tbody id="permMatrix"></tbody>
@@ -137,17 +137,17 @@
     <div id="sec-users" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="users" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">System Users</h2>
+        <h2 class="font-display text-lg text-forest-800" data-i18n="system_users">System Users</h2>
       </div>
       <div class="filter-bar">
-        <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="userSearch" placeholder="Search users…" class="filter-input w-full pl-8" oninput="usersPage=1;renderUsers()"/></span>
+        <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="userSearch" placeholder="Search users…" data-i18n-placeholder="search_users_placeholder" class="filter-input w-full pl-8" oninput="usersPage=1;renderUsers()"/></span>
         <select id="roleFilter" class="filter-input" onchange="usersPage=1;renderUsers()">
           <option value="">All Roles</option>
           <option>System Admin</option><option>Barangay Captain</option>
           <option>Desk Officer</option><option>Data Encoder</option>
         </select>
         <select id="statusFilter2" class="filter-input" onchange="usersPage=1;renderUsers()">
-          <option value="">All Statuses</option>
+          <option value="" data-i18n="all_statuses">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
           <option value="Suspended">Suspended</option>
@@ -157,7 +157,7 @@
         <table class="data-table">
           <thead><tr>
             <th>User</th><th>Username</th><th>Role</th>
-            <th>Last Login</th><th>Status</th><th>Actions</th>
+            <th>Last Login</th><th>Status</th><th data-i18n="actions">Actions</th>
           </tr></thead>
           <tbody id="usersTableBody"></tbody>
         </table>
@@ -172,11 +172,11 @@
     <div id="sec-audit" class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden scroll-mt-6">
       <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
         <div class="stat-icon-badge" data-icon="database" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800">Recent Audit Log</h2>
+        <h2 class="font-display text-lg text-forest-800" data-i18n="recent_audit_log">Recent Audit Log</h2>
       </div>
       <div class="overflow-x-auto table-responsive">
         <table class="data-table">
-          <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th><th>Details</th></tr></thead>
+          <thead><tr><th>Timestamp</th><th>User</th><th data-i18n="action">Action</th><th>Module</th><th>Details</th></tr></thead>
           <tbody id="auditLog"></tbody>
         </table>
       </div>
@@ -669,31 +669,39 @@
 <script src="custom-controls.js"></script>
 <script>
 var permissions = [
-  { label:'View All Records',    admin:true, captain:true,  officer:true,  encoder:true  },
-  { label:'Add Blotter Entry',   admin:true, captain:true,  officer:true,  encoder:true  },
-  { label:'Edit Any Record',     admin:true, captain:true,  officer:true,  encoder:true  },
-  { label:'Delete Records',      admin:true, captain:false, officer:false, encoder:false },
-  { label:'Archive Records',     admin:true, captain:true,  officer:true,  encoder:true  },
-  { label:'Generate Reports',    admin:true, captain:true,  officer:true,  encoder:false },
-  { label:'View Analytics',      admin:true, captain:true,  officer:true,  encoder:false },
-  { label:'Manage Users',        admin:true, captain:true,  officer:false, encoder:false },
-  { label:'Retrain ML Model',    admin:true, captain:true,  officer:false, encoder:false },
-  { label:'Import CSV/Excel',    admin:true, captain:true,  officer:false, encoder:true  },
-  { label:'System Settings',     admin:true, captain:false, officer:false, encoder:false },
+  { key: 'perm_view_all_records', label:'View All Records', label_tl:'Tignan ang Lahat ng Tala', admin:true, captain:true, officer:true, encoder:true },
+  { key: 'perm_add_blotter_entry', label:'Add Blotter Entry', label_tl:'Magdagdag ng Entry sa Blotter', admin:true, captain:true, officer:true, encoder:true },
+  { key: 'perm_edit_any_record', label:'Edit Any Record', label_tl:'Baguhin ang Anumang Tala', admin:true, captain:true, officer:true, encoder:true },
+  { key: 'perm_delete_records', label:'Delete Records', label_tl:'Burahin ang mga Tala', admin:true, captain:false, officer:false, encoder:false },
+  { key: 'perm_archive_records', label:'Archive Records', label_tl:'I-arkibo ang mga Tala', admin:true, captain:true, officer:true, encoder:true },
+  { key: 'perm_generate_reports', label:'Generate Reports', label_tl:'Gumawa ng mga Ulat', admin:true, captain:true, officer:true, encoder:false },
+  { key: 'perm_view_analytics', label:'View Analytics', label_tl:'Tignan ang Analytics', admin:true, captain:true, officer:true, encoder:false },
+  { key: 'perm_manage_users', label:'Manage Users', label_tl:'Pamahalaan ang mga Gumagamit', admin:true, captain:true, officer:false, encoder:false },
+  { key: 'perm_retrain_ml_model', label:'Retrain ML Model', label_tl:'I-retrain ang Modelong ML', admin:true, captain:true, officer:false, encoder:false },
+  { key: 'perm_import_csv_excel', label:'Import CSV/Excel', label_tl:'Mag-import ng CSV/Excel', admin:true, captain:true, officer:false, encoder:true },
+  { key: 'perm_system_settings', label:'System Settings', label_tl:'Mga Setting ng Sistema', admin:true, captain:false, officer:false, encoder:false },
 ];
 
 var check = v => v
   ? '<span class="perm-yes" data-icon="check" data-icon-size="14"></span>'
   : '<span class="perm-no">&#8212;</span>';
 
-document.getElementById('permMatrix').innerHTML = permissions.map(p=>`
-  <tr>
-    <td class="font-medium text-forest-700">${p.label}</td>
-    <td class="perm-cell">${check(p.admin)}</td>
-    <td class="perm-cell">${check(p.captain)}</td>
-    <td class="perm-cell">${check(p.officer)}</td>
-    <td class="perm-cell">${check(p.encoder)}</td>
-  </tr>`).join('');
+function renderPermMatrix() {
+  const el = document.getElementById('permMatrix');
+  if (!el) return;
+  const isTl = (localStorage.getItem('app_language') || '').toLowerCase() === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+  el.innerHTML = permissions.map(p => `
+    <tr>
+      <td class="font-medium text-forest-700" data-i18n="${p.key}">${isTl ? p.label_tl : p.label}</td>
+      <td class="perm-cell">${check(p.admin)}</td>
+      <td class="perm-cell">${check(p.captain)}</td>
+      <td class="perm-cell">${check(p.officer)}</td>
+      <td class="perm-cell">${check(p.encoder)}</td>
+    </tr>`).join('');
+  if (typeof replaceIcons === 'function') replaceIcons();
+}
+window.renderPermMatrix = renderPermMatrix;
+renderPermMatrix();
 
 var usersData = []; var usersPage = 1; var USERS_ROWS = 8;
 var editUserId = null;
@@ -745,17 +753,30 @@ async function loadAuditLog(silent = false) {
   try {
     const rows = await BCApi.auditLog(10);
     const tbody = document.getElementById('auditLog');
+    if (!tbody) return;
+    const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
     if (!rows || rows.length === 0) {
-      bcSetTableEmpty('auditLog', 'No activity recorded yet.', 'audit', 5);
+      bcSetTableEmpty('auditLog', isTl ? 'Walang naitalang aktibidad.' : 'No activity recorded yet.', 'audit', 5);
     } else {
-      tbody.innerHTML = rows.map(r => `
+      tbody.innerHTML = rows.map(r => {
+        const actUpper = String(r.action || '').toUpperCase();
+        const badgeClass = (actUpper === 'CREATED' || actUpper === 'RESOLVED') ? 'badge-resolved' :
+          (actUpper === 'DELETED' || actUpper === 'NOT COMPLIED') ? 'badge-not-complied' : 'badge-ongoing';
+        const displayAction = typeof bcTranslateAuditAction === 'function'
+          ? bcTranslateAuditAction(r.action)
+          : (isTl ? (actUpper === 'CREATED' ? 'GINAWA' : actUpper === 'DELETED' ? 'BINURA' : actUpper === 'UPDATED' ? 'INUPDATE' : actUpper === 'LOGIN' ? 'NAG-LOGIN' : r.action) : r.action);
+        const displayDetails = typeof bcTranslateAuditDetails === 'function'
+          ? bcTranslateAuditDetails(r.details)
+          : (r.details || '');
+        return `
         <tr>
           <td class="text-xs text-forest-400">${bcFormatTimestamp(r.created_at)}</td>
           <td class="font-semibold text-forest-700 text-sm">${r.username}</td>
-          <td><span class="badge ${r.action==='Created'?'badge-resolved':r.action==='Deleted'?'badge-not-complied':'badge-ongoing'}">${r.action}</span></td>
+          <td><span class="badge ${badgeClass}">${displayAction}</span></td>
           <td class="text-sm text-forest-600">${r.module}</td>
-          <td class="text-xs text-forest-400">${r.details || ''}</td>
-        </tr>`).join('');
+          <td class="text-xs text-forest-400">${displayDetails}</td>
+        </tr>`;
+      }).join('');
     }
   } catch (err) {
     bcSetTableError('auditLog', 'Could not load audit log from server.', 'loadAuditLog()', 5);
@@ -788,7 +809,6 @@ function renderUsers() {
   const start = (usersPage - 1) * USERS_ROWS;
   const pageRows = filtered.slice(start, start + USERS_ROWS);
   const initials = n => (typeof getInitials === 'function' ? getInitials(n) : (typeof bcInitials === 'function' ? bcInitials(n) : ((n || '').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'U')));
-  const tbody = document.getElementById('usersTableBody');
   if (pageRows.length === 0) {
     if (usersData.length === 0) {
       bcSetTableEmpty('usersTableBody', "There's no user records. Please Add a New User.", 'users', 6, "Create and manage authorized staff accounts.");
@@ -797,7 +817,7 @@ function renderUsers() {
     }
   } else {
     tbody.innerHTML = pageRows.map(u => {
-      const isProtected = u.role === 'System Admin' || u.role === 'Barangay Captain' || u.is_protected;
+      const isProtected = (u.role === 'System Admin' || u.role === 'System Administrator' || !!u.is_protected) && u.role !== 'Barangay Captain';
       const statusBadge = u.status === 'Active'
         ? `<span class="badge badge-resolved badge-active text-xs font-semibold inline-flex items-center"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>Active</span>`
         : u.status === 'Suspended'
@@ -833,27 +853,57 @@ function renderUsers() {
       <td><span class="badge badge-resolved text-xs">${u.role}</span></td>
       <td class="text-xs text-forest-400">${u.lastLogin}</td>
       <td>${statusBadge}</td>
-      <td>
-        <div class="row-actions items-center">
-          <button onclick="editUser(${u.id})" class="btn-edit text-xs px-2 py-1"><span data-icon="edit" data-icon-size="13"></span> <span>View & Edit</span></button>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div class="flex items-center justify-end gap-2">
+          <!-- View & Edit Button -->
+          <button 
+            type="button" 
+            onclick="openEditUserModal('${u.id}')" 
+            class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#edf5f0] text-[#1e3a2b] hover:bg-[#e2efe7] rounded-lg text-xs font-semibold transition-colors"
+            data-i18n="view_edit">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <span>View & Edit</span>
+          </button>
           ${isProtected
-            ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> Protected</span>`
+            ? `<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-700 border border-forest-200 select-none shadow-xs" title="Protected Account — Cannot be suspended or deleted"><span data-icon="shield" data-icon-size="13"></span> <span data-i18n="protected">${(typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino') ? 'Protektado' : 'Protected'}</span></span>`
             : u.role === 'Barangay Captain'
-            ? `<button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
+            ? `<!-- Delete Button (Replaces Protected badge) -->
+               <button 
+                 type="button" 
+                 onclick="confirmDeleteUser('${u.id}', '${u.role}')" 
+                 class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors"
+                 data-i18n="delete">
+                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                 </svg>
+                 <span>Delete</span>
+               </button>`
             : `<button onclick="toggleStatus(${u.id})" class="btn-secondary text-xs px-2 py-1">${u.status==='Suspended'?'Activate':'Suspend'}</button>
-               <button onclick="removeUser(${u.id})" class="icon-btn danger" data-perm="delete_records" title="Delete"><span data-icon="trash" data-icon-size="16"></span></button>`
+               <button 
+                 type="button" 
+                 onclick="confirmDeleteUser('${u.id}', '${u.role}')" 
+                 class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors"
+                 data-i18n="delete">
+                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                 </svg>
+                 <span>Delete</span>
+               </button>`
           }
         </div>
       </td>
     </tr>`;
     }).join('');
   }
-  document.getElementById('usersPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`;
+  document.getElementById('usersPaginationInfo').textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(start+1, Math.min(start+USERS_ROWS,total), total) : (total===0 ? '' : `Showing ${start+1}–${Math.min(start+USERS_ROWS,total)} of ${total}`);
   bcRenderPagination(document.getElementById('usersPaginationControls'), usersPage, totalPages, (p) => { usersPage = p; renderUsers(); });
 }
 
 window.usersData = usersData;
 window.renderUsers = renderUsers;
+window.renderUserTable = renderUsers;
 window.openEditUserModal = editUser;
 window.addEventListener('userAvatarUpdated', (e) => {
   if (!document.getElementById('usersTableBody')) return;
@@ -1422,9 +1472,9 @@ async function editWizardGoToStep(targetStep) {
 }
 
 function editUser(id) {
-  const u = usersData.find(x => x.id === id);
+  const u = usersData.find(x => Number(x.id) === Number(id));
   if (!u) return;
-  editUserId = id;
+  editUserId = Number(id);
   document.getElementById('userModalTitle').textContent = 'Edit User';
   const nameEl = document.getElementById('uf_name');
   if (nameEl) {
@@ -1727,7 +1777,10 @@ async function removeUser(id) {
   openDeleteUserModal(u);
 }
 
-async function confirmDeleteUser() {
+async function confirmDeleteUser(userId, userRole) {
+  if (userId !== undefined && userId !== null) {
+    return removeUser(Number(userId));
+  }
   if (!pendingDeleteUserId) return;
   const inputEl = document.getElementById('delUserConfirmInput');
   if (!inputEl || inputEl.value.trim().toUpperCase() !== 'DELETE') return;
@@ -1752,6 +1805,8 @@ async function confirmDeleteUser() {
     }
   }
 }
+window.confirmDeleteUser = confirmDeleteUser;
+window.removeUser = removeUser;
 
 // ── Real-Time Presence Synchronization ────────────────────────
 var userPresenceTimer = null;

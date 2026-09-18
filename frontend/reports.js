@@ -3,7 +3,9 @@
  * Handles browser tab name, system/PDF document icon, and MIME types.
  */
 
-const BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+if (typeof window !== 'undefined' && typeof window.BC_REPORT_FAVICON === 'undefined') {
+  window.BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+}
 
 /**
  * METHOD A: Generates a named, branded print/preview browser tab via window.open.
@@ -23,6 +25,10 @@ function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Re
     return null;
   }
 
+  const faviconUrl = (typeof window !== 'undefined' && window.BC_REPORT_FAVICON)
+    ? window.BC_REPORT_FAVICON
+    : "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+
   printWindow.document.write(`
     <!DOCTYPE html>
     <html lang="en">
@@ -31,7 +37,7 @@ function openReportPrintTab(htmlContent, reportTitle = 'Settlement Compliance Re
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${reportTitle}</title>
       <!-- Sets the PDF / App Icon in browser tab -->
-      <link rel="icon" type="image/svg+xml" href="${BC_REPORT_FAVICON}">
+      <link rel="icon" type="image/svg+xml" href="${faviconUrl}">
       <style>
         /* Report base styling */
         @page { size: letter portrait; margin: 0.5in; }
@@ -159,14 +165,16 @@ function previewPdfBlob(pdfOrBlob, reportTitle = 'Settlement_Compliance_Report')
 }
 
 if (typeof window !== 'undefined') {
-  window.BC_REPORT_FAVICON = BC_REPORT_FAVICON;
+  if (typeof window.BC_REPORT_FAVICON === 'undefined') {
+    window.BC_REPORT_FAVICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>";
+  }
   window.openReportPrintTab = openReportPrintTab;
   window.previewPdfBlob = previewPdfBlob;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    BC_REPORT_FAVICON,
+    BC_REPORT_FAVICON: (typeof window !== 'undefined' ? window.BC_REPORT_FAVICON : "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a2b'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H14z'/></svg>"),
     openReportPrintTab,
     previewPdfBlob
   };

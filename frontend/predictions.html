@@ -172,18 +172,18 @@
           </svg>
         </button>
         <div>
-          <h1 class="font-display text-xl md:text-2xl text-forest-800">Predictive Insights</h1>
-          <p class="text-forest-500 text-xs md:text-sm">ML-based incident risk forecasting by zone, time, and category</p>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="predictive_insights">Predictive Insights</h1>
+          <p class="text-forest-500 text-xs md:text-sm" data-i18n="predictive_insights_desc">ML-based incident risk forecasting by zone, time, and category</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
         <div id="modelTrainedBadge"
           class="flex items-center gap-2 bg-forest-50 border border-forest-200 rounded-xl px-4 py-2 text-sm text-forest-600">
           <span class="pulse-dot"></span>
-          <span id="trainedStamp">Training models…</span>
+          <span id="trainedStamp" data-i18n="loading_latest_insights">Training models…</span>
         </div>
         <button onclick="retrain()" class="btn-primary flex items-center gap-2" id="retrainBtn">
-          <span data-icon="refresh" data-icon-size="15"></span> Retrain Model
+          <span data-icon="refresh" data-icon-size="15"></span> <span data-i18n="retrain_model_btn">Retrain Model</span>
         </button>
       </div>
     </header>
@@ -226,14 +226,14 @@
               </div>
               <div class="flex items-center gap-2">
                 <select id="zoneRiskChartFilter" class="filter-input text-xs" onchange="renderOutputs()">
-                  <option value="HIGH" selected>High Risk Zones</option>
-                  <option value="MODERATE">Moderate Risk Zones</option>
-                  <option value="LOW">Low Risk Zones</option>
-                  <option value="ALL">All Zones (1 - 7)</option>
+                  <option value="HIGH" selected data-i18n="high_risk_zones">High Risk Zones</option>
+                  <option value="MODERATE" data-i18n="moderate_risk_zones">Moderate Risk Zones</option>
+                  <option value="LOW" data-i18n="low_risk_zones">Low Risk Zones</option>
+                  <option value="ALL" data-i18n="all_zones_1_7">All Zones (1 - 7)</option>
                 </select>
                 <select id="horizonSel" class="filter-input text-xs" onchange="renderOutputs()">
-                  <option value="7">Next 7 Days</option>
-                  <option value="14">Next 14 Days</option>
+                  <option value="7" data-i18n="next_7_days">Next 7 Days</option>
+                  <option value="14" data-i18n="next_14_days">Next 14 Days</option>
                 </select>
               </div>
             </div>
@@ -242,7 +242,7 @@
 
           <!-- Patrol Deployment -->
           <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
-            <h2 class="font-display text-base text-forest-800 mb-4 flex items-center gap-2"><span data-icon="shield" data-icon-size="18"></span> Patrol Recommendations</h2>
+            <h2 class="font-display text-base text-forest-800 mb-4 flex items-center gap-2"><span data-icon="shield" data-icon-size="18"></span> <span data-i18n="patrol_recommendations">Patrol Recommendations</span></h2>
             <div class="space-y-3" id="patrolRecs"></div>
           </div>
         </div>
@@ -253,8 +253,8 @@
             <div class="flex items-center gap-3">
               <div class="stat-icon-badge" data-icon="incident" data-icon-size="17"></div>
               <div>
-                <h2 class="font-display text-lg text-forest-800">Category Forecast by Zone</h2>
-                <p class="text-xs text-forest-400">Expected incidents per day, broken down by category, for the selected zone</p>
+                <h2 class="font-display text-lg text-forest-800" data-i18n="category_forecast_by_zone">Category Forecast by Zone</h2>
+                <p class="text-xs text-forest-400" data-i18n="category_forecast_desc">Expected incidents per day, broken down by category, for the selected zone</p>
               </div>
             </div>
             <select id="categoryZoneSel" class="filter-input text-xs" onchange="renderCategoryChart()"></select>
@@ -267,19 +267,19 @@
           <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
-              <h2 class="font-display text-lg text-forest-800">Predicted Incident Risk by Zone</h2>
+              <h2 class="font-display text-lg text-forest-800" data-i18n="predicted_risk_by_zone">Predicted Incident Risk by Zone</h2>
             </div>
           </div>
           <div class="overflow-x-auto">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Zone</th>
-                  <th>Hotspot Probability</th>
+                  <th data-i18n="th_pred_zone">Zone</th>
+                  <th data-i18n="th_pred_hotspot">Hotspot Probability</th>
                   <th id="expectedCountHeader">Expected Incidents (7d)</th>
-                  <th>Risk Level</th>
-                  <th>Predicted Top Category</th>
-                  <th>Peak Time Window</th>
+                  <th data-i18n="th_pred_risk">Risk Level</th>
+                  <th data-i18n="th_pred_top_cat">Predicted Top Category</th>
+                  <th data-i18n="th_pred_peak_time">Peak Time Window</th>
                   <th id="trendHeader">14-Day Trend</th>
                 </tr>
               </thead>
@@ -362,6 +362,32 @@
       return parts.length > 1 ? `${zoneId} · ${parts[1]}` : label;
     }
 
+    function isFilipino() {
+      const lang = (localStorage.getItem('app_language') || localStorage.getItem('bc_lang') || localStorage.getItem('bc_language') || localStorage.getItem('preferred_language') || document.documentElement.lang || '').toLowerCase();
+      if (lang.startsWith('fil') || lang.startsWith('tag') || lang === 'tl') return true;
+      if (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino') return true;
+      return false;
+    }
+
+    var CATEGORY_TL = {
+      'Theft': 'Pagnanakaw',
+      'Public Disturbance': 'Pambubulahaw sa Publiko',
+      'Physical Assault': 'Pananakit / Pag-atake',
+      'Vandalism': 'Pambaboy ng Ari-arian (Vandalism)',
+      'Trespassing': 'Panghihimasok (Trespassing)',
+      'Domestic Dispute': 'Alitan sa Pamamahay',
+      'Drug-Related Activity': 'Ilegal na Droga',
+      'Other': 'Iba pa'
+    };
+
+    function getCategoryDisplayName(cat) {
+      if (!cat) return 'N/A';
+      if (isFilipino()) {
+        return CATEGORY_TL[cat] || cat;
+      }
+      return cat;
+    }
+
     async function loadZoneLabels() {
       try {
         const zones = await BCApi.zones();
@@ -396,6 +422,16 @@
       const icons = ['incident', 'predictions', 'heatmap'];
       const count = (RESULT?.recordCount ?? RESULT?.record_count ?? 0);
       const isInsufficient = !RESULT || RESULT.ok === false || RESULT.status === 'insufficient_data' || count < 10;
+      const fil = isFilipino();
+      const taskLabels = {
+        occurrence: fil ? 'Pagkakaroon ng Insidente' : 'Incident Occurrence',
+        type: fil ? 'Uri ng Insidente' : 'Incident Type',
+        hotspot: fil ? 'Panganib sa Hotspot' : 'Hotspot Risk'
+      };
+      const metricLabels = {
+        accuracy: fil ? 'Katumpakan' : 'Accuracy',
+        f1: 'F1 Score'
+      };
 
       el.innerHTML = Object.entries(TASKS).map(([task, cfg], i) => {
         const key = cfg.models[0];
@@ -425,13 +461,14 @@
         }
 
         const score = (scoreVal !== null && scoreVal !== undefined) ? pct(scoreVal) : '—';
-        const metricLabel = task === 'type' ? 'F1 Score' : cfg.metricLabel;
+        const metricLabel = task === 'type' ? metricLabels.f1 : (fil ? metricLabels.accuracy : cfg.metricLabel);
         const scoreIdAttr = task === 'type' ? ' id="incidentTypeScore"' : '';
+        const titleLabel = taskLabels[task] || cfg.label;
 
         return `
       <div class="stat-card-grad ${grads[i % grads.length]}">
         <div class="flex items-center justify-between mb-3">
-          <div class="text-xs font-bold text-white/75 uppercase tracking-wide">${cfg.label}</div>
+          <div class="text-xs font-bold text-white/75 tracking-wide">${titleLabel}</div>
           <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="${icons[i % icons.length]}" data-icon-size="16"></div>
         </div>
         <div class="font-display text-3xl text-white"${scoreIdAttr}>${score}</div>
@@ -445,20 +482,21 @@
     function riskLevel(p) { return p >= 0.20 ? 'High' : p >= 0.13 ? 'Moderate' : 'Low'; }
 
     function evaluatePatrolTier(expectedCount) {
+      const fil = isFilipino();
       // CRITICAL: Expected incidents >= 3.0 (Assign 3 officers, prioritize high-risk time window)
       // HIGH:     Expected incidents 2.0 - 2.9 (Assign 2 officers)
       // MEDIUM:   Expected incidents 1.0 - 1.9 (Assign 1–2 officers)
       // LOW:      Expected incidents < 1.0 (Assign 1 officer)
       if (expectedCount >= 3.0) {
-        return { tier: 'Critical', officers: 3, officerText: '3 officers', badgeClass: 'badge-not-complied', isCritical: true };
+        return { tier: fil ? 'Kritikal' : 'Critical', officers: 3, officerText: fil ? '3 opisyal' : '3 officers', badgeClass: 'badge-not-complied', isCritical: true };
       }
       if (expectedCount >= 2.0) {
-        return { tier: 'High', officers: 2, officerText: '2 officers', badgeClass: 'badge-ongoing', isCritical: false };
+        return { tier: fil ? 'Mataas' : 'High', officers: 2, officerText: fil ? '2 opisyal' : '2 officers', badgeClass: 'badge-ongoing', isCritical: false };
       }
       if (expectedCount >= 1.0) {
-        return { tier: 'Medium', officers: 2, officerText: '1–2 officers', badgeClass: 'badge-ongoing', isCritical: false };
+        return { tier: fil ? 'Katamtaman' : 'Medium', officers: 2, officerText: fil ? '1–2 opisyal' : '1–2 officers', badgeClass: 'badge-ongoing', isCritical: false };
       }
-      return { tier: 'Low', officers: 1, officerText: '1 officer', badgeClass: 'badge-resolved', isCritical: false };
+      return { tier: fil ? 'Mababa' : 'Low', officers: 1, officerText: fil ? '1 opisyal' : '1 officer', badgeClass: 'badge-resolved', isCritical: false };
     }
 
     /**
@@ -469,8 +507,13 @@
      *   Delta_trend = ((Expected Incidents - Historical Incidents) / Math.max(1, Historical Incidents)) * 100
      */
     function calculateTrend(zoneData, horizon = 14) {
+      const fil = isFilipino();
+      const stableText = fil ? '(Matatag)' : '(Stable)';
+      const risingText = fil ? '(Tumataas)' : '(Rising)';
+      const fallingText = fil ? '(Bumababa)' : '(Falling)';
+
       if (!zoneData) {
-        return `<span class="text-gray-500 font-bold flex items-center gap-1" title="Projected trend: +0.0% over ${horizon} days">→ <span class="text-xs font-medium">(Stable)</span></span>`;
+        return `<span class="text-gray-500 font-bold flex items-center gap-1" title="Projected trend: +0.0% over ${horizon} days">→ <span class="text-xs font-medium">${stableText}</span></span>`;
       }
 
       const daily = zoneData.dailyProbs || [];
@@ -508,14 +551,14 @@
 
       const sign = deltaTrend > 0 ? '+' : '';
       const formattedPct = `${sign}${deltaTrend.toFixed(1)}%`;
-      const tooltip = `Projected trend: ${formattedPct} over ${horizon} days`;
+      const tooltip = fil ? `Inaasahang trend: ${formattedPct} sa loob ng ${horizon} araw` : `Projected trend: ${formattedPct} over ${horizon} days`;
 
       if (deltaTrend > 10) {
-        return `<span class="text-rose-600 font-bold flex items-center gap-1" title="${tooltip}">↑ <span class="text-xs font-medium">(Rising)</span></span>`;
+        return `<span class="text-rose-600 font-bold flex items-center gap-1" title="${tooltip}">↑ <span class="text-xs font-medium">${risingText}</span></span>`;
       } else if (deltaTrend < -10) {
-        return `<span class="text-emerald-600 font-bold flex items-center gap-1" title="${tooltip}">↓ <span class="text-xs font-medium">(Falling)</span></span>`;
+        return `<span class="text-emerald-600 font-bold flex items-center gap-1" title="${tooltip}">↓ <span class="text-xs font-medium">${fallingText}</span></span>`;
       } else {
-        return `<span class="text-gray-500 font-bold flex items-center gap-1" title="${tooltip}">→ <span class="text-xs font-medium">(Stable)</span></span>`;
+        return `<span class="text-gray-500 font-bold flex items-center gap-1" title="${tooltip}">→ <span class="text-xs font-medium">${stableText}</span></span>`;
       }
     }
 
@@ -540,6 +583,7 @@
       if (emptyState) emptyState.classList.add('hidden');
       if (contentContainer) contentContainer.classList.remove('hidden');
 
+      const fil = isFilipino();
       const horizon = Number(document.getElementById('horizonSel')?.value || 7);
       const ranked = [...RESULT.zoneRisk].sort((a, b) => b.meanDailyProb - a.meanDailyProb);
 
@@ -550,33 +594,45 @@
         sessionStorage.setItem('bc_pred_riskFilter', riskFilter);
       } catch (_) {}
       let chartZones = [];
-      let filterLabel = 'High Risk Zones';
+      let filterLabel = fil ? 'Mga Sona na may Mataas na Panganib' : 'High Risk Zones';
 
       if (riskFilter === 'HIGH') {
         chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'High');
-        filterLabel = 'High Risk Zones';
+        filterLabel = fil ? 'Mga Sona na may Mataas na Panganib' : 'High Risk Zones';
         if (chartZones.length === 0) {
           chartZones = ranked.slice(0, 3);
-          filterLabel = 'Top Risk Zones';
+          filterLabel = fil ? 'Nangungunang mga Sona sa Panganib' : 'Top Risk Zones';
         }
       } else if (riskFilter === 'MODERATE') {
         chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'Moderate');
-        filterLabel = 'Moderate Risk Zones';
+        filterLabel = fil ? 'Mga Sona na may Katamtamang Panganib' : 'Moderate Risk Zones';
       } else if (riskFilter === 'LOW') {
         chartZones = ranked.filter(z => riskLevel(z.meanDailyProb) === 'Low');
-        filterLabel = 'Low Risk Zones';
+        filterLabel = fil ? 'Mga Sona na may Mababang Panganib' : 'Low Risk Zones';
       } else {
         chartZones = ranked;
-        filterLabel = 'All Zones (1 - 7)';
+        filterLabel = fil ? 'Lahat ng Sona (1 - 7)' : 'All Zones (1 - 7)';
       }
 
       // Update dynamic titles
       const forecastTitle = document.getElementById('forecastTitle');
-      if (forecastTitle) forecastTitle.textContent = `${horizon}-Day Forecast — Expected Incidents (${filterLabel})`;
+      if (forecastTitle) {
+        forecastTitle.textContent = fil
+          ? `${horizon}-Araw na Hula — Inaasahang mga Insidente (${filterLabel})`
+          : `${horizon}-Day Forecast — Expected Incidents (${filterLabel})`;
+      }
       const countHeader = document.getElementById('expectedCountHeader');
-      if (countHeader) countHeader.textContent = `Expected Incidents (${horizon}d)`;
+      if (countHeader) {
+        countHeader.textContent = fil
+          ? `Inaasahang mga Insidente (${horizon}d)`
+          : `Expected Incidents (${horizon}d)`;
+      }
       const trendHeader = document.getElementById('trendHeader');
-      if (trendHeader) trendHeader.textContent = `${horizon}-Day Trend`;
+      if (trendHeader) {
+        trendHeader.textContent = fil
+          ? `Trend sa ${horizon} na Araw`
+          : `${horizon}-Day Trend`;
+      }
 
       // Forecast chart — filtered zones across chosen horizon (7 vs 14 days)
       const top4 = ranked.slice(0, 4);
@@ -602,7 +658,7 @@
               tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 }
             },
             scales: {
-              y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: 'Daily occurrence probability' } },
+              y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: fil ? 'Pang-araw-araw na probabilidad ng paglitaw' : 'Daily occurrence probability' } },
               x: { grid: { display: false }, border: { display: false } }
             },
           },
@@ -613,7 +669,8 @@
       const predTable = document.getElementById('predTableBody');
       if (predTable) {
         predTable.innerHTML = ranked.map(h => {
-          const risk = riskLevel(h.meanDailyProb);
+          const riskRaw = riskLevel(h.meanDailyProb);
+          const riskDisplay = fil ? (riskRaw === 'High' ? 'Mataas' : riskRaw === 'Moderate' ? 'Katamtaman' : 'Mababa') : riskRaw;
           const daily = h.dailyProbs || [];
           const expected = daily.length >= horizon
             ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
@@ -621,18 +678,19 @@
 
           const trendCell = calculateTrend(h, horizon);
           const catProb = h.topCategoryProb != null ? ` (${pct(h.topCategoryProb)})` : '';
-          const topCatText = h.topCategory || 'N/A';
+          const topCatText = getCategoryDisplayName(h.topCategory);
+          const perDayText = fil ? '/araw' : '/day';
 
           return `<tr>
         <td class="font-semibold text-forest-700">${zoneDisplay(h.zone)}</td>
         <td>
           <div class="flex items-center gap-2">
-            <div class="risk-bar w-20"><div class="risk-bar-fill" style="width:${Math.min(100, h.meanDailyProb * 300)}%;background:${risk === 'High' ? '#ef4444' : risk === 'Moderate' ? '#fbbf24' : '#23703c'}"></div></div>
-            <span class="text-xs font-bold text-forest-700">${pct(h.meanDailyProb)}<span class="text-forest-400 font-normal"> /day</span></span>
+            <div class="risk-bar w-20"><div class="risk-bar-fill" style="width:${Math.min(100, h.meanDailyProb * 300)}%;background:${riskRaw === 'High' ? '#ef4444' : riskRaw === 'Moderate' ? '#fbbf24' : '#23703c'}"></div></div>
+            <span class="text-xs font-bold text-forest-700">${pct(h.meanDailyProb)}<span class="text-forest-400 font-normal"> ${perDayText}</span></span>
           </div>
         </td>
         <td><span class="font-bold text-forest-800">${expected.toFixed(1)}</span></td>
-        <td><span class="badge ${risk === 'High' ? 'badge-not-complied' : risk === 'Moderate' ? 'badge-ongoing' : 'badge-resolved'}">${risk}</span></td>
+        <td><span class="badge ${riskRaw === 'High' ? 'badge-not-complied' : riskRaw === 'Moderate' ? 'badge-ongoing' : 'badge-resolved'}">${riskDisplay}</span></td>
         <td class="text-sm">${topCatText} <span class="text-xs text-forest-400">${catProb}</span></td>
         <td class="text-xs text-forest-500">${h.peakWindow || 'N/A'}</td>
         <td>${trendCell}</td>
@@ -649,9 +707,13 @@
             ? daily.slice(0, horizon).reduce((acc, v) => acc + Number(v), 0)
             : (horizon === 14 ? (h.expectedCount14d || h.expectedCount7d * 2) : h.expectedCount7d);
 
+          const patrol = evaluatePatrolTier(expected);
           const criticalNotice = patrol.isCritical
-            ? `<div class="text-[11px] font-semibold text-red-600 mt-1">Prioritize patrol dispatch during ${h.peakWindow}</div>`
+            ? `<div class="text-[11px] font-semibold text-red-600 mt-1">${fil ? `Bigyang-priyoridad ang pagpapatrolya tuwing ${h.peakWindow}` : `Prioritize patrol dispatch during ${h.peakWindow}`}</div>`
             : '';
+
+          const peakLabel = fil ? 'Tugatog' : 'Peak';
+          const expIncUnit = fil ? `inaasahang insidente / ${horizon} araw` : `expected incidents / ${horizon}d`;
 
           return `
         <div class="bg-forest-50 rounded-xl p-3 border border-forest-100">
@@ -659,10 +721,10 @@
             <span class="font-bold text-forest-800 text-sm">${zoneDisplay(h.zone)}</span>
             <span class="badge ${patrol.badgeClass} text-xs font-bold">${patrol.tier}</span>
           </div>
-          <div class="text-xs text-forest-500 flex items-center gap-1"><span data-icon="clock" data-icon-size="13"></span> Peak: ${h.peakWindow || 'N/A'}</div>
+          <div class="text-xs text-forest-500 flex items-center gap-1"><span data-icon="clock" data-icon-size="13"></span> ${peakLabel}: ${h.peakWindow || 'N/A'}</div>
           <div class="text-xs text-forest-600 font-medium flex items-center gap-1 mt-0.5">
             <span data-icon="shield" data-icon-size="13"></span>
-            ${patrol.officerText} · ${expected.toFixed(1)} expected incidents / ${horizon}d
+            ${patrol.officerText} · ${expected.toFixed(1)} ${expIncUnit}
           </div>
           ${criticalNotice}
         </div>`;
@@ -679,15 +741,16 @@
     // sent them (so labels line up with the actual dailyProbs/categorySeries
     // array position), falling back to "today + N" if not available.
     function dayLabels(zone, horizon) {
+      const locale = isFilipino() ? 'fil-PH' : 'en-PH';
       if (zone && Array.isArray(zone.forecastDates) && zone.forecastDates.length >= horizon) {
         return zone.forecastDates.slice(0, horizon).map(ds => {
           const d = new Date(ds + 'T00:00:00');
-          return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
+          return d.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
         });
       }
       return Array.from({ length: horizon }, (_, i) => {
         const d = new Date(); d.setDate(d.getDate() + i + 1);
-        return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
+        return d.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
       });
     }
 
@@ -717,6 +780,7 @@
 
       const labels = dayLabels(zone, horizon);
       const categories = Object.keys(zone.categorySeries);
+      const fil = isFilipino();
 
       if (categoryChart) categoryChart.destroy();
       const catCanvas = document.getElementById('categoryChart');
@@ -726,7 +790,7 @@
         data: {
           labels,
           datasets: categories.map(cat => ({
-            label: cat,
+            label: getCategoryDisplayName(cat),
             data: (zone.categorySeries[cat] || []).slice(0, horizon).map(v => +Number(v).toFixed(4)),
             borderColor: CATEGORY_COLORS[cat] || '#6b7280', backgroundColor: 'transparent',
             tension: 0.4, pointRadius: 2, borderWidth: 2,
@@ -735,7 +799,7 @@
         options: {
           plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, usePointStyle: true } }, tooltip: { backgroundColor: '#123d22', padding: 10, cornerRadius: 8 } },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: 'Expected incidents/day' } },
+            y: { beginAtZero: true, grid: { color: '#f0f9f2' }, border: { display: false }, title: { display: true, text: fil ? 'Inaasahang mga insidente/araw' : 'Expected incidents/day' } },
             x: { grid: { display: false }, border: { display: false } },
           },
         },
@@ -876,6 +940,15 @@
         }
       }
     }
+
+    window.addEventListener('bc:language-changed', () => {
+      renderModelCards();
+      renderOutputs();
+    });
+    window.addEventListener('bc-language-changed', () => {
+      renderModelCards();
+      renderOutputs();
+    });
 
     window.initPredictions = async function () {
       try {

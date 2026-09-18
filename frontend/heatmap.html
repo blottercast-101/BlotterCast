@@ -357,21 +357,21 @@
           </svg>
         </button>
         <div>
-          <h1 class="font-display text-xl md:text-2xl text-forest-800">Incident Heat Map</h1>
-          <p class="text-forest-500 text-xs md:text-sm">Map boundary overlay of Mapulang Lupa, Pandi, Bulacan</p>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="incident_heat_map">Incident Heat Map</h1>
+          <p class="text-forest-500 text-xs md:text-sm" data-i18n="heatmap_subtitle">Map boundary overlay of Mapulang Lupa, Pandi, Bulacan</p>
         </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
         <select id="periodFilter" class="filter-input">
-          <option value="all">All Time</option>
-          <option value="month">This Month</option>
-          <option value="week">This Week</option>
+          <option value="all" data-i18n="period_all_time">All Time</option>
+          <option value="month" data-i18n="period_this_month">This Month</option>
+          <option value="week" data-i18n="period_this_week">This Week</option>
         </select>
 
         <label class="flex items-center gap-2 bg-white border border-forest-200 rounded-xl px-3 py-2 text-sm text-forest-700">
           <input type="checkbox" id="showMarkers" checked />
-          Show Incident Markers
+          <span data-i18n="show_incident_markers">Show Incident Markers</span>
         </label>
       </div>
     </header>
@@ -386,24 +386,24 @@
               <div class="flex items-center gap-3">
                 <div class="stat-icon-badge" data-icon="heatmap" data-icon-size="17"></div>
                 <div>
-                  <h2 class="font-display text-lg text-forest-800">Mapulang Lupa Heat Map</h2>
-                  <p class="text-sm text-forest-500">Visual density of reported incidents across Barangay Mapulang Lupa zones</p>
+                  <h2 class="font-display text-lg text-forest-800" data-i18n="mapulang_lupa_heat_map">Mapulang Lupa Heat Map</h2>
+                  <p class="text-sm text-forest-500" data-i18n="visual_density_desc">Visual density of reported incidents across Barangay Mapulang Lupa zones</p>
                 </div>
               </div>
 
               <div id="heatmapLegendContainer" class="flex flex-wrap items-center gap-3 text-xs text-forest-600">
-                <span class="font-semibold text-forest-800 mr-1">Zone Density:</span>
+                <span class="font-semibold text-forest-800 mr-1" data-i18n="zone_density_label">Zone Density:</span>
                 <div class="flex items-center gap-1.5">
-                  <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText">Low</span>
+                  <div class="legend-box" style="background:#10B981;"></div><span id="legendLowText" data-i18n="density_low">Low</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText">Medium</span>
+                  <div class="legend-box" style="background:#FACC15;"></div><span id="legendMedText" data-i18n="density_medium">Medium</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText">Elevated</span>
+                  <div class="legend-box" style="background:#FB923C;"></div><span id="legendEleText" data-i18n="density_elevated">Elevated</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText">High</span>
+                  <div class="legend-box" style="background:#EF4444;"></div><span id="legendHighText" data-i18n="density_high">High</span>
                 </div>
               </div>
             </div>
@@ -412,22 +412,22 @@
             <div class="flex flex-wrap items-center gap-2.5 pt-1">
               <!-- Badge 1: Barangay -->
               <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-                <span>Barangay: <span id="heatmapBadgeBarangay" class="font-medium text-[#064e3b]">Mapulang Lupa</span></span>
+                <span><span data-i18n="badge_barangay">Barangay:</span> <span id="heatmapBadgeBarangay" class="font-medium text-[#064e3b]">Mapulang Lupa</span></span>
               </div>
 
               <!-- Badge 2: Municipality -->
               <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-                <span>Municipality: <span id="heatmapBadgeMunicipality" class="font-medium text-[#064e3b]">Pandi</span></span>
+                <span><span data-i18n="badge_municipality">Municipality:</span> <span id="heatmapBadgeMunicipality" class="font-medium text-[#064e3b]">Pandi</span></span>
               </div>
 
               <!-- Badge 3: Source -->
               <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-                <span>Source: <span class="font-medium text-[#064e3b]">Incident Report</span></span>
+                <span><span data-i18n="badge_source">Source:</span> <span class="font-medium text-[#064e3b]">Incident Report</span></span>
               </div>
 
               <!-- Badge 4: Boundary File -->
               <div class="inline-flex items-center px-4 py-2 rounded-full bg-[#f0fdf4] border border-[#dcfce7] text-xs sm:text-sm font-medium text-[#064e3b] shadow-xs cursor-default">
-                <span>Boundary file: <span class="font-medium text-[#064e3b]">mapulang-lupa.geojson</span></span>
+                <span><span data-i18n="badge_boundary_file">Boundary file:</span> <span class="font-medium text-[#064e3b]">mapulang-lupa.geojson</span></span>
               </div>
             </div>
           </div>
@@ -438,18 +438,18 @@
 
         <div class="flex flex-col gap-6 h-full">
           <div class="card p-5 shrink-0">
-            <h2 class="font-display text-base text-forest-800 mb-4">Summary</h2>
+            <h2 class="font-display text-base text-forest-800 mb-4" data-i18n="summary">Summary</h2>
             <div class="grid grid-cols-2 gap-4">
               <div class="stat-card-grad plum cursor-default">
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-white/80 text-xs font-medium uppercase tracking-wide">Visible Incidents</span>
+                  <span class="text-white/80 text-xs font-medium uppercase tracking-wide" data-i18n="visible_incidents">Visible Incidents</span>
                   <div class="stat-icon-badge w-8 h-8 rounded-lg" data-icon="incident" data-icon-size="15"></div>
                 </div>
                 <div id="totalVisible" class="font-display text-2xl">0</div>
               </div>
               <div class="stat-card-grad dark cursor-default">
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-white/70 text-xs font-medium uppercase tracking-wide">Top Category</span>
+                  <span class="text-white/70 text-xs font-medium uppercase tracking-wide" data-i18n="top_category">Top Category</span>
                   <div class="stat-icon-badge w-8 h-8 rounded-lg" data-icon="trends" data-icon-size="15"></div>
                 </div>
                 <div id="topCategory" class="font-display text-sm font-semibold text-white leading-snug">—</div>
@@ -458,7 +458,7 @@
           </div>
 
           <div class="card p-5 flex-1 flex flex-col min-h-[300px]">
-            <h2 class="font-display text-base text-forest-800 mb-4">Category Breakdown</h2>
+            <h2 class="font-display text-base text-forest-800 mb-4" data-i18n="category_breakdown">Category Breakdown</h2>
             <div id="categoryList" class="space-y-3 flex-1 overflow-y-auto max-h-[380px] pr-1"></div>
           </div>
         </div>
@@ -467,8 +467,8 @@
       <div class="card overflow-hidden">
         <div class="px-6 py-4 border-b border-forest-50 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 class="font-display text-lg text-forest-800">Incident Location Summary</h2>
-            <p id="tableSubtitle" class="text-sm text-forest-500">Only incidents inside the loaded barangay boundary are displayed on the map canvas</p>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="incident_location_summary">Incident Location Summary</h2>
+            <p id="tableSubtitle" class="text-sm text-forest-500" data-i18n="incident_location_summary_desc">Only incidents inside the loaded barangay boundary are displayed on the map canvas</p>
           </div>
           <div id="unmappedSummaryBadge" class="hidden"></div>
         </div>
@@ -487,13 +487,14 @@
               id="heatmapSearchInput" 
               placeholder="Search by ID, location, category, or reporter..." 
               class="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-emerald-100/80 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-sm"
+              data-i18n-placeholder="search_heatmap_placeholder"
             />
           </div>
 
           <!-- Inline Filter Selects on the Right -->
           <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0">
             <select id="heatmapZoneFilter" class="px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer">
-              <option value="ALL">All Zones (7 Zones)</option>
+              <option value="ALL" data-i18n="all_zones">All Zones (7 Zones)</option>
               <option value="Zone 1">Zone 1 - Residence 3 (Barangay Hall)</option>
               <option value="Zone 2">Zone 2 - Residence 1</option>
               <option value="Zone 3">Zone 3 - Pandi Village 2 (Atlantica)</option>
@@ -504,7 +505,7 @@
             </select>
 
             <select id="heatmapCategoryFilter" class="px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-xl text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer">
-              <option value="ALL">All Categories</option>
+              <option value="ALL" data-i18n="all_categories">All Categories</option>
               <option value="Physical Assault">Physical Assault</option>
               <option value="Theft">Theft</option>
               <option value="Public Disturbance">Public Disturbance</option>
@@ -538,7 +539,7 @@
 
         <!-- Unified Pagination Controls -->
         <div class="flex items-center justify-between px-6 py-4 border-t border-forest-50">
-          <span class="text-sm text-forest-500" id="tablePaginationInfo">Showing 0 to 0 of 0 incidents</span>
+          <span class="text-sm text-forest-500" id="tablePaginationInfo" data-i18n="showing_zero_incidents">Showing 0 to 0 of 0 incidents</span>
           <div class="flex gap-2" id="tablePaginationControls"></div>
         </div>
       </div>
@@ -1489,9 +1490,9 @@
 
       const infoEl = document.getElementById('tablePaginationInfo');
       if (infoEl) {
-        infoEl.textContent = total === 0
-          ? 'Showing 0 to 0 of 0 incidents'
-          : `Showing ${start + 1} to ${Math.min(start + TABLE_PAGE_SIZE, total)} of ${total} incident${total !== 1 ? 's' : ''}`;
+        infoEl.textContent = typeof bcFormatPaginationInfo === 'function'
+          ? bcFormatPaginationInfo(start + 1, Math.min(start + TABLE_PAGE_SIZE, total), total, 'incidents')
+          : (total === 0 ? 'Showing 0 to 0 of 0 incidents' : `Showing ${start + 1} to ${Math.min(start + TABLE_PAGE_SIZE, total)} of ${total} incident${total !== 1 ? 's' : ''}`);
       }
 
       const pagControls = document.getElementById('tablePaginationControls');
@@ -1832,6 +1833,8 @@
         console.error('Could not load incident data:', err);
       }
     };
+    window.addEventListener('bc:language-changed', () => { if (typeof renderTablePage === 'function') renderTablePage(); });
+    window.addEventListener('bc-language-changed', () => { if (typeof renderTablePage === 'function') renderTablePage(); });
     if (!window._bcSpaNavActive) { initHeatmap(); }
 
   </script>

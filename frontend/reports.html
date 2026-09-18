@@ -113,7 +113,7 @@
       </button>
       <div>
         <h1 class="font-display text-xl md:text-2xl text-forest-800">Reports</h1>
-        <p class="text-forest-500 text-xs md:text-sm">Generate, schedule, and download formatted reports</p>
+        <p class="text-forest-500 text-xs md:text-sm" data-i18n="generate_reports_subtitle">Generate, schedule, and download formatted reports</p>
       </div>
     </div>
   </header>
@@ -122,12 +122,12 @@
 
     <!-- Report Type Cards -->
     <div>
-      <h2 class="font-display text-lg text-forest-700 mb-4">Generate Report</h2>
+      <h2 class="font-display text-lg text-forest-700 mb-4" data-i18n="generate_report_title">Generate Report</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="report-card" onclick="openGenerateModal('Incident Summary Report')">
           <div class="icon" data-icon="blotter" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Incident Summary Report</div>
-          <div class="text-xs text-forest-500">All incidents in a selected date range with category and status breakdown.</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_incident_summary_title">Incident Summary Report</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_incident_summary_desc">All incidents in a selected date range with category and status breakdown.</div>
           <div class="mt-3 flex gap-2">
             <span class="badge badge-pdf text-xs">PDF</span>
             <span class="badge badge-excel text-xs">Excel</span>
@@ -135,16 +135,16 @@
         </div>
         <div class="report-card" onclick="openGenerateModal('Predictive Risk Assessment')">
           <div class="icon" data-icon="predictions" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Predictive Risk Assessment</div>
-          <div class="text-xs text-forest-500">Zone-level risk forecast with patrol deployment recommendations.</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_predictive_risk_title">Predictive Risk Assessment</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_predictive_risk_desc">Zone-level risk forecast with patrol deployment recommendations.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-pdf text-xs">PDF Only</span>
+            <span class="badge badge-pdf text-xs" data-i18n="badge_pdf_only">PDF Only</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Patrol Deployment Plan')">
           <div class="icon" data-icon="shield" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Patrol Deployment Plan</div>
-          <div class="text-xs text-forest-500">Recommended patrol schedules by zone, time, and risk level.</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_patrol_deployment_title">Patrol Deployment Plan</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_patrol_deployment_desc">Recommended patrol schedules by zone, time, and risk level.</div>
           <div class="mt-3 flex gap-2">
             <span class="badge badge-pdf text-xs">PDF</span>
             <span class="badge badge-excel text-xs">Excel</span>
@@ -152,8 +152,8 @@
         </div>
         <div class="report-card" onclick="openGenerateModal('Trend Analysis Report')">
           <div class="icon" data-icon="trends" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Trend Analysis Report</div>
-          <div class="text-xs text-forest-500">Historical patterns, seasonal trends, and category comparisons.</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_trend_analysis_title">Trend Analysis Report</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_trend_analysis_desc">Historical patterns, seasonal trends, and category comparisons.</div>
           <div class="mt-3 flex gap-2">
             <span class="badge badge-pdf text-xs">PDF</span>
             <span class="badge badge-excel text-xs">Excel</span>
@@ -161,16 +161,16 @@
         </div>
         <div class="report-card" onclick="openGenerateModal('Settlement Compliance Report')">
           <div class="icon" data-icon="settlement" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Settlement Compliance Report</div>
-          <div class="text-xs text-forest-500">Status of all active settlement agreements and compliance tracking.</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_settlement_compliance_title">Settlement Compliance Report</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_settlement_compliance_desc">Status of all active settlement agreements and compliance tracking.</div>
           <div class="mt-3 flex gap-2">
-            <span class="badge badge-pdf text-xs">PDF Only</span>
+            <span class="badge badge-pdf text-xs" data-i18n="badge_pdf_only">PDF Only</span>
           </div>
         </div>
         <div class="report-card" onclick="openGenerateModal('Comparative Period Report')">
           <div class="icon" data-icon="dashboard" data-icon-size="22"></div>
-          <div class="font-semibold text-forest-800 mb-1">Comparative Period Report</div>
-          <div class="text-xs text-forest-500">Side-by-side comparison of two date ranges (e.g. Q1 vs Q2).</div>
+          <div class="font-semibold text-forest-800 mb-1" data-i18n="report_card_comparative_period_title">Comparative Period Report</div>
+          <div class="text-xs text-forest-500" data-i18n="report_card_comparative_period_desc">Side-by-side comparison of two date ranges (e.g. Q1 vs Q2).</div>
           <div class="mt-3 flex gap-2">
             <span class="badge badge-pdf text-xs">PDF</span>
             <span class="badge badge-excel text-xs">Excel</span>
@@ -182,12 +182,12 @@
     <!-- Scheduled Reports -->
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-forest-50">
-        <h2 class="font-display text-lg text-forest-800">Scheduled Reports</h2>
+        <h2 class="font-display text-lg text-forest-800" data-i18n="scheduled_reports_title">Scheduled Reports</h2>
       </div>
       <div class="overflow-x-auto table-responsive">
         <table class="data-table">
           <thead><tr>
-            <th>Report</th><th>Frequency</th><th>Next Run</th><th>Recipients</th><th>Format</th><th>Enabled</th>
+            <th data-i18n="th_report">Report</th><th data-i18n="th_frequency">Frequency</th><th data-i18n="th_next_run">Next Run</th><th data-i18n="th_recipients">Recipients</th><th data-i18n="th_format">Format</th><th data-i18n="th_enabled">Enabled</th>
           </tr></thead>
           <tbody id="schedTableBody"></tbody>
         </table>
@@ -197,11 +197,11 @@
     <!-- Recent Reports -->
     <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-forest-50">
-        <h2 class="font-display text-lg text-forest-800">Recent Generated Reports</h2>
+        <h2 class="font-display text-lg text-forest-800" data-i18n="recent_generated_reports_title">Recent Generated Reports</h2>
       </div>
       <div class="overflow-x-auto table-responsive">
         <table class="data-table">
-          <thead><tr><th>Report Name</th><th>Generated By</th><th>Date</th><th>Period</th><th>Format</th><th>Actions</th></tr></thead>
+          <thead><tr><th data-i18n="th_report_name">Report Name</th><th data-i18n="th_generated_by">Generated By</th><th data-i18n="th_date">Date</th><th data-i18n="th_period">Period</th><th data-i18n="th_format">Format</th><th data-i18n="th_actions">Actions</th></tr></thead>
           <tbody id="recentReports"></tbody>
         </table>
       </div>
@@ -282,15 +282,35 @@ var schedStates = scheduled.map(s => s.on);
 function renderScheduledReports() {
   const tbody = document.getElementById('schedTableBody');
   if (!tbody) return;
-  tbody.innerHTML = scheduled.map((s, i) => `
+  const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
+
+  tbody.innerHTML = scheduled.map((s, i) => {
+    let repName = s.report;
+    let freqName = s.freq;
+    let nextName = s.next;
+    if (isTl) {
+      if (s.report === 'Incident Summary Report') repName = 'Ulat sa Buod ng Insidente';
+      else if (s.report === 'Trend Analysis Report') repName = 'Ulat sa Pagsusuri ng Trend';
+      else if (s.report === 'Settlement Compliance' || s.report === 'Settlement Compliance Report') repName = 'Ulat sa Pagtupad sa Kasunduan';
+      else if (typeof bcT === 'function') repName = bcT(s.report, s.report);
+
+      if (s.freq === 'Weekly') freqName = 'Lingguhan';
+      else if (s.freq === 'Monthly') freqName = 'Buwanan';
+      else if (s.freq === 'Daily') freqName = 'Araw-araw';
+
+      if (s.next === 'Next Monday') nextName = 'Susunod na Lunes';
+      else if (s.next === '1st of month') nextName = 'Unang araw ng buwan';
+    }
+    return `
     <tr>
-      <td class="font-medium text-forest-800">${s.report}</td>
-      <td><span class="badge badge-resolved text-xs">${s.freq}</span></td>
-      <td class="text-sm text-forest-600">${s.next}</td>
+      <td class="font-medium text-forest-800">${repName}</td>
+      <td><span class="badge badge-resolved text-xs">${freqName}</span></td>
+      <td class="text-sm text-forest-600">${nextName}</td>
       <td class="text-xs text-forest-400">${s.recipients}</td>
       <td><span class="badge ${s.format === 'PDF' ? 'badge-pdf' : 'badge-excel'} text-xs">${s.format}</span></td>
       <td><button class="sched-toggle ${schedStates[i] ? 'on' : 'off'}" id="tog${i}" onclick="toggleSched(${i})"></button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function toggleSched(i) {
@@ -310,8 +330,9 @@ async function loadRecentReports(silent = false) {
     const rows = await BCApi._fetch('api/reports.php?action=list');
     const tbody = document.getElementById('recentReports');
     if (!tbody) return;
+    const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
     if (!rows || rows.length === 0) {
-      bcSetTableEmpty('recentReports', "There's no generated report records. Please Generate a New Report.", 'reports', 6, "Select a report card above and click 'Generate Report' to create an official document.");
+      bcSetTableEmpty('recentReports', isTl ? "Walang talaan ng nabuong ulat. Mangyaring Gumawa ng Bagong Ulat." : "There's no generated report records. Please Generate a New Report.", 'reports', 6, isTl ? "Pumili ng card ng ulat sa itaas at i-click ang 'Gumawa ng Ulat' upang lumikha ng opisyal na dokumento." : "Select a report card above and click 'Generate Report' to create an official document.");
     } else {
       tbody.innerHTML = rows.map(r => `
         <tr>
@@ -323,9 +344,9 @@ async function loadRecentReports(silent = false) {
           <td>
             <div class="flex items-center gap-2">
               ${r.format && r.format.toLowerCase() === 'pdf' ? `
-                <a href="api/reports.php?action=preview&file=${encodeURIComponent(r.file_path)}" target="_blank" rel="noopener noreferrer" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Preview Report in New Tab"><span data-icon="reports" data-icon-size="14"></span> Preview</a>
+                <a href="api/reports.php?action=preview&file=${encodeURIComponent(r.file_path)}" target="_blank" rel="noopener noreferrer" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Preview Report in New Tab" data-i18n="preview"><span data-icon="reports" data-icon-size="14"></span> <span>${isTl ? 'Silipin' : 'Preview'}</span></a>
               ` : ''}
-              <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Download Report"><span data-icon="download" data-icon-size="14"></span> Download</a>
+              <a href="api/reports.php?action=download&file=${encodeURIComponent(r.file_path)}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center gap-1" title="Download Report" data-i18n="download"><span data-icon="download" data-icon-size="14"></span> <span>${isTl ? 'I-download' : 'Download'}</span></a>
             </div>
           </td>
         </tr>`).join('');
@@ -435,16 +456,17 @@ async function simulateGenerate(isPreview = false) {
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
+    const isTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
     const prevBtn = document.getElementById('prevBtn');
     if (prevBtn) {
       prevBtn.disabled = false;
-      prevBtn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> Preview';
+      prevBtn.innerHTML = '<span data-icon="reports" data-icon-size="16"></span> <span data-i18n="preview">' + (isTl ? 'Silipin' : 'Preview') + '</span>';
       if (typeof renderIcons === 'function') renderIcons(prevBtn);
     }
     const genBtn = document.getElementById('genBtn');
     if (genBtn) {
       genBtn.disabled = false;
-      genBtn.innerHTML = '<span data-icon="download" data-icon-size="16"></span> Generate';
+      genBtn.innerHTML = '<span data-icon="download" data-icon-size="16"></span> <span data-i18n="generate">' + (isTl ? 'Bumuo' : 'Generate') + '</span>';
       if (typeof renderIcons === 'function') renderIcons(genBtn);
     }
   }
