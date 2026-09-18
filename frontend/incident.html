@@ -956,6 +956,8 @@
   var pickerZonesLayer = null;
   var pickerZonesGeojson = null;
   var activeZoneLayerGroup = null;
+  var activeZonePolygon = null;
+  var selectedZoneId = null;
   var boundaryLoadingPromise = null;
   var isLocationVerifiedInBoundary = false;
   var isGeocoded = false;
@@ -1000,21 +1002,27 @@
 
     if (!activeZoneLayerGroup) {
       activeZoneLayerGroup = L.layerGroup().addTo(pickerMap);
+    } else if (!pickerMap.hasLayer(activeZoneLayerGroup)) {
+      activeZoneLayerGroup.addTo(pickerMap);
     }
     activeZoneLayerGroup.clearLayers();
+    activeZonePolygon = null;
+    selectedZoneId = zoneId || null;
 
     if (!pickerZonesGeojson || !pickerZonesGeojson.features) return;
 
     // Reset base polygons to subtle neutral styling
     if (pickerZonesLayer) {
       pickerZonesLayer.eachLayer((layer) => {
-        layer.setStyle({
-          color: '#94A3B8',
-          weight: 1.5,
-          fillColor: '#F1F5F9',
-          fillOpacity: 0.18,
-          dashArray: '4'
-        });
+        if (layer.setStyle) {
+          layer.setStyle({
+            color: '#94A3B8',
+            weight: 1.5,
+            fillColor: '#F1F5F9',
+            fillOpacity: 0.18,
+            dashArray: '4'
+          });
+        }
       });
     }
 
@@ -1041,6 +1049,7 @@
         },
         interactive: false
       });
+      activeZonePolygon = activeHighlight;
       activeZoneLayerGroup.addLayer(activeHighlight);
       if (activeHighlight.bringToFront) {
         activeHighlight.bringToFront();
@@ -1656,98 +1665,125 @@
     }
   }
 
-  function quickFixZoneConflict() {
+  async function quickFixZoneConflict() {
     if (!currentZoneConflict) return;
     const targetZone = currentZoneConflict.detectedZone;
+    if (!targetZone) return;
+
+    // 1. Ensure picker boundary GeoJSON and picker map are loaded and initialized
+    await ensurePickerBoundaryLoaded();
+    if (!pickerMap) {
+      showPickerMap();
+      await initPickerMap();
+    }
+
+    // 2. Update the zone select dropdown value and custom UI display
     const zoneSelect = document.getElementById('if_zone');
     if (zoneSelect) {
       zoneSelect.value = targetZone;
       if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(zoneSelect);
-      showToast(`Switched zone to ${targetZone}`, 'success');
-      highlightSelectedZoneOnMiniMap(targetZone, true);
     }
 
-    // 1. Resolve new coordinates for marker repositioning:
-    // Prioritize exact coordinates of selected Location Detail from lookup dataset;
-    // Otherwise fall back to the centroid of the resolved zone boundary (targetZoneLayer.getBounds().getCenter())
-    const LOCATION_COORDINATES_LOOKUP = [
-      { name: 'Pandi Residences 3', zone: 'Zone 1', aliases: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3', 'barangay hall', 'brgy hall', 'aquariadise', 'siling bata', 'massway', 'petshop'], lat: 14.884500, lng: 120.973500 },
-      { name: 'Pandi Residences 1', zone: 'Zone 2', aliases: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1', 'pasong kalabaw', 'kalabaw st', 'residence private resort'], lat: 14.881800, lng: 120.960200 },
-      { name: 'Pandi Village 2 (Atlantica)', zone: 'Zone 3', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.971500 },
-      { name: 'Mitay 1', zone: 'Zone 4', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno', 'pandi village 1', 'jollibee', 'jollibee - pandi', 'jollibee pandi', "adam's hotel", "adam's hotel apartment", 'adams hotel'], lat: 14.887000, lng: 120.963500 },
-      { name: 'Sitio Gubat', zone: 'Zone 5', aliases: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center'], lat: 14.881500, lng: 120.964750 },
-      { name: 'Bangko St.', zone: 'Zone 6', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'balai loreta', 'balai loreta private resort', 'balai loreta resort'], lat: 14.875200, lng: 120.971000 },
-      { name: 'Barangka St.', zone: 'Zone 7', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi-angat road', 'pandi angat', 'pandi-angat rd'], lat: 14.876800, lng: 120.959500 },
-      { name: 'Aquariadise Petshop', zone: 'Zone 1', aliases: ['aquariadise', 'aquariadise petshop', 'petshop'], lat: 14.885000, lng: 120.974000 },
-      { name: 'Massway Supermarket - Pandi', zone: 'Zone 1', aliases: ['massway', 'massway supermarket', 'supermarket'], lat: 14.886800, lng: 120.976000 },
-      { name: "ADAM'S Hotel Apartment", zone: 'Zone 4', aliases: ['adams', "adam's", "adam's hotel", 'adams hotel apartment'], lat: 14.882800, lng: 120.956000 },
-      { name: 'Residence Private Resort', zone: 'Zone 2', aliases: ['residence private resort', 'private resort', 'residence resort'], lat: 14.882000, lng: 120.954800 },
-      { name: 'Jollibee - Pandi', zone: 'Zone 4', aliases: ['jollibee', 'jollibee - pandi', 'jollibee pandi'], lat: 14.887200, lng: 120.968000 },
-      { name: 'Balai Loreta Private Resort', zone: 'Zone 6', aliases: ['balai loreta', 'balai loreta private resort', 'balai loreta resort'], lat: 14.875200, lng: 120.966000 },
-      { name: 'Pandi Encampment One', zone: 'Zone 7', aliases: ['pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi encampment', 'encampment'], lat: 14.883059, lng: 120.963831 },
-      { name: 'Mapulang Lupa Barangay Hall', zone: 'Zone 1', aliases: ['barangay hall', 'brgy hall', 'hall', 'mapulang lupa hall'], lat: 14.883600, lng: 120.965500 },
-      { name: 'Mapulang Lupa Elementary School', zone: 'Zone 2', aliases: ['elementary school', 'mapulang lupa elementary', 'elem school', 'es school'], lat: 14.880000, lng: 120.963400 },
-      { name: 'Sitio Bata', zone: 'Zone 1', aliases: ['sitio bata', 'bata', 'siling bata'], lat: 14.886300, lng: 120.977500 },
-      { name: 'Silangan Corridor', zone: 'Zone 6', aliases: ['silangan', 'silangan corridor'], lat: 14.876000, lng: 120.965500 },
-    ];
+    // 3. Resolve marker coordinates:
+    // If the placed marker/pin is already inside targetZone (e.g. Pin Placement conflict, or
+    // current marker/input coordinates verify inside targetZone), strictly preserve the placed pin!
+    const latInput = document.getElementById('if_lat');
+    const lngInput = document.getElementById('if_lng');
+    const curLat = latInput && latInput.value ? parseFloat(latInput.value) : (pickerMarker ? pickerMarker.getLatLng().lat : null);
+    const curLng = lngInput && lngInput.value ? parseFloat(lngInput.value) : (pickerMarker ? pickerMarker.getLatLng().lng : null);
 
-    const locText = (document.getElementById('if_location') ? document.getElementById('if_location').value : '').toLowerCase().trim();
-    const matchedKw = (currentZoneConflict.matchedKeyword || '').toLowerCase().trim();
+    let finalLat = null;
+    let finalLng = null;
 
-    let newLat = null;
-    let newLng = null;
+    let pinAlreadyInTargetZone = false;
+    if (curLat != null && curLng != null && !isNaN(curLat) && !isNaN(curLng) && (curLat !== 0 || curLng !== 0)) {
+      if (currentZoneConflict.matchedKeyword === 'Pin Placement') {
+        pinAlreadyInTargetZone = true;
+      } else {
+        const detected = detectZoneFromCoordinates(curLat, curLng);
+        if (detected && (detected.zone === targetZone || detected.zone_id === targetZone)) {
+          pinAlreadyInTargetZone = true;
+        }
+      }
+    }
 
-    // A. Prioritize matching Location Detail in lookup table
-    let matchedLocation = null;
-    if (locText || matchedKw) {
-      matchedLocation = LOCATION_COORDINATES_LOOKUP.find(entry => {
-        if (targetZone && entry.zone && entry.zone !== targetZone) return false;
-        if (matchedKw && (entry.name.toLowerCase().includes(matchedKw) || entry.aliases.some(a => a === matchedKw || matchedKw.includes(a)))) return true;
-        if (locText && (entry.name.toLowerCase().includes(locText) || locText.includes(entry.name.toLowerCase()) || entry.aliases.some(a => locText.includes(a)))) return true;
-        return false;
-      });
-      if (!matchedLocation) {
+    if (pinAlreadyInTargetZone) {
+      finalLat = curLat;
+      finalLng = curLng;
+    } else {
+      // Resolve coordinates strictly matching targetZone from lookup table
+      const LOCATION_COORDINATES_LOOKUP = [
+        { name: 'Pandi Residences 3', zone: 'Zone 1', aliases: ['residence 3', 'residences 3', 'r3', 'res 3', 'res3', 'pandi residences 3', 'pandi residence 3', 'barangay hall', 'brgy hall', 'aquariadise', 'siling bata', 'massway', 'petshop'], lat: 14.884500, lng: 120.973500 },
+        { name: 'Pandi Residences 1', zone: 'Zone 2', aliases: ['residence 1', 'residences 1', 'r1', 'res 1', 'res1', 'pandi residences 1', 'pandi residence 1', 'pasong kalabaw', 'kalabaw st', 'residence private resort'], lat: 14.881800, lng: 120.960200 },
+        { name: 'Pandi Village 2 (Atlantica)', zone: 'Zone 3', aliases: ['pandi village 2', 'pandi village', 'atlantica', 'pv2', 'pv 2'], lat: 14.879500, lng: 120.971500 },
+        { name: 'Mitay 1', zone: 'Zone 4', aliases: ['mitay 1', 'mitay', 'sitio mitay', 'mitay uno', 'pandi village 1', 'jollibee', 'jollibee - pandi', 'jollibee pandi', "adam's hotel", "adam's hotel apartment", 'adams hotel'], lat: 14.887000, lng: 120.963500 },
+        { name: 'Sitio Gubat', zone: 'Zone 5', aliases: ['sitio gubat', 'gubat', 'purok gubat', 'barangay center', 'mapulang lupa center'], lat: 14.881500, lng: 120.964750 },
+        { name: 'Bangko St.', zone: 'Zone 6', aliases: ['bangko st', 'bangko street', 'bangko', 'kalye bangko', 'balai loreta', 'balai loreta private resort', 'balai loreta resort'], lat: 14.875200, lng: 120.971000 },
+        { name: 'Barangka St.', zone: 'Zone 7', aliases: ['barangka st', 'barangka street', 'barangka', 'kalye barangka', 'pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi-angat road', 'pandi angat', 'pandi-angat rd'], lat: 14.876800, lng: 120.959500 },
+        { name: 'Aquariadise Petshop', zone: 'Zone 1', aliases: ['aquariadise', 'aquariadise petshop', 'petshop'], lat: 14.885000, lng: 120.974000 },
+        { name: 'Massway Supermarket - Pandi', zone: 'Zone 1', aliases: ['massway', 'massway supermarket', 'supermarket'], lat: 14.886800, lng: 120.976000 },
+        { name: "ADAM'S Hotel Apartment", zone: 'Zone 4', aliases: ['adams', "adam's", "adam's hotel", 'adams hotel apartment'], lat: 14.882800, lng: 120.956000 },
+        { name: 'Residence Private Resort', zone: 'Zone 2', aliases: ['residence private resort', 'private resort', 'residence resort'], lat: 14.882000, lng: 120.954800 },
+        { name: 'Jollibee - Pandi', zone: 'Zone 4', aliases: ['jollibee', 'jollibee - pandi', 'jollibee pandi'], lat: 14.887200, lng: 120.968000 },
+        { name: 'Balai Loreta Private Resort', zone: 'Zone 6', aliases: ['balai loreta', 'balai loreta private resort', 'balai loreta resort'], lat: 14.875200, lng: 120.966000 },
+        { name: 'Pandi Encampment One', zone: 'Zone 7', aliases: ['pandi encampment one', 'pandi encamp one', 'encampment one', 'encamp one', 'pandi encampment', 'encampment'], lat: 14.883059, lng: 120.963831 },
+        { name: 'Mapulang Lupa Barangay Hall', zone: 'Zone 1', aliases: ['barangay hall', 'brgy hall', 'hall', 'mapulang lupa hall'], lat: 14.883600, lng: 120.965500 },
+        { name: 'Mapulang Lupa Elementary School', zone: 'Zone 2', aliases: ['elementary school', 'mapulang lupa elementary', 'elem school', 'es school'], lat: 14.880000, lng: 120.963400 },
+        { name: 'Sitio Bata', zone: 'Zone 1', aliases: ['sitio bata', 'bata', 'siling bata'], lat: 14.886300, lng: 120.977500 },
+        { name: 'Silangan Corridor', zone: 'Zone 6', aliases: ['silangan', 'silangan corridor'], lat: 14.876000, lng: 120.965500 },
+      ];
+
+      const locText = (document.getElementById('if_location') ? document.getElementById('if_location').value : '').toLowerCase().trim();
+      const matchedKw = (currentZoneConflict.matchedKeyword || '').toLowerCase().trim();
+
+      let matchedLocation = null;
+      if (locText || matchedKw) {
         matchedLocation = LOCATION_COORDINATES_LOOKUP.find(entry => {
+          if (entry.zone !== targetZone) return false;
           if (matchedKw && (entry.name.toLowerCase().includes(matchedKw) || entry.aliases.some(a => a === matchedKw || matchedKw.includes(a)))) return true;
           if (locText && (entry.name.toLowerCase().includes(locText) || locText.includes(entry.name.toLowerCase()) || entry.aliases.some(a => locText.includes(a)))) return true;
           return false;
         });
       }
-    }
 
-    if (matchedLocation) {
-      newLat = matchedLocation.lat;
-      newLng = matchedLocation.lng;
-    }
-
-    // B. Fall back to centroid of resolved zone boundary (targetZoneLayer.getBounds().getCenter())
-    if (newLat == null || newLng == null) {
-      if (pickerZonesGeojson && pickerZonesGeojson.features) {
-        const targetFeature = pickerZonesGeojson.features.find(f =>
-          f.properties && (f.properties.zone === targetZone || f.properties.zone_id === targetZone)
-        );
-        if (targetFeature) {
-          const targetZoneLayer = L.geoJSON(targetFeature);
-          if (targetZoneLayer.getBounds) {
-            const centroid = targetZoneLayer.getBounds().getCenter();
-            newLat = centroid.lat;
-            newLng = centroid.lng;
-          } else if (targetFeature.properties && targetFeature.properties.center) {
-            newLat = targetFeature.properties.center[0];
-            newLng = targetFeature.properties.center[1];
+      if (matchedLocation) {
+        finalLat = matchedLocation.lat;
+        finalLng = matchedLocation.lng;
+      } else {
+        // Fall back to centroid of targetZone boundary
+        if (pickerZonesGeojson && pickerZonesGeojson.features) {
+          const targetFeature = pickerZonesGeojson.features.find(f =>
+            f.properties && (f.properties.zone === targetZone || f.properties.zone_id === targetZone)
+          );
+          if (targetFeature) {
+            const targetZoneLayer = L.geoJSON(targetFeature);
+            if (targetZoneLayer.getBounds) {
+              const centroid = targetZoneLayer.getBounds().getCenter();
+              finalLat = centroid.lat;
+              finalLng = centroid.lng;
+            } else if (targetFeature.properties && targetFeature.properties.center) {
+              finalLat = targetFeature.properties.center[0];
+              finalLng = targetFeature.properties.center[1];
+            }
           }
         }
       }
     }
 
-    if (newLat != null && newLng != null) {
-      const numLat = Number(newLat);
-      const numLng = Number(newLng);
+    // 4. Update coordinates & pin on pickerMap
+    if (finalLat != null && finalLng != null) {
+      const numLat = Number(finalLat);
+      const numLng = Number(finalLng);
 
-      // Ensure picker map is initialized
-      if (!pickerMap) initPickerMap();
+      if (latInput) latInput.value = numLat.toFixed(6);
+      if (lngInput) lngInput.value = numLng.toFixed(6);
 
-      // 1. Update marker position
+      const coordsStr = `Lat: ${numLat.toFixed(5)}, Lng: ${numLng.toFixed(5)}`;
+      const preview = document.getElementById('if_coordsPreview');
+      if (preview) preview.textContent = coordsStr;
+      const widePreview = document.getElementById('wideCoordsPreview');
+      if (widePreview) widePreview.textContent = coordsStr;
+
       if (pickerMarker) {
         pickerMarker.setLatLng([numLat, numLng]);
       } else if (pickerMap) {
@@ -1758,47 +1794,39 @@
         });
       }
 
-      // 2. Update latitude/longitude input values and bottom-right coordinate readout
-      const latInput = document.getElementById('if_lat');
-      const lngInput = document.getElementById('if_lng');
-      if (latInput) latInput.value = numLat.toFixed(6);
-      if (lngInput) lngInput.value = numLng.toFixed(6);
-
-      const coordsStr = `Lat: ${numLat.toFixed(5)}, Lng: ${numLng.toFixed(5)}`;
-      const preview = document.getElementById('if_coordsPreview');
-      if (preview) preview.textContent = coordsStr;
-      const widePreview = document.getElementById('wideCoordsPreview');
-      if (widePreview) widePreview.textContent = coordsStr;
-
-      // 3. Pan or re-center the map view to the new marker position
-      if (pickerMap) {
-        pickerMap.panTo([numLat, numLng]);
-      }
-
-      // 4. Ensure the "Inside Boundary" badge reflects the updated valid state
       isLocationVerifiedInBoundary = true;
       isGeocoded = true;
-      const badge = document.getElementById('if_geoBadge');
-      if (badge) {
-        badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
-        badge.textContent = 'Inside Boundary';
-      }
-      const wideGeoBadge = document.getElementById('wideGeoBadge');
-      if (wideGeoBadge) {
-        wideGeoBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
-        wideGeoBadge.textContent = 'Inside Boundary';
-      }
-      const wideZoneBadge = document.getElementById('wideZoneBadge');
-      if (wideZoneBadge) {
-        wideZoneBadge.textContent = targetZone ? `Zone: ${targetZone}` : 'Zone: None Selected';
-      }
-      const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
-      if (boundaryBanner) boundaryBanner.classList.add('hidden');
-      setBoundaryStyle(false);
-      updateSubmitButtonState();
     }
 
-    checkZoneLocationConflict();
+    // 5. Immediate Boundary Re-render:
+    // Reset previous layer styles, clear active highlight, and highlight only targetZone polygon
+    highlightSelectedZoneOnMiniMap(targetZone, true);
+
+    // 6. Update badges and dismiss conflict banner
+    const badge = document.getElementById('if_geoBadge');
+    if (badge) {
+      badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      badge.textContent = 'Inside Boundary';
+    }
+    const wideGeoBadge = document.getElementById('wideGeoBadge');
+    if (wideGeoBadge) {
+      wideGeoBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      wideGeoBadge.textContent = 'Inside Boundary';
+    }
+    const wideZoneBadge = document.getElementById('wideZoneBadge');
+    if (wideZoneBadge) {
+      wideZoneBadge.textContent = `Zone: ${targetZone}`;
+    }
+    const boundaryBanner = document.getElementById('if_boundaryErrorBanner');
+    if (boundaryBanner) boundaryBanner.classList.add('hidden');
+    setBoundaryStyle(false);
+    updateSubmitButtonState();
+
+    currentZoneConflict = null;
+    const banner = document.getElementById('if_zoneConflictBanner');
+    if (banner) banner.classList.add('hidden');
+
+    showToast(`Switched zone to ${targetZone}`, 'success');
   }
 
   async function onZoneDropdownChange() {
@@ -2281,6 +2309,7 @@
       if (switchZone) {
         document.getElementById('if_zone').value = conflict.detectedZone;
         if (window.bcUpdateSelectDisplay) bcUpdateSelectDisplay(document.getElementById('if_zone'));
+        highlightSelectedZoneOnMiniMap(conflict.detectedZone, false);
         checkZoneLocationConflict();
       }
     }

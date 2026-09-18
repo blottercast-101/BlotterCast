@@ -129,6 +129,89 @@ class TestZoneHighlightPersistence(unittest.TestCase):
         self.assertEqual(len(active_zone_layer_group.layers), 1, "Only one zone should be highlighted after switch in Add flow")
         self.assertEqual(active_zone_layer_group.layers[0].zone_name, "Zone 4")
 
+    def test_06_quick_fix_zone_conflict_async_and_ensures_boundary(self):
+        """Verify quickFixZoneConflict is async, awaits boundary load, and triggers highlightSelectedZoneOnMiniMap."""
+        self.assertIn(
+            "async function quickFixZoneConflict()",
+            self.incident_html,
+            "quickFixZoneConflict must be an async function to await boundary loading",
+        )
+        self.assertIn(
+            "await ensurePickerBoundaryLoaded()",
+            self.incident_html,
+            "quickFixZoneConflict must await ensurePickerBoundaryLoaded before rendering highlight or resolving centroid",
+        )
+        self.assertIn(
+            "highlightSelectedZoneOnMiniMap(targetZone, true)",
+            self.incident_html,
+            "quickFixZoneConflict must call highlightSelectedZoneOnMiniMap with targetZone to immediately re-render boundary",
+        )
+
+    def test_07_quick_fix_preserves_placed_pin_inside_target_zone(self):
+        """Verify quickFixZoneConflict preserves placed pin coordinates when already inside target zone."""
+        self.assertIn(
+            "pinAlreadyInTargetZone",
+            self.incident_html,
+            "quickFixZoneConflict must check if pin is already inside targetZone before recalculating coordinates",
+        )
+        self.assertIn(
+            "currentZoneConflict.matchedKeyword === 'Pin Placement'",
+            self.incident_html,
+            "quickFixZoneConflict must honor 'Pin Placement' conflict and keep placed pin in targetZone",
+        )
+        self.assertIn(
+            "finalLat = curLat",
+            self.incident_html,
+            "quickFixZoneConflict must keep curLat when pin is already in targetZone",
+        )
+
+    def test_08_quick_fix_strict_target_zone_lookup_filter(self):
+        """Verify lookup coordinates are strictly filtered by targetZone and cannot pick from another zone."""
+        # Find the quickFixZoneConflict function body
+        start_idx = self.incident_html.find("async function quickFixZoneConflict()")
+        end_idx = self.incident_html.find("async function onZoneDropdownChange()")
+        self.assertNotEqual(start_idx, -1)
+        self.assertNotEqual(end_idx, -1)
+        fn_body = self.incident_html[start_idx:end_idx]
+
+        self.assertIn(
+            "entry.zone !== targetZone",
+            fn_body,
+            "LOCATION_COORDINATES_LOOKUP search must reject entries not matching targetZone",
+        )
+        # Ensure there is no unconstrained fallback lookup that drops the zone check
+        self.assertNotIn(
+            "if (!matchedLocation) {\n        matchedLocation = LOCATION_COORDINATES_LOOKUP.find(entry => {\n          if (matchedKw",
+            fn_body,
+            "LOCATION_COORDINATES_LOOKUP must never have an unconstrained fallback matching outside targetZone",
+        )
+
+    def test_09_active_zone_polygon_and_selected_zone_state_tracking(self):
+        """Verify activeZonePolygon and selectedZoneId variables exist and are updated in highlightSelectedZoneOnMiniMap."""
+        self.assertIn(
+            "var activeZonePolygon = null;",
+            self.incident_html,
+            "activeZonePolygon must be declared to track the active highlighted polygon",
+        )
+        self.assertIn(
+            "var selectedZoneId = null;",
+            self.incident_html,
+            "selectedZoneId must be declared to track the active zone id",
+        )
+        self.assertIn(
+            "activeZonePolygon = activeHighlight;",
+            self.incident_html,
+            "highlightSelectedZoneOnMiniMap must assign activeZonePolygon to the new activeHighlight",
+        )
+
+    def test_10_save_incident_syncs_zone_highlight_on_confirm(self):
+        """Verify saveIncident updates the mini-map zone highlight when user confirms switching zone before save."""
+        self.assertIn(
+            "highlightSelectedZoneOnMiniMap(conflict.detectedZone, false);",
+            self.incident_html,
+            "saveIncident must call highlightSelectedZoneOnMiniMap when user confirms switching zones",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
