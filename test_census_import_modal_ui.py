@@ -47,14 +47,25 @@ class TestCensusImportModalUI(unittest.TestCase):
         self.assertIn('id="censusFileInput"', self.html)
 
     def test_modal_footer_and_actions(self):
-        # Left: Download template link
+        # Footer container layout: full-width horizontal flex-row with justify-between
+        self.assertIn('flex-row', self.html)
+        self.assertIn('items-center', self.html)
+        self.assertIn('justify-between', self.html)
+        self.assertIn('w-full', self.html)
+
+        # Far Left: Download template link
         self.assertIn('/templates/census_resident_template.csv', self.html)
         self.assertIn('Download Resident Census Template (.csv)', self.html)
 
-        # Right: Cancel and Import Data buttons
+        # Far Right: Action buttons group in horizontal row
+        self.assertIn('id="cancelCensusImportBtn"', self.html)
         self.assertIn('Cancel', self.html)
         self.assertIn('closeCensusImportModal()', self.html)
-        self.assertIn('id="btnConfirmCensusImport"', self.html)
+        self.assertIn('bg-[#edf5f0]', self.html)
+
+        self.assertIn('id="submitCensusImportBtn"', self.html)
+        self.assertIn('executeCensusImport()', self.html)
+        self.assertIn('bg-[#1e3a2b]', self.html)
         self.assertIn('Import Data', self.html)
 
     def test_javascript_handlers_present(self):
