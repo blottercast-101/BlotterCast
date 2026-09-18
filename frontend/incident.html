@@ -1021,8 +1021,13 @@
     if (!zoneId) return;
 
     // Find the feature matching zoneId
+    const normZone = (zoneId || '').trim();
     const matchingFeature = pickerZonesGeojson.features.find(f =>
-      f.properties && (f.properties.zone === zoneId || f.properties.zone_id === zoneId)
+      f.properties && (
+        f.properties.zone === normZone ||
+        f.properties.zone_id === normZone ||
+        (normZone && (normZone.startsWith(f.properties.zone) || f.properties.zone.toLowerCase() === normZone.toLowerCase()))
+      )
     );
 
     if (matchingFeature) {
@@ -1037,6 +1042,9 @@
         interactive: false
       });
       activeZoneLayerGroup.addLayer(activeHighlight);
+      if (activeHighlight.bringToFront) {
+        activeHighlight.bringToFront();
+      }
 
       if (shouldPan && activeHighlight.getBounds) {
         const bounds = activeHighlight.getBounds();
@@ -1125,7 +1133,11 @@
     }
 
     // Dedicated layer group for active zone highlighting
-    activeZoneLayerGroup = L.layerGroup().addTo(pickerMap);
+    if (!activeZoneLayerGroup) {
+      activeZoneLayerGroup = L.layerGroup().addTo(pickerMap);
+    } else {
+      activeZoneLayerGroup.clearLayers();
+    }
 
     if (pickerBoundaryGeojson) {
       pickerBoundaryLayer = L.geoJSON(pickerBoundaryGeojson, {
@@ -1799,12 +1811,10 @@
 
     checkZoneLocationConflict();
 
-    // Re-verify status with the new zone
+    // Re-verify status and badges with the new zone
     const lat = document.getElementById('if_lat').value;
     const lng = document.getElementById('if_lng').value;
-    if (lat && lng) {
-      updatePickerStatusBadge(Number(lat), Number(lng));
-    }
+    updatePickerStatusBadge(lat ? Number(lat) : null, lng ? Number(lng) : null);
   }
 
   var censusResidentsForIncident = [];
@@ -2045,6 +2055,9 @@
     if (document.getElementById('if_involvedParties')) document.getElementById('if_involvedParties').value = '';
 
     setPickerCoordinates(null, null);
+    if (pickerMap) {
+      highlightSelectedZoneOnMiniMap('', false);
+    }
     isLocationVerifiedInBoundary = false;
     isGeocoded = false;
     currentZoneConflict = null;
