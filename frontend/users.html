@@ -759,9 +759,16 @@ async function loadAuditLog(silent = false) {
 }
 
 function renderUsers() {
-  const s = document.getElementById('userSearch').value.toLowerCase();
-  const r = document.getElementById('roleFilter').value;
-  const st = document.getElementById('statusFilter2').value;
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+
+  const searchEl = document.getElementById('userSearch');
+  const roleEl = document.getElementById('roleFilter');
+  const statusEl = document.getElementById('statusFilter2');
+
+  const s = searchEl ? searchEl.value.toLowerCase() : '';
+  const r = roleEl ? roleEl.value : '';
+  const st = statusEl ? statusEl.value : '';
   try {
     sessionStorage.setItem('bc_users_roleFilter', r || '');
     sessionStorage.setItem('bc_users_statusFilter2', st || '');
@@ -844,6 +851,7 @@ window.usersData = usersData;
 window.renderUsers = renderUsers;
 window.openEditUserModal = editUser;
 window.addEventListener('userAvatarUpdated', (e) => {
+  if (!document.getElementById('usersTableBody')) return;
   const updatedUser = e.detail?.user;
   const avatarUrl = e.detail?.avatar_url;
   if (usersData && usersData.length > 0) {
@@ -858,7 +866,46 @@ window.addEventListener('userAvatarUpdated', (e) => {
         changed = true;
       }
     });
-    if (changed) renderUsers();
+    if (changed && typeof renderUsers === 'function') {
+      try { renderUsers(); } catch (_) {}
+    }
+  }
+});
+
+window.addEventListener('userAccountUpdated', (e) => {
+  const updated = e.detail?.user || e.detail;
+  if (!updated) return;
+  const targetId = updated.id ? Number(updated.id) : null;
+  const oldU = (e.detail?.old_username || '').toLowerCase();
+  const newU = (updated.username || '').toLowerCase();
+  if (usersData && usersData.length > 0) {
+    let changed = false;
+    usersData.forEach(u => {
+      if ((targetId && Number(u.id) === targetId) ||
+          (oldU && (u.username || '').toLowerCase() === oldU) ||
+          (newU && (u.username || '').toLowerCase() === newU)) {
+        if (updated.username) u.username = updated.username;
+        if (updated.fullName || updated.full_name || updated.name) {
+          const nm = updated.fullName || updated.full_name || updated.name;
+          u.name = nm;
+          u.fullName = nm;
+          u.full_name = nm;
+        }
+        if (updated.email) u.email = updated.email;
+        if (updated.contact || updated.contact_no) {
+          const cn = updated.contact || updated.contact_no;
+          u.contact = cn;
+          u.contact_no = cn;
+        }
+        changed = true;
+      }
+    });
+    if (changed && document.getElementById('usersTableBody') && typeof renderUsers === 'function') {
+      try { renderUsers(); } catch (_) {}
+    }
+  }
+  if (document.getElementById('usersTableBody') && typeof loadUsers === 'function') {
+    try { loadUsers(true); } catch (_) {}
   }
 });
 

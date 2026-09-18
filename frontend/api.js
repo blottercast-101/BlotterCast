@@ -75,9 +75,10 @@ const BCApi = {
         if (url.includes('census') || url.includes('type=census')) {
           this.invalidateCache('census');
         }
-        if (url.includes('users') || url.includes('captain_signature')) {
+        if (url.includes('users') || url.includes('captain_signature') || url.includes('update_my_account') || url.includes('my_account')) {
           this.invalidateCache('captain');
           this.invalidateCache('users');
+          this.invalidateCache('auth');
         }
         if (url.includes('incidents') || url.includes('blotter') || url.includes('settlements')) {
           this.invalidateCache('blotter');
@@ -175,10 +176,12 @@ const BCApi = {
   },
   myAccount() { return this._fetch(`${BC_API}/api/auth.php?action=my_account`); },
   updateMyAccount(fullName, email, contact, username) {
-    const payload = { fullName, email, contact };
+    const payload = { fullName, full_name: fullName, email, contact, contact_no: contact };
     if (username !== undefined && username !== null) {
       payload.username = username;
     }
+    this.invalidateCache('users');
+    this.invalidateCache('auth');
     return this._fetch(`${BC_API}/api/auth.php?action=update_my_account`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

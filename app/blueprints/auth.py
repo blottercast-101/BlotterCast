@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import bcrypt
 from flask import Blueprint, current_app, jsonify, request, session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from werkzeug.utils import secure_filename
 
 from ..email import send_otp_email
@@ -435,7 +435,13 @@ def _login():
             return json_error("Username and password required")
 
         settings = get_security_settings()
-        user = User.query.filter(func.lower(func.trim(User.username)) == username.lower()).first()
+        clean_identifier = username.lower()
+        user = User.query.filter(
+            or_(
+                func.lower(func.trim(User.username)) == clean_identifier,
+                func.lower(func.trim(User.email)) == clean_identifier,
+            )
+        ).first()
 
         if user and settings["lockout_enabled"] and user.locked_until and user.locked_until > datetime.utcnow():
             minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1)
@@ -625,7 +631,13 @@ def _forgot_password():
     if not username:
         return json_error("Enter your username")
 
-    user = User.query.filter_by(username=username).first()
+    clean_identifier = username.lower()
+    user = User.query.filter(
+        or_(
+            func.lower(func.trim(User.username)) == clean_identifier,
+            func.lower(func.trim(User.email)) == clean_identifier,
+        )
+    ).first()
     if not user:
         return json_error("No account found with that username.", 404)
     if user.status.upper() == "SUSPENDED":
@@ -981,6 +993,9 @@ def _update_my_account():
     user.email = email
     user.contact_no = contact
     session["full_name"] = full_name
+    session["username"] = user.username
+    session["email"] = email
+    session["contact"] = contact
 
     avatar_payload = data.get("avatar") or data.get("avatar_url") or data.get("profile_photo") or data.get("profile_photo_path")
     if avatar_payload is not None:
@@ -1020,8 +1035,10 @@ def _update_my_account():
             "username": user.username,
             "fullName": user.full_name,
             "full_name": user.full_name,
+            "name": user.full_name,
             "email": user.email,
             "contact": user.contact_no,
+            "contact_no": user.contact_no,
             "role": user.role,
             "status": user.status or "Active",
             "avatar": avatar_val,

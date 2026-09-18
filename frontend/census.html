@@ -7,9 +7,9 @@
   <title>Census — BlotterCast</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
-  <script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414'}},fontFamily:{display:['DM Serif Display','serif'],body:['DM Sans','sans-serif']}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414'}},fontFamily:{display:['Playfair Display','DM Serif Display','serif'],body:['DM Sans','sans-serif']}}}}</script>
 </head>
 <body class="font-body bg-forest-50 min-h-screen">
 
@@ -108,7 +108,7 @@
       </div>
     </div>
     <div class="flex items-center gap-3">
-      <button onclick="openModal('importCensusModal')" class="btn-secondary" id="importBtn"><span data-icon="folder" data-icon-size="16"></span> Import</button>
+      <button onclick="openCensusImportModal()" class="btn-secondary" id="importBtn"><span data-icon="folder" data-icon-size="16"></span> Import</button>
       <button onclick="openAddResident()" class="btn-primary"><span data-icon="plus" data-icon-size="16"></span> Add Resident</button>
     </div>
   </header>
@@ -342,25 +342,85 @@
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importCensusModal">
-  <div class="modal-box max-w-md" id="importResidentModal">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-display text-xl text-forest-800">Import Resident Data</h2>
-      <button onclick="closeModal('importCensusModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
+  <div class="modal-box w-full max-w-[680px] p-0 rounded-3xl bg-white shadow-2xl relative overflow-hidden" id="importResidentModal" style="width: 680px; max-width: 94vw; padding: 0; border-radius: 1.5rem !important;">
+    <!-- Modal Header -->
+    <div class="relative px-8 pt-7 pb-2 flex items-center justify-center">
+      <h2 class="font-display text-2xl sm:text-[26px] font-bold text-[#143525] text-center tracking-tight" style="font-family: 'Playfair Display', Georgia, serif;">Import Resident Data</h2>
+      <button type="button" onclick="closeCensusImportModal()" class="absolute right-7 top-7 text-gray-400 hover:text-gray-700 p-1.5 rounded-lg transition-colors focus:outline-none" title="Close" aria-label="Close modal">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
-    <div class="flex items-center justify-between p-3.5 mb-4 bg-[#edf5f0] border border-[#d8e8dd] rounded-xl text-xs font-medium text-[#1e3a2b]">
-      <span>CSV Template:</span>
-      <a href="/templates/census_resident_template.csv" download class="inline-flex items-center gap-1 text-[#1e3a2b] underline hover:text-[#52796f] transition-colors">
-        <span>↓ Resident Census Template (.csv)</span>
+
+    <!-- Modal Body / Upload Container -->
+    <div class="px-8 pb-7 pt-3 sm:px-9">
+      <div id="censusDropzone"
+           class="border-2 border-dashed border-[#d8e8dd] border-[#a3c9b1] bg-[#edf5f0] rounded-2xl py-12 px-8 text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:bg-[#e7f4eb] hover:border-[#86b595]"
+           style="border-color: #a3c9b1;"
+           onclick="document.getElementById('censusFileInput').click()"
+           ondragover="handleCensusDragOver(event)"
+           ondragleave="handleCensusDragLeave(event)"
+           ondrop="handleCensusDrop(event)">
+        
+        <!-- Folder-plus icon -->
+        <div class="mb-4 text-[#226343] flex items-center justify-center pointer-events-none">
+          <svg class="w-14 h-14" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 14h10l4 4h18a2 2 0 0 1 2 2v9"/>
+            <path d="M8 14a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h19"/>
+            <path d="M35 28v14"/>
+            <path d="M28 35h14"/>
+          </svg>
+        </div>
+
+        <!-- Primary text -->
+        <div class="text-[#2d3748] text-[15px] font-normal mb-4 max-w-[340px] mx-auto leading-snug pointer-events-none" id="importDropLabel">
+          Drag &amp; Drop CSV or Excel file (.xlsx, .xls) here or Click to upload
+        </div>
+
+        <!-- Hidden file input -->
+        <input type="file" id="censusFileInput" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" class="hidden" onchange="handleCensusFileInputChange(event)"/>
+
+        <!-- Action Button: Browse Files -->
+        <button type="button" class="inline-flex items-center gap-2 bg-[#1c4332] hover:bg-[#143326] text-white font-medium text-sm px-5 py-2.5 rounded-lg shadow-sm transition-all hover:shadow cursor-pointer" onclick="event.stopPropagation(); document.getElementById('censusFileInput').click()">
+          <svg class="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          <span>Browse Files</span>
+        </button>
+
+        <!-- Hint text -->
+        <div class="text-xs text-gray-500 mt-3.5 pointer-events-none">
+          Supported types: CSV, Excel (.xlsx, .xls)
+        </div>
+      </div>
+
+      <!-- Status text -->
+      <p class="text-xs text-forest-600 mt-2.5 min-h-[1.25rem] text-center empty:hidden" id="importStatus"></p>
+    </div>
+
+    <!-- Modal Footer / Actions -->
+    <div class="px-8 py-5 border-t border-gray-200 flex items-center justify-between gap-4 bg-white">
+      <!-- Left: Download Template Link -->
+      <a href="/templates/census_resident_template.csv" download class="inline-flex items-center gap-1.5 text-sm text-[#1e3a2b] underline hover:text-[#52796f] transition-colors font-normal whitespace-nowrap cursor-pointer">
+        <svg class="w-4 h-4 text-[#1e3a2b] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+          <path d="M7 11l5 5 5-5"/>
+          <path d="M12 4v12"/>
+        </svg>
+        <span>Download Resident Census Template (.csv)</span>
       </a>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex items-center gap-3 shrink-0">
+        <button type="button" onclick="closeCensusImportModal()" class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors cursor-pointer">
+          Cancel
+        </button>
+        <button type="button" id="btnConfirmCensusImport" onclick="executeCensusImport()" class="px-5 py-2.5 bg-[#1c4332] hover:bg-[#143326] text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow cursor-pointer">
+          Import Data
+        </button>
+      </div>
     </div>
-    <div class="border-2 border-dashed border-forest-300 rounded-xl p-10 text-center bg-forest-50 hover:bg-forest-100 transition-colors cursor-pointer" onclick="document.getElementById('censusFileInput').click()">
-      <div class="flex justify-center mb-3" style="color:var(--forest-500)" data-icon="folder" data-icon-size="40"></div>
-      <div class="font-semibold text-forest-700 mb-1" id="importDropLabel">Click to choose a CSV or Excel file (.xlsx, .xls)</div>
-      <input type="file" id="censusFileInput" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" class="hidden" onchange="handleCensusFile(event)"/>
-      <button class="mt-4 btn-primary text-sm px-5 py-2" onclick="event.stopPropagation(); document.getElementById('censusFileInput').click()">Browse Files</button>
-    </div>
-    <p class="text-xs text-forest-400 mt-3" id="importStatus"></p>
-    <div class="mt-4 flex justify-end"><button onclick="closeModal('importCensusModal')" class="btn-secondary">Close</button></div>
   </div>
 </div>
 
@@ -1202,18 +1262,137 @@ function parseCensusExcel(arrayBuffer) {
   return parseCensusRows(rawRows);
 }
 
+var stagedCensusFile = null;
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+function resetCensusImportModalState() {
+  stagedCensusFile = null;
+  const fileInput = document.getElementById('censusFileInput');
+  if (fileInput) fileInput.value = '';
+  const label = document.getElementById('importDropLabel');
+  if (label) {
+    label.innerHTML = 'Drag &amp; Drop CSV or Excel file (.xlsx, .xls) here or Click to upload';
+  }
+  const status = document.getElementById('importStatus');
+  if (status) status.innerHTML = '';
+  const dropzone = document.getElementById('censusDropzone');
+  if (dropzone) {
+    dropzone.classList.remove('ring-2', 'ring-emerald-500', 'bg-[#e2f3e7]');
+  }
+}
+
+function openCensusImportModal() {
+  resetCensusImportModalState();
+  openModal('importCensusModal');
+}
+
+function closeCensusImportModal() {
+  closeModal('importCensusModal');
+  resetCensusImportModalState();
+}
+
+function handleCensusDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById('censusDropzone');
+  if (dropzone) {
+    dropzone.classList.add('ring-2', 'ring-emerald-500', 'bg-[#e2f3e7]');
+  }
+}
+
+function handleCensusDragLeave(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById('censusDropzone');
+  if (dropzone) {
+    dropzone.classList.remove('ring-2', 'ring-emerald-500', 'bg-[#e2f3e7]');
+  }
+}
+
+function handleCensusDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById('censusDropzone');
+  if (dropzone) {
+    dropzone.classList.remove('ring-2', 'ring-emerald-500', 'bg-[#e2f3e7]');
+  }
+  const files = e.dataTransfer ? e.dataTransfer.files : null;
+  if (files && files.length > 0) {
+    stageCensusFile(files[0]);
+  }
+}
+
+function handleCensusFileInputChange(e) {
+  const file = e.target && e.target.files && e.target.files[0];
+  if (file) {
+    stageCensusFile(file);
+  }
+}
+
+function stageCensusFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const validExts = ['csv', 'xlsx', 'xls'];
+  const status = document.getElementById('importStatus');
+  const label = document.getElementById('importDropLabel');
+
+  if (!validExts.includes(ext)) {
+    if (status) {
+      status.innerHTML = '<span class="text-rose-600 font-medium">Invalid file type. Supported types: CSV, Excel (.xlsx, .xls)</span>';
+    }
+    stagedCensusFile = null;
+    return;
+  }
+
+  stagedCensusFile = file;
+  const sizeStr = file.size < 1048576 
+    ? (file.size / 1024).toFixed(1) + ' KB' 
+    : (file.size / 1048576).toFixed(1) + ' MB';
+
+  if (label) {
+    label.innerHTML = `<span class="text-xs text-gray-500 uppercase tracking-wider block mb-0.5">Selected file:</span><span class="font-bold text-[#1c4332] text-sm break-all">${escapeHtml(file.name)}</span> <span class="text-xs text-gray-500">(${sizeStr})</span>`;
+  }
+  if (status) {
+    status.innerHTML = '<span class="text-emerald-700 font-medium">File ready. Click "Import Data" to proceed.</span>';
+  }
+}
+
+async function executeCensusImport() {
+  if (!stagedCensusFile) {
+    const fileInput = document.getElementById('censusFileInput');
+    if (fileInput) fileInput.click();
+    return;
+  }
+  await processCensusImportFile(stagedCensusFile);
+}
+
+// Preserve existing handleCensusFile for backwards compatibility
 async function handleCensusFile(e) {
-  const file = e.target.files[0];
+  const file = (e && e.target && e.target.files && e.target.files[0]) ? e.target.files[0] : (e instanceof File ? e : stagedCensusFile);
+  if (!file) return;
+  stagedCensusFile = file;
+  await processCensusImportFile(file);
+  if (e && e.target) e.target.value = '';
+}
+
+async function processCensusImportFile(file) {
   if (!file) return;
   const me = await BCApi._fetch('api/auth.php?action=me');
   if (!roleCan(me.user.role, 'import_data')) {
     showToast('Your role does not have permission to import data.', 'error');
-    e.target.value = '';
+    resetCensusImportModalState();
     return;
   }
+
   const status = document.getElementById('importStatus');
   const ext = file.name.split('.').pop().toLowerCase();
-  status.textContent = `Reading and analyzing ${ext.toUpperCase()} file…`;
+  if (status) status.textContent = `Reading and analyzing ${ext.toUpperCase()} file…`;
 
   try {
     let result;
@@ -1226,19 +1405,17 @@ async function handleCensusFile(e) {
     }
 
     if (result.error) {
-      status.innerHTML = `<span class="text-rose-600 font-medium">${result.error}</span>`;
-      e.target.value = '';
+      if (status) status.innerHTML = `<span class="text-rose-600 font-medium">${escapeHtml(result.error)}</span>`;
       return;
     }
 
     const { rows, skipReasons, totalLines } = result;
     if (rows.length === 0) {
-      status.innerHTML = `<span class="text-rose-600 font-medium">No valid resident rows found in file.${skipReasons?.length ? ' ' + skipReasons.slice(0, 3).join('; ') : ''}</span>`;
-      e.target.value = '';
+      if (status) status.innerHTML = `<span class="text-rose-600 font-medium">No valid resident rows found in file.${skipReasons?.length ? ' ' + escapeHtml(skipReasons.slice(0, 3).join('; ')) : ''}</span>`;
       return;
     }
 
-    status.textContent = `Found ${rows.length} valid resident row(s). Importing…`;
+    if (status) status.textContent = `Found ${rows.length} valid resident row(s). Importing…`;
 
     let ok = 0, failed = 0;
     const errors = [];
@@ -1252,7 +1429,7 @@ async function handleCensusFile(e) {
         failed++;
         errors.push(`${row.firstName} ${row.lastName}: ${err.message || err}`);
       }
-      status.textContent = `Importing… ${ok + failed}/${rows.length} processed (${ok} added)`;
+      if (status) status.textContent = `Importing… ${ok + failed}/${rows.length} processed (${ok} added)`;
     }
 
     const skippedTotal = (totalLines - rows.length) + failed;
@@ -1262,19 +1439,20 @@ async function handleCensusFile(e) {
     }
 
     if (failed > 0 && errors.length > 0) {
-      status.innerHTML = `<span class="text-forest-700 font-medium">${summaryText}</span><br/><span class="text-xs text-amber-700 mt-1 block">Issues: ${errors.slice(0, 3).join(' | ')}${errors.length > 3 ? '...' : ''}</span>`;
+      if (status) status.innerHTML = `<span class="text-forest-700 font-medium">${escapeHtml(summaryText)}</span><br/><span class="text-xs text-amber-700 mt-1 block">Issues: ${escapeHtml(errors.slice(0, 3).join(' | '))}${errors.length > 3 ? '...' : ''}</span>`;
     } else {
-      status.innerHTML = `<span class="text-emerald-700 font-semibold">${summaryText}</span>`;
+      if (status) status.innerHTML = `<span class="text-emerald-700 font-semibold">${escapeHtml(summaryText)}</span>`;
     }
 
     showToast(summaryText, ok > 0 ? 'success' : 'warning');
     await loadResidents();
+    setTimeout(() => {
+      closeCensusImportModal();
+    }, 1500);
   } catch (err) {
     console.error('Census import error:', err);
-    status.innerHTML = `<span class="text-rose-600 font-medium">Import failed: ${err.message || err}</span>`;
+    if (status) status.innerHTML = `<span class="text-rose-600 font-medium">Import failed: ${escapeHtml(err.message || err)}</span>`;
     showToast('Import failed: ' + (err.message || err), 'error');
-  } finally {
-    e.target.value = '';
   }
 }
 
@@ -1287,6 +1465,14 @@ async function handleCensusFile(e) {
   window.toggleArchivedView = toggleArchivedView;
   window.updateResidentCharCounters = updateResidentCharCounters;
   window.initResidentCharCounters = initResidentCharCounters;
+  window.openCensusImportModal = openCensusImportModal;
+  window.closeCensusImportModal = closeCensusImportModal;
+  window.handleCensusDragOver = handleCensusDragOver;
+  window.handleCensusDragLeave = handleCensusDragLeave;
+  window.handleCensusDrop = handleCensusDrop;
+  window.handleCensusFileInputChange = handleCensusFileInputChange;
+  window.executeCensusImport = executeCensusImport;
+  window.handleCensusFile = handleCensusFile;
 
   window.initCensus = async function () {
     try {

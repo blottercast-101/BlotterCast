@@ -948,11 +948,16 @@ function formatActiveSinceDate(rawDate) {
 async function loadMyAccount() {
   try {
     const acct = await BCApi.myAccount();
-    document.getElementById('acct_username').value = acct.username || '';
-    document.getElementById('acct_role').value = acct.role || '';
-    document.getElementById('acct_fullName').value = acct.fullName || acct.full_name || '';
-    document.getElementById('acct_email').value = acct.email || '';
-    document.getElementById('acct_contact').value = acct.contact || acct.contact_no || '';
+    const userEl = document.getElementById('acct_username');
+    if (userEl) userEl.value = acct.username || '';
+    const roleEl = document.getElementById('acct_role');
+    if (roleEl) roleEl.value = acct.role || '';
+    const nameEl = document.getElementById('acct_fullName');
+    if (nameEl) nameEl.value = acct.fullName || acct.full_name || '';
+    const emailEl = document.getElementById('acct_email');
+    if (emailEl) emailEl.value = acct.email || '';
+    const contactEl = document.getElementById('acct_contact');
+    if (contactEl) contactEl.value = acct.contact || acct.contact_no || '';
     
     const statusVal = acct.status || 'Active';
     const statusEl = document.getElementById('acct_status');
@@ -1085,7 +1090,11 @@ async function handleAvatarFileSelect(input) {
     const res = await BCApi.uploadMyAvatar(resizedDataUrl);
     const newAvatarUrl = resolveAvatar(res?.avatar_url || res?.avatar || res?.avatarUrl || res?.user?.avatar_url || res?.user?.avatar) || previewUrl;
 
+    // Instant UI update for My Account preview and Sidebar badge with confirmed URL
     renderAccountAvatar(newAvatarUrl);
+    document.querySelectorAll('[data-user-avatar]').forEach(el => {
+      el.innerHTML = `<img src="${newAvatarUrl}" alt="User" class="w-full h-full object-cover rounded-full" />`;
+    });
 
     let cachedUser = {};
     try {
@@ -1111,32 +1120,45 @@ async function handleAvatarFileSelect(input) {
       localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
 
-    if (typeof bcHydrateCachedSession === 'function') {
-      bcHydrateCachedSession();
-    }
-    if (typeof hydrateGlobalState === 'function') {
-      hydrateGlobalState();
-    }
-
-    // Live update in-memory usersData if active/loaded
-    if (window.usersData && Array.isArray(window.usersData)) {
-      const currentId = cachedUser.id ? Number(cachedUser.id) : null;
-      const currentUsername = (cachedUser.username || '').toLowerCase();
-      window.usersData.forEach(u => {
-        if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
-          u.avatar_url = newAvatarUrl;
-          u.avatar = newAvatarUrl;
-          u.avatarUrl = newAvatarUrl;
-          u.profile_photo_path = newAvatarUrl;
-        }
-      });
-      if (typeof window.renderUsers === 'function') {
-        window.renderUsers();
+    try {
+      if (typeof bcHydrateCachedSession === 'function') {
+        bcHydrateCachedSession();
       }
+      if (typeof hydrateGlobalState === 'function') {
+        hydrateGlobalState();
+      }
+    } catch (e) {
+      console.warn('Hydration notice:', e);
     }
 
-    window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_updated', avatar_url: newAvatarUrl, user: cachedUser } }));
-    window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: newAvatarUrl, user: cachedUser } }));
+    // Live update in-memory usersData if active/loaded AND users table exists in DOM
+    try {
+      if (window.usersData && Array.isArray(window.usersData)) {
+        const currentId = cachedUser.id ? Number(cachedUser.id) : null;
+        const currentUsername = (cachedUser.username || '').toLowerCase();
+        window.usersData.forEach(u => {
+          if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
+            u.avatar_url = newAvatarUrl;
+            u.avatar = newAvatarUrl;
+            u.avatarUrl = newAvatarUrl;
+            u.profile_photo_path = newAvatarUrl;
+          }
+        });
+        if (document.getElementById('usersTableBody') && typeof window.renderUsers === 'function') {
+          window.renderUsers();
+        }
+      }
+    } catch (e) {
+      console.warn('UsersData sync notice:', e);
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_updated', avatar_url: newAvatarUrl, user: cachedUser } }));
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: newAvatarUrl, user: cachedUser } }));
+    } catch (_) {}
+
     showToast('Profile photo updated successfully.', 'success');
   } catch (err) {
     console.error('[handleAvatarFileSelect] Upload failed:', err);
@@ -1174,32 +1196,52 @@ async function handleAvatarRemove() {
       localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
 
-    if (typeof bcHydrateCachedSession === 'function') {
-      bcHydrateCachedSession();
-    }
-    if (typeof hydrateGlobalState === 'function') {
-      hydrateGlobalState();
-    }
+    // Instant UI update for sidebar avatar
+    document.querySelectorAll('[data-user-avatar]').forEach(el => {
+      el.innerHTML = '';
+      const name = cachedUser.full_name || cachedUser.fullName || 'User';
+      el.textContent = typeof getInitials === 'function' ? getInitials(name) : (typeof bcInitials === 'function' ? bcInitials(name) : (name.slice(0, 2).toUpperCase() || 'U'));
+    });
 
-    // Live update in-memory usersData if active/loaded
-    if (window.usersData && Array.isArray(window.usersData)) {
-      const currentId = cachedUser.id ? Number(cachedUser.id) : null;
-      const currentUsername = (cachedUser.username || '').toLowerCase();
-      window.usersData.forEach(u => {
-        if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
-          u.avatar_url = null;
-          u.avatar = null;
-          u.avatarUrl = null;
-          u.profile_photo_path = null;
-        }
-      });
-      if (typeof window.renderUsers === 'function') {
-        window.renderUsers();
+    try {
+      if (typeof bcHydrateCachedSession === 'function') {
+        bcHydrateCachedSession();
       }
+      if (typeof hydrateGlobalState === 'function') {
+        hydrateGlobalState();
+      }
+    } catch (e) {
+      console.warn('Hydration notice:', e);
     }
 
-    window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_removed', avatar_url: null, user: cachedUser } }));
-    window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: null, user: cachedUser } }));
+    // Live update in-memory usersData if active/loaded AND users table exists in DOM
+    try {
+      if (window.usersData && Array.isArray(window.usersData)) {
+        const currentId = cachedUser.id ? Number(cachedUser.id) : null;
+        const currentUsername = (cachedUser.username || '').toLowerCase();
+        window.usersData.forEach(u => {
+          if ((currentId && Number(u.id) === currentId) || (currentUsername && (u.username || '').toLowerCase() === currentUsername)) {
+            u.avatar_url = null;
+            u.avatar = null;
+            u.avatarUrl = null;
+            u.profile_photo_path = null;
+          }
+        });
+        if (document.getElementById('usersTableBody') && typeof window.renderUsers === 'function') {
+          window.renderUsers();
+        }
+      }
+    } catch (e) {
+      console.warn('UsersData sync notice:', e);
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent('bc-data-changed', { detail: { type: 'avatar_removed', avatar_url: null, user: cachedUser } }));
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('userAvatarUpdated', { detail: { avatar_url: null, user: cachedUser } }));
+    } catch (_) {}
+
     showToast('Profile photo removed.', 'info');
   } catch (err) {
     console.error('[handleAvatarRemove] Remove failed:', err);
@@ -1213,10 +1255,15 @@ window.handleAvatarFileSelect = handleAvatarFileSelect;
 window.handleAvatarRemove = handleAvatarRemove;
 
 async function saveMyAccount() {
-  const username = document.getElementById('acct_username') ? document.getElementById('acct_username').value.trim() : '';
-  const fullName = document.getElementById('acct_fullName').value.trim();
-  const contact = document.getElementById('acct_contact').value.trim();
-  const email = document.getElementById('acct_email').value.trim();
+  const userEl = document.getElementById('acct_username');
+  const nameEl = document.getElementById('acct_fullName');
+  const contactEl = document.getElementById('acct_contact');
+  const emailEl = document.getElementById('acct_email');
+
+  const username = userEl ? userEl.value.trim() : '';
+  const fullName = nameEl ? nameEl.value.trim() : '';
+  const contact = contactEl ? contactEl.value.trim() : '';
+  const email = emailEl ? emailEl.value.trim() : '';
 
   if (!username) {
     showToast('Username is required.', 'error');
@@ -1250,9 +1297,17 @@ async function saveMyAccount() {
   }
   if (!bcIsValidEmail(email)) {
     showToast('Please enter a valid email address.', 'error');
-    document.getElementById('acct_email').focus();
+    if (emailEl) emailEl.focus();
     return;
   }
+
+  // Track previous username before update for in-memory mapping
+  let prevUsername = '';
+  try {
+    const rawPrev = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser');
+    const uPrev = rawPrev ? JSON.parse(rawPrev) : {};
+    prevUsername = uPrev.username || '';
+  } catch (_) {}
 
   try {
     const result = await BCApi.updateMyAccount(fullName, email, contact, username);
@@ -1261,25 +1316,87 @@ async function saveMyAccount() {
     // Immediately synchronize local storage & session storage
     let cachedUser = {};
     try {
-      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user');
+      const raw = localStorage.getItem('bc_cached_user') || sessionStorage.getItem('bc_cached_user') || localStorage.getItem('currentUser') || localStorage.getItem('user');
       cachedUser = raw ? JSON.parse(raw) : {};
     } catch (_) {}
+    if (result && result.user && typeof result.user === 'object') {
+      cachedUser = Object.assign({}, cachedUser, result.user);
+    }
     cachedUser.username = username;
     cachedUser.full_name = fullName;
     cachedUser.fullName = fullName;
+    cachedUser.name = fullName;
     cachedUser.email = email;
     cachedUser.contact = contact;
+    cachedUser.contact_no = contact;
     try {
       localStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
       sessionStorage.setItem('bc_cached_user', JSON.stringify(cachedUser));
       localStorage.setItem('currentUser', JSON.stringify(cachedUser));
       sessionStorage.setItem('currentUser', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('bc_user', JSON.stringify(cachedUser));
+      localStorage.setItem('user', JSON.stringify(cachedUser));
+      sessionStorage.setItem('user', JSON.stringify(cachedUser));
+      localStorage.setItem('bc_data_updated', Date.now().toString());
     } catch (_) {}
+
+    // Invalidate API cache so users list re-fetches
+    if (typeof BCApi !== 'undefined' && typeof BCApi.invalidateCache === 'function') {
+      BCApi.invalidateCache('users');
+      BCApi.invalidateCache('auth');
+    }
 
     // Re-hydrate all user badge elements across the page
     if (typeof bcHydrateCachedSession === 'function') {
       bcHydrateCachedSession();
     }
+    if (typeof hydrateGlobalState === 'function') {
+      hydrateGlobalState();
+    }
+
+    // Live update in-memory usersData if active/loaded
+    try {
+      if (window.usersData && Array.isArray(window.usersData)) {
+        const currentId = cachedUser.id ? Number(cachedUser.id) : null;
+        const oldU = prevUsername.toLowerCase();
+        const newU = username.toLowerCase();
+        window.usersData.forEach(u => {
+          if ((currentId && Number(u.id) === currentId) ||
+              (oldU && (u.username || '').toLowerCase() === oldU) ||
+              (newU && (u.username || '').toLowerCase() === newU)) {
+            u.username = username;
+            u.name = fullName;
+            u.fullName = fullName;
+            u.full_name = fullName;
+            u.email = email;
+            u.contact = contact;
+            u.contact_no = contact;
+          }
+        });
+        if (document.getElementById('usersTableBody') && typeof window.renderUsers === 'function') {
+          window.renderUsers();
+        }
+      }
+    } catch (e) {
+      console.warn('usersData sync notice:', e);
+    }
+
+    // Broadcast change across modules and pages
+    try {
+      window.dispatchEvent(new CustomEvent('bc-data-changed', {
+        detail: {
+          type: 'user_updated',
+          user: cachedUser,
+          data: { user: cachedUser, username, fullName, email, contact }
+        }
+      }));
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('userAccountUpdated', {
+        detail: { user: cachedUser, username, fullName, email, contact, old_username: prevUsername }
+      }));
+    } catch (_) {}
   } catch (err) {
     showToast(err.message, 'error');
   }
