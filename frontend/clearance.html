@@ -1,26 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <link rel="icon" type="image/png" href="favicon.png"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barangay Clearance — BlotterCast</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css"/>
-  <script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414'}},fontFamily:{display:['DM Serif Display','serif'],body:['DM Sans','sans-serif']}}}}</script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>tailwind.config = { theme: { extend: { colors: { forest: { 50: '#f0f9f2', 100: '#dcf0e0', 200: '#b8e0c0', 300: '#86c895', 400: '#4fa868', 500: '#2f8a4c', 600: '#23703c', 700: '#1a5730', 800: '#123d22', 900: '#0a2414' } }, fontFamily: { display: ['DM Serif Display', 'serif'], body: ['DM Sans', 'sans-serif'] } } } }</script>
 </head>
+
 <body class="font-body bg-forest-50 min-h-screen">
 
-<aside id="sidebar" class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
+  <aside id="sidebar"
+    class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
     <!-- Logo Header -->
     <div class="sidebar-header flex items-center gap-2.5 px-5 py-4 border-b border-white/10">
       <div class="sidebar-logo-emblem flex-shrink-0 flex items-center justify-center">
-        <img src="logo.png" alt="BlotterCast" class="h-10 w-auto object-contain block" onerror="this.onerror=null;this.src='assets/logo.png';"/>
+        <img src="logo.png" alt="BlotterCast" class="h-10 w-auto object-contain block"
+          onerror="this.onerror=null;this.src='assets/logo.png';" />
       </div>
       <div class="sidebar-brand-group flex flex-col justify-center min-w-0">
-        <span class="sidebar-brand-title text-[23px] font-semibold text-white tracking-tight leading-none block">lotterCast</span>
-        <span class="sidebar-brand-subtitle text-[13.5px] font-medium text-[#A3E6BA] tracking-normal leading-tight block mt-0.5">Barangay System</span>
+        <span
+          class="sidebar-brand-title text-[23px] font-semibold text-white tracking-tight leading-none block">lotterCast</span>
+        <span
+          class="sidebar-brand-subtitle text-[13.5px] font-medium text-[#A3E6BA] tracking-normal leading-tight block mt-0.5">Barangay
+          System</span>
       </div>
     </div>
 
@@ -28,55 +38,147 @@
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
       <p class="nav-section-label">Main Menu</p>
       <a href="dashboard.html" class="nav-link" data-page="dashboard">
-        <span class="nav-icon" data-icon="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span> Dashboard
+        <span class="nav-icon" data-icon="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <rect x="3" y="3" width="7" height="9" rx="1.5" />
+            <rect x="14" y="3" width="7" height="5" rx="1.5" />
+            <rect x="14" y="12" width="7" height="9" rx="1.5" />
+            <rect x="3" y="16" width="7" height="5" rx="1.5" />
+          </svg></span> Dashboard
       </a>
       <a href="blotter.html" class="nav-link" data-page="blotter">
-        <span class="nav-icon" data-icon="blotter"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M6 2h9l4 4v16H6z"/><path d="M15 2v4h4"/><path d="M9 11h7M9 15h7M9 7h3"/></svg></span> Blotter Records
+        <span class="nav-icon" data-icon="blotter"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M6 2h9l4 4v16H6z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 11h7M9 15h7M9 7h3" />
+          </svg></span> Blotter Records
       </a>
       <a href="incident.html" class="nav-link" data-page="incident">
-        <span class="nav-icon" data-icon="incident"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M12 2 2 20h20L12 2z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg></span> Incident Reports
+        <span class="nav-icon" data-icon="incident"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M12 2 2 20h20L12 2z" />
+            <path d="M12 9v5" />
+            <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+          </svg></span> Incident Reports
       </a>
       <a href="settlement.html" class="nav-link" data-page="settlement">
-        <span class="nav-icon" data-icon="settlement"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M8 12l3 3 6-7"/><circle cx="12" cy="12" r="9"/></svg></span> Settlement Monitor
+        <span class="nav-icon" data-icon="settlement"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M8 12l3 3 6-7" />
+            <circle cx="12" cy="12" r="9" />
+          </svg></span> Settlement Monitor
       </a>
 
       <p class="nav-section-label">Documents</p>
       <a href="census.html" class="nav-link" data-page="census">
-        <span class="nav-icon" data-icon="census"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="8" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M14.5 20c.3-2.6 2.3-4.5 4.9-4.7"/></svg></span> Census
+        <span class="nav-icon" data-icon="census"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="8" cy="8" r="3" />
+            <path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+            <circle cx="17" cy="9" r="2.5" />
+            <path d="M14.5 20c.3-2.6 2.3-4.5 4.9-4.7" />
+          </svg></span> Census
       </a>
       <a href="clearance.html" class="nav-link active" data-page="clearance">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Brgy Clearance
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Brgy Clearance
       </a>
       <a href="residency.html" class="nav-link" data-page="residency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Residency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Residency
       </a>
       <a href="non_residency.html" class="nav-link" data-page="non_residency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Non-Residency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
       <a href="heatmap.html" class="nav-link" data-page="heatmap">
-        <span class="nav-icon" data-icon="heatmap"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M3 20l5-11 4 6 3-5 6 10z"/><path d="M3 20h18"/></svg></span> Heat Map
+        <span class="nav-icon" data-icon="heatmap"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M3 20l5-11 4 6 3-5 6 10z" />
+            <path d="M3 20h18" />
+          </svg></span> Heat Map
       </a>
       <a href="trends.html" class="nav-link" data-page="trends">
-        <span class="nav-icon" data-icon="trends"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M3 17l5-6 4 3 7-9"/><path d="M14 5h5v5"/><path d="M3 21h18"/></svg></span> Trends
+        <span class="nav-icon" data-icon="trends"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M3 17l5-6 4 3 7-9" />
+            <path d="M14 5h5v5" />
+            <path d="M3 21h18" />
+          </svg></span> Trends
       </a>
       <a href="predictions.html" class="nav-link" data-page="predictions">
-        <span class="nav-icon" data-icon="predictions"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/><circle cx="9" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/></svg></span> Predictions
+        <span class="nav-icon" data-icon="predictions"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <rect x="4" y="8" width="16" height="12" rx="2" />
+            <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+            <circle cx="9" cy="14" r="1" fill="currentColor" stroke="none" />
+            <circle cx="15" cy="14" r="1" fill="currentColor" stroke="none" />
+          </svg></span> Predictions
       </a>
 
       <p class="nav-section-label">System</p>
       <a href="users.html" class="nav-link" data-page="users">
-        <span class="nav-icon" data-icon="users"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17" cy="9" r="2.3"/><path d="M15 13.8c2.6.5 4.5 2.7 4.8 5.4"/></svg></span> Users &amp; Roles
+        <span class="nav-icon" data-icon="users"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="9" cy="8" r="3.2" />
+            <path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" />
+            <circle cx="17" cy="9" r="2.3" />
+            <path d="M15 13.8c2.6.5 4.5 2.7 4.8 5.4" />
+          </svg></span> Users &amp; Roles
       </a>
       <a href="reports.html" class="nav-link" data-page="reports">
-        <span class="nav-icon" data-icon="reports"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M6 2h9l4 4v16H6z"/><path d="M15 2v4h4"/><path d="M9 11h7M9 15h4"/></svg></span> Reports
+        <span class="nav-icon" data-icon="reports"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M6 2h9l4 4v16H6z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 11h7M9 15h4" />
+          </svg></span> Reports
       </a>
       <a href="settings.html" class="nav-link" data-page="settings">
-        <span class="nav-icon" data-icon="settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.6.9 1 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/></svg></span> Settings
+        <span class="nav-icon" data-icon="settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.6.9 1 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z" />
+          </svg></span> Settings
       </a>
     </nav>
 
@@ -88,318 +190,390 @@
           <div class="text-sm font-semibold truncate" data-user-name></div>
           <div class="text-forest-400 text-xs" data-user-role></div>
         </div>
-        <button class="logout-btn" onclick="doLogout()" title="Log out"><span data-icon="logout" data-icon-size="16"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 flex-shrink-0 text-current bc-icon"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span></button>
+        <button class="logout-btn" onclick="doLogout()" title="Log out"><span data-icon="logout"
+            data-icon-size="16"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+              class="w-4 h-4 flex-shrink-0 text-current bc-icon">
+              <path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg></span></button>
       </div>
     </div>
   </aside>
 
-<div id="app-content" class="ml-64 flex flex-col min-h-screen">
-  <header class="page-header">
-    <div class="flex items-center gap-3">
-      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-      <div>
-        <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="barangay_clearance">Barangay Clearance</h1>
-        <p class="text-forest-500 text-xs md:text-sm" data-i18n="clearance_description">Issue and manage barangay clearance certificates</p>
+  <div id="app-content" class="ml-64 flex flex-col min-h-screen">
+    <header class="page-header">
+      <div class="flex items-center gap-3">
+        <button id="globalSidebarToggle"
+          class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0"
+          aria-label="Toggle Sidebar">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="barangay_clearance">Barangay Clearance
+          </h1>
+          <p class="text-forest-500 text-xs md:text-sm" data-i18n="clearance_description">Issue and manage barangay
+            clearance certificates</p>
+        </div>
       </div>
-    </div>
-    <button onclick="openClearanceForm()" class="btn-primary" data-i18n="issue_new_clearance"><span data-icon="plus" data-icon-size="16"></span> <span data-i18n="issue_new_clearance">+ Issue New Clearance</span></button>
-  </header>
+      <button onclick="openClearanceForm()" class="btn-primary" data-i18n="issue_new_clearance"><span data-icon="plus"
+          data-icon-size="16"></span> <span data-i18n="issue_new_clearance">Issue New Clearance</span></button>
+    </header>
 
-  <main class="flex-1 p-6 space-y-6">
+    <main class="flex-1 p-6 space-y-6">
 
-    <!-- Summary -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="stat-card-grad plum">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium" data-i18n="issued_this_month">Issued This Month</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clearance" data-icon-size="18"></div>
+      <!-- Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="stat-card-grad plum">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-white/80 text-sm font-medium" data-i18n="issued_this_month">Issued This Month</span>
+            <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="clearance" data-icon-size="18"></div>
+          </div>
+          <div class="font-display text-3xl" id="clMonthCount">0</div>
         </div>
-        <div class="font-display text-3xl" id="clMonthCount">0</div>
-      </div>
-      <div class="stat-card-grad sunset">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/80 text-sm font-medium" data-i18n="total_this_year">Total This Year</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="trends" data-icon-size="18"></div>
+        <div class="stat-card-grad sunset">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-white/80 text-sm font-medium" data-i18n="total_this_year">Total This Year</span>
+            <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="trends" data-icon-size="18"></div>
+          </div>
+          <div class="font-display text-3xl" id="clYearCount">0</div>
         </div>
-        <div class="font-display text-3xl" id="clYearCount">0</div>
-      </div>
-      <div class="stat-card-grad dark">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-white/70 text-sm font-medium" data-i18n="revenue_fees">Revenue (Fees)</span>
-          <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="database" data-icon-size="18"></div>
-        </div>
-        <div class="font-display text-3xl text-white" id="clRevenue">₱0</div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-      <!-- Issuance Log -->
-      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden flex flex-col h-full">
-        <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
-          <div class="stat-icon-badge" data-icon="clearance" data-icon-size="17"></div>
-          <h2 class="font-display text-lg text-forest-800" data-i18n="issuance_log">Issuance Log</h2>
-        </div>
-        <div class="filter-bar">
-          <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="14"></span><input type="text" id="clSearch" placeholder="Search…" class="filter-input text-sm pl-8 w-full" oninput="clPage=1;renderLog()" data-i18n-placeholder="search_clearance_placeholder"/></span>
-        </div>
-        <div class="flex-1 overflow-x-auto min-h-[320px] flex flex-col">
-          <table class="data-table w-full">
-            <thead><tr>
-              <th>Control No.</th><th>Name</th><th>Purpose</th><th>Date Issued</th><th>OR No.</th><th>Actions</th>
-            </tr></thead>
-            <tbody id="clearanceLog"></tbody>
-          </table>
-        </div>
-        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50 mt-auto bg-white">
-          <span class="text-sm text-forest-500" id="clPaginationInfo"></span>
-          <div class="flex gap-2" id="clPaginationControls"></div>
+        <div class="stat-card-grad dark">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-white/70 text-sm font-medium" data-i18n="revenue_fees">Revenue (Fees)</span>
+            <div class="stat-icon-badge w-9 h-9 rounded-xl" data-icon="database" data-icon-size="18"></div>
+          </div>
+          <div class="font-display text-3xl text-white" id="clRevenue">₱0</div>
         </div>
       </div>
 
-
-      <!-- Certificate Preview -->
-      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-display text-lg text-forest-800" data-i18n="certificate_preview">Certificate Preview</h2>
-          <div class="flex gap-2">
-            <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2" data-i18n="print"><span data-icon="printer" data-icon-size="16"></span> <span data-i18n="print">Print</span></button>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <!-- Issuance Log -->
+        <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden flex flex-col h-full">
+          <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
+            <div class="stat-icon-badge" data-icon="clearance" data-icon-size="17"></div>
+            <h2 class="font-display text-lg text-forest-800" data-i18n="issuance_log">Issuance Log</h2>
+          </div>
+          <div class="filter-bar">
+            <span class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400"
+                data-icon="search" data-icon-size="14"></span><input type="text" id="clSearch" placeholder="Search…"
+                class="filter-input text-sm pl-8 w-full" oninput="clPage=1;renderLog()"
+                data-i18n-placeholder="search_clearance_placeholder" /></span>
+          </div>
+          <div class="flex-1 overflow-x-auto min-h-[320px] flex flex-col">
+            <table class="data-table w-full">
+              <thead>
+                <tr>
+                  <th>Control No.</th>
+                  <th>Name</th>
+                  <th>Purpose</th>
+                  <th>Date Issued</th>
+                  <th>OR No.</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clearanceLog"></tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50 mt-auto bg-white">
+            <span class="text-sm text-forest-500" id="clPaginationInfo"></span>
+            <div class="flex gap-2" id="clPaginationControls"></div>
           </div>
         </div>
-        <div id="certPrint" class="certificate-viewport-container certificate-preview-viewport certificate-preview-wrapper w-full overflow-hidden flex items-start justify-center p-2 sm:p-4 bg-slate-100 rounded-xl min-h-[500px]">
-          <div class="a4-sheet cert-sheet certificate-sheet certificate-container printable-document certificate-paper origin-top transition-transform duration-150 relative bg-white shadow-2xl overflow-hidden flex flex-col justify-between" id="printableCertificate" data-base-width="794">
-            <img src="assets/clearance-letterhead.jpg" class="cert-bg" alt="Barangay Clearance letterhead"/>
-            <div class="cert-ov cert-ov-or meta-row" id="c_or">
-              Control No.: BC-2025-001 &nbsp;|&nbsp; O.R. No.: — &nbsp;|&nbsp; Amount Paid: ₱20.00
+
+
+        <!-- Certificate Preview -->
+        <div class="bg-white rounded-2xl border border-forest-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-display text-lg text-forest-800" data-i18n="certificate_preview">Certificate Preview</h2>
+            <div class="flex gap-2">
+              <button onclick="executePrint()" class="btn-secondary text-sm flex items-center gap-2"
+                data-i18n="print"><span data-icon="printer" data-icon-size="16"></span> <span
+                  data-i18n="print">Print</span></button>
             </div>
-            <div class="cert-ov cert-ov-title title-container">Barangay Clearance</div>
-            <div class="cert-ov cert-ov-body body-paragraphs text-left leading-relaxed space-y-4">
-              <p class="no-indent cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">TO WHOM IT MAY CONCERN:</p>
-              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
-                This is to certify that <span class="cert-underlined field-name cert-line cert-name cert-field cert-line-field" id="c_name"></span>, <span class="cert-underlined field-age cert-line cert-age cert-field cert-line-field" id="c_age"></span> years old, <span class="cert-underlined field-status cert-line cert-status cert-field cert-line-field" id="c_civil"></span>, Filipino citizen, and a resident of <span class="cert-underlined field-address cert-line cert-address cert-field cert-line-field" id="c_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, is a bonafide resident of this barangay.
-              </p>
-              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
-                This further certifies that the above-named person is of good moral character and has no derogatory record filed in this office as of this date.
-              </p>
-              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
-                This certification is issued upon the request of the above-named person for the purpose of <span class="cert-underlined field-purpose cert-line cert-purpose cert-field cert-line-field" id="c_purpose"></span> and for whatever legal purpose it may serve.
-              </p>
-              <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4" style="line-height: 2.3 !important;">
-                Issued this <span class="cert-underlined field-day cert-line cert-day cert-field cert-line-field" id="c_day"></span> day of <span class="cert-underlined field-month cert-line cert-month cert-field cert-line-field" id="c_month"></span>, <span class="cert-underlined field-year cert-line cert-year cert-field cert-line-field" id="c_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.
-              </p>
-            </div>
-            <div class="cert-ov cert-ov-voter voter-status">( &nbsp;<span id="c_voter">&nbsp;</span>&nbsp; ) VOTER &nbsp; ( &nbsp;<span id="c_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
-            <!-- Signatory Section Container (Centered with Reduced Gap) -->
-            <div class="cert-ov cert-ov-signatories footer-signatures w-full flex justify-center items-end gap-10 box-border">
-              <!-- Left Signatory: Applicant -->
-              <div class="cert-signatory-col cert-ov-applicant-sigblock w-48 text-center flex flex-col justify-end">
-                <!-- Blank space reserved for physical wet signature / name -->
-                <div class="h-9 flex items-end justify-center pb-0.5">
-                  <span class="cert-ov-applicant-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="c_applicant_name"></span>
-                </div>
-                <!-- Underline -->
-                <div class="border-b-[1.5px] border-black w-full mb-1"></div>
-                <span class="cert-ov-applicant-title text-[11px] text-gray-800 font-serif tracking-tight block">Signature over Printed Name</span>
+          </div>
+          <div id="certPrint"
+            class="certificate-viewport-container certificate-preview-viewport certificate-preview-wrapper w-full overflow-hidden flex items-start justify-center p-2 sm:p-4 bg-slate-100 rounded-xl min-h-[500px]">
+            <div
+              class="a4-sheet cert-sheet certificate-sheet certificate-container printable-document certificate-paper origin-top transition-transform duration-150 relative bg-white shadow-2xl overflow-hidden flex flex-col justify-between"
+              id="printableCertificate" data-base-width="794">
+              <img src="assets/clearance-letterhead.jpg" class="cert-bg" alt="Barangay Clearance letterhead" />
+              <div class="cert-ov cert-ov-or meta-row" id="c_or">
+                Control No.: BC-2025-001 &nbsp;|&nbsp; O.R. No.: — &nbsp;|&nbsp; Amount Paid: ₱20.00
               </div>
+              <div class="cert-ov cert-ov-title title-container">Barangay Clearance</div>
+              <div class="cert-ov cert-ov-body body-paragraphs text-left leading-relaxed space-y-4">
+                <p class="no-indent cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4"
+                  style="line-height: 2.3 !important;">TO WHOM IT MAY CONCERN:</p>
+                <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4"
+                  style="line-height: 2.3 !important;">
+                  This is to certify that <span
+                    class="cert-underlined field-name cert-line cert-name cert-field cert-line-field"
+                    id="c_name"></span>, <span
+                    class="cert-underlined field-age cert-line cert-age cert-field cert-line-field" id="c_age"></span>
+                  years old, <span class="cert-underlined field-status cert-line cert-status cert-field cert-line-field"
+                    id="c_civil"></span>, Filipino citizen, and a resident of <span
+                    class="cert-underlined field-address cert-line cert-address cert-field cert-line-field"
+                    id="c_addr"></span>, Barangay Mapulang Lupa, Pandi, Bulacan, is a bonafide resident of this
+                  barangay.
+                </p>
+                <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4"
+                  style="line-height: 2.3 !important;">
+                  This further certifies that the above-named person is of good moral character and has no derogatory
+                  record filed in this office as of this date.
+                </p>
+                <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4"
+                  style="line-height: 2.3 !important;">
+                  This certification is issued upon the request of the above-named person for the purpose of <span
+                    class="cert-underlined field-purpose cert-line cert-purpose cert-field cert-line-field"
+                    id="c_purpose"></span> and for whatever legal purpose it may serve.
+                </p>
+                <p class="cert-body-paragraph text-left text-sm leading-loose text-slate-900 my-4"
+                  style="line-height: 2.3 !important;">
+                  Issued this <span class="cert-underlined field-day cert-line cert-day cert-field cert-line-field"
+                    id="c_day"></span> day of <span
+                    class="cert-underlined field-month cert-line cert-month cert-field cert-line-field"
+                    id="c_month"></span>, <span
+                    class="cert-underlined field-year cert-line cert-year cert-field cert-line-field"
+                    id="c_year"></span> at Barangay Mapulang Lupa, Pandi, Bulacan.
+                </p>
+              </div>
+              <div class="cert-ov cert-ov-voter voter-status">( &nbsp;<span id="c_voter">&nbsp;</span>&nbsp; ) VOTER
+                &nbsp; ( &nbsp;<span id="c_nonvoter">&nbsp;</span>&nbsp; ) NON-VOTER</div>
+              <!-- Signatory Section Container (Centered with Reduced Gap) -->
+              <div
+                class="cert-ov cert-ov-signatories footer-signatures w-full flex justify-center items-end gap-10 box-border">
+                <!-- Left Signatory: Applicant -->
+                <div class="cert-signatory-col cert-ov-applicant-sigblock w-48 text-center flex flex-col justify-end">
+                  <!-- Blank space reserved for physical wet signature / name -->
+                  <div class="h-9 flex items-end justify-center pb-0.5">
+                    <span
+                      class="cert-ov-applicant-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap"
+                      id="c_applicant_name"></span>
+                  </div>
+                  <!-- Underline -->
+                  <div class="border-b-[1.5px] border-black w-full mb-1"></div>
+                  <span
+                    class="cert-ov-applicant-title text-[11px] text-gray-800 font-serif tracking-tight block">Signature
+                    over Printed Name</span>
+                </div>
 
-              <!-- Right Signatory: Punong Barangay -->
-              <div class="captain-signatory-block signature-block cert-signatory-col w-48 text-center flex flex-col justify-end">
-                <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
-                <div class="captain-sig-wrapper signature-line" id="c_sigimg_wrap">
-                  <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
+                <!-- Right Signatory: Punong Barangay -->
+                <div
+                  class="captain-signatory-block signature-block cert-signatory-col w-48 text-center flex flex-col justify-end">
+                  <!-- E-Signature Image Container sitting directly above/overlapping printed name -->
+                  <div class="captain-sig-wrapper signature-line" id="c_sigimg_wrap">
+                    <img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature"
+                      class="captain-e-signature"
+                      onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />
+                  </div>
+                  <!-- Printed Captain Name above the line -->
+                  <div class="h-9 flex items-end justify-center pb-0.5">
+                    <span
+                      class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap"
+                      id="c_captain">
+                      HON. ALEX ROQUE CRUZ
+                    </span>
+                  </div>
+                  <!-- Underline -->
+                  <div class="captain-line border-b-[1.5px] border-black w-full mb-1"></div>
+                  <span
+                    class="captain-title cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong
+                    Barangay</span>
                 </div>
-                <!-- Printed Captain Name above the line -->
-                <div class="h-9 flex items-end justify-center pb-0.5">
-                  <span class="captain-name cert-ov-chairman-name cert-captain-name font-bold text-xs text-black tracking-wide uppercase font-serif whitespace-nowrap" id="c_captain">
-                    HON. ALEX ROQUE CRUZ
-                  </span>
-                </div>
-                <!-- Underline -->
-                <div class="captain-line border-b-[1.5px] border-black w-full mb-1"></div>
-                <span class="captain-title cert-ov-chairman-title text-[11px] text-gray-800 font-serif font-medium tracking-tight block">Punong Barangay</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </main>
-</div>
+    </main>
+  </div>
 
-<!-- Clearance Form Modal -->
-<div class="modal-overlay" id="clearanceFormModal">
-  <div class="modal-box max-w-lg max-h-[90vh] flex flex-col">
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100 flex-shrink-0">
-      <h2 class="font-display text-xl text-forest-800" data-i18n="issue_clearance_title">Issue Barangay Clearance</h2>
-      <button onclick="closeModal('clearanceFormModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
-    </div>
-    <!-- Modal Body -->
-    <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
-      <div class="relative w-full mb-3" id="residentSearchContainer">
-        <label class="block text-xs font-semibold text-[#1e3a2b] mb-1"><span data-i18n="resident_label">Resident</span> *</label>
-        <input 
-          type="text" 
-          id="residentSearch" 
-          autocomplete="off"
-          placeholder="Type a name to search..." 
-          data-i18n-placeholder="search_resident_ph"
-          class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-4 py-2.5 text-sm text-[#52796f] placeholder-[#52796f] focus:outline-none focus:ring-1 focus:ring-[#1e3a2b]"
-        />
-        <input type="hidden" id="cl_residentId"/>
-        <p class="text-[11px] text-[#52796f] mt-1">A clearance can only be issued to someone already recorded in Census...</p>
+  <!-- Clearance Form Modal -->
+  <div class="modal-overlay" id="clearanceFormModal">
+    <div class="modal-box max-w-lg max-h-[90vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-forest-100 flex-shrink-0">
+        <h2 class="font-display text-xl text-forest-800" data-i18n="issue_clearance_title">Issue Barangay Clearance</h2>
+        <button onclick="closeModal('clearanceFormModal')" class="modal-close-btn" data-i18n-title="close"
+          title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      </div>
+      <!-- Modal Body -->
+      <div class="modal-body modal-scrollable flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 sm:pr-2 space-y-4">
+        <div class="relative w-full mb-3" id="residentSearchContainer">
+          <label class="block text-xs font-semibold text-[#1e3a2b] mb-1"><span
+              data-i18n="resident_label">Resident</span> <span class="text-red-500">*</span></label>
+          <input type="text" id="residentSearch" autocomplete="off" placeholder="Type a name to search..."
+            data-i18n-placeholder="search_resident_ph"
+            class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl px-4 py-2.5 text-sm text-[#52796f] placeholder-[#52796f] focus:outline-none focus:ring-1 focus:ring-[#1e3a2b]" />
+          <input type="hidden" id="cl_residentId" />
+          <p class="text-[11px] text-[#52796f] mt-1">A clearance can only be issued to someone already recorded in
+            Census...</p>
 
-        <!-- Autocomplete Results Container -->
-        <div 
-          id="residentResultsMenu" 
-          class="hidden absolute left-0 right-0 top-[65px] bg-white border border-[#c6dfd4] rounded-xl shadow-xl max-h-56 overflow-y-auto z-[999]"
-        >
-          <!-- Dynamic list items injected here -->
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4" id="cl_derived_preview">
-        <div class="col-span-2"><label class="form-label" data-i18n="full_name">Full Name</label><input type="text" id="cl_name_display" class="form-input" disabled/></div>
-        <div><label class="form-label" data-i18n="age">Age</label><input type="text" id="cl_age_display" class="form-input" disabled/></div>
-        <div><label class="form-label" data-i18n="civil_status">Civil Status</label><input type="text" id="cl_civil_display" class="form-input" disabled/></div>
-        <div class="col-span-2"><label class="form-label" data-i18n="address">Address</label><input type="text" id="cl_addr_display" class="form-input" disabled/></div>
-        <div class="col-span-2"><label class="form-label" data-i18n="voter_status">Voter Status</label><input type="text" id="cl_voter_display" class="form-input" disabled/></div>
-        <div class="col-span-2">
-          <label class="form-label" data-i18n="purpose_of_clearance">Purpose of Clearance</label>
-          <select id="cl_purpose" class="form-input" required>
-            <option value="" disabled selected hidden data-i18n="purpose_of_clearance">-Select-</option>
-            <option>Employment</option><option>Loan Application</option><option>Business Permit</option>
-            <option>School Requirement</option><option>Travel Abroad</option><option>Legal Purposes</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div><label class="form-label" data-i18n="or_number">O.R. Number</label><input type="text" id="cl_or" class="form-input bg-forest-50" placeholder="Auto-generated on save" data-i18n-placeholder="resident_no_ph" disabled/></div>
-        <div><label class="form-label" data-i18n="amount_paid">Amount Paid (₱)</label><input type="number" id="cl_fee" class="form-input" value="20"/></div>
-      </div>
-      <div id="cl_blotter_block" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 transition-all">
-        <div class="flex items-start gap-2.5 mb-2.5">
-          <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="alert" data-icon-size="18"></span>
-          <div class="flex-1">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-              <span class="font-semibold text-amber-900 text-sm flex items-center gap-1.5">
-                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                <span data-i18n="applicant_active_blotter">Applicant has an active blotter record</span>
-              </span>
-              <span class="badge badge-pending text-xs font-semibold px-2 py-0.5" data-i18n="derogatory_alert">Derogatory Alert</span>
-            </div>
-            <p class="text-xs text-amber-800 mt-1 leading-relaxed">
-              This resident is listed as a Respondent in active or unresolved blotter case(s). A Certificate of Clearance cannot be released until all respondent cases are resolved.
-            </p>
+          <!-- Autocomplete Results Container -->
+          <div id="residentResultsMenu"
+            class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-forest-200 rounded-2xl shadow-lg max-h-64 overflow-y-auto z-[999]">
+            <!-- Dynamic list items injected here -->
           </div>
         </div>
-        <div id="cl_blotter_list" class="space-y-2 pt-1 border-t border-amber-200/70"></div>
+        <div class="grid grid-cols-2 gap-4" id="cl_derived_preview">
+          <div class="col-span-2"><label class="form-label" data-i18n="full_name">Full Name</label><input type="text"
+              id="cl_name_display" class="form-input" disabled /></div>
+          <div><label class="form-label" data-i18n="age">Age</label><input type="text" id="cl_age_display"
+              class="form-input" disabled /></div>
+          <div><label class="form-label" data-i18n="civil_status">Civil Status</label><input type="text"
+              id="cl_civil_display" class="form-input" disabled /></div>
+          <div class="col-span-2"><label class="form-label" data-i18n="address">Address</label><input type="text"
+              id="cl_addr_display" class="form-input" disabled /></div>
+          <div class="col-span-2"><label class="form-label" data-i18n="voter_status">Voter Status</label><input
+              type="text" id="cl_voter_display" class="form-input" disabled /></div>
+          <div class="col-span-2">
+            <label class="form-label"><span data-i18n="purpose_of_clearance">Purpose of Clearance</span> <span class="text-red-500">*</span></label>
+            <select id="cl_purpose" class="form-input" required>
+              <option value="" disabled selected hidden data-i18n="purpose_of_clearance">-Select-</option>
+              <option>Employment</option>
+              <option>Loan Application</option>
+              <option>Business Permit</option>
+              <option>School Requirement</option>
+              <option>Travel Abroad</option>
+              <option>Legal Purposes</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div><label class="form-label" data-i18n="or_number">O.R. Number</label><input type="text" id="cl_or"
+              class="form-input bg-forest-50" placeholder="Auto-generated on save"
+              data-i18n-placeholder="resident_no_ph" disabled /></div>
+          <div><label class="form-label" data-i18n="amount_paid">Amount Paid (₱)</label><input type="number" id="cl_fee"
+              class="form-input" value="20" /></div>
+        </div>
+        <div id="cl_blotter_block" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 transition-all">
+          <div class="flex items-start gap-2.5 mb-2.5">
+            <span class="text-amber-600 flex-shrink-0 mt-0.5" data-icon="alert" data-icon-size="18"></span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="font-semibold text-amber-900 text-sm flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                  <span data-i18n="applicant_active_blotter">Applicant has an active blotter record</span>
+                </span>
+                <span class="badge badge-pending text-xs font-semibold px-2 py-0.5"
+                  data-i18n="derogatory_alert">Derogatory Alert</span>
+              </div>
+              <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+                This resident is listed as a Respondent in active or unresolved blotter case(s). A Certificate of
+                Clearance cannot be released until all respondent cases are resolved.
+              </p>
+            </div>
+          </div>
+          <div id="cl_blotter_list" class="space-y-2 pt-1 border-t border-amber-200/70"></div>
+        </div>
       </div>
-    </div>
-    <!-- Modal Footer -->
-    <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-forest-100 flex-shrink-0">
-      <button onclick="closeModal('clearanceFormModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
-      <button id="cl_submit_btn" onclick="issueClearance()" class="btn-primary" data-i18n="issue_preview">Issue &amp; Preview</button>
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100 flex-shrink-0">
+        <button type="button" onclick="closeModal('clearanceFormModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm" data-i18n="cancel">Cancel</button>
+        <button type="button" id="cl_submit_btn" onclick="issueClearance()" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm" data-i18n="issue_preview">Issue &amp; Preview</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script src="api.js"></script>
-<script src="permissions.js"></script>
-<script src="app.js"></script>
-<script src="icons.js"></script>
-<script src="custom-controls.js"></script>
-<script src="clearance.js"></script>
-<script>
-var months = window.BC_MONTHS || ['January','February','March','April','May','June','July','August','September','October','November','December'];
-var logData=[]; var clPage=1; var CL_ROWS=8;
-var clRespondentBlocked = false;
+  <script src="api.js"></script>
+  <script src="permissions.js"></script>
+  <script src="app.js"></script>
+  <script src="icons.js"></script>
+  <script src="custom-controls.js"></script>
+  <script src="clearance.js"></script>
+  <script>
+    var months = window.BC_MONTHS || ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    var logData = []; var clPage = 1; var CL_ROWS = 8;
+    var clRespondentBlocked = false;
 
-function mapClearance(r) {
-  const d = new Date(r.date_issued + 'T00:00:00');
-  return {
-    id: Number(r.id), residentId: Number(r.resident_id), ctrl: r.ctrl_no, name: r.full_name, age: r.age, civil: r.civil_status,
-    address: r.address, voter: r.voter_status, purpose: r.purpose, date: `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`,
-    dateRaw: r.date_issued, or: r.or_no || '—', fee: parseFloat(r.fee) || 0,
-  };
-}
+    function mapClearance(r) {
+      const d = new Date(r.date_issued + 'T00:00:00');
+      return {
+        id: Number(r.id), residentId: Number(r.resident_id), ctrl: r.ctrl_no, name: r.full_name, age: r.age, civil: r.civil_status,
+        address: r.address, voter: r.voter_status, purpose: r.purpose, date: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`,
+        dateRaw: r.date_issued, or: r.or_no || '—', fee: parseFloat(r.fee) || 0,
+      };
+    }
 
-function renderVoterCheckbox(voterStatus) {
-  document.getElementById('c_voter').textContent = voterStatus === 'Registered Voter' ? '✓' : '';
-  document.getElementById('c_nonvoter').textContent = voterStatus === 'Not Registered' ? '✓' : '';
-}
+    function renderVoterCheckbox(voterStatus) {
+      document.getElementById('c_voter').textContent = voterStatus === 'Registered Voter' ? '✓' : '';
+      document.getElementById('c_nonvoter').textContent = voterStatus === 'Not Registered' ? '✓' : '';
+    }
 
-var residentOptions = []; // census residents available to pick for a new clearance
+    var residentOptions = []; // census residents available to pick for a new clearance
 
-async function loadResidentOptionsForPicker() {
-  const raw = await BCApi.docList('census');
-  residentOptions = raw.map(r => {
-    const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
-    const fullName = `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`.trim();
-    return {
-      id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
-      last_name: r.last_name, first_name: r.first_name, middle_name: r.middle_name || '',
-      full_name: fullName,
-      age, civilStatus: r.civil_status, address: r.address || '', voterStatus: r.voter_status,
-      householdNo: r.household_no || '', household_no: r.household_no || '',
-      zone: r.zone_id || r.zone || '', zone_id: r.zone_id || r.zone || '',
-      status: r.status || 'Active',
-      resident_status: r.status || 'Active', census_status: r.status || 'Active',
-      is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
-    };
-  });
-  window.censusResidents = residentOptions;
-  if (typeof initClearanceSearchEvents === 'function') {
-    initClearanceSearchEvents();
-  }
-  bcInitResidentPicker('residentSearch', 'cl_residentId', 'residentResultsMenu', residentOptions, onResidentPicked, validateClearanceEligibility);
-}
-
-// Mirrors the server-side rule in api/documents.php — Deceased or
-// Transferred residents can't be issued a Certificate of Clearance.
-function validateClearanceEligibility(r) {
-  if (r.status === 'Deceased' || r.status === 'Transferred') {
-    return `${r.firstName} ${r.lastName} is recorded as ${r.status} in Census. A Certificate of Clearance cannot be issued for a resident with this status.`;
-  }
-  return null;
-}
-
-async function onResidentPicked(r) {
-  const blockBox = document.getElementById('cl_blotter_block');
-  const listEl = document.getElementById('cl_blotter_list');
-  const submitBtn = document.getElementById('cl_submit_btn');
-  clRespondentBlocked = false;
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-  }
-
-  if (!r) {
-    ['cl_name_display','cl_age_display','cl_civil_display','cl_addr_display','cl_voter_display'].forEach(f => document.getElementById(f).value = '');
-    if (blockBox) blockBox.classList.add('hidden');
-    if (listEl) listEl.innerHTML = '';
-    return;
-  }
-  document.getElementById('cl_name_display').value = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
-  document.getElementById('cl_age_display').value = r.age ?? '';
-  document.getElementById('cl_civil_display').value = r.civilStatus;
-  document.getElementById('cl_addr_display').value = r.address;
-  document.getElementById('cl_voter_display').value = r.voterStatus;
-
-  if (blockBox) blockBox.classList.add('hidden');
-  if (listEl) listEl.innerHTML = '';
-
-  try {
-    const clearanceRes = await BCApi.checkBlotterClearance(r.id);
-    if (!clearanceRes.is_cleared && clearanceRes.blocking_cases && clearanceRes.blocking_cases.length > 0) {
-      clRespondentBlocked = true;
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    async function loadResidentOptionsForPicker() {
+      const raw = await BCApi.docList('census');
+      const activeResidents = (raw || []).filter(resident => resident.status !== 'Transferred');
+      residentOptions = activeResidents.map(r => {
+        const age = r.date_of_birth ? Math.floor((new Date() - new Date(r.date_of_birth)) / 31557600000) : null;
+        const fullName = `${r.last_name}, ${r.first_name}${r.middle_name ? ' ' + r.middle_name : ''}`.trim();
+        return {
+          id: Number(r.id), lastName: r.last_name, firstName: r.first_name, middleName: r.middle_name || '',
+          last_name: r.last_name, first_name: r.first_name, middle_name: r.middle_name || '',
+          full_name: fullName,
+          age, civilStatus: r.civil_status, address: r.address || '', voterStatus: r.voter_status,
+          householdNo: r.household_no || '', household_no: r.household_no || '',
+          zone: r.zone_id || r.zone || '', zone_id: r.zone_id || r.zone || '',
+          status: r.status || 'Active',
+          resident_status: r.status || 'Active', census_status: r.status || 'Active',
+          is_deceased: r.is_deceased ?? (String(r.status).toLowerCase() === 'deceased' ? 1 : 0),
+        };
+      });
+      window.censusResidents = residentOptions;
+      if (typeof initClearanceSearchEvents === 'function') {
+        initClearanceSearchEvents();
       }
-      if (listEl) {
-        listEl.innerHTML = clearanceRes.blocking_cases.map(b => `
+      bcInitResidentPicker('residentSearch', 'cl_residentId', 'residentResultsMenu', residentOptions, onResidentPicked, validateClearanceEligibility);
+    }
+
+    // Mirrors the server-side rule in api/documents.php — Deceased or
+    // Transferred residents can't be issued a Certificate of Clearance.
+    function validateClearanceEligibility(r) {
+      if (r.status === 'Deceased' || r.status === 'Transferred') {
+        return `${r.firstName} ${r.lastName} is recorded as ${r.status} in Census. A Certificate of Clearance cannot be issued for a resident with this status.`;
+      }
+      return null;
+    }
+
+    async function onResidentPicked(r) {
+      const blockBox = document.getElementById('cl_blotter_block');
+      const listEl = document.getElementById('cl_blotter_list');
+      const submitBtn = document.getElementById('cl_submit_btn');
+      clRespondentBlocked = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      if (!r) {
+        ['cl_name_display', 'cl_age_display', 'cl_civil_display', 'cl_addr_display', 'cl_voter_display'].forEach(f => document.getElementById(f).value = '');
+        if (blockBox) blockBox.classList.add('hidden');
+        if (listEl) listEl.innerHTML = '';
+        return;
+      }
+      document.getElementById('cl_name_display').value = `${r.lastName}, ${r.firstName} ${r.middleName}`.trim();
+      document.getElementById('cl_age_display').value = r.age ?? '';
+      document.getElementById('cl_civil_display').value = r.civilStatus;
+      document.getElementById('cl_addr_display').value = r.address;
+      document.getElementById('cl_voter_display').value = r.voterStatus;
+
+      if (blockBox) blockBox.classList.add('hidden');
+      if (listEl) listEl.innerHTML = '';
+
+      try {
+        const clearanceRes = await BCApi.checkBlotterClearance(r.id);
+        if (!clearanceRes.is_cleared && clearanceRes.blocking_cases && clearanceRes.blocking_cases.length > 0) {
+          clRespondentBlocked = true;
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          }
+          if (listEl) {
+            listEl.innerHTML = clearanceRes.blocking_cases.map(b => `
           <div class="bg-white border border-amber-200 rounded-xl p-3 text-xs shadow-sm">
             <div class="flex justify-between items-center mb-1.5">
               <div class="flex items-center gap-1.5">
@@ -417,66 +591,66 @@ async function onResidentPicked(r) {
               </a>
             </div>
           </div>`).join('');
-      }
-      if (blockBox) {
-        blockBox.classList.remove('hidden');
-        if (window.renderIcons) renderIcons(blockBox);
+          }
+          if (blockBox) {
+            blockBox.classList.remove('hidden');
+            if (window.renderIcons) renderIcons(blockBox);
+          }
+        }
+      } catch (e) {
+        console.error('Clearance check error:', e);
       }
     }
-  } catch (e) {
-    console.error('Clearance check error:', e);
-  }
-}
 
-async function loadLog(silent = false) {
-  if (!silent) {
-    bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], true);
-    bcRenderTableSkeleton('clearanceLog', { template: 'clearance', rows: CL_ROWS });
-  }
+    async function loadLog(silent = false) {
+      if (!silent) {
+        bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], true);
+        bcRenderTableSkeleton('clearanceLog', { template: 'clearance', rows: CL_ROWS });
+      }
 
-  try {
-    const raw = await BCApi.docList('clearance');
-    logData = Array.isArray(raw) ? raw.map(mapClearance) : [];
-    renderSummary();
-    renderLog();
-  } catch (err) {
-    console.error('loadLog error:', err);
-    logData = [];
-    bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], false, '0');
-    bcSetTableError('clearanceLog', 'Could not load clearances from server.', 'loadLog()', 6);
-    showToast('Could not load clearances: ' + (err.message || err), 'error');
-  }
-}
-
-function renderSummary() {
-  const now = new Date();
-  const thisMonth = logData.filter(r => {
-    const d = new Date(r.dateRaw);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const thisYear = logData.filter(r => new Date(r.dateRaw).getFullYear() === now.getFullYear());
-  document.getElementById('clMonthCount').textContent = thisMonth.length;
-  document.getElementById('clYearCount').textContent = thisYear.length;
-  document.getElementById('clRevenue').textContent = '₱' + thisYear.reduce((sum, r) => sum + r.fee, 0).toLocaleString();
-}
-
-function renderLog(){
-  const s=document.getElementById('clSearch').value.toLowerCase();
-  const rows=logData.filter(r=>!s||r.name.toLowerCase().includes(s)||r.ctrl.toLowerCase().includes(s));
-  const total=rows.length;
-  const totalPages=Math.ceil(total/CL_ROWS)||1;
-  clPage=Math.min(Math.max(1,clPage),totalPages);
-  const start=(clPage-1)*CL_ROWS;
-  const pageRows=rows.slice(start,start+CL_ROWS);
-  const tbody = document.getElementById('clearanceLog');
-  if (pageRows.length === 0) {
-    if (logData.length === 0) {
-      bcSetTableEmpty('clearanceLog', "There's no clearance records. Please issue or Add a New Barangay Clearance.", 'clearance', 6, "Issue an official barangay clearance certificate for registered residents.");
-    } else {
-      bcSetTableEmpty('clearanceLog', 'No clearance certificates found matching your search.', 'clearance', 6, 'Try adjusting your search keywords.');
+      try {
+        const raw = await BCApi.docList('clearance');
+        logData = Array.isArray(raw) ? raw.map(mapClearance) : [];
+        renderSummary();
+        renderLog();
+      } catch (err) {
+        console.error('loadLog error:', err);
+        logData = [];
+        bcSetStatsLoading(['clMonthCount', 'clYearCount', 'clRevenue'], false, '0');
+        bcSetTableError('clearanceLog', 'Could not load clearances from server.', 'loadLog()', 6);
+        showToast('Could not load clearances: ' + (err.message || err), 'error');
+      }
     }
-  } else {
-    tbody.innerHTML = pageRows.map(r=>`
+
+    function renderSummary() {
+      const now = new Date();
+      const thisMonth = logData.filter(r => {
+        const d = new Date(r.dateRaw);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+      const thisYear = logData.filter(r => new Date(r.dateRaw).getFullYear() === now.getFullYear());
+      document.getElementById('clMonthCount').textContent = thisMonth.length;
+      document.getElementById('clYearCount').textContent = thisYear.length;
+      document.getElementById('clRevenue').textContent = '₱' + thisYear.reduce((sum, r) => sum + r.fee, 0).toLocaleString();
+    }
+
+    function renderLog() {
+      const s = document.getElementById('clSearch').value.toLowerCase();
+      const rows = logData.filter(r => !s || r.name.toLowerCase().includes(s) || r.ctrl.toLowerCase().includes(s));
+      const total = rows.length;
+      const totalPages = Math.ceil(total / CL_ROWS) || 1;
+      clPage = Math.min(Math.max(1, clPage), totalPages);
+      const start = (clPage - 1) * CL_ROWS;
+      const pageRows = rows.slice(start, start + CL_ROWS);
+      const tbody = document.getElementById('clearanceLog');
+      if (pageRows.length === 0) {
+        if (logData.length === 0) {
+          bcSetTableEmpty('clearanceLog', "There's no clearance records. Please issue or Add a New Barangay Clearance.", 'clearance', 6, "Issue an official barangay clearance certificate for registered residents.");
+        } else {
+          bcSetTableEmpty('clearanceLog', 'No clearance certificates found matching your search.', 'clearance', 6, 'Try adjusting your search keywords.');
+        }
+      } else {
+        tbody.innerHTML = pageRows.map(r => `
     <tr>
       <td class="font-semibold text-forest-700">${r.ctrl}</td>
       <td class="font-semibold text-sm">${r.name}</td>
@@ -489,197 +663,198 @@ function renderLog(){
         </div>
       </td>
     </tr>`).join('');
-  }
-  document.getElementById('clPaginationInfo').textContent = total===0 ? '' : `Showing ${start+1}–${Math.min(start+CL_ROWS,total)} of ${total}`;
-  bcRenderPagination(document.getElementById('clPaginationControls'), clPage, totalPages, (p) => { clPage=p; renderLog(); });
-}
-
-function previewLog(id){
-  const r=logData.find(x=>x.id===id);
-  if (!r) return;
-  const d = new Date(r.dateRaw + 'T00:00:00');
-  document.getElementById('c_name').textContent=(r.name || '').trim();
-  document.getElementById('c_applicant_name').textContent=(r.name || '').trim();
-  document.getElementById('c_age').textContent=r.age != null ? String(r.age).trim() : '';
-  document.getElementById('c_civil').textContent=(r.civil || '').trim();
-  document.getElementById('c_addr').textContent=(r.address || '').trim();
-  document.getElementById('c_purpose').textContent=(r.purpose || '').trim();
-  document.getElementById('c_day').textContent=String(d.getDate()).trim();
-  document.getElementById('c_month').textContent=String(months[d.getMonth()] || '').trim();
-  document.getElementById('c_year').textContent=String(d.getFullYear()).trim();
-  renderVoterCheckbox(r.voter);
-  document.getElementById('c_or').innerHTML=`Control No.: ${r.ctrl} &nbsp;|&nbsp; O.R. No.: ${r.or} &nbsp;|&nbsp; Amount Paid: ₱${r.fee.toFixed(2)}`;
-  if (typeof bindCertificateCaptainName === 'function') {
-    bindCertificateCaptainName(r);
-  }
-  if (typeof enforceCenteredFields === 'function') {
-    enforceCenteredFields('printableCertificate');
-  }
-}
-
-function printLog(id){
-  previewLog(id);
-  executePrint();
-}
-
-async function openClearanceForm(){
-  bcResidentPickerClear('residentSearch');
-  resetFormDropdowns('clearanceFormModal');
-  openModal('clearanceFormModal');
-
-  // Show what the O.R. No. will be, rather than leaving it blank until
-  // after saving. Look-ahead preview only — the real number is generated
-  // fresh again at save time, so it can't go stale/collide even if two
-  // "Issue New…" forms happen to be open at once.
-  const orField = document.getElementById('cl_or');
-  orField.value = 'Loading…';
-  try {
-    const { orNo } = await BCApi.peekOr();
-    orField.value = orNo;
-  } catch (err) {
-    orField.value = '';
-  }
-}
-
-function selectResidentForClearance(residentId) {
-  const numId = Number(residentId);
-  const sourceList = Array.isArray(window.censusResidents) 
-    ? window.censusResidents 
-    : (typeof residentOptions !== 'undefined' && Array.isArray(residentOptions) ? residentOptions : []);
-  const r = sourceList.find(x => Number(x.id) === numId);
-  if (!r) return;
-
-  const residentInput = document.getElementById('residentSearch');
-  if (residentInput) {
-    residentInput.value = `${r.last_name || r.lastName}, ${r.first_name || r.firstName} ${r.middle_name || r.middleName || ''}`.trim();
-  }
-
-  const hidden = document.getElementById('cl_residentId');
-  if (hidden) hidden.value = String(numId);
-
-  if (typeof onResidentPicked === 'function') {
-    onResidentPicked(r);
-  }
-}
-window.selectResidentForClearance = selectResidentForClearance;
-
-function resetClearanceForm(){
-  const searchInput = document.getElementById('residentSearch');
-  if (searchInput) searchInput.value = '';
-  const hidden = document.getElementById('cl_residentId');
-  if (hidden) hidden.value = '';
-  const menu = document.getElementById('residentResultsMenu') || document.getElementById('residentDropdownList');
-  if (menu) {
-    menu.classList.add('hidden');
-    menu.innerHTML = '';
-  }
-  if (typeof bcResidentPickerClear === 'function') {
-    bcResidentPickerClear('residentSearch');
-  }
-  resetFormDropdowns('clearanceFormModal');
-  clRespondentBlocked = false;
-  const submitBtn = document.getElementById('cl_submit_btn');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
-  const blockBox = document.getElementById('cl_blotter_block');
-  if (blockBox) blockBox.classList.add('hidden');
-  const listEl = document.getElementById('cl_blotter_list');
-  if (listEl) listEl.innerHTML = '';
-  document.getElementById('cl_or').value = '';
-  document.getElementById('cl_fee').value = '20';
-  ['cl_name_display','cl_age_display','cl_civil_display','cl_addr_display','cl_voter_display'].forEach(f => {
-    const el = document.getElementById(f);
-    if (el) el.value = '';
-  });
-}
-
-async function issueClearance(){
-  const residentId=document.getElementById('cl_residentId').value;
-  const purpose=document.getElementById('cl_purpose').value;
-  const orNo=document.getElementById('cl_or').value.trim();
-  const fee=document.getElementById('cl_fee').value;
-  if(!residentId){await bcAlert('Please select the resident this clearance is for.');return;}
-  if(!purpose){await bcAlert('Please select the purpose of this clearance.');return;}
-  if (clRespondentBlocked) {
-    await bcAlert('Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.');
-    return;
-  }
-
-  try {
-    const result = await BCApi.docCreate('clearance', {
-      residentId, purpose, orNo, fee, dateIssued: new Date().toISOString().slice(0,10),
-    });
-
-    const r = residentOptions.find(x => x.id === Number(residentId));
-    const now = new Date();
-    document.getElementById('c_name').textContent=`${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim().toUpperCase();
-    document.getElementById('c_applicant_name').textContent=`${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim().toUpperCase();
-    document.getElementById('c_age').textContent=r.age != null ? String(r.age).trim() : '';
-    document.getElementById('c_civil').textContent=(r.civilStatus || '').trim();
-    document.getElementById('c_addr').textContent=(r.address || '').trim();
-    document.getElementById('c_purpose').textContent=(purpose || '').trim();
-    document.getElementById('c_day').textContent=String(now.getDate()).trim();
-    document.getElementById('c_month').textContent=String(months[now.getMonth()] || '').trim();
-    document.getElementById('c_year').textContent=String(now.getFullYear()).trim();
-    renderVoterCheckbox(r.voterStatus);
-    document.getElementById('c_or').innerHTML=`Control No.: ${result.ctrlNo} &nbsp;|&nbsp; O.R. No.: ${result.orNo||orNo||'—'} &nbsp;|&nbsp; Amount Paid: ₱${parseFloat(fee).toFixed(2)}`;
-    if (typeof enforceCenteredFields === 'function') {
-      enforceCenteredFields('printableCertificate');
+      }
+      document.getElementById('clPaginationInfo').textContent = total === 0 ? '' : `Showing ${start + 1}–${Math.min(start + CL_ROWS, total)} of ${total}`;
+      bcRenderPagination(document.getElementById('clPaginationControls'), clPage, totalPages, (p) => { clPage = p; renderLog(); });
     }
 
-    closeModal('clearanceFormModal');
-    resetClearanceForm();
-    await loadLog();
-    showToast('Clearance issued! Preview updated.');
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-window.initClearance = async function () {
-  try {
-    await requireAuth();
-    try {
-      const cap = await BCApi.captainSignature();
-      const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : '');
-      const capEl = document.getElementById('c_captain');
-      if (capEl && captainName) {
-        capEl.textContent = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
+    function previewLog(id) {
+      const r = logData.find(x => x.id === id);
+      if (!r) return;
+      const d = new Date(r.dateRaw + 'T00:00:00');
+      document.getElementById('c_name').textContent = (r.name || '').trim();
+      document.getElementById('c_applicant_name').textContent = (r.name || '').trim();
+      document.getElementById('c_age').textContent = r.age != null ? String(r.age).trim() : '';
+      document.getElementById('c_civil').textContent = (r.civil || '').trim();
+      document.getElementById('c_addr').textContent = (r.address || '').trim();
+      document.getElementById('c_purpose').textContent = (r.purpose || '').trim();
+      document.getElementById('c_day').textContent = String(d.getDate()).trim();
+      document.getElementById('c_month').textContent = String(months[d.getMonth()] || '').trim();
+      document.getElementById('c_year').textContent = String(d.getFullYear()).trim();
+      renderVoterCheckbox(r.voter);
+      document.getElementById('c_or').innerHTML = `Control No.: ${r.ctrl} &nbsp;|&nbsp; O.R. No.: ${r.or} &nbsp;|&nbsp; Amount Paid: ₱${r.fee.toFixed(2)}`;
+      if (typeof bindCertificateCaptainName === 'function') {
+        bindCertificateCaptainName(r);
       }
-      const sigWrap = document.getElementById('c_sigimg_wrap');
-      if (sigWrap) {
-        const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
-        sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
-      }
-    } catch (e) {
-      const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : '';
-      const capEl = document.getElementById('c_captain');
-      if (capEl && fallbackCaptain) {
-        capEl.textContent = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
-      }
-      const sigWrap = document.getElementById('c_sigimg_wrap');
-      if (sigWrap) {
-        sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
+      if (typeof enforceCenteredFields === 'function') {
+        enforceCenteredFields('printableCertificate');
       }
     }
 
-    try { await loadResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
-
-    const prefillResidentId = sessionStorage.getItem('bc_prefill_resident_id');
-    if (prefillResidentId) {
-      if (typeof bcResidentPickerChoose === 'function') {
-        bcResidentPickerChoose('residentSearch', Number(prefillResidentId));
-      }
-      sessionStorage.removeItem('bc_prefill_resident_id');
-      if (typeof openModal === 'function') openModal('clearanceFormModal');
+    function printLog(id) {
+      previewLog(id);
+      executePrint();
     }
-    try { await loadLog(); } catch (err) { showToast('Could not load clearance log: ' + (err.message || err), 'error'); }
-  } catch (initErr) {
-    console.error('initClearance error:', initErr);
-  }
-};
-if (!window._bcSpaNavActive) { initClearance(); }
 
-</script>
-<script src="public/js/certificates.js"></script>
+    async function openClearanceForm() {
+      bcResidentPickerClear('residentSearch');
+      resetFormDropdowns('clearanceFormModal');
+      openModal('clearanceFormModal');
+
+      // Show what the O.R. No. will be, rather than leaving it blank until
+      // after saving. Look-ahead preview only — the real number is generated
+      // fresh again at save time, so it can't go stale/collide even if two
+      // "Issue New…" forms happen to be open at once.
+      const orField = document.getElementById('cl_or');
+      orField.value = 'Loading…';
+      try {
+        const { orNo } = await BCApi.peekOr();
+        orField.value = orNo;
+      } catch (err) {
+        orField.value = '';
+      }
+    }
+
+    function selectResidentForClearance(residentId) {
+      const numId = Number(residentId);
+      const sourceList = Array.isArray(window.censusResidents)
+        ? window.censusResidents
+        : (typeof residentOptions !== 'undefined' && Array.isArray(residentOptions) ? residentOptions : []);
+      const r = sourceList.find(x => Number(x.id) === numId);
+      if (!r) return;
+
+      const residentInput = document.getElementById('residentSearch');
+      if (residentInput) {
+        residentInput.value = `${r.last_name || r.lastName}, ${r.first_name || r.firstName} ${r.middle_name || r.middleName || ''}`.trim();
+      }
+
+      const hidden = document.getElementById('cl_residentId');
+      if (hidden) hidden.value = String(numId);
+
+      if (typeof onResidentPicked === 'function') {
+        onResidentPicked(r);
+      }
+    }
+    window.selectResidentForClearance = selectResidentForClearance;
+
+    function resetClearanceForm() {
+      const searchInput = document.getElementById('residentSearch');
+      if (searchInput) searchInput.value = '';
+      const hidden = document.getElementById('cl_residentId');
+      if (hidden) hidden.value = '';
+      const menu = document.getElementById('residentResultsMenu') || document.getElementById('residentDropdownList');
+      if (menu) {
+        menu.classList.add('hidden');
+        menu.innerHTML = '';
+      }
+      if (typeof bcResidentPickerClear === 'function') {
+        bcResidentPickerClear('residentSearch');
+      }
+      resetFormDropdowns('clearanceFormModal');
+      clRespondentBlocked = false;
+      const submitBtn = document.getElementById('cl_submit_btn');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+      const blockBox = document.getElementById('cl_blotter_block');
+      if (blockBox) blockBox.classList.add('hidden');
+      const listEl = document.getElementById('cl_blotter_list');
+      if (listEl) listEl.innerHTML = '';
+      document.getElementById('cl_or').value = '';
+      document.getElementById('cl_fee').value = '20';
+      ['cl_name_display', 'cl_age_display', 'cl_civil_display', 'cl_addr_display', 'cl_voter_display'].forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+    }
+
+    async function issueClearance() {
+      const residentId = document.getElementById('cl_residentId').value;
+      const purpose = document.getElementById('cl_purpose').value;
+      const orNo = document.getElementById('cl_or').value.trim();
+      const fee = document.getElementById('cl_fee').value;
+      if (!residentId) { await bcAlert('Please select the resident this clearance is for.'); return; }
+      if (!purpose) { await bcAlert('Please select the purpose of this clearance.'); return; }
+      if (clRespondentBlocked) {
+        await bcAlert('Issuance blocked: Resident has active pending or ongoing blotter records as a respondent.');
+        return;
+      }
+
+      try {
+        const result = await BCApi.docCreate('clearance', {
+          residentId, purpose, orNo, fee, dateIssued: new Date().toISOString().slice(0, 10),
+        });
+
+        const r = residentOptions.find(x => x.id === Number(residentId));
+        const now = new Date();
+        document.getElementById('c_name').textContent = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim().toUpperCase();
+        document.getElementById('c_applicant_name').textContent = `${r.lastName}, ${r.firstName} ${r.middleName || ''}`.trim().toUpperCase();
+        document.getElementById('c_age').textContent = r.age != null ? String(r.age).trim() : '';
+        document.getElementById('c_civil').textContent = (r.civilStatus || '').trim();
+        document.getElementById('c_addr').textContent = (r.address || '').trim();
+        document.getElementById('c_purpose').textContent = (purpose || '').trim();
+        document.getElementById('c_day').textContent = String(now.getDate()).trim();
+        document.getElementById('c_month').textContent = String(months[now.getMonth()] || '').trim();
+        document.getElementById('c_year').textContent = String(now.getFullYear()).trim();
+        renderVoterCheckbox(r.voterStatus);
+        document.getElementById('c_or').innerHTML = `Control No.: ${result.ctrlNo} &nbsp;|&nbsp; O.R. No.: ${result.orNo || orNo || '—'} &nbsp;|&nbsp; Amount Paid: ₱${parseFloat(fee).toFixed(2)}`;
+        if (typeof enforceCenteredFields === 'function') {
+          enforceCenteredFields('printableCertificate');
+        }
+
+        closeModal('clearanceFormModal');
+        resetClearanceForm();
+        await loadLog();
+        showToast('Clearance issued! Preview updated.');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    window.initClearance = async function () {
+      try {
+        await requireAuth();
+        try {
+          const cap = await BCApi.captainSignature();
+          const captainName = (cap && cap.fullName) ? cap.fullName : (typeof getCaptainName === 'function' ? getCaptainName() : '');
+          const capEl = document.getElementById('c_captain');
+          if (capEl && captainName) {
+            capEl.textContent = captainName.toUpperCase().startsWith('HON.') ? captainName.toUpperCase() : `HON. ${captainName.toUpperCase()}`;
+          }
+          const sigWrap = document.getElementById('c_sigimg_wrap');
+          if (sigWrap) {
+            const sigSrc = (cap && cap.signaturePath) ? cap.signaturePath : '/assets/signatures/default-kapitan-signature.png';
+            sigWrap.innerHTML = `<img src="${sigSrc}" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
+          }
+        } catch (e) {
+          const fallbackCaptain = typeof getCaptainName === 'function' ? getCaptainName() : '';
+          const capEl = document.getElementById('c_captain');
+          if (capEl && fallbackCaptain) {
+            capEl.textContent = fallbackCaptain.toUpperCase().startsWith('HON.') ? fallbackCaptain.toUpperCase() : `HON. ${fallbackCaptain.toUpperCase()}`;
+          }
+          const sigWrap = document.getElementById('c_sigimg_wrap');
+          if (sigWrap) {
+            sigWrap.innerHTML = `<img src="/assets/signatures/default-kapitan-signature.png" alt="Punong Barangay Signature" class="captain-e-signature" onerror="this.onerror=null; this.src='/assets/signatures/default-kapitan-signature.png';" />`;
+          }
+        }
+
+        try { await loadResidentOptionsForPicker(); } catch (err) { showToast('Could not load residents: ' + (err.message || err), 'error'); }
+
+        const prefillResidentId = sessionStorage.getItem('bc_prefill_resident_id');
+        if (prefillResidentId) {
+          if (typeof bcResidentPickerChoose === 'function') {
+            bcResidentPickerChoose('residentSearch', Number(prefillResidentId));
+          }
+          sessionStorage.removeItem('bc_prefill_resident_id');
+          if (typeof openModal === 'function') openModal('clearanceFormModal');
+        }
+        try { await loadLog(); } catch (err) { showToast('Could not load clearance log: ' + (err.message || err), 'error'); }
+      } catch (initErr) {
+        console.error('initClearance error:', initErr);
+      }
+    };
+    if (!window._bcSpaNavActive) { initClearance(); }
+
+  </script>
+  <script src="public/js/certificates.js"></script>
 </body>
+
 </html>

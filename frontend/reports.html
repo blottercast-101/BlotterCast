@@ -244,10 +244,10 @@
         </div>
         <p id="gen_fmt_note" class="text-xs text-forest-500 mt-2 hidden"></p>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
-        <button onclick="closeModal('generateModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
-        <button onclick="simulateGenerate(true)" class="btn-secondary" id="prevBtn"><span data-icon="reports" data-icon-size="16"></span> <span data-i18n="preview">Preview</span></button>
-        <button onclick="simulateGenerate(false)" class="btn-primary" id="genBtn"><span data-icon="download" data-icon-size="16"></span> <span data-i18n="generate">Generate</span></button>
+      <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+        <button onclick="closeModal('generateModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer" data-i18n="cancel">Cancel</button>
+        <button onclick="simulateGenerate(true)" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer flex items-center gap-1.5" id="prevBtn"><span data-icon="reports" data-icon-size="16"></span> <span data-i18n="preview">Preview</span></button>
+        <button onclick="simulateGenerate(false)" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm cursor-pointer flex items-center gap-1.5" id="genBtn"><span data-icon="download" data-icon-size="16"></span> <span data-i18n="generate">Generate</span></button>
       </div>
     </div>
   </div>

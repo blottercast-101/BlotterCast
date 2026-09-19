@@ -309,7 +309,7 @@
             <input type="text" id="f_complainantFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] hidden" placeholder="Full name" data-i18n-placeholder="full_name_ph" data-no-numbers maxlength="50"/>
             <input type="hidden" id="f_complainant"/>
             <input type="hidden" id="f_complainantId"/>
-            <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-[#c6dfd4] rounded-xl shadow-lg"></div>
+            <div id="f_complainantSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-2xl shadow-lg"></div>
           </div>
           <div class="flex justify-end mt-1">
             <span class="text-xs text-[#52796f]" id="f_complainantCount">0/50</span>
@@ -353,7 +353,7 @@
             <input type="text" id="f_respondentFreeText" class="w-full bg-[#edf5f0] border border-[#c6dfd4] rounded-xl pl-9 pr-3.5 py-2 text-sm text-[#1b3b2b] placeholder-[#52796f]/70 focus:outline-none focus:ring-1 focus:ring-[#1b4d3e] hidden" placeholder="Full name" data-i18n-placeholder="full_name_ph" data-no-numbers maxlength="50"/>
             <input type="hidden" id="f_respondent"/>
             <input type="hidden" id="f_respondentId"/>
-            <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-[#c6dfd4] rounded-xl shadow-lg"></div>
+            <div id="f_respondentSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-2xl shadow-lg"></div>
           </div>
           <div class="flex justify-end mt-1">
             <span class="text-xs text-[#52796f]" id="f_respondentCount">0/50</span>
@@ -394,9 +394,9 @@
         </div>
       </div>
 
-      <div class="flex justify-end gap-3 pt-3">
-        <button type="button" onclick="closeModal('blotterModal')" class="bg-[#eef6f2] text-[#2d5a43] hover:bg-[#dcefe4] font-medium px-6 py-2.5 rounded-xl transition-colors text-sm cursor-pointer" data-i18n="cancel">Cancel</button>
-        <button type="button" onclick="saveBlotter()" class="bg-[#1e4d36] hover:bg-[#163c29] text-white font-semibold rounded-xl px-6 py-2.5 shadow-sm transition-colors text-sm cursor-pointer" data-i18n="save_entry">Save Entry</button>
+      <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+        <button type="button" onclick="closeModal('blotterModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer" data-i18n="cancel">Cancel</button>
+        <button type="button" onclick="saveBlotter()" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm cursor-pointer" data-i18n="save_entry">Save Entry</button>
       </div>
     </form>
   </div>
@@ -480,9 +480,9 @@
     </div>
     <div id="importStatus" class="mt-3 text-sm text-forest-600"></div>
 
-    <div class="mt-5 flex items-center justify-end gap-3">
-      <button type="button" onclick="closeModal('importModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
-      <button type="button" id="btnConfirmImport" onclick="startBlotterImport()" class="btn-primary flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled>
+    <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+      <button type="button" onclick="closeModal('importModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer" data-i18n="cancel">Cancel</button>
+      <button type="button" id="btnConfirmImport" onclick="startBlotterImport()" class="btn-primary px-6 py-2.5 bg-[#1e4d36] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm flex items-center gap-1.5 opacity-50 cursor-not-allowed" disabled>
         <span data-icon="upload" data-icon-size="16"></span> <span data-i18n="upload_import">Upload &amp; Import</span>
       </button>
     </div>
@@ -505,9 +505,9 @@
       <button onclick="closeModal('viewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" title="Close" data-i18n-title="close"><span data-icon="x" data-icon-size="18"></span></button>
     </div>
     <div id="viewContent" class="space-y-3"></div>
-    <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
+    <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
       <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
-      <button onclick="closeModal('viewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer" data-i18n="close">Close</button>
+      <button onclick="closeModal('viewModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer" data-i18n="close">Close</button>
     </div>
   </div>
 </div>

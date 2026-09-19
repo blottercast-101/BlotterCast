@@ -1,34 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <link rel="icon" type="image/png" href="favicon.png"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Settlement Monitor — Barangay System</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
   <script>
     tailwind.config = {
-      theme: { extend: { colors: {
-        forest: { 50:'#f0f9f2',100:'#dcf0e0',200:'#b8e0c0',300:'#86c895',400:'#4fa868',500:'#2f8a4c',600:'#23703c',700:'#1a5730',800:'#123d22',900:'#0a2414' },
-      }, fontFamily: { display:['DM Serif Display','serif'], body:['DM Sans','sans-serif'] } } }
+      theme: {
+        extend: {
+          colors: {
+            forest: { 50: '#f0f9f2', 100: '#dcf0e0', 200: '#b8e0c0', 300: '#86c895', 400: '#4fa868', 500: '#2f8a4c', 600: '#23703c', 700: '#1a5730', 800: '#123d22', 900: '#0a2414' },
+          }, fontFamily: { display: ['DM Serif Display', 'serif'], body: ['DM Sans', 'sans-serif'] }
+        }
+      }
     }
   </script>
 </head>
+
 <body class="font-body bg-forest-50 min-h-screen">
 
-<!-- Sidebar -->
-<aside id="sidebar" class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="fixed top-0 left-0 h-full w-64 sidebar-grad text-white z-30 flex flex-col shadow-2xl transition-transform duration-300">
     <!-- Logo Header -->
     <div class="sidebar-header flex items-center gap-2.5 px-5 py-4 border-b border-white/10">
       <div class="sidebar-logo-emblem flex-shrink-0 flex items-center justify-center">
-        <img src="logo.png" alt="BlotterCast" class="h-10 w-auto object-contain block" onerror="this.onerror=null;this.src='assets/logo.png';"/>
+        <img src="logo.png" alt="BlotterCast" class="h-10 w-auto object-contain block"
+          onerror="this.onerror=null;this.src='assets/logo.png';" />
       </div>
       <div class="sidebar-brand-group flex flex-col justify-center min-w-0">
-        <span class="sidebar-brand-title text-[23px] font-semibold text-white tracking-tight leading-none block">lotterCast</span>
-        <span class="sidebar-brand-subtitle text-[13.5px] font-medium text-[#A3E6BA] tracking-normal leading-tight block mt-0.5">Barangay System</span>
+        <span
+          class="sidebar-brand-title text-[23px] font-semibold text-white tracking-tight leading-none block">lotterCast</span>
+        <span
+          class="sidebar-brand-subtitle text-[13.5px] font-medium text-[#A3E6BA] tracking-normal leading-tight block mt-0.5">Barangay
+          System</span>
       </div>
     </div>
 
@@ -36,55 +49,147 @@
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
       <p class="nav-section-label">Main Menu</p>
       <a href="dashboard.html" class="nav-link" data-page="dashboard">
-        <span class="nav-icon" data-icon="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span> Dashboard
+        <span class="nav-icon" data-icon="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <rect x="3" y="3" width="7" height="9" rx="1.5" />
+            <rect x="14" y="3" width="7" height="5" rx="1.5" />
+            <rect x="14" y="12" width="7" height="9" rx="1.5" />
+            <rect x="3" y="16" width="7" height="5" rx="1.5" />
+          </svg></span> Dashboard
       </a>
       <a href="blotter.html" class="nav-link" data-page="blotter">
-        <span class="nav-icon" data-icon="blotter"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M6 2h9l4 4v16H6z"/><path d="M15 2v4h4"/><path d="M9 11h7M9 15h7M9 7h3"/></svg></span> Blotter Records
+        <span class="nav-icon" data-icon="blotter"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M6 2h9l4 4v16H6z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 11h7M9 15h7M9 7h3" />
+          </svg></span> Blotter Records
       </a>
       <a href="incident.html" class="nav-link" data-page="incident">
-        <span class="nav-icon" data-icon="incident"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M12 2 2 20h20L12 2z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg></span> Incident Reports
+        <span class="nav-icon" data-icon="incident"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M12 2 2 20h20L12 2z" />
+            <path d="M12 9v5" />
+            <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+          </svg></span> Incident Reports
       </a>
       <a href="settlement.html" class="nav-link active" data-page="settlement">
-        <span class="nav-icon" data-icon="settlement"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M8 12l3 3 6-7"/><circle cx="12" cy="12" r="9"/></svg></span> Settlement Monitor
+        <span class="nav-icon" data-icon="settlement"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M8 12l3 3 6-7" />
+            <circle cx="12" cy="12" r="9" />
+          </svg></span> Settlement Monitor
       </a>
 
       <p class="nav-section-label">Documents</p>
       <a href="census.html" class="nav-link" data-page="census">
-        <span class="nav-icon" data-icon="census"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="8" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M14.5 20c.3-2.6 2.3-4.5 4.9-4.7"/></svg></span> Census
+        <span class="nav-icon" data-icon="census"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="8" cy="8" r="3" />
+            <path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+            <circle cx="17" cy="9" r="2.5" />
+            <path d="M14.5 20c.3-2.6 2.3-4.5 4.9-4.7" />
+          </svg></span> Census
       </a>
       <a href="clearance.html" class="nav-link" data-page="clearance">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Brgy Clearance
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Brgy Clearance
       </a>
       <a href="residency.html" class="nav-link" data-page="residency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Residency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Residency
       </a>
       <a href="non_residency.html" class="nav-link" data-page="non_residency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Non-Residency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Non-Residency
       </a>
       <a href="indigency.html" class="nav-link" data-page="indigency">
-        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M7 2h8l4 4v16H7z"/><path d="M15 2v4h4"/><path d="M9 12l2 2 4-4"/></svg></span> Cert. of Indigency
+        <span class="nav-icon" data-icon="clearance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M7 2h8l4 4v16H7z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 12l2 2 4-4" />
+          </svg></span> Cert. of Indigency
       </a>
 
       <p class="nav-section-label">Analytics</p>
       <a href="heatmap.html" class="nav-link" data-page="heatmap">
-        <span class="nav-icon" data-icon="heatmap"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M3 20l5-11 4 6 3-5 6 10z"/><path d="M3 20h18"/></svg></span> Heat Map
+        <span class="nav-icon" data-icon="heatmap"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M3 20l5-11 4 6 3-5 6 10z" />
+            <path d="M3 20h18" />
+          </svg></span> Heat Map
       </a>
       <a href="trends.html" class="nav-link" data-page="trends">
-        <span class="nav-icon" data-icon="trends"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M3 17l5-6 4 3 7-9"/><path d="M14 5h5v5"/><path d="M3 21h18"/></svg></span> Trends
+        <span class="nav-icon" data-icon="trends"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M3 17l5-6 4 3 7-9" />
+            <path d="M14 5h5v5" />
+            <path d="M3 21h18" />
+          </svg></span> Trends
       </a>
       <a href="predictions.html" class="nav-link" data-page="predictions">
-        <span class="nav-icon" data-icon="predictions"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/><circle cx="9" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/></svg></span> Predictions
+        <span class="nav-icon" data-icon="predictions"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <rect x="4" y="8" width="16" height="12" rx="2" />
+            <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+            <circle cx="9" cy="14" r="1" fill="currentColor" stroke="none" />
+            <circle cx="15" cy="14" r="1" fill="currentColor" stroke="none" />
+          </svg></span> Predictions
       </a>
 
       <p class="nav-section-label">System</p>
       <a href="users.html" class="nav-link" data-page="users">
-        <span class="nav-icon" data-icon="users"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17" cy="9" r="2.3"/><path d="M15 13.8c2.6.5 4.5 2.7 4.8 5.4"/></svg></span> Users &amp; Roles
+        <span class="nav-icon" data-icon="users"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="9" cy="8" r="3.2" />
+            <path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" />
+            <circle cx="17" cy="9" r="2.3" />
+            <path d="M15 13.8c2.6.5 4.5 2.7 4.8 5.4" />
+          </svg></span> Users &amp; Roles
       </a>
       <a href="reports.html" class="nav-link" data-page="reports">
-        <span class="nav-icon" data-icon="reports"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><path d="M6 2h9l4 4v16H6z"/><path d="M15 2v4h4"/><path d="M9 11h7M9 15h4"/></svg></span> Reports
+        <span class="nav-icon" data-icon="reports"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <path d="M6 2h9l4 4v16H6z" />
+            <path d="M15 2v4h4" />
+            <path d="M9 11h7M9 15h4" />
+          </svg></span> Reports
       </a>
       <a href="settings.html" class="nav-link" data-page="settings">
-        <span class="nav-icon" data-icon="settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.6.9 1 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/></svg></span> Settings
+        <span class="nav-icon" data-icon="settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="w-5 h-5 flex-shrink-0 text-current bc-icon">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.3.6.9 1 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z" />
+          </svg></span> Settings
       </a>
     </nav>
 
@@ -96,415 +201,479 @@
           <div class="text-sm font-semibold truncate" data-user-name></div>
           <div class="text-forest-400 text-xs" data-user-role></div>
         </div>
-        <button class="logout-btn" onclick="doLogout()" title="Log out"><span data-icon="logout" data-icon-size="16"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 flex-shrink-0 text-current bc-icon"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span></button>
+        <button class="logout-btn" onclick="doLogout()" title="Log out"><span data-icon="logout"
+            data-icon-size="16"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+              class="w-4 h-4 flex-shrink-0 text-current bc-icon">
+              <path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg></span></button>
       </div>
     </div>
   </aside>
 
-<div id="app-content" class="ml-64 flex flex-col min-h-screen">
+  <div id="app-content" class="ml-64 flex flex-col min-h-screen">
 
-  <!-- Header -->
-  <header class="page-header">
-    <div class="flex items-center gap-3">
-      <button id="globalSidebarToggle" class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0" aria-label="Toggle Sidebar">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-      <div>
-        <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="settlement_monitoring_title">Monitoring of Compliance to Settlement or Award</h1>
-        <p class="text-forest-500 text-xs md:text-sm" data-i18n="settlement_monitoring_desc">Track and manage settlement agreements and compliance status</p>
-      </div>
-    </div>
-    <div class="flex items-center gap-3">
-      <button type="button" onclick="openExportFilter('api/exports.php?action=settlement_monitoring', 'Export Settlement Monitoring')" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors" data-perm="generate_reports" data-i18n="export_excel">
-        <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg> <span data-i18n="export_excel">Export to Excel</span>
-      </button>
-      <button onclick="openAddSettlement()" class="btn-primary flex items-center gap-2" data-i18n="add_settlement_record">
-        <span data-icon="plus" data-icon-size="16"></span> <span data-i18n="add_settlement_record">+ Add Settlement Record</span>
-      </button>
-    </div>
-  </header>
-
-  <main class="flex-1 p-6">
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
-        <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium" data-i18n="total_cases">Total Cases</span>
-          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="settlement" data-icon-size="18"></div>
-        </div>
+    <!-- Header -->
+    <header class="page-header">
+      <div class="flex items-center gap-3">
+        <button id="globalSidebarToggle"
+          class="sidebar-toggle-btn p-2 rounded-lg text-emerald-950 hover:bg-emerald-100 lg:hidden focus:outline-none flex-shrink-0"
+          aria-label="Toggle Sidebar">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <div>
-          <div class="font-display text-3xl mt-3" id="totalSettlementCases">0</div>
+          <h1 class="font-display text-xl md:text-2xl text-forest-800" data-i18n="settlement_monitoring_title">
+            Monitoring of Compliance to Settlement or Award</h1>
+          <p class="text-forest-500 text-xs md:text-sm" data-i18n="settlement_monitoring_desc">Track and manage
+            settlement agreements and compliance status</p>
         </div>
-        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
       </div>
-      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
-        <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium" data-i18n="status_pending">Pending</span>
-          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="clock" data-icon-size="18"></div>
-        </div>
-        <div>
-          <div class="font-display text-3xl mt-3" id="pendingSettlementCases">0</div>
-        </div>
-        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
-      </div>
-      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
-        <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium" data-i18n="status_complied">Complied</span>
-          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="check" data-icon-size="18"></div>
-        </div>
-        <div>
-          <div class="font-display text-3xl mt-3" id="compliedSettlementCases">0</div>
-        </div>
-        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
-      </div>
-      <div class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
-        <div class="flex items-center justify-between">
-          <span class="text-white/80 text-sm font-medium" data-i18n="status_not_complied">Not Complied</span>
-          <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90" data-icon="x" data-icon-size="18"></div>
-        </div>
-        <div>
-          <div class="font-display text-3xl text-white mt-3" id="notCompliedSettlementCases">0</div>
-        </div>
-        <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
-      </div>
-    </div>
-    <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
-
-      <!-- Table Title -->
-      <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
-        <div class="stat-icon-badge" data-icon="settlement" data-icon-size="17"></div>
-        <h2 class="font-display text-lg text-forest-800" id="stlTitle" data-i18n="settlement_records">Settlement Records</h2>
-        <button id="archiveToggleBtn" onclick="toggleArchivedView()" class="btn-secondary text-xs ml-auto flex items-center gap-2" data-i18n="view_archived">
-          <span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">View Archived</span>
+      <div class="flex items-center gap-3">
+        <button type="button"
+          onclick="openExportFilter('api/exports.php?action=settlement_monitoring', 'Export Settlement Monitoring')"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#edf5f0] hover:bg-[#e2efe7] text-[#1e3a2b] text-xs font-semibold rounded-xl transition-colors"
+          data-perm="generate_reports" data-i18n="export_excel">
+          <svg class="w-4 h-4 text-[#1e3a2b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg> <span data-i18n="export_excel">Export to Excel</span>
         </button>
       </div>
-      <script>
-        (function _syncSettlementViewEarly(){
-          try {
-            const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
-            const q = new URLSearchParams(window.location.search).get('view') || '';
-            const s = sessionStorage.getItem('current_active_view_settlement') || '';
-            if (h === 'archived' || q === 'archived' || s === 'archived') {
-              const t = document.getElementById('stlTitle');
-              if (t) t.textContent = 'Archived Settlement Records';
-              const b = document.getElementById('archiveToggleBtn');
-              if (b) b.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
-            }
-          } catch(_) {}
-        })();
-      </script>
+    </header>
 
-      <!-- Filter Bar -->
-      <div class="filter-bar">
-        <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch" placeholder="Search case no., title…" class="filter-input w-full pl-8" oninput="stlPage=1; renderSettlements()" data-i18n-placeholder="search_settlement_placeholder"/></span>
-        <select id="stlNatureFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
-          <option value="">All Natures</option>
-          <option>Criminal</option>
-          <option>Civil</option>
-        </select>
-        <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
-          <option value="" data-i18n="all_statuses">All Statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="Complied">Complied</option>
-          <option value="Not Complied">Not Complied</option>
-        </select>
-      </div>
-
-      <!-- Table -->
-      <div class="overflow-x-auto">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="bc-select-header-col" style="width: 44px; min-width: 44px; text-align: center;">
-                <div class="bc-select-slot relative flex items-center justify-center mx-auto">
-                  <span class="bc-header-index font-semibold text-forest-700 text-xs">#</span>
-                  <input type="checkbox" id="selectAllSettlements" class="bc-header-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500" onchange="stlBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
-                </div>
-              </th>
-              <th>Case No.</th>
-              <th>Case Title</th>
-              <th>Complaint Title</th>
-              <th>Nature</th>
-              <th>Date Filed</th>
-              <th>Action Taken</th>
-              <th>Status of Compliance</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="settlementTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- Pagination -->
-      <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50">
-        <span class="text-sm text-forest-500" id="stlPaginationInfo"></span>
-        <div class="flex gap-2" id="stlPaginationControls"></div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<!-- Add/Edit Settlement Modal -->
-<div class="modal-overlay" id="settlementModal">
-  <div class="modal-box" style="width:680px">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-display text-xl text-forest-800" id="stlModalTitle" data-i18n="new_settlement_title">New Settlement Record</h2>
-      <button onclick="closeModal('settlementModal')" class="modal-close-btn" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
-    </div>
-    <form id="settlementForm" class="space-y-4" novalidate onsubmit="event.preventDefault(); saveSettlement();">
-      <div id="sf_blotter_picker_wrap" class="relative z-30">
-        <label class="form-label"><span data-i18n="link_blotter_case">Link to Blotter Case</span> <span class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal" data-i18n="search_docket_complainant_hint">(Search docket no. or complainant)</span></label>
-        <div class="relative">
-          <input type="text" id="sf_blotterSearch" class="form-input" placeholder="Type docket no. or name to search Blotter…" data-i18n-placeholder="search_blotter_ph" autocomplete="off" maxlength="100" oninput="clearFieldSpecificError('sf_blotterId'); updateSettlementCharCounters();"/>
-          <input type="hidden" id="sf_blotterId"/>
+    <main class="flex-1 p-6">
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div
+          class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1e5d38] to-[#2d7a4d]">
+          <div class="flex items-center justify-between">
+            <span class="text-white/80 text-sm font-medium" data-i18n="total_cases">Total Cases</span>
+            <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90"
+              data-icon="settlement" data-icon-size="18"></div>
+          </div>
+          <div>
+            <div class="font-display text-3xl mt-3" id="totalSettlementCases">0</div>
+          </div>
+          <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
         </div>
-        <span id="linkBlotterCount" class="text-xs text-[#52796f] mt-1 text-right block">0/100</span>
-        <p id="err_sf_blotterId" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-        <div id="sf_blotterSuggestions" class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg"></div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label" data-i18n="case_no">Case No.</label><input type="text" id="sf_caseNo" class="form-input bg-forest-50" placeholder="Auto-generated" data-i18n-placeholder="auto_generated" disabled/></div>
-        <div><label class="form-label" data-i18n="case_title">Case Title</label><input type="text" id="sf_caseTitle" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" data-i18n-placeholder="auto_filled_blotter" disabled/></div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="form-label" data-i18n="nature_of_case">Nature of Case</label><input type="text" id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter" data-i18n-placeholder="auto_filled_blotter" disabled/></div>
-        <div>
-          <label class="form-label" data-i18n="date_initial_confrontation">Date of Initial Confrontation</label>
-          <input type="date" id="sf_dateConfrontation" class="form-input" data-no-future onchange="clearFieldSpecificError('sf_dateConfrontation')"/>
-          <p id="err_sf_dateConfrontation" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        <div
+          class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#1b6b66] to-[#268982]">
+          <div class="flex items-center justify-between">
+            <span class="text-white/80 text-sm font-medium" data-i18n="status_pending">Pending</span>
+            <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90"
+              data-icon="clock" data-icon-size="18"></div>
+          </div>
+          <div>
+            <div class="font-display text-3xl mt-3" id="pendingSettlementCases">0</div>
+          </div>
+          <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
+        </div>
+        <div
+          class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#4d6e32] via-[#6f8538] to-[#a38b3a]">
+          <div class="flex items-center justify-between">
+            <span class="text-white/80 text-sm font-medium" data-i18n="status_complied">Complied</span>
+            <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90"
+              data-icon="check" data-icon-size="18"></div>
+          </div>
+          <div>
+            <div class="font-display text-3xl mt-3" id="compliedSettlementCases">0</div>
+          </div>
+          <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
+        </div>
+        <div
+          class="rounded-2xl p-5 relative overflow-hidden text-white shadow-sm flex flex-col justify-between min-h-[135px] bg-gradient-to-br from-[#0c261a] to-[#143d2b]">
+          <div class="flex items-center justify-between">
+            <span class="text-white/80 text-sm font-medium" data-i18n="status_not_complied">Not Complied</span>
+            <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white/90"
+              data-icon="x" data-icon-size="18"></div>
+          </div>
+          <div>
+            <div class="font-display text-3xl text-white mt-3" id="notCompliedSettlementCases">0</div>
+          </div>
+          <div class="w-36 h-36 rounded-full bg-white/[0.08] absolute -right-8 -bottom-10 pointer-events-none"></div>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="form-label"><span data-i18n="action_taken">Action Taken</span> <span class="text-red-500">*</span></label>
-          <select id="sf_actionTaken" class="form-input" required onchange="clearFieldSpecificError('sf_actionTaken')">
-            <option value="" disabled selected data-i18n="select_placeholder">-Select-</option>
-            <option value="Mediation (M)">Mediation (M)</option>
-            <option value="Conciliation (C)">Conciliation (C)</option>
-            <option value="Arbitration (A)">Arbitration (A)</option>
+      <div class="bg-white rounded-2xl border border-forest-100 shadow-sm overflow-hidden">
+
+        <!-- Table Title -->
+        <div class="px-6 py-4 border-b border-forest-50 flex items-center gap-3">
+          <div class="stat-icon-badge" data-icon="settlement" data-icon-size="17"></div>
+          <h2 class="font-display text-lg text-forest-800" id="stlTitle" data-i18n="settlement_records">Settlement
+            Records</h2>
+          <button id="archiveToggleBtn" onclick="toggleArchivedView()"
+            class="btn-secondary text-xs ml-auto flex items-center gap-2" data-i18n="view_archived">
+            <span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">View Archived</span>
+          </button>
+        </div>
+        <script>
+            (function _syncSettlementViewEarly() {
+              try {
+                const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+                const q = new URLSearchParams(window.location.search).get('view') || '';
+                const s = sessionStorage.getItem('current_active_view_settlement') || '';
+                if (h === 'archived' || q === 'archived' || s === 'archived') {
+                  const t = document.getElementById('stlTitle');
+                  if (t) t.textContent = 'Archived Settlement Records';
+                  const b = document.getElementById('archiveToggleBtn');
+                  if (b) b.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
+                }
+              } catch (_) { }
+            })();
+        </script>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <span class="relative flex-1 min-w-48"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400"
+              data-icon="search" data-icon-size="15"></span><input type="text" id="stlSearch"
+              placeholder="Search case no., title…" class="filter-input w-full pl-8"
+              oninput="stlPage=1; renderSettlements()" data-i18n-placeholder="search_settlement_placeholder" /></span>
+          <select id="stlNatureFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
+            <option value="">All Natures</option>
+            <option>Criminal</option>
+            <option>Civil</option>
           </select>
-          <p id="err_sf_actionTaken" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-        </div>
-        <div>
-          <label class="form-label"><span data-i18n="date_of_settlement">Date of Settlement or Award</span> <span class="text-red-500">*</span></label>
-          <input type="date" id="sf_dateSettlement" class="form-input" data-no-future required onchange="clearFieldSpecificError('sf_dateSettlement')"/>
-          <p id="err_sf_dateSettlement" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="form-label" data-i18n="date_of_execution">Date of Execution</label>
-          <input type="date" id="sf_dateExecution" class="form-input" onchange="clearFieldSpecificError('sf_dateExecution')"/>
-          <p id="err_sf_dateExecution" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-        </div>
-        <div>
-          <label class="form-label"><span data-i18n="officer_in_charge">Officer-in-Charge / Conciliator</span> <span class="text-red-500">*</span></label>
-          <input type="text" id="sf_officer" class="form-input" placeholder="e.g. Punong Barangay / Pangkat Chairman" data-i18n-placeholder="officer_ph" required oninput="clearFieldSpecificError('sf_officer')"/>
-          <p id="err_sf_officer" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-        </div>
-      </div>
-      <div>
-        <label class="form-label"><span data-i18n="agreement_terms">Main Point of Agreement / Settlement Terms</span> <span class="text-red-500">*</span></label>
-        <textarea id="sf_mainPoint" class="form-input h-20 resize-none" placeholder="Key terms and conditions of the settlement agreement…" data-i18n-placeholder="agreement_terms_ph" required oninput="clearFieldSpecificError('sf_mainPoint')"></textarea>
-        <p id="err_sf_mainPoint" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="form-label"><span data-i18n="status_compliance">Status of Compliance / Resolution</span> <span class="text-red-500">*</span></label>
-          <select id="sf_status" class="form-input" required onchange="clearFieldSpecificError('sf_status')">
-            <option value="" disabled selected hidden data-i18n="select_placeholder">-Select-</option>
-            <option value="Pending" data-i18n="pending">Pending</option>
+          <select id="stlStatusFilter" class="filter-input" onchange="stlPage=1; renderSettlements()">
+            <option value="" data-i18n="all_statuses">All Statuses</option>
+            <option value="Pending">Pending</option>
             <option value="Complied">Complied</option>
             <option value="Not Complied">Not Complied</option>
           </select>
-          <p id="err_sf_status" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="bc-select-header-col" style="width: 44px; min-width: 44px; text-align: center;">
+                  <div class="bc-select-slot relative flex items-center justify-center mx-auto">
+                    <span class="bc-header-index font-semibold text-forest-700 text-xs">#</span>
+                    <input type="checkbox" id="selectAllSettlements"
+                      class="bc-header-cb form-checkbox cursor-pointer rounded text-forest-600 focus:ring-forest-500"
+                      onchange="stlBatchManager.toggleSelectAll(this.checked)" title="Select All Visible" />
+                  </div>
+                </th>
+                <th>Case No.</th>
+                <th>Case Title</th>
+                <th>Complaint Title</th>
+                <th>Nature</th>
+                <th>Date Filed</th>
+                <th>Action Taken</th>
+                <th>Status of Compliance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="settlementTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-5 py-4 border-t border-forest-50">
+          <span class="text-sm text-forest-500" id="stlPaginationInfo"></span>
+          <div class="flex gap-2" id="stlPaginationControls"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Settlement Modal -->
+  <div class="modal-overlay" id="settlementModal">
+    <div class="modal-box" style="width:680px">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-xl text-forest-800" id="stlModalTitle" data-i18n="new_settlement_title">New
+          Settlement Record</h2>
+        <button onclick="closeModal('settlementModal')" class="modal-close-btn" data-i18n-title="close"
+          title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      </div>
+      <form id="settlementForm" class="space-y-4" novalidate onsubmit="event.preventDefault(); saveSettlement();">
+        <div id="sf_blotter_picker_wrap" class="relative z-30">
+          <label class="form-label"><span data-i18n="link_blotter_case">Link to Blotter Case</span> <span
+              class="text-red-500">*</span> <span class="text-xs text-forest-500 font-normal"
+              data-i18n="search_docket_complainant_hint">(Search docket no. or complainant)</span></label>
+          <div class="relative">
+            <input type="text" id="sf_blotterSearch" class="form-input"
+              placeholder="Type docket no. or name to search Blotter…" data-i18n-placeholder="search_blotter_ph"
+              autocomplete="off" maxlength="100"
+              oninput="clearFieldSpecificError('sf_blotterId'); updateSettlementCharCounters();" />
+            <input type="hidden" id="sf_blotterId" />
+          </div>
+          <span id="linkBlotterCount" class="text-xs text-[#52796f] mt-1 text-right block">0/100</span>
+          <p id="err_sf_blotterId" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          <div id="sf_blotterSuggestions"
+            class="hidden absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-forest-200 rounded-xl shadow-lg">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="form-label" data-i18n="case_no">Case No.</label><input type="text" id="sf_caseNo"
+              class="form-input bg-forest-50" placeholder="Auto-generated" data-i18n-placeholder="auto_generated"
+              disabled /></div>
+          <div><label class="form-label" data-i18n="case_title">Case Title</label><input type="text" id="sf_caseTitle"
+              class="form-input bg-forest-50" placeholder="Auto-filled from Blotter"
+              data-i18n-placeholder="auto_filled_blotter" disabled /></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="form-label" data-i18n="nature_of_case">Nature of Case</label><input type="text"
+              id="sf_nature_display" class="form-input bg-forest-50" placeholder="Auto-filled from Blotter"
+              data-i18n-placeholder="auto_filled_blotter" disabled /></div>
+          <div>
+            <label class="form-label" data-i18n="date_initial_confrontation">Date of Initial Confrontation</label>
+            <input type="date" id="sf_dateConfrontation" class="form-input" data-no-future
+              onchange="clearFieldSpecificError('sf_dateConfrontation')" />
+            <p id="err_sf_dateConfrontation" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label"><span data-i18n="action_taken">Action Taken</span> <span
+                class="text-red-500">*</span></label>
+            <select id="sf_actionTaken" class="form-input" required
+              onchange="clearFieldSpecificError('sf_actionTaken')">
+              <option value="" disabled selected data-i18n="select_placeholder">-Select-</option>
+              <option value="Mediation (M)">Mediation (M)</option>
+              <option value="Conciliation (C)">Conciliation (C)</option>
+              <option value="Arbitration (A)">Arbitration (A)</option>
+            </select>
+            <p id="err_sf_actionTaken" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
+          <div>
+            <label class="form-label"><span data-i18n="date_of_settlement">Date of Settlement or Award</span> <span
+                class="text-red-500">*</span></label>
+            <input type="date" id="sf_dateSettlement" class="form-input" data-no-future required
+              onchange="clearFieldSpecificError('sf_dateSettlement')" />
+            <p id="err_sf_dateSettlement" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label" data-i18n="date_of_execution">Date of Execution</label>
+            <input type="date" id="sf_dateExecution" class="form-input"
+              onchange="clearFieldSpecificError('sf_dateExecution')" />
+            <p id="err_sf_dateExecution" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
+          <div>
+            <label class="form-label"><span data-i18n="officer_in_charge">Officer-in-Charge / Conciliator</span> <span
+                class="text-red-500">*</span></label>
+            <input type="text" id="sf_officer" class="form-input" placeholder="e.g. Punong Barangay / Pangkat Chairman"
+              data-i18n-placeholder="officer_ph" required oninput="clearFieldSpecificError('sf_officer')" />
+            <p id="err_sf_officer" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
         </div>
         <div>
-          <label class="form-label" data-i18n="remarks">Remarks</label>
-          <input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes" data-i18n-placeholder="optional_notes"/>
+          <label class="form-label"><span data-i18n="agreement_terms">Main Point of Agreement / Settlement Terms</span>
+            <span class="text-red-500">*</span></label>
+          <textarea id="sf_mainPoint" class="form-input h-20 resize-none"
+            placeholder="Key terms and conditions of the settlement agreement…"
+            data-i18n-placeholder="agreement_terms_ph" required
+            oninput="clearFieldSpecificError('sf_mainPoint')"></textarea>
+          <p id="err_sf_mainPoint" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
         </div>
-      </div>
-      <div class="flex items-center justify-end gap-3 pt-3 border-t border-forest-100">
-        <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
-        <button type="button" onclick="saveSettlement()" class="btn-primary" data-i18n="save_record">Save Record</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- View Modal -->
-<div class="modal-overlay" id="stlViewModal">
-  <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
-    <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
-          <span data-icon="settlement" data-icon-size="18"></span>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label"><span data-i18n="status_compliance">Status of Compliance / Resolution</span> <span
+                class="text-red-500">*</span></label>
+            <select id="sf_status" class="form-input" required onchange="clearFieldSpecificError('sf_status')">
+              <option value="" disabled selected hidden data-i18n="select_placeholder">-Select-</option>
+              <option value="Pending" data-i18n="pending">Pending</option>
+              <option value="Complied">Complied</option>
+              <option value="Not Complied">Not Complied</option>
+            </select>
+            <p id="err_sf_status" class="text-xs text-rose-600 font-medium mt-1 hidden"></p>
+          </div>
+          <div>
+            <label class="form-label" data-i18n="remarks">Remarks</label>
+            <input type="text" id="sf_remarks" class="form-input" placeholder="Optional notes"
+              data-i18n-placeholder="optional_notes" />
+          </div>
         </div>
-        <div>
-          <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight" data-i18n="settlement_hearing_details">Settlement Hearing Details</h2>
-          <p class="text-xs text-emerald-700 font-medium mt-0.5" id="stlModalSubtitle">Docket: SET-2026-004</p>
+        <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+          <button type="button" onclick="closeModal('settlementModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer"
+            data-i18n="cancel">Cancel</button>
+          <button type="button" onclick="saveSettlement()" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm cursor-pointer" data-i18n="save_record">Save Record</button>
         </div>
-      </div>
-      <button onclick="closeModal('stlViewModal')" class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" data-i18n-title="close" title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      </form>
     </div>
-    <div id="stlViewContent" class="space-y-3"></div>
-    <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
-      <span class="text-emerald-700 text-sm font-medium" data-i18n="blottercast_system_label">BlotterCast Barangay System</span>
-      <button type="button" onclick="closeModal('stlViewModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm" data-i18n="close">Close</button>
+  </div>
+
+  <!-- View Modal -->
+  <div class="modal-overlay" id="stlViewModal">
+    <div class="modal-box max-w-xl" style="max-height: 90vh; overflow-y: auto;">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-emerald-100/70">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
+            <span data-icon="settlement" data-icon-size="18"></span>
+          </div>
+          <div>
+            <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight"
+              data-i18n="settlement_hearing_details">Settlement Hearing Details</h2>
+            <p class="text-xs text-emerald-700 font-medium mt-0.5" id="stlModalSubtitle">Docket: SET-2026-004</p>
+          </div>
+        </div>
+        <button onclick="closeModal('stlViewModal')"
+          class="modal-close-btn text-gray-400 hover:text-gray-700 transition-colors" data-i18n-title="close"
+          title="Close"><span data-icon="x" data-icon-size="18"></span></button>
+      </div>
+      <div id="stlViewContent" class="space-y-3"></div>
+      <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+        <span class="text-emerald-700 text-sm font-medium" data-i18n="blottercast_system_label">BlotterCast Barangay
+          System</span>
+        <button type="button" onclick="closeModal('stlViewModal')"
+          class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer"
+          data-i18n="close">Close</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script src="api.js?v=2.2.0"></script>
-<script src="permissions.js?v=2.2.0"></script>
-<script src="app.js?v=2.2.0"></script>
-<script src="icons.js?v=2.2.0"></script>
-<script src="custom-controls.js?v=2.2.0"></script>
-<script>
-  var STL_ROWS = 5;
-  var stlPage = 1, stlEditId = null;
-  var settlementData = [];
+  <script src="api.js?v=2.2.0"></script>
+  <script src="permissions.js?v=2.2.0"></script>
+  <script src="app.js?v=2.2.0"></script>
+  <script src="icons.js?v=2.2.0"></script>
+  <script src="custom-controls.js?v=2.2.0"></script>
+  <script>
+    var STL_ROWS = 5;
+    var stlPage = 1, stlEditId = null;
+    var settlementData = [];
 
-  function mapSettlement(r) {
-    return {
-      id: Number(r.id), blotterId: Number(r.blotter_id), blotterDocketNo: r.blotter_docket_no,
-      caseNo: r.case_no, caseTitle: r.case_title, complaintTitle: r.complaint_title,
-      nature: r.nature, dateFiled: r.date_filed, dateConfrontation: r.date_confrontation,
-      actionTaken: r.action_taken, dateSettlement: r.date_settlement, dateExecution: r.date_execution,
-      mainPoint: r.main_point, status: r.status, officer: r.officer || '', remarks: r.remarks || '',
-      complainant: r.complainant, complainantAddr: r.complainant_addr,
-      respondent: r.respondent, respondentAddr: r.respondent_addr,
-    };
-  }
-
-  var viewingArchived = false;
-
-  async function loadSettlements(silent = false) {
-    if (!document.getElementById('settlementTableBody')) return;
-    if (!silent) {
-      bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
-      bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
+    function mapSettlement(r) {
+      return {
+        id: Number(r.id), blotterId: Number(r.blotter_id), blotterDocketNo: r.blotter_docket_no,
+        caseNo: r.case_no, caseTitle: r.case_title, complaintTitle: r.complaint_title,
+        nature: r.nature, dateFiled: r.date_filed, dateConfrontation: r.date_confrontation,
+        actionTaken: r.action_taken, dateSettlement: r.date_settlement, dateExecution: r.date_execution,
+        mainPoint: r.main_point, status: r.status, officer: r.officer || '', remarks: r.remarks || '',
+        complainant: r.complainant, complainantAddr: r.complainant_addr,
+        respondent: r.respondent, respondentAddr: r.respondent_addr,
+      };
     }
 
-    try {
-      const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
+    var viewingArchived = false;
+
+    async function loadSettlements(silent = false) {
       if (!document.getElementById('settlementTableBody')) return;
-      settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
-      updateSettlementMetrics();
-      renderSettlements();
-      bcCheckUrlHighlight({
-        items: settlementData,
-        pageSize: STL_ROWS,
-        setPage: (p) => { stlPage = p; },
-        render: renderSettlements
-      });
-    } catch (err) {
-      if (!document.getElementById('settlementTableBody')) return;
-      console.error('loadSettlements error:', err);
-      settlementData = [];
-      bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
-      bcSetTableError('settlementTableBody', 'Could not load settlement records from server.', 'loadSettlements()', 9);
-      showToast('Could not load settlements: ' + (err.message || err), 'error');
-    }
-  }
+      if (!silent) {
+        bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], true);
+        bcRenderTableSkeleton('settlementTableBody', { template: 'settlement', rows: STL_ROWS });
+      }
 
-  async function toggleArchivedView(explicitState = null) {
-    if (explicitState !== null) {
-      viewingArchived = !!explicitState;
-    } else {
-      viewingArchived = !viewingArchived;
+      try {
+        const raw = await BCApi.list('settlements', viewingArchived ? { archived: '1' } : {});
+        if (!document.getElementById('settlementTableBody')) return;
+        settlementData = Array.isArray(raw) ? raw.map(mapSettlement) : [];
+        updateSettlementMetrics();
+        renderSettlements();
+        bcCheckUrlHighlight({
+          items: settlementData,
+          pageSize: STL_ROWS,
+          setPage: (p) => { stlPage = p; },
+          render: renderSettlements
+        });
+      } catch (err) {
+        if (!document.getElementById('settlementTableBody')) return;
+        console.error('loadSettlements error:', err);
+        settlementData = [];
+        bcSetStatsLoading(['totalSettlementCases', 'pendingSettlementCases', 'compliedSettlementCases', 'notCompliedSettlementCases', 'stlTotal', 'stlComplied', 'stlNotComplied', 'stlPending'], false, '0');
+        bcSetTableError('settlementTableBody', 'Could not load settlement records from server.', 'loadSettlements()', 9);
+        showToast('Could not load settlements: ' + (err.message || err), 'error');
+      }
     }
-    stlPage = 1;
-    stlBatchManager.clearSelection();
-    const lang = (typeof localStorage !== 'undefined' && (localStorage.getItem('app_language') || localStorage.getItem('bc_language'))) || 'en';
-    const isTl = (String(lang)).toLowerCase().startsWith('fil') || (String(lang)).toLowerCase().startsWith('tag') || (String(lang)).toLowerCase() === 'tl';
-    const titleEl = document.getElementById('stlTitle');
-    if (titleEl) titleEl.textContent = viewingArchived ? (isTl ? 'Naka-arkibong mga Tala ng Settlement' : 'Archived Settlement Records') : (isTl ? 'Mga Tala ng Settlement' : 'Settlement Records');
-    const toggleBtn = document.getElementById('archiveToggleBtn');
-    if (toggleBtn) {
-      const backLabel = isTl ? 'Bumalik sa Aktibo' : 'Back to Active';
-      const viewLabel = isTl ? 'Tignan ang Naka-arkibo' : 'View Archived';
-      toggleBtn.innerHTML = viewingArchived
-        ? `<span data-icon="settlement" data-icon-size="14"></span> <span data-i18n="back_to_active">${backLabel}</span>`
-        : `<span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">${viewLabel}</span>`;
-      if (typeof renderIcons === 'function') renderIcons();
-    }
-    try {
-      sessionStorage.setItem('current_active_view_settlement', viewingArchived ? 'archived' : 'active');
-      if (typeof bcSetActiveView === 'function') {
-        bcSetActiveView('settlement', viewingArchived ? 'archived' : 'active');
+
+    async function toggleArchivedView(explicitState = null) {
+      if (explicitState !== null) {
+        viewingArchived = !!explicitState;
       } else {
-        history.replaceState(null, '', viewingArchived ? '#archived' : window.location.pathname.split('/').pop());
+        viewingArchived = !viewingArchived;
       }
-    } catch (_) {}
-    try {
-      await loadSettlements();
-    } catch (err) {
-      showToast('Could not load records: ' + err.message, 'error');
-    }
-  }
-
-  var blotterOptions = []; // cases available to attach a new settlement to
-
-  async function loadBlotterOptionsForPicker() {
-    try {
-      const raw = await BCApi.list('blotter');
-      // Include all active (non-archived) blotter records (Pending, Ongoing, etc.)
-      blotterOptions = (raw || [])
-        .filter(b => !b.archived)
-        .map(b => ({
-          id: Number(b.id),
-          docketNo: b.docket_no || b.docketNo || '',
-          complainant: b.complainant || '',
-          respondent: b.respondent || '',
-          nature: b.nature || '',
-          caseType: b.case_type || b.caseType || 'CRIM',
-          dateFiled: b.date_filed || b.dateFiled || '',
-          status: b.status || 'Pending'
-        }));
-    } catch (e) {
-      console.error('Error loading blotter options for picker:', e);
-      blotterOptions = [];
-    }
-    _bindBlotterCasePicker();
-  }
-
-  function _bindBlotterCasePicker() {
-    const input = document.getElementById('sf_blotterSearch');
-    if (!input || input.dataset.bound) return;
-    input.dataset.bound = '1';
-    input.addEventListener('input', _filterBlotterCases);
-    input.addEventListener('focus', _filterBlotterCases);
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('#sf_blotterSuggestions') && e.target !== input) {
-        document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
+      stlPage = 1;
+      stlBatchManager.clearSelection();
+      const lang = (typeof localStorage !== 'undefined' && (localStorage.getItem('app_language') || localStorage.getItem('bc_language'))) || 'en';
+      const isTl = (String(lang)).toLowerCase().startsWith('fil') || (String(lang)).toLowerCase().startsWith('tag') || (String(lang)).toLowerCase() === 'tl';
+      const titleEl = document.getElementById('stlTitle');
+      if (titleEl) titleEl.textContent = viewingArchived ? (isTl ? 'Naka-arkibong mga Tala ng Settlement' : 'Archived Settlement Records') : (isTl ? 'Mga Tala ng Settlement' : 'Settlement Records');
+      const toggleBtn = document.getElementById('archiveToggleBtn');
+      if (toggleBtn) {
+        const backLabel = isTl ? 'Bumalik sa Aktibo' : 'Back to Active';
+        const viewLabel = isTl ? 'Tignan ang Naka-arkibo' : 'View Archived';
+        toggleBtn.innerHTML = viewingArchived
+          ? `<span data-icon="settlement" data-icon-size="14"></span> <span data-i18n="back_to_active">${backLabel}</span>`
+          : `<span data-icon="archive" data-icon-size="14"></span> <span data-i18n="view_archived">${viewLabel}</span>`;
+        if (typeof renderIcons === 'function') renderIcons();
       }
-    });
-  }
-
-  function _formatDateFiled(dateStr) {
-    if (!dateStr) return '—';
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const [y, m, d] = parts;
-      return `${m}/${d}/${y}`;
+      try {
+        sessionStorage.setItem('current_active_view_settlement', viewingArchived ? 'archived' : 'active');
+        if (typeof bcSetActiveView === 'function') {
+          bcSetActiveView('settlement', viewingArchived ? 'archived' : 'active');
+        } else {
+          history.replaceState(null, '', viewingArchived ? '#archived' : window.location.pathname.split('/').pop());
+        }
+      } catch (_) { }
+      try {
+        await loadSettlements();
+      } catch (err) {
+        showToast('Could not load records: ' + err.message, 'error');
+      }
     }
-    return dateStr;
-  }
 
-  function _filterBlotterCases() {
-    const input = document.getElementById('sf_blotterSearch');
-    const list = document.getElementById('sf_blotterSuggestions');
-    if (!input || !list) return;
-    const q = input.value.trim().toLowerCase();
+    var blotterOptions = []; // cases available to attach a new settlement to
 
-    const matches = q === ''
-      ? blotterOptions.slice(0, 20)
-      : blotterOptions.filter(b =>
+    async function loadBlotterOptionsForPicker() {
+      try {
+        const raw = await BCApi.list('blotter');
+        // Include all active (non-archived) blotter records (Pending, Ongoing, etc.)
+        blotterOptions = (raw || [])
+          .filter(b => !b.archived)
+          .map(b => ({
+            id: Number(b.id),
+            docketNo: b.docket_no || b.docketNo || '',
+            complainant: b.complainant || '',
+            respondent: b.respondent || '',
+            nature: b.nature || '',
+            caseType: b.case_type || b.caseType || 'CRIM',
+            dateFiled: b.date_filed || b.dateFiled || '',
+            status: b.status || 'Pending'
+          }));
+      } catch (e) {
+        console.error('Error loading blotter options for picker:', e);
+        blotterOptions = [];
+      }
+      _bindBlotterCasePicker();
+    }
+
+    function _bindBlotterCasePicker() {
+      const input = document.getElementById('sf_blotterSearch');
+      if (!input || input.dataset.bound) return;
+      input.dataset.bound = '1';
+      input.addEventListener('input', _filterBlotterCases);
+      input.addEventListener('focus', _filterBlotterCases);
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#sf_blotterSuggestions') && e.target !== input) {
+          document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
+        }
+      });
+    }
+
+    function _formatDateFiled(dateStr) {
+      if (!dateStr) return '—';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        return `${m}/${d}/${y}`;
+      }
+      return dateStr;
+    }
+
+    function _filterBlotterCases() {
+      const input = document.getElementById('sf_blotterSearch');
+      const list = document.getElementById('sf_blotterSuggestions');
+      if (!input || !list) return;
+      const q = input.value.trim().toLowerCase();
+
+      const matches = q === ''
+        ? blotterOptions.slice(0, 20)
+        : blotterOptions.filter(b =>
           (b.docketNo || '').toLowerCase().includes(q) ||
           (b.complainant || '').toLowerCase().includes(q) ||
           (b.respondent || '').toLowerCase().includes(q) ||
@@ -512,14 +681,14 @@
           `${b.complainant} vs. ${b.respondent}`.toLowerCase().includes(q)
         ).slice(0, 20);
 
-    if (matches.length === 0) {
-      list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching blotter cases.' : 'No active blotter cases available.'}</div>`;
-    } else {
-      list.innerHTML = matches.map(b => {
-        const isOngoing = (b.status || '').toLowerCase() === 'ongoing';
-        const isPending = (b.status || '').toLowerCase() === 'pending';
-        const badgeClass = isOngoing ? 'bg-amber-100 text-amber-800' : (isPending ? 'bg-forest-100 text-forest-800' : 'bg-gray-100 text-gray-700');
-        return `
+      if (matches.length === 0) {
+        list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching blotter cases.' : 'No active blotter cases available.'}</div>`;
+      } else {
+        list.innerHTML = matches.map(b => {
+          const isOngoing = (b.status || '').toLowerCase() === 'ongoing';
+          const isPending = (b.status || '').toLowerCase() === 'pending';
+          const badgeClass = isOngoing ? 'bg-amber-100 text-amber-800' : (isPending ? 'bg-forest-100 text-forest-800' : 'bg-gray-100 text-gray-700');
+          return `
         <button type="button" class="w-full text-left px-3 py-2.5 hover:bg-forest-50 border-b border-forest-50 last:border-0 transition-colors"
                 onclick="chooseBlotterCase(${b.id})">
           <div class="flex items-center justify-between">
@@ -528,151 +697,151 @@
           </div>
           <div class="text-xs text-forest-500 mt-0.5">${b.complainant} vs. ${b.respondent} &middot; Filed ${_formatDateFiled(b.dateFiled)} &middot; ${b.nature || ''}</div>
         </button>`;
-      }).join('');
-    }
-    list.classList.remove('hidden');
-  }
-
-  function chooseBlotterCase(id) {
-    const b = blotterOptions.find(x => x.id === id);
-    if (!b) return;
-    const searchEl = document.getElementById('sf_blotterSearch');
-    const idEl = document.getElementById('sf_blotterId');
-    if (searchEl) searchEl.value = `${b.docketNo} — ${b.complainant} vs. ${b.respondent}`;
-    if (idEl) idEl.value = String(id);
-    document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
-    onBlotterPicked();
-    updateSettlementCharCounters();
-  }
-
-  function clearBlotterCasePicker() {
-    const searchEl = document.getElementById('sf_blotterSearch');
-    const idEl = document.getElementById('sf_blotterId');
-    if (searchEl) searchEl.value = '';
-    if (idEl) idEl.value = '';
-    document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
-    onBlotterPicked();
-    updateSettlementCharCounters();
-  }
-
-  function onBlotterPicked() {
-    const idEl = document.getElementById('sf_blotterId');
-    const id = idEl ? Number(idEl.value) : 0;
-    const b = blotterOptions.find(x => x.id === id);
-    const titleEl = document.getElementById('sf_caseTitle');
-    const natureEl = document.getElementById('sf_nature_display');
-    if (!b) {
-      if (titleEl) titleEl.value = '';
-      if (natureEl) natureEl.value = '';
-      return;
-    }
-    if (titleEl) titleEl.value = `${b.complainant} vs. ${b.respondent}`;
-    if (natureEl) natureEl.value = (b.caseType === 'CRIM' ? 'Criminal' : 'Civil') + ' — ' + b.nature;
-  }
-
-  function updateSettlementMetrics() {
-    const totalEl = document.getElementById('totalSettlementCases') || document.getElementById('stlTotal');
-    const pendEl = document.getElementById('pendingSettlementCases') || document.getElementById('stlPending');
-    const compEl = document.getElementById('compliedSettlementCases') || document.getElementById('stlComplied');
-    const notCompEl = document.getElementById('notCompliedSettlementCases') || document.getElementById('stlNotComplied');
-    if (!totalEl && !pendEl && !compEl && !notCompEl) return;
-
-    const isPending = (status) => {
-      const s = String(status || '').toLowerCase().trim();
-      return s === 'pending' || s === 'ongoing';
-    };
-
-    const isComplied = (status) => {
-      const s = String(status || '').toLowerCase().trim();
-      return s === 'complied' || s === 'settled';
-    };
-
-    const isNotComplied = (status) => {
-      const s = String(status || '').toLowerCase().trim();
-      return s === 'not complied' || s === 'non-compliant' || s === 'repudiated' || s === 'elevated';
-    };
-
-    const data = settlementData || [];
-    const totalCount = data.length;
-    const pendingCount = data.filter(r => isPending(r.status)).length;
-    const compliedCount = data.filter(r => isComplied(r.status)).length;
-    const notCompliedCount = data.filter(r => isNotComplied(r.status) || (!isPending(r.status) && !isComplied(r.status))).length;
-
-    if (totalEl) totalEl.textContent = totalCount;
-    if (pendEl) pendEl.textContent = pendingCount;
-    if (compEl) compEl.textContent = compliedCount;
-    if (notCompEl) notCompEl.textContent = notCompliedCount;
-
-    // Sync legacy element IDs if they exist
-    ['stlTotal', 'stlPending', 'stlComplied', 'stlNotComplied'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && el !== totalEl && el !== pendEl && el !== compEl && el !== notCompEl) {
-        if (id === 'stlTotal') el.textContent = totalCount;
-        if (id === 'stlPending') el.textContent = pendingCount;
-        if (id === 'stlComplied') el.textContent = compliedCount;
-        if (id === 'stlNotComplied') el.textContent = notCompliedCount;
+        }).join('');
       }
+      list.classList.remove('hidden');
+    }
+
+    function chooseBlotterCase(id) {
+      const b = blotterOptions.find(x => x.id === id);
+      if (!b) return;
+      const searchEl = document.getElementById('sf_blotterSearch');
+      const idEl = document.getElementById('sf_blotterId');
+      if (searchEl) searchEl.value = `${b.docketNo} — ${b.complainant} vs. ${b.respondent}`;
+      if (idEl) idEl.value = String(id);
+      document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
+      onBlotterPicked();
+      updateSettlementCharCounters();
+    }
+
+    function clearBlotterCasePicker() {
+      const searchEl = document.getElementById('sf_blotterSearch');
+      const idEl = document.getElementById('sf_blotterId');
+      if (searchEl) searchEl.value = '';
+      if (idEl) idEl.value = '';
+      document.getElementById('sf_blotterSuggestions')?.classList.add('hidden');
+      onBlotterPicked();
+      updateSettlementCharCounters();
+    }
+
+    function onBlotterPicked() {
+      const idEl = document.getElementById('sf_blotterId');
+      const id = idEl ? Number(idEl.value) : 0;
+      const b = blotterOptions.find(x => x.id === id);
+      const titleEl = document.getElementById('sf_caseTitle');
+      const natureEl = document.getElementById('sf_nature_display');
+      if (!b) {
+        if (titleEl) titleEl.value = '';
+        if (natureEl) natureEl.value = '';
+        return;
+      }
+      if (titleEl) titleEl.value = `${b.complainant} vs. ${b.respondent}`;
+      if (natureEl) natureEl.value = (b.caseType === 'CRIM' ? 'Criminal' : 'Civil') + ' — ' + b.nature;
+    }
+
+    function updateSettlementMetrics() {
+      const totalEl = document.getElementById('totalSettlementCases') || document.getElementById('stlTotal');
+      const pendEl = document.getElementById('pendingSettlementCases') || document.getElementById('stlPending');
+      const compEl = document.getElementById('compliedSettlementCases') || document.getElementById('stlComplied');
+      const notCompEl = document.getElementById('notCompliedSettlementCases') || document.getElementById('stlNotComplied');
+      if (!totalEl && !pendEl && !compEl && !notCompEl) return;
+
+      const isPending = (status) => {
+        const s = String(status || '').toLowerCase().trim();
+        return s === 'pending' || s === 'ongoing';
+      };
+
+      const isComplied = (status) => {
+        const s = String(status || '').toLowerCase().trim();
+        return s === 'complied' || s === 'settled';
+      };
+
+      const isNotComplied = (status) => {
+        const s = String(status || '').toLowerCase().trim();
+        return s === 'not complied' || s === 'non-compliant' || s === 'repudiated' || s === 'elevated';
+      };
+
+      const data = settlementData || [];
+      const totalCount = data.length;
+      const pendingCount = data.filter(r => isPending(r.status)).length;
+      const compliedCount = data.filter(r => isComplied(r.status)).length;
+      const notCompliedCount = data.filter(r => isNotComplied(r.status) || (!isPending(r.status) && !isComplied(r.status))).length;
+
+      if (totalEl) totalEl.textContent = totalCount;
+      if (pendEl) pendEl.textContent = pendingCount;
+      if (compEl) compEl.textContent = compliedCount;
+      if (notCompEl) notCompEl.textContent = notCompliedCount;
+
+      // Sync legacy element IDs if they exist
+      ['stlTotal', 'stlPending', 'stlComplied', 'stlNotComplied'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el !== totalEl && el !== pendEl && el !== compEl && el !== notCompEl) {
+          if (id === 'stlTotal') el.textContent = totalCount;
+          if (id === 'stlPending') el.textContent = pendingCount;
+          if (id === 'stlComplied') el.textContent = compliedCount;
+          if (id === 'stlNotComplied') el.textContent = notCompliedCount;
+        }
+      });
+    }
+    var updateStlSummary = updateSettlementMetrics;
+    window.updateSettlementMetrics = updateSettlementMetrics;
+    window.updateStlSummary = updateStlSummary;
+
+    function getStlFiltered() {
+      const searchEl = document.getElementById('stlSearch');
+      const natEl = document.getElementById('stlNatureFilter');
+      const statEl = document.getElementById('stlStatusFilter');
+      const s = (searchEl ? searchEl.value : '').trim().toLowerCase();
+      const n = natEl ? natEl.value : '';
+      const st = statEl ? statEl.value : '';
+      return settlementData.filter(r =>
+        (!s || (r.caseNo || '').toLowerCase().includes(s) || (r.caseTitle || '').toLowerCase().includes(s)) &&
+        (!n || n === 'ALL' || n === 'All Natures' || r.nature === n) &&
+        (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
+      );
+    }
+
+    var stlBatchManager = new BcBatchManager({
+      entityName: 'settlement record',
+      entityPlural: 'settlement records',
+      apiType: 'settlements',
+      selectAllId: 'selectAllSettlements',
+      getPageItems: () => {
+        const filtered = getStlFiltered();
+        const start = (stlPage - 1) * STL_ROWS;
+        return filtered.slice(start, start + STL_ROWS);
+      },
+      getAllItems: () => getStlFiltered(),
+      isArchivedView: () => viewingArchived,
+      onRefresh: async () => { await loadSettlements(); },
     });
-  }
-  var updateStlSummary = updateSettlementMetrics;
-  window.updateSettlementMetrics = updateSettlementMetrics;
-  window.updateStlSummary = updateStlSummary;
 
-  function getStlFiltered() {
-    const searchEl = document.getElementById('stlSearch');
-    const natEl = document.getElementById('stlNatureFilter');
-    const statEl = document.getElementById('stlStatusFilter');
-    const s = (searchEl ? searchEl.value : '').trim().toLowerCase();
-    const n = natEl ? natEl.value : '';
-    const st = statEl ? statEl.value : '';
-    return settlementData.filter(r =>
-      (!s || (r.caseNo || '').toLowerCase().includes(s) || (r.caseTitle||'').toLowerCase().includes(s)) &&
-      (!n || n === 'ALL' || n === 'All Natures' || r.nature === n) &&
-      (!st || st === 'ALL' || st === 'All Statuses' || r.status === st)
-    );
-  }
-
-  var stlBatchManager = new BcBatchManager({
-    entityName: 'settlement record',
-    entityPlural: 'settlement records',
-    apiType: 'settlements',
-    selectAllId: 'selectAllSettlements',
-    getPageItems: () => {
+    function renderSettlements() {
+      const tbody = document.getElementById('settlementTableBody');
+      if (!tbody) return;
       const filtered = getStlFiltered();
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / STL_ROWS) || 1;
+      if (stlPage > totalPages) stlPage = totalPages;
       const start = (stlPage - 1) * STL_ROWS;
-      return filtered.slice(start, start + STL_ROWS);
-    },
-    getAllItems: () => getStlFiltered(),
-    isArchivedView: () => viewingArchived,
-    onRefresh: async () => { await loadSettlements(); },
-  });
+      const page = filtered.slice(start, start + STL_ROWS);
 
-  function renderSettlements() {
-    const tbody = document.getElementById('settlementTableBody');
-    if (!tbody) return;
-    const filtered = getStlFiltered();
-    const total = filtered.length;
-    const totalPages = Math.ceil(total / STL_ROWS) || 1;
-    if (stlPage > totalPages) stlPage = totalPages;
-    const start = (stlPage - 1) * STL_ROWS;
-    const page = filtered.slice(start, start + STL_ROWS);
-
-    if (page.length === 0) {
-      if (viewingArchived) {
-        bcSetTableEmpty('settlementTableBody', "There's no archived settlement records.", 'settlement', 9);
-      } else if (settlementData.length === 0) {
-        bcSetTableEmpty(
-          'settlementTableBody',
-          "There's no settlement records. Please import a settlement record / case record or Add a New Settlement Record.",
-          'settlement',
-          9,
-          "Track mediation hearings, conciliation agreements, and compliance records."
-        );
+      if (page.length === 0) {
+        if (viewingArchived) {
+          bcSetTableEmpty('settlementTableBody', "There's no archived settlement records.", 'settlement', 9);
+        } else if (settlementData.length === 0) {
+          bcSetTableEmpty(
+            'settlementTableBody',
+            "There's no settlement records. Please import a settlement record / case record or Add a New Settlement Record.",
+            'settlement',
+            9,
+            "Track mediation hearings, conciliation agreements, and compliance records."
+          );
+        } else {
+          bcSetTableEmpty('settlementTableBody', 'No settlement records found matching your filters.', 'settlement', 9, 'Try adjusting your filters or search keywords.');
+        }
       } else {
-        bcSetTableEmpty('settlementTableBody', 'No settlement records found matching your filters.', 'settlement', 9, 'Try adjusting your filters or search keywords.');
-      }
-    } else {
-      tbody.innerHTML = page.map((r, idx) => `
+        tbody.innerHTML = page.map((r, idx) => `
         <tr data-id="${r.id}" data-key="${r.caseNo}" data-case-no="${r.caseNo}" class="bc-table-row ${stlBatchManager.has(r.id) ? 'row-selected' : ''}">
           <td class="bc-row-select-cell" style="width: 44px; min-width: 44px; text-align: center;">
             <div class="bc-select-slot relative flex items-center justify-center mx-auto">
@@ -681,12 +850,12 @@
             </div>
           </td>
           <td class="font-semibold text-forest-700">${r.caseNo}</td>
-          <td class="font-medium text-sm">${r.caseTitle||''}</td>
-          <td class="text-sm">${r.complaintTitle||''}</td>
-          <td><span class="badge ${r.nature==='Criminal'?'badge-criminal':'badge-civil'}">${r.nature}</span></td>
-          <td class="text-xs">${r.dateFiled||''}</td>
-          <td class="text-xs font-medium text-forest-700">${r.actionTaken||''}</td>
-          <td><span class="badge ${r.status==='Complied'||r.status==='Resolved'||r.status==='Settled'?'badge-resolved':r.status==='Not Complied'?'badge-not-complied':'badge-pending'}" style="white-space:nowrap">${(r.status==='Resolved'||r.status==='Settled')?'Complied':r.status}</span></td>
+          <td class="font-medium text-sm">${r.caseTitle || ''}</td>
+          <td class="text-sm">${r.complaintTitle || ''}</td>
+          <td><span class="badge ${r.nature === 'Criminal' ? 'badge-criminal' : 'badge-civil'}">${r.nature}</span></td>
+          <td class="text-xs">${r.dateFiled || ''}</td>
+          <td class="text-xs font-medium text-forest-700">${r.actionTaken || ''}</td>
+          <td><span class="badge ${r.status === 'Complied' || r.status === 'Resolved' || r.status === 'Settled' ? 'badge-resolved' : r.status === 'Not Complied' ? 'badge-not-complied' : 'badge-pending'}" style="white-space:nowrap">${(r.status === 'Resolved' || r.status === 'Settled') ? 'Complied' : r.status}</span></td>
           <td>
             <div class="row-actions">
               <button onclick="viewSettlement(${r.id})" class="icon-btn" title="View"><span data-icon="view" data-icon-size="16"></span></button>
@@ -700,280 +869,280 @@
             </div>
           </td>
         </tr>`).join('');
+      }
+
+      const infoEl = document.getElementById('stlPaginationInfo');
+      if (infoEl) infoEl.textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(Math.min(start + 1, total) || 0, Math.min(start + STL_ROWS, total), total) : `Showing ${Math.min(start + 1, total) || 0}–${Math.min(start + STL_ROWS, total)} of ${total}`;
+      const ctrlEl = document.getElementById('stlPaginationControls');
+      if (ctrlEl) bcRenderPagination(ctrlEl, stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
+      stlBatchManager.updateUI();
     }
 
-    const infoEl = document.getElementById('stlPaginationInfo');
-    if (infoEl) infoEl.textContent = typeof bcFormatPaginationInfo === 'function' ? bcFormatPaginationInfo(Math.min(start+1,total)||0, Math.min(start+STL_ROWS,total), total) : `Showing ${Math.min(start+1,total)||0}–${Math.min(start+STL_ROWS,total)} of ${total}`;
-    const ctrlEl = document.getElementById('stlPaginationControls');
-    if (ctrlEl) bcRenderPagination(ctrlEl, stlPage, totalPages, (p) => { stlPage = p; renderSettlements(); });
-    stlBatchManager.updateUI();
-  }
-
-  function clearFieldSpecificError(fieldId) {
-    const inputEl = document.getElementById(fieldId);
-    const errEl = document.getElementById(`err_${fieldId}`);
-    if (inputEl) {
-      inputEl.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
-    }
-    if (errEl) {
-      errEl.textContent = '';
-      errEl.classList.add('hidden');
-    }
-  }
-  window.clearFieldSpecificError = clearFieldSpecificError;
-
-  function clearSettlementFormErrors() {
-    const form = document.getElementById('settlementForm');
-    if (!form) return;
-    form.querySelectorAll('.border-rose-500, .bg-rose-50\\/40, .focus\\:ring-rose-400').forEach(el => {
-      el.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
-    });
-    form.querySelectorAll('[id^="err_sf_"]').forEach(el => {
-      el.textContent = '';
-      el.classList.add('hidden');
-    });
-  }
-  window.clearSettlementFormErrors = clearSettlementFormErrors;
-
-  async function openAddSettlement() {
-    stlEditId = null;
-    const titleEl = document.getElementById('stlModalTitle');
-    titleEl.setAttribute('data-i18n', 'new_settlement_title');
-    titleEl.textContent = 'New Settlement Record';
-    document.getElementById('settlementForm').reset();
-    clearSettlementFormErrors();
-    resetFormDropdowns('settlementForm');
-    document.getElementById('sf_blotter_picker_wrap').classList.remove('hidden');
-    clearBlotterCasePicker();
-    document.getElementById('sf_caseNo').value = 'Loading…';
-    document.getElementById('sf_officer').value = '';
-    updateSettlementCharCounters();
-    openModal('settlementModal');
-    try {
-      const { seqNo } = await BCApi.peekSeq('settlements');
-      if (stlEditId === null) document.getElementById('sf_caseNo').value = seqNo;
-    } catch (err) {
-      document.getElementById('sf_caseNo').value = '';
-    }
-    try { await loadBlotterOptionsForPicker(); } catch (err) { showToast('Could not load blotter records: ' + err.message, 'error'); }
-  }
-
-  function editSettlement(id) {
-    const r = settlementData.find(x => x.id === id);
-    stlEditId = id;
-    clearSettlementFormErrors();
-    const titleEl = document.getElementById('stlModalTitle');
-    titleEl.setAttribute('data-i18n', 'edit_settlement_title');
-    titleEl.textContent = 'Edit Settlement Record';
-    document.getElementById('sf_blotter_picker_wrap').classList.add('hidden');
-    document.getElementById('sf_caseNo').value = r.caseNo;
-    document.getElementById('sf_caseTitle').value = r.caseTitle || '';
-    document.getElementById('sf_nature_display').value = (r.nature || '') + (r.complaintTitle ? ' — ' + r.complaintTitle : '');
-    document.getElementById('sf_dateConfrontation').value = r.dateConfrontation || '';
-    document.getElementById('sf_actionTaken').value = r.actionTaken || '';
-    document.getElementById('sf_dateSettlement').value = r.dateSettlement || '';
-    document.getElementById('sf_dateExecution').value = r.dateExecution || '';
-    document.getElementById('sf_officer').value = r.officer || '';
-    document.getElementById('sf_mainPoint').value = r.mainPoint || '';
-    document.getElementById('sf_status').value = r.status || 'Pending';
-    document.getElementById('sf_remarks').value = r.remarks || '';
-    openModal('settlementModal');
-  }
-
-  function validateSettlementForm(vals, isEdit) {
-    clearSettlementFormErrors();
-    let isValid = true;
-    let firstInvalidEl = null;
-
-    function setFieldError(fieldId, errorMsg) {
-      isValid = false;
+    function clearFieldSpecificError(fieldId) {
       const inputEl = document.getElementById(fieldId);
       const errEl = document.getElementById(`err_${fieldId}`);
       if (inputEl) {
-        inputEl.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
-        if (!firstInvalidEl) firstInvalidEl = inputEl;
+        inputEl.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
       }
       if (errEl) {
-        errEl.textContent = errorMsg;
-        errEl.classList.remove('hidden');
+        errEl.textContent = '';
+        errEl.classList.add('hidden');
+      }
+    }
+    window.clearFieldSpecificError = clearFieldSpecificError;
+
+    function clearSettlementFormErrors() {
+      const form = document.getElementById('settlementForm');
+      if (!form) return;
+      form.querySelectorAll('.border-rose-500, .bg-rose-50\\/40, .focus\\:ring-rose-400').forEach(el => {
+        el.classList.remove('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+      });
+      form.querySelectorAll('[id^="err_sf_"]').forEach(el => {
+        el.textContent = '';
+        el.classList.add('hidden');
+      });
+    }
+    window.clearSettlementFormErrors = clearSettlementFormErrors;
+
+    async function openAddSettlement() {
+      stlEditId = null;
+      const titleEl = document.getElementById('stlModalTitle');
+      titleEl.setAttribute('data-i18n', 'new_settlement_title');
+      titleEl.textContent = 'New Settlement Record';
+      document.getElementById('settlementForm').reset();
+      clearSettlementFormErrors();
+      resetFormDropdowns('settlementForm');
+      document.getElementById('sf_blotter_picker_wrap').classList.remove('hidden');
+      clearBlotterCasePicker();
+      document.getElementById('sf_caseNo').value = 'Loading…';
+      document.getElementById('sf_officer').value = '';
+      updateSettlementCharCounters();
+      openModal('settlementModal');
+      try {
+        const { seqNo } = await BCApi.peekSeq('settlements');
+        if (stlEditId === null) document.getElementById('sf_caseNo').value = seqNo;
+      } catch (err) {
+        document.getElementById('sf_caseNo').value = '';
+      }
+      try { await loadBlotterOptionsForPicker(); } catch (err) { showToast('Could not load blotter records: ' + err.message, 'error'); }
+    }
+
+    function editSettlement(id) {
+      const r = settlementData.find(x => x.id === id);
+      stlEditId = id;
+      clearSettlementFormErrors();
+      const titleEl = document.getElementById('stlModalTitle');
+      titleEl.setAttribute('data-i18n', 'edit_settlement_title');
+      titleEl.textContent = 'Edit Settlement Record';
+      document.getElementById('sf_blotter_picker_wrap').classList.add('hidden');
+      document.getElementById('sf_caseNo').value = r.caseNo;
+      document.getElementById('sf_caseTitle').value = r.caseTitle || '';
+      document.getElementById('sf_nature_display').value = (r.nature || '') + (r.complaintTitle ? ' — ' + r.complaintTitle : '');
+      document.getElementById('sf_dateConfrontation').value = r.dateConfrontation || '';
+      document.getElementById('sf_actionTaken').value = r.actionTaken || '';
+      document.getElementById('sf_dateSettlement').value = r.dateSettlement || '';
+      document.getElementById('sf_dateExecution').value = r.dateExecution || '';
+      document.getElementById('sf_officer').value = r.officer || '';
+      document.getElementById('sf_mainPoint').value = r.mainPoint || '';
+      document.getElementById('sf_status').value = r.status || 'Pending';
+      document.getElementById('sf_remarks').value = r.remarks || '';
+      openModal('settlementModal');
+    }
+
+    function validateSettlementForm(vals, isEdit) {
+      clearSettlementFormErrors();
+      let isValid = true;
+      let firstInvalidEl = null;
+
+      function setFieldError(fieldId, errorMsg) {
+        isValid = false;
+        const inputEl = document.getElementById(fieldId);
+        const errEl = document.getElementById(`err_${fieldId}`);
+        if (inputEl) {
+          inputEl.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+          if (!firstInvalidEl) firstInvalidEl = inputEl;
+        }
+        if (errEl) {
+          errEl.textContent = errorMsg;
+          errEl.classList.remove('hidden');
+        }
+      }
+
+      if (!isEdit && !vals.blotterId) {
+        setFieldError('sf_blotterId', 'Please link an official Blotter case to this settlement.');
+        const searchInput = document.getElementById('sf_blotterSearch');
+        if (searchInput) {
+          searchInput.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
+          if (!firstInvalidEl) firstInvalidEl = searchInput;
+        }
+      }
+
+      if (!vals.actionTaken) {
+        setFieldError('sf_actionTaken', 'Please select the Action Taken.');
+      }
+
+      if (!vals.dateSettlement) {
+        setFieldError('sf_dateSettlement', 'Date of Settlement or Award is required.');
+      } else if (bcIsFutureDate(vals.dateSettlement)) {
+        setFieldError('sf_dateSettlement', 'Date of Settlement or Award cannot be in the future.');
+      }
+
+      if (vals.dateConfrontation && bcIsFutureDate(vals.dateConfrontation)) {
+        setFieldError('sf_dateConfrontation', 'Date of Initial Confrontation cannot be in the future.');
+      }
+
+      if (vals.dateSettlement && vals.dateConfrontation && bcIsBeforeDate(vals.dateSettlement, vals.dateConfrontation)) {
+        setFieldError('sf_dateSettlement', 'Date of Settlement cannot be earlier than Date of Initial Confrontation.');
+      }
+
+      if (vals.dateExecution && vals.dateSettlement && bcIsBeforeDate(vals.dateExecution, vals.dateSettlement)) {
+        setFieldError('sf_dateExecution', 'Date of Execution cannot be earlier than Date of Settlement.');
+      }
+
+      if (!vals.officer) {
+        setFieldError('sf_officer', 'Officer-in-Charge / Conciliator is required.');
+      }
+
+      if (!vals.mainPoint) {
+        setFieldError('sf_mainPoint', 'Main point and key terms of agreement are required.');
+      }
+
+      if (!vals.status) {
+        setFieldError('sf_status', 'Status of Compliance is required.');
+      }
+
+      return { isValid, firstInvalidEl };
+    }
+
+    async function saveSettlement() {
+      const isEdit = Boolean(stlEditId);
+      const blotterId = isEdit ? null : document.getElementById('sf_blotterId').value;
+      const vals = {
+        caseNo: document.getElementById('sf_caseNo').value.trim(),
+        dateConfrontation: document.getElementById('sf_dateConfrontation').value,
+        actionTaken: document.getElementById('sf_actionTaken').value,
+        dateSettlement: document.getElementById('sf_dateSettlement').value,
+        dateExecution: document.getElementById('sf_dateExecution').value,
+        officer: document.getElementById('sf_officer').value.trim(),
+        mainPoint: document.getElementById('sf_mainPoint').value.trim(),
+        status: document.getElementById('sf_status').value,
+        remarks: document.getElementById('sf_remarks').value.trim(),
+      };
+
+      if (!isEdit) {
+        vals.blotterId = blotterId ? Number(blotterId) : null;
+      }
+
+      const { isValid, firstInvalidEl } = validateSettlementForm(vals, isEdit);
+      if (!isValid) {
+        if (firstInvalidEl && typeof firstInvalidEl.focus === 'function') {
+          firstInvalidEl.focus();
+        }
+        showToast('Please complete all required settlement fields.', 'warning');
+        return; // Keep modal open!
+      }
+
+      try {
+        if (isEdit) {
+          await BCApi.update('settlements', stlEditId, vals);
+          showToast('Settlement record updated successfully!');
+        } else {
+          await BCApi.create('settlements', vals);
+          showToast('Settlement record created successfully!');
+        }
+        closeModal('settlementModal');
+        await loadSettlements();
+      } catch (err) {
+        showToast(err.message || err, 'error');
       }
     }
 
-    if (!isEdit && !vals.blotterId) {
-      setFieldError('sf_blotterId', 'Please link an official Blotter case to this settlement.');
-      const searchInput = document.getElementById('sf_blotterSearch');
-      if (searchInput) {
-        searchInput.classList.add('border-rose-500', 'bg-rose-50/40', 'focus:ring-rose-400');
-        if (!firstInvalidEl) firstInvalidEl = searchInput;
+    async function archiveSettlement(id) {
+      if (!(await bcConfirm('Archive this settlement record? The associated Blotter Record and underlying Incident Report will also be automatically archived. You can restore them later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
+      try {
+        await BCApi.remove('settlements', id);
+        showToast('Settlement record and linked records archived.');
+        await loadSettlements();
+      } catch (err) {
+        showToast(err.message, 'error');
       }
     }
 
-    if (!vals.actionTaken) {
-      setFieldError('sf_actionTaken', 'Please select the Action Taken.');
-    }
-
-    if (!vals.dateSettlement) {
-      setFieldError('sf_dateSettlement', 'Date of Settlement or Award is required.');
-    } else if (bcIsFutureDate(vals.dateSettlement)) {
-      setFieldError('sf_dateSettlement', 'Date of Settlement or Award cannot be in the future.');
-    }
-
-    if (vals.dateConfrontation && bcIsFutureDate(vals.dateConfrontation)) {
-      setFieldError('sf_dateConfrontation', 'Date of Initial Confrontation cannot be in the future.');
-    }
-
-    if (vals.dateSettlement && vals.dateConfrontation && bcIsBeforeDate(vals.dateSettlement, vals.dateConfrontation)) {
-      setFieldError('sf_dateSettlement', 'Date of Settlement cannot be earlier than Date of Initial Confrontation.');
-    }
-
-    if (vals.dateExecution && vals.dateSettlement && bcIsBeforeDate(vals.dateExecution, vals.dateSettlement)) {
-      setFieldError('sf_dateExecution', 'Date of Execution cannot be earlier than Date of Settlement.');
-    }
-
-    if (!vals.officer) {
-      setFieldError('sf_officer', 'Officer-in-Charge / Conciliator is required.');
-    }
-
-    if (!vals.mainPoint) {
-      setFieldError('sf_mainPoint', 'Main point and key terms of agreement are required.');
-    }
-
-    if (!vals.status) {
-      setFieldError('sf_status', 'Status of Compliance is required.');
-    }
-
-    return { isValid, firstInvalidEl };
-  }
-
-  async function saveSettlement() {
-    const isEdit = Boolean(stlEditId);
-    const blotterId = isEdit ? null : document.getElementById('sf_blotterId').value;
-    const vals = {
-      caseNo: document.getElementById('sf_caseNo').value.trim(),
-      dateConfrontation: document.getElementById('sf_dateConfrontation').value,
-      actionTaken: document.getElementById('sf_actionTaken').value,
-      dateSettlement: document.getElementById('sf_dateSettlement').value,
-      dateExecution: document.getElementById('sf_dateExecution').value,
-      officer: document.getElementById('sf_officer').value.trim(),
-      mainPoint: document.getElementById('sf_mainPoint').value.trim(),
-      status: document.getElementById('sf_status').value,
-      remarks: document.getElementById('sf_remarks').value.trim(),
-    };
-
-    if (!isEdit) {
-      vals.blotterId = blotterId ? Number(blotterId) : null;
-    }
-
-    const { isValid, firstInvalidEl } = validateSettlementForm(vals, isEdit);
-    if (!isValid) {
-      if (firstInvalidEl && typeof firstInvalidEl.focus === 'function') {
-        firstInvalidEl.focus();
+    async function restoreSettlement(id) {
+      if (!(await bcConfirm('Restore this settlement record to the active list? The associated Blotter Record and underlying Incident Report will also be automatically restored.', { title: 'Restore Settlement Record', okLabel: 'Restore' }))) return;
+      try {
+        await BCApi.restore('settlements', id);
+        showToast('Settlement record and linked records restored to active list.');
+        await loadSettlements();
+      } catch (err) {
+        showToast(err.message, 'error');
       }
-      showToast('Please complete all required settlement fields.', 'warning');
-      return; // Keep modal open!
     }
 
-    try {
-      if (isEdit) {
-        await BCApi.update('settlements', stlEditId, vals);
-        showToast('Settlement record updated successfully!');
+    async function permanentDeleteSettlement(id, caseNo) {
+      const label = caseNo ? `Settlement Case #${caseNo}` : 'this settlement record';
+      const confirmed = await bcConfirmPermanentDelete(
+        `Are you sure you want to permanently delete ${label}? This action is IRREVERSIBLE and will also permanently delete the associated Blotter Record, underlying Incident Report, and all related notifications from the database.`,
+        { title: 'Permanently Delete Settlement Record' }
+      );
+      if (!confirmed) return;
+      try {
+        await BCApi.permanentDelete('settlements', id);
+        showToast(`${label} and associated records permanently deleted.`);
+        await loadSettlements();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function viewSettlement(id) {
+      const r = settlementData.find(x => x.id === id || Number(x.id) === Number(id));
+      if (!r) return;
+
+      const esc = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+
+      const docketNo = r.caseNo || r.blotterDocketNo || ('SET-' + r.id);
+      const subtitleEl = document.getElementById('stlModalSubtitle');
+      if (subtitleEl) {
+        subtitleEl.textContent = `Docket: ${docketNo}`;
+      }
+
+      // Status badge
+      const statusVal = r.status || 'Ongoing';
+      let statusPill = '';
+      if (statusVal === 'Resolved' || statusVal === 'Settled' || statusVal === 'Complied' || statusVal === 'Closed') {
+        statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(statusVal)}</span>`;
       } else {
-        await BCApi.create('settlements', vals);
-        showToast('Settlement record created successfully!');
+        statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${esc(statusVal)}</span>`;
       }
-      closeModal('settlementModal');
-      await loadSettlements();
-    } catch (err) {
-      showToast(err.message || err, 'error');
-    }
-  }
 
-  async function archiveSettlement(id) {
-    if (!(await bcConfirm('Archive this settlement record? The associated Blotter Record and underlying Incident Report will also be automatically archived. You can restore them later from "View Archived".', { title: 'Archive Settlement Record', okLabel: 'Archive', danger: true }))) return;
-    try {
-      await BCApi.remove('settlements', id);
-      showToast('Settlement record and linked records archived.');
-      await loadSettlements();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  }
+      // Hearing Date & Time
+      const hearingDate = r.dateConfrontation || r.dateSettlement || r.dateFiled || '—';
+      const hearingStage = r.actionTaken || '1st Conciliation';
+      const natureVal = r.nature || r.caseTitle || r.complaintTitle || 'General Dispute';
+      const officerVal = r.officer || 'Barangay Captain / Lupon Tagapamayapa';
 
-  async function restoreSettlement(id) {
-    if (!(await bcConfirm('Restore this settlement record to the active list? The associated Blotter Record and underlying Incident Report will also be automatically restored.', { title: 'Restore Settlement Record', okLabel: 'Restore' }))) return;
-    try {
-      await BCApi.restore('settlements', id);
-      showToast('Settlement record and linked records restored to active list.');
-      await loadSettlements();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  }
+      const rows = [
+        ['DOCKET NO.', `<span class="font-bold font-mono text-gray-900">${esc(docketNo)}</span>${r.blotterDocketNo && r.blotterDocketNo !== docketNo ? `<span class="text-xs text-emerald-700 ml-2 font-medium">(Blotter: ${esc(r.blotterDocketNo)})</span>` : ''}`],
+        ['HEARING DATE & TIME', `<span class="text-gray-900 font-semibold text-sm">${esc(hearingDate)}</span>`],
+        ['HEARING STAGE', `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${esc(hearingStage)}</span>`],
+        ['NATURE OF DISPUTE', `<span class="text-gray-900 font-semibold text-sm">${esc(natureVal)}</span>`],
+        ['STATUS', statusPill],
+        ['COMPLAINANT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.complainant || '—')}</div>${r.complainantAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.complainantAddr)}</div>` : ''}`],
+        ['RESPONDENT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.respondent || '—')}</div>${r.respondentAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.respondentAddr)}</div>` : ''}`],
+        ['OFFICER-IN-CHARGE', `<span class="text-gray-900 font-semibold text-sm">${esc(officerVal)}</span>`],
+      ];
 
-  async function permanentDeleteSettlement(id, caseNo) {
-    const label = caseNo ? `Settlement Case #${caseNo}` : 'this settlement record';
-    const confirmed = await bcConfirmPermanentDelete(
-      `Are you sure you want to permanently delete ${label}? This action is IRREVERSIBLE and will also permanently delete the associated Blotter Record, underlying Incident Report, and all related notifications from the database.`,
-      { title: 'Permanently Delete Settlement Record' }
-    );
-    if (!confirmed) return;
-    try {
-      await BCApi.permanentDelete('settlements', id);
-      showToast(`${label} and associated records permanently deleted.`);
-      await loadSettlements();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  }
+      if (r.mainPoint) {
+        rows.push(['MAIN AGREEMENT', `<span class="text-gray-900 font-normal text-sm leading-relaxed">${esc(r.mainPoint)}</span>`]);
+      }
+      if (r.remarks) {
+        rows.push(['REMARKS', `<span class="text-gray-700 text-xs leading-relaxed italic">${esc(r.remarks)}</span>`]);
+      }
 
-  function viewSettlement(id) {
-    const r = settlementData.find(x => x.id === id || Number(x.id) === Number(id));
-    if (!r) return;
-
-    const esc = (s) => (typeof _escapeHtml === 'function' ? _escapeHtml(s) : String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
-
-    const docketNo = r.caseNo || r.blotterDocketNo || ('SET-' + r.id);
-    const subtitleEl = document.getElementById('stlModalSubtitle');
-    if (subtitleEl) {
-      subtitleEl.textContent = `Docket: ${docketNo}`;
-    }
-
-    // Status badge
-    const statusVal = r.status || 'Ongoing';
-    let statusPill = '';
-    if (statusVal === 'Resolved' || statusVal === 'Settled' || statusVal === 'Complied' || statusVal === 'Closed') {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(statusVal)}</span>`;
-    } else {
-      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200">${esc(statusVal)}</span>`;
-    }
-
-    // Hearing Date & Time
-    const hearingDate = r.dateConfrontation || r.dateSettlement || r.dateFiled || '—';
-    const hearingStage = r.actionTaken || '1st Conciliation';
-    const natureVal = r.nature || r.caseTitle || r.complaintTitle || 'General Dispute';
-    const officerVal = r.officer || 'Barangay Captain / Lupon Tagapamayapa';
-
-    const rows = [
-      ['DOCKET NO.', `<span class="font-bold font-mono text-gray-900">${esc(docketNo)}</span>${r.blotterDocketNo && r.blotterDocketNo !== docketNo ? `<span class="text-xs text-emerald-700 ml-2 font-medium">(Blotter: ${esc(r.blotterDocketNo)})</span>` : ''}`],
-      ['HEARING DATE & TIME', `<span class="text-gray-900 font-semibold text-sm">${esc(hearingDate)}</span>`],
-      ['HEARING STAGE', `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">${esc(hearingStage)}</span>`],
-      ['NATURE OF DISPUTE', `<span class="text-gray-900 font-semibold text-sm">${esc(natureVal)}</span>`],
-      ['STATUS', statusPill],
-      ['COMPLAINANT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.complainant || '—')}</div>${r.complainantAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.complainantAddr)}</div>` : ''}`],
-      ['RESPONDENT', `<div class="text-gray-900 font-semibold text-sm">${esc(r.respondent || '—')}</div>${r.respondentAddr ? `<div class="text-emerald-700/80 text-xs mt-0.5 font-medium">${esc(r.respondentAddr)}</div>` : ''}`],
-      ['OFFICER-IN-CHARGE', `<span class="text-gray-900 font-semibold text-sm">${esc(officerVal)}</span>`],
-    ];
-
-    if (r.mainPoint) {
-      rows.push(['MAIN AGREEMENT', `<span class="text-gray-900 font-normal text-sm leading-relaxed">${esc(r.mainPoint)}</span>`]);
-    }
-    if (r.remarks) {
-      rows.push(['REMARKS', `<span class="text-gray-700 text-xs leading-relaxed italic">${esc(r.remarks)}</span>`]);
-    }
-
-    const contentEl = document.getElementById('stlViewContent');
-    if (contentEl) {
-      contentEl.innerHTML = `
+      const contentEl = document.getElementById('stlViewContent');
+      if (contentEl) {
+        contentEl.innerHTML = `
         <div class="bg-[#f4faf6] rounded-2xl border border-emerald-100/60 p-6 space-y-1 shadow-sm">
           ${rows.map(([k, v]) => `
             <div class="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-4 py-3.5 border-b border-emerald-100/70 last:border-0">
@@ -983,64 +1152,65 @@
           `).join('')}
         </div>
       `;
-    }
-    if (window.renderIcons) window.renderIcons(document.getElementById('stlViewModal'));
-    openModal('stlViewModal');
-  }
-
-  function updateSettlementCharCounters() {
-    const searchEl = document.getElementById('sf_blotterSearch');
-    const countEl = document.getElementById('linkBlotterCount');
-    if (searchEl && countEl) {
-      countEl.textContent = `${(searchEl.value || '').length}/100`;
-    }
-  }
-
-  function initSettlementCharCounters() {
-    const searchEl = document.getElementById('sf_blotterSearch');
-    if (searchEl && !searchEl.dataset.charCounterBound) {
-      searchEl.dataset.charCounterBound = '1';
-      searchEl.addEventListener('input', updateSettlementCharCounters);
-      searchEl.addEventListener('change', updateSettlementCharCounters);
-      searchEl.addEventListener('keyup', updateSettlementCharCounters);
-    }
-    updateSettlementCharCounters();
-  }
-
-  window.updateSettlementCharCounters = updateSettlementCharCounters;
-  window.initSettlementCharCounters = initSettlementCharCounters;
-  window.loadSettlements = loadSettlements;
-  window.archiveSettlement = archiveSettlement;
-  window.restoreSettlement = restoreSettlement;
-  window.permanentDeleteSettlement = permanentDeleteSettlement;
-  window.viewSettlement = viewSettlement;
-  window.editSettlement = editSettlement;
-  window.toggleArchivedView = toggleArchivedView;
-
-  window.initSettlement = async function () {
-    try {
-      await requireAuth();
-      // Restore active view (active vs archived)
-      const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('settlement', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_settlement') || 'active');
-      if (activeView === 'archived') {
-        viewingArchived = true;
-        const titleEl = document.getElementById('stlTitle');
-        if (titleEl) titleEl.textContent = 'Archived Settlement Records';
-        const toggleBtn = document.getElementById('archiveToggleBtn');
-        if (toggleBtn) {
-          toggleBtn.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
-          if (typeof renderIcons === 'function') renderIcons();
-        }
       }
-      try { initSettlementCharCounters(); } catch (_) {}
-      try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
-    } catch (initErr) {
-      console.error('initSettlement error:', initErr);
+      if (window.renderIcons) window.renderIcons(document.getElementById('stlViewModal'));
+      openModal('stlViewModal');
     }
-  };
-  window.initSettlements = window.initSettlement;
-  if (!window._bcSpaNavActive) { initSettlement(); }
 
-</script>
+    function updateSettlementCharCounters() {
+      const searchEl = document.getElementById('sf_blotterSearch');
+      const countEl = document.getElementById('linkBlotterCount');
+      if (searchEl && countEl) {
+        countEl.textContent = `${(searchEl.value || '').length}/100`;
+      }
+    }
+
+    function initSettlementCharCounters() {
+      const searchEl = document.getElementById('sf_blotterSearch');
+      if (searchEl && !searchEl.dataset.charCounterBound) {
+        searchEl.dataset.charCounterBound = '1';
+        searchEl.addEventListener('input', updateSettlementCharCounters);
+        searchEl.addEventListener('change', updateSettlementCharCounters);
+        searchEl.addEventListener('keyup', updateSettlementCharCounters);
+      }
+      updateSettlementCharCounters();
+    }
+
+    window.updateSettlementCharCounters = updateSettlementCharCounters;
+    window.initSettlementCharCounters = initSettlementCharCounters;
+    window.loadSettlements = loadSettlements;
+    window.archiveSettlement = archiveSettlement;
+    window.restoreSettlement = restoreSettlement;
+    window.permanentDeleteSettlement = permanentDeleteSettlement;
+    window.viewSettlement = viewSettlement;
+    window.editSettlement = editSettlement;
+    window.toggleArchivedView = toggleArchivedView;
+
+    window.initSettlement = async function () {
+      try {
+        await requireAuth();
+        // Restore active view (active vs archived)
+        const activeView = typeof bcGetActiveView === 'function' ? bcGetActiveView('settlement', 'active') : (window.location.hash.replace(/^#/, '') || sessionStorage.getItem('current_active_view_settlement') || 'active');
+        if (activeView === 'archived') {
+          viewingArchived = true;
+          const titleEl = document.getElementById('stlTitle');
+          if (titleEl) titleEl.textContent = 'Archived Settlement Records';
+          const toggleBtn = document.getElementById('archiveToggleBtn');
+          if (toggleBtn) {
+            toggleBtn.innerHTML = '<span data-icon="settlement" data-icon-size="14"></span> Back to Active';
+            if (typeof renderIcons === 'function') renderIcons();
+          }
+        }
+        try { initSettlementCharCounters(); } catch (_) { }
+        try { await loadSettlements(); } catch (err) { showToast('Could not load records: ' + (err.message || err), 'error'); }
+      } catch (initErr) {
+        console.error('initSettlement error:', initErr);
+      }
+    };
+    window.initSettlements = window.initSettlement;
+    if (!window._bcSpaNavActive) { initSettlement(); }
+
+  </script>
 </body>
+
 </html>

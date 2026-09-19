@@ -1105,6 +1105,25 @@ def _incidents():
 
     if method == "POST":
         d = request.get_json(silent=True) or {}
+
+        required_fields = [
+            ("reportNo", "Report No."),
+            ("date", "Date Reported"),
+            ("timeReported", "Time Reported"),
+            ("zone", "Zone / Purok"),
+            ("location", "Location Detail"),
+            ("category", "Category"),
+            ("priority", "Priority Level"),
+            ("description", "Description"),
+            ("reporter", "Reporter Name"),
+            ("officer", "Responding Officer"),
+            ("status", "Status"),
+        ]
+        for f_key, f_label in required_fields:
+            val = str(d.get(f_key) or "").strip()
+            if not val or val == "Loading…":
+                return json_error(f"{f_label} is required.", 400)
+
         zone_id = d.get("zone") or "Zone 1"
         loc_text = d.get("location", "")
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None
@@ -1254,6 +1273,24 @@ def _incidents():
             return json_error("Referred incidents are final and cannot be modified.", 403)
 
         d = request.get_json(silent=True) or {}
+
+        required_fields = [
+            ("date", "Date Reported"),
+            ("timeReported", "Time Reported"),
+            ("zone", "Zone / Purok"),
+            ("location", "Location Detail"),
+            ("category", "Category"),
+            ("priority", "Priority Level"),
+            ("description", "Description"),
+            ("reporter", "Reporter Name"),
+            ("officer", "Responding Officer"),
+            ("status", "Status"),
+        ]
+        for f_key, f_label in required_fields:
+            val = str(d.get(f_key) or "").strip()
+            if not val:
+                return json_error(f"{f_label} is required.", 400)
+
         zone_id = d.get("zone") or "Zone 1"
         loc_text = d.get("location", "")
         lat = float(d["lat"]) if d.get("lat") not in (None, "") else None

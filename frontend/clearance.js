@@ -35,11 +35,14 @@ function renderResidentsList(query = '') {
   // Use existing global or cached resident list (e.g., window.censusResidents)
   const sourceList = Array.isArray(window.censusResidents) ? window.censusResidents : [];
   
-  // Filter: skip deceased, match query
+  // Filter: skip deceased, skip transferred, match query
   const filtered = sourceList.filter(resident => {
-    const status = String(resident.status || resident.census_status || '').toLowerCase().trim();
+    const status = String(resident.status || resident.resident_status || resident.census_status || '').toLowerCase().trim();
     if (status === 'deceased' || resident.is_deceased === 1 || resident.is_deceased === true) {
       return false; // Skip deceased completely
+    }
+    if (status === 'transferred') {
+      return false; // Exclude transferred residents
     }
     
     const fullName = `${resident.first_name || ''} ${resident.last_name || ''}`.toLowerCase();
@@ -49,23 +52,26 @@ function renderResidentsList(query = '') {
   });
 
   if (filtered.length === 0) {
-    menu.innerHTML = '<div class="p-3 text-xs text-[#52796f] text-center">No matching residents found</div>';
+    menu.innerHTML = '<div class="p-4 text-xs text-forest-400 text-center italic">No active residents found</div>';
   } else {
     menu.innerHTML = filtered.map(r => {
-      const isTransferred = String(r.status || r.census_status || '').toLowerCase() === 'transferred';
+      const lastName = r.last_name || r.lastName || '';
+      const firstName = r.first_name || r.firstName || '';
+      const middleName = r.middle_name || r.middleName || '';
+      const age = r.age != null ? r.age : '—';
+      const address = r.address || '—';
+      const householdNo = r.household_no || r.householdNo || '—';
       return `
-        <div 
-          class="resident-option px-3 py-2 text-sm border-b border-gray-100 flex items-center justify-between ${isTransferred ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-[#edf5f0] text-[#1e3a2b]'}"
-          data-id="${r.id}"
-          data-transferred="${isTransferred}"
-        >
-          <div>
-            <div class="font-medium">${r.last_name}, ${r.first_name} ${r.middle_name || ''}</div>
-            <div class="text-[11px] text-[#52796f]">Zone ${r.zone || ''} • Household ${r.household_no || ''}</div>
-          </div>
-          ${isTransferred ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">TRANSFERRED</span>' : ''}
+      <div class="resident-dropdown-item px-3 py-1.5 hover:bg-[#f0f7f4] cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors" data-id="${r.id}" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+        <div style="font-weight: 700; color: #0f382c; font-size: 13px; line-height: 1.2;">${lastName}, ${firstName}${middleName ? ' ' + middleName : ''}</div>
+        <div style="font-weight: 500; color: #4e9b86; font-size: 11px; margin-top: 2px;" class="flex items-center gap-1 flex-wrap">
+          <span>${age} yrs old</span>
+          <span>·</span>
+          <span>${address}</span>
+          <span>·</span>
+          <span>Household ${householdNo}</span>
         </div>
-      `;
+      </div>`;
     }).join('');
   }
 
@@ -101,7 +107,7 @@ if (residentInput) {
 // Delegate selection click
 if (resultsMenu) {
   resultsMenu.addEventListener('click', (e) => {
-    const option = e.target.closest('.resident-option');
+    const option = e.target.closest('.resident-dropdown-item, .resident-option');
     if (!option || option.dataset.transferred === 'true') return;
 
     const residentId = option.dataset.id;
@@ -146,7 +152,7 @@ function initClearanceSearchEvents() {
   if (curMenu && !curMenu.dataset.clearanceResultsBound) {
     curMenu.dataset.clearanceResultsBound = '1';
     curMenu.addEventListener('click', (e) => {
-      const option = e.target.closest('.resident-option');
+      const option = e.target.closest('.resident-dropdown-item, .resident-option');
       if (!option || option.dataset.transferred === 'true') return;
 
       const residentId = option.dataset.id;

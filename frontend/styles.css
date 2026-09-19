@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700&display=swap');
 
 /* ============================================================
    BlotterCast Design System
@@ -832,32 +832,33 @@ select.form-input { cursor: pointer; color: #52796f !important; }
 
 /* ---------------- Buttons ---------------- */
 .btn-primary {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--forest-600);
-  color: white;
-  padding: 10px 22px;
-  border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background-color: #1e6b43;
+  color: #ffffff !important;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
-.btn-primary:hover { background: var(--forest-700); transform: translateY(-1px); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-primary:hover { background-color: #185736 !important; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-secondary {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--forest-50);
-  color: var(--forest-600);
-  padding: 10px 22px;
-  border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background-color: #f0f9f4;
+  color: #1e6b43 !important;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  border: 1.5px solid var(--forest-100);
+  font-weight: 700;
+  border: 1px solid rgba(209, 250, 229, 0.8);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-.btn-secondary:hover { background: var(--forest-100); }
+.btn-secondary:hover { background-color: rgba(209, 250, 229, 0.6) !important; }
 .btn-danger {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--red-100);

@@ -104,6 +104,8 @@ CORE_SYSTEM_USERS = [
     ("admin", "admin123", "System Administrator", "System Admin", "blottercast@gmail.com"),
     ("kapitan", "kapitan123", "Barangay Captain", "Barangay Captain", "fhalynramos4@gmail.com"),
 ]
+DEMO_USERS = CORE_SYSTEM_USERS
+
 
 AUTHENTIC_INCIDENTS = [
     {
@@ -348,8 +350,8 @@ def run(force_reset: bool = False):
     with app.app_context():
         seed_data(app, force_reset=force_reset)
         print(f"Seed complete. {len(ZONE_LANDMARK_COORDINATES)} zones synchronized.")
-        print("Demo accounts:")
-        for username, password, _, role, email in DEMO_USERS:
+        print("Core system accounts:")
+        for username, password, _, role, email in CORE_SYSTEM_USERS:
             print(f"  {username:10} / {password:12} ({role}) — {email}")
 
 

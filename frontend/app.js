@@ -779,7 +779,7 @@ const BC_TRANSLATIONS = {
     "Complied": "Nakatupad",
     "Not Complied": "Hindi Nakatupad",
     "Add Settlement Record": "Magdagdag ng Tala ng Pag-aayos",
-    "+ Add Settlement Record": "+ Magdagdag ng Tala ng Pag-aayos",
+    "+ Add Settlement Record": "Magdagdag ng Tala ng Pag-aayos",
     "Settlement Records": "Mga Tala ng Pag-aayos",
     "Search case no., title…": "Maghanap ng no. ng kaso, pamagat...",
     "Search case no., title...": "Maghanap ng no. ng kaso, pamagat...",
@@ -799,13 +799,13 @@ const BC_TRANSLATIONS = {
     "Search name, address…": "Maghanap ng pangalan, tirahan...",
     "Search name, address...": "Maghanap ng pangalan, tirahan...",
     "Add Resident": "Magdagdag ng Residente",
-    "+ Add Resident": "+ Magdagdag ng Residente",
+    "+ Add Resident": "Magdagdag ng Residente",
 
     // Barangay Clearance Page
     "Barangay Clearance": "Barangay Clearance",
     "Issue and manage barangay clearance certificates": "Mag-isyu at pamahalaan ang mga sertipiko ng barangay clearance",
     "Issue New Clearance": "Mag-isyu ng Bagong Clearance",
-    "+ Issue New Clearance": "+ Mag-isyu ng Bagong Clearance",
+    "+ Issue New Clearance": "Mag-isyu ng Bagong Clearance",
     "Issued This Month": "Nai-isyu Ngayong Buwan",
     "Total This Year": "Kabuuan Ngayong Taon",
     "Revenue (Fees)": "Kikita / Halaga (Bayad)",
@@ -1359,7 +1359,7 @@ const i18n = {
     // Barangay Census
     barangay_census: "Barangay Census",
     census_description: "Official list of registered residents of Barangay Mapulang Lupa",
-    add_resident: "+ Add Resident",
+    add_resident: "Add Resident",
     total_residents: "Total Residents",
     registered_in_barangay: "registered in barangay",
     total_households: "Total Households",
@@ -1390,14 +1390,14 @@ const i18n = {
     status_pending: "Pending",
     status_complied: "Complied",
     status_not_complied: "Not Complied",
-    add_settlement_record: "+ Add Settlement Record",
+    add_settlement_record: "Add Settlement Record",
     settlement_records: "Settlement Records",
     search_settlement_placeholder: "Search case no., title…",
 
     // Barangay Clearance
     barangay_clearance: "Barangay Clearance",
     clearance_description: "Issue and manage barangay clearance certificates",
-    issue_new_clearance: "+ Issue New Clearance",
+    issue_new_clearance: "Issue New Clearance",
     issued_this_month: "Issued This Month",
     total_this_year: "Total This Year",
     revenue_fees: "Revenue (Fees)",
@@ -1409,14 +1409,14 @@ const i18n = {
     // Other Certificates
     certificate_of_residency: "Certificate of Residency",
     residency_description: "Issue and manage certificates of residency",
-    issue_new_certificate: "+ Issue New Certificate",
+    issue_new_certificate: "Issue New Certificate",
     search_residency_placeholder: "Search…",
     certificate_of_non_residency: "Certificate of Non-Residency",
     non_residency_description: "Issue and manage certificates of non-residency",
     search_non_residency_placeholder: "Search…",
     certificate_of_indigency: "Certificate of Indigency",
     indigency_description: "Issue certificates for financially indigent residents",
-    issue_certificate: "+ Issue Certificate",
+    issue_certificate: "Issue Certificate",
     common_purpose: "Common Purpose",
     search_indigency_placeholder: "Search…",
 
@@ -1975,7 +1975,7 @@ const i18n = {
     // Barangay Census
     barangay_census: "Sensus ng Barangay",
     census_description: "Opisyal na talaan ng mga nakatatalang residente ng Barangay Mapulang Lupa",
-    add_resident: "+ Magdagdag ng Residente",
+    add_resident: "Magdagdag ng Residente",
     total_residents: "Kabuuan ng Residente",
     registered_in_barangay: "nakatala sa barangay",
     total_households: "Kabuuan ng Kaya-bahayan",
@@ -2006,14 +2006,14 @@ const i18n = {
     status_pending: "Naghihintay",
     status_complied: "Nakatupad",
     status_not_complied: "Hindi Nakatupad",
-    add_settlement_record: "+ Magdagdag ng Tala ng Pag-aayos",
+    add_settlement_record: "Magdagdag ng Tala ng Pag-aayos",
     settlement_records: "Mga Tala ng Pag-aayos",
     search_settlement_placeholder: "Maghanap ng no. ng kaso, pamagat...",
 
     // Barangay Clearance
     barangay_clearance: "Barangay Clearance",
     clearance_description: "Mag-isyu at pamahalaan ang mga sertipiko ng barangay clearance",
-    issue_new_clearance: "+ Mag-isyu ng Bagong Clearance",
+    issue_new_clearance: "Mag-isyu ng Bagong Clearance",
     issued_this_month: "Nai-isyu Ngayong Buwan",
     total_this_year: "Kabuuan Ngayong Taon",
     revenue_fees: "Kikita / Halaga (Bayad)",
@@ -2025,14 +2025,14 @@ const i18n = {
     // Other Certificates
     certificate_of_residency: "Katibayan ng Paninirahan",
     residency_description: "Mag-isyu at pamahalaan ang mga katibayan ng paninirahan",
-    issue_new_certificate: "+ Mag-isyu ng Bagong Sertipiko",
+    issue_new_certificate: "Mag-isyu ng Bagong Sertipiko",
     search_residency_placeholder: "Maghanap…",
     certificate_of_non_residency: "Katibayan ng Di-Paninirahan",
     non_residency_description: "Mag-isyu at pamahalaan ang mga katibayan ng di-paninirahan",
     search_non_residency_placeholder: "Maghanap…",
     certificate_of_indigency: "Katibayan ng Kawalan ng Sapat na Kita",
     indigency_description: "Mag-isyu ng mga katibayan para sa kapus-palad na mga residente",
-    issue_certificate: "+ Mag-isyu ng Sertipiko",
+    issue_certificate: "Mag-isyu ng Sertipiko",
     common_purpose: "Karaniwang Layunin",
     search_indigency_placeholder: "Maghanap…",
 
@@ -3547,7 +3547,7 @@ async function navigateTo(url, pushState = true) {
             <span data-icon="warning" data-icon-size="28"></span>
           </div>
           <div>
-            <h2 class="font-display text-xl text-forest-800">Failed to Load View</h2>
+            <h2 class="font-sans text-xl text-forest-800">Failed to Load View</h2>
             <p class="text-sm text-forest-500 mt-1">${err.message || 'An error occurred while loading this page.'}</p>
           </div>
           <div class="flex items-center justify-center gap-3 pt-2">
@@ -4452,7 +4452,7 @@ function bcShowForcedPasswordChange() {
   overlay.style.zIndex = '9999';
   overlay.innerHTML = `
     <div class="modal-box max-w-md">
-      <h2 class="font-display text-xl text-forest-800 mb-1">Password Update Required</h2>
+      <h2 class="font-sans text-xl text-forest-800 mb-1">Password Update Required</h2>
       <p class="text-sm text-forest-500 mb-4">Your password has expired per this system's Security policy. Please set a new one to continue.</p>
       <div class="space-y-3">
         <div><label class="form-label">Current Password</label><input type="password" id="bcPw_current" class="form-input" autocomplete="current-password"/></div>
@@ -4484,8 +4484,8 @@ function bcShowForcedPasswordChange() {
         </div>
         <div><label class="form-label">Confirm New Password</label><input type="password" id="bcPw_confirm" class="form-input" autocomplete="new-password"/></div>
         <div id="bcPw_error" class="text-red-600 text-xs hidden"></div>
-        <div class="flex justify-end pt-2">
-          <button id="bcPw_submit" class="btn-primary">Update Password</button>
+        <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+          <button id="bcPw_submit" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm cursor-pointer">Update Password</button>
         </div>
       </div>
     </div>`;
@@ -5098,9 +5098,9 @@ function _bcEnsureDialog() {
         <h3 id="bcDialogTitle" class="bc-dialog-title"></h3>
       </div>
       <p id="bcDialogMessage" class="bc-dialog-message"></p>
-      <div class="bc-dialog-actions">
-        <button id="bcDialogCancelBtn" type="button" class="btn-secondary"></button>
-        <button id="bcDialogOkBtn" type="button" class="btn-primary"></button>
+      <div class="bc-dialog-actions flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+        <button id="bcDialogCancelBtn" type="button" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer"></button>
+        <button id="bcDialogOkBtn" type="button" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm cursor-pointer"></button>
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -5155,13 +5155,13 @@ function _bcOpenDialog({ title, message, isConfirm, okLabel, cancelLabel, danger
   const isDialogTl = (localStorage.getItem('app_language') || 'en') === 'tl' || (localStorage.getItem('preferred_language') || 'en') === 'tl' || document.documentElement.lang === 'tl' || (typeof bcGetLanguage === 'function' && bcGetLanguage() === 'Filipino');
   cancelBtn.style.display = isConfirm ? '' : 'none';
   cancelBtn.textContent = cancelLabel || (isDialogTl ? 'Kanselahin' : 'Cancel');
-  cancelBtn.className = 'bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer';
+  cancelBtn.className = 'btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer';
 
   okBtn.textContent = okLabel || (isConfirm ? (isDialogTl ? 'Kumpirmahin' : 'Confirm') : 'OK');
   if (danger) {
     okBtn.className = 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm transition-all cursor-pointer border border-rose-700 px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2';
   } else {
-    okBtn.className = 'bg-[#1b4332] hover:bg-[#143326] text-white px-6 py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer';
+    okBtn.className = 'btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer';
   }
 
   const icon = document.getElementById('bcDialogIcon');
@@ -5226,7 +5226,7 @@ function _bcEnsurePermDeleteDialog() {
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </div>
           <div>
-            <h2 id="bcPermDeleteTitle" class="font-display text-xl font-bold text-[#9f1239] leading-tight" style="font-family: 'DM Serif Display', serif; color: #9f1239; font-size: 1.25rem; font-weight: 700; margin: 0;">Permanently Delete Record</h2>
+            <h2 id="bcPermDeleteTitle" class="font-sans text-xl font-bold text-[#9f1239] leading-tight" style="font-family: 'DM Serif Display', serif; color: #9f1239; font-size: 1.25rem; font-weight: 700; margin: 0;">Permanently Delete Record</h2>
             <p id="bcPermDeleteSubtitle" class="text-xs text-rose-600 font-medium mt-0.5" style="font-size: 0.75rem; color: #e11d48; margin-top: 2px;">Destructive Record Removal</p>
           </div>
         </div>
@@ -5262,12 +5262,11 @@ function _bcEnsurePermDeleteDialog() {
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center justify-end gap-3 pt-2" style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding-top: 0.5rem;">
+      <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
         <button
           id="bcPermDeleteCancelBtn"
           type="button"
-          class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm cursor-pointer"
-          style="background: #eaf6ee; color: #064e3b; border: 1px solid #a7f3d0; padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-weight: 500; font-size: 0.875rem; cursor: pointer;"
+          class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer"
         >
           Cancel
         </button>
@@ -5276,7 +5275,6 @@ function _bcEnsurePermDeleteDialog() {
           type="button"
           disabled
           class="bg-rose-50 text-rose-300 cursor-not-allowed opacity-70 border border-rose-200 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 select-none"
-          style="background: #fff1f2; color: #fda4af; border: 1px solid #fecdd3; padding: 0.625rem 1.5rem; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; opacity: 0.7; cursor: not-allowed; transition: all 0.15s;"
         >
           Permanent Delete
         </button>
@@ -6263,7 +6261,7 @@ function _ensureExportFilterModal() {
     <div class="modal-overlay" id="bcExportFilterModal">
       <div class="modal-box" style="width:420px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-display text-lg text-forest-800" id="bcExportFilterTitle" data-i18n="export_blotter_title">Export Blotter Records</h2>
+          <h2 class="font-sans text-lg text-forest-800" id="bcExportFilterTitle" data-i18n="export_blotter_title">Export Blotter Records</h2>
           <button onclick="closeModal('bcExportFilterModal')" class="modal-close-btn"><span data-icon="x" data-icon-size="18"></span></button>
         </div>
         <div class="space-y-4">
@@ -6289,9 +6287,9 @@ function _ensureExportFilterModal() {
             </select>
           </div>
         </div>
-        <div class="flex justify-end gap-3 pt-5">
-          <button type="button" onclick="closeModal('bcExportFilterModal')" class="btn-secondary" data-i18n="cancel">Cancel</button>
-          <button type="button" onclick="_confirmExportFilter()" class="btn-primary flex items-center gap-2">
+        <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+          <button type="button" onclick="closeModal('bcExportFilterModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer" data-i18n="cancel">Cancel</button>
+          <button type="button" onclick="_confirmExportFilter()" class="btn-primary px-6 py-2.5 bg-[#1e6b43] text-white font-bold rounded-xl hover:bg-[#185736] transition-colors text-sm shadow-sm flex items-center gap-2 cursor-pointer">
             <span data-icon="download" data-icon-size="16"></span> <span data-i18n="download">Download</span>
           </button>
         </div>
@@ -6380,7 +6378,7 @@ function _ensureBlotterDetailsModal() {
             <span data-icon="blotter" data-icon-size="18"></span>
           </div>
           <div>
-            <h2 class="font-display text-lg sm:text-xl text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
+            <h2 class="font-sans text-lg sm:text-xl text-forest-800 font-bold leading-tight">Blotter Record Details</h2>
             <p class="text-xs text-emerald-700 font-medium mt-0.5" id="bcBlotterModalSubtitle">Official Barangay Docket Record</p>
           </div>
         </div>
@@ -6389,9 +6387,9 @@ function _ensureBlotterDetailsModal() {
       <div id="bcBlotterDetailsContent" class="space-y-3">
         <div class="py-8 text-center text-forest-400">Loading blotter details…</div>
       </div>
-      <div class="mt-6 pt-4 border-t border-emerald-100/70 flex items-center justify-between">
+      <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
         <span class="text-emerald-700 text-sm font-medium">BlotterCast Barangay System</span>
-        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="bg-[#eaf6ee] text-emerald-900 border border-emerald-200 px-6 py-2 rounded-xl font-medium hover:bg-emerald-100 transition-colors text-sm">Close</button>
+        <button type="button" onclick="closeModal('bcBlotterDetailsModal')" class="btn-secondary px-6 py-2.5 bg-[#f0f9f4] border border-emerald-100/80 text-[#1e6b43] font-bold rounded-xl hover:bg-emerald-100/60 transition-colors text-sm cursor-pointer">Close</button>
       </div>
     </div>`;
   document.body.appendChild(el);
@@ -6901,34 +6899,56 @@ function renderResidentResults(results) {
   const dropdown = document.getElementById('residentDropdownList');
   if (!dropdown) return;
 
+  const isNonResidency = window.location.pathname.includes('non_residency');
+
   if (!results || results.length === 0) {
-    dropdown.innerHTML = '<div class="p-3 text-xs text-[#52796f] text-center">No active residents found</div>';
+    dropdown.innerHTML = `<div class="p-4 text-xs text-forest-400 text-center italic">${isNonResidency ? 'No transferred residents found' : 'No active residents found'}</div>`;
     dropdown.classList.remove('hidden');
     return;
   }
 
-  // Populate items (skipping deceased)
+  // Filter out deceased residents and apply transfer status filter
   const activeResults = results.filter(r => {
     const statusValue = String(r.status || r.resident_status || r.census_status || '').toLowerCase().trim();
     const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
-    return !isDeceased;
+    if (isDeceased) return false;
+
+    if (isNonResidency) {
+      return statusValue === 'transferred';
+    } else {
+      return statusValue !== 'transferred';
+    }
   });
 
   if (activeResults.length === 0) {
-    dropdown.innerHTML = '<div class="p-3 text-xs text-[#52796f] text-center">No active residents found</div>';
+    dropdown.innerHTML = `<div class="p-4 text-xs text-forest-400 text-center italic">${isNonResidency ? 'No transferred residents found' : 'No active residents found'}</div>`;
     dropdown.classList.remove('hidden');
     return;
   }
 
-  dropdown.innerHTML = activeResults.map(r => `
-    <div class="resident-item p-2 hover:bg-[#edf5f0] cursor-pointer text-sm text-[#1e3a2b]" data-id="${r.id}">
-      ${r.full_name || (r.last_name + ', ' + r.first_name)}
-    </div>
-  `).join('');
+  dropdown.innerHTML = activeResults.map(r => {
+    const lastName = r.last_name || r.lastName || '';
+    const firstName = r.first_name || r.firstName || '';
+    const middleName = r.middle_name || r.middleName || '';
+    const age = r.age != null ? r.age : '—';
+    const address = r.address || '—';
+    const householdNo = r.household_no || r.householdNo || '—';
+    return `
+    <div class="resident-dropdown-item px-3 py-1.5 hover:bg-[#f0f7f4] cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors" data-id="${r.id}" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+      <div style="font-weight: 700; color: #0f382c; font-size: 13px; line-height: 1.2;">${lastName}, ${firstName}${middleName ? ' ' + middleName : ''}</div>
+      <div style="font-weight: 500; color: #4e9b86; font-size: 11px; margin-top: 2px;" class="flex items-center gap-1 flex-wrap">
+        <span>${age} yrs old</span>
+        <span>·</span>
+        <span>${address}</span>
+        <span>·</span>
+        <span>Household ${householdNo}</span>
+      </div>
+    </div>`;
+  }).join('');
 
   dropdown.classList.remove('hidden');
 
-  dropdown.querySelectorAll('.resident-item').forEach(el => {
+  dropdown.querySelectorAll('.resident-dropdown-item').forEach(el => {
     el.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -7000,11 +7020,20 @@ function filterResidents(val) {
     };
   });
 
+  const isNonResidency = window.location.pathname.includes('non_residency') || activeId === 'nr_residentSearch';
+
   const matches = normalized.filter(r => {
     // Exclude deceased residents
     const statusValue = String(r.status || r.resident_status || r.census_status || '').toLowerCase().trim();
     const isDeceased = statusValue === 'deceased' || r.is_deceased == 1 || r.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(r));
     if (isDeceased) return false;
+
+    // Transfer status filtering
+    if (isNonResidency) {
+      if (statusValue !== 'transferred') return false;
+    } else {
+      if (statusValue === 'transferred') return false;
+    }
 
     const target = `${r.last_name} ${r.first_name} ${r.middle_name} ${r.full_name}`.toLowerCase();
     return target.includes(query);
@@ -7171,16 +7200,24 @@ function _bcFilterResidents(inputId) {
     return;
   }
 
+  const isNonResidency = inputId === 'nr_residentSearch' || window.location.pathname.includes('non_residency');
   const isCertPicker = ['residentSearch', 'cl_residentSearch', 'rs_residentSearch', 'if_residentSearch', 'nr_residentSearch'].includes(inputId) ||
                        inputId.startsWith('cl_') || inputId.startsWith('rs_') || inputId.startsWith('ind_') || inputId === 'if_residentSearch' ||
-                       window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency');
+                       window.location.pathname.includes('clearance') || window.location.pathname.includes('residency') || window.location.pathname.includes('indigency') ||
+                       isNonResidency;
 
   let rawOptions = picker.options || [];
   if (isCertPicker) {
     rawOptions = rawOptions.filter(resident => {
       const statusValue = String(resident.status || resident.resident_status || resident.census_status || '').toLowerCase().trim();
       const isDeceased = statusValue === 'deceased' || resident.is_deceased == 1 || resident.is_deceased === true || (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
-      return !isDeceased;
+      if (isDeceased) return false;
+
+      if (isNonResidency) {
+        return statusValue === 'transferred';
+      } else {
+        return statusValue !== 'transferred';
+      }
     });
   }
 
@@ -7189,7 +7226,7 @@ function _bcFilterResidents(inputId) {
     : rawOptions.filter(r => `${r.lastName || r.last_name} ${r.firstName || r.first_name} ${r.middleName || r.middle_name || ''}`.toLowerCase().includes(q)).slice(0, 20);
 
   if (matches.length === 0) {
-    list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
+    list.innerHTML = `<div class="p-4 text-xs text-forest-400 text-center italic">${q ? 'No matching residents.' : (isNonResidency ? 'No transferred records found.' : 'No active residents found.')}</div>`;
   } else {
     const isRespondent = inputId.toLowerCase().includes('respondent');
     const items = matches.map(resident => {
@@ -7202,29 +7239,53 @@ function _bcFilterResidents(inputId) {
         return; // (or continue; if inside a for-loop)
       }
 
+      if (isNonResidency && statusValue !== 'transferred') {
+        return;
+      } else if (!isNonResidency && isCertPicker && statusValue === 'transferred') {
+        return;
+      }
+
+      const deadIneligible = (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
       const deceasedMsg = isRespondent
         ? 'Deceased residents cannot be recorded as respondents.'
         : 'Deceased residents cannot be filed as complainants/reporters.';
-      const deadIneligible = (typeof window.bcIsResidentDeceased === 'function' && window.bcIsResidentDeceased(resident));
       const resLastName = resident.lastName || resident.last_name || '';
       const resFirstName = resident.firstName || resident.first_name || '';
       const resMiddleName = resident.middleName || resident.middle_name || '';
-      return `
-      <button type="button" class="w-full text-left px-3 py-2 border-b border-forest-50 last:border-0 ${deadIneligible ? 'bg-gray-50/80 cursor-not-allowed opacity-75' : 'hover:bg-forest-50 cursor-pointer'}"
-              onmousedown="event.stopPropagation(); event.preventDefault();"
-              onclick="${deadIneligible ? `showToast('${deceasedMsg}', 'error');` : `bcResidentPickerChoose('${inputId}', ${resident.id})`}">
-        <div class="flex items-center justify-between gap-2">
-          <div class="text-sm font-semibold ${deadIneligible ? 'text-gray-500 line-through' : 'text-forest-800'}">
-            ${resLastName}, ${resFirstName} ${resMiddleName}
+      const resAge = resident.age != null ? resident.age : '—';
+      const resAddress = resident.address || '—';
+      const resHousehold = resident.householdNo || resident.household_no || '—';
+
+      if (deadIneligible) {
+        return `
+        <div class="px-3 py-1.5 border-b border-gray-100 last:border-b-0 bg-gray-50/80 cursor-not-allowed opacity-70" style="font-family: 'Plus Jakarta Sans', sans-serif;"
+             onmousedown="event.stopPropagation(); event.preventDefault();"
+             onclick="showToast('${deceasedMsg}', 'error');">
+          <div class="flex items-center justify-between gap-2">
+            <div style="font-weight: 700; color: #9ca3af; font-size: 13px; line-height: 1.2; text-decoration: line-through;">${resLastName}, ${resFirstName}${resMiddleName ? ' ' + resMiddleName : ''}</div>
+            <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 rounded shrink-0">Deceased</span>
           </div>
-          ${deadIneligible ? `<span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-200 rounded">Deceased - Ineligible</span>` : ''}
+          <div style="font-weight: 500; color: #9ca3af; font-size: 11px; margin-top: 2px;">${resAge} yrs old · ${resAddress} · Household ${resHousehold}</div>
+        </div>`;
+      }
+
+      return `
+      <div class="resident-dropdown-item px-3 py-1.5 hover:bg-[#f0f7f4] cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors" data-id="${resident.id}" style="font-family: 'Plus Jakarta Sans', sans-serif;"
+           onmousedown="event.stopPropagation(); event.preventDefault();"
+           onclick="bcResidentPickerChoose('${inputId}', ${resident.id})">
+        <div style="font-weight: 700; color: #0f382c; font-size: 13px; line-height: 1.2;">${resLastName}, ${resFirstName}${resMiddleName ? ' ' + resMiddleName : ''}</div>
+        <div style="font-weight: 500; color: #4e9b86; font-size: 11px; margin-top: 2px;" class="flex items-center gap-1 flex-wrap">
+          <span>${resAge} yrs old</span>
+          <span>·</span>
+          <span>${resAddress}</span>
+          <span>·</span>
+          <span>Household ${resHousehold}</span>
         </div>
-        <div class="text-xs text-forest-500">${resident.age ?? '—'} yrs old &middot; ${resident.address || '—'} &middot; Household ${resident.householdNo || resident.household_no || '—'}</div>
-      </button>`;
+      </div>`;
     }).filter(Boolean);
 
     if (items.length === 0) {
-      list.innerHTML = `<div class="px-3 py-3 text-sm text-forest-400">${q ? 'No matching residents.' : 'No residents recorded yet.'}</div>`;
+      list.innerHTML = `<div class="p-4 text-xs text-forest-400 text-center italic">${q ? 'No matching residents.' : (isNonResidency ? 'No transferred records found.' : 'No active residents found.')}</div>`;
     } else {
       list.innerHTML = items.join('');
     }
