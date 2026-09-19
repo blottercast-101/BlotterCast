@@ -42,8 +42,38 @@ function initAuthErrorListeners() {
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAuthErrorListeners);
-} else {
+function initAuthUrlParams() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const usernameParam = urlParams.get('username') || urlParams.get('user') || urlParams.get('u');
+    if (usernameParam) {
+      const usernameInput = document.getElementById('username');
+      if (usernameInput) {
+        usernameInput.value = usernameParam.trim();
+        usernameInput.classList.remove('error');
+        const errEl = document.getElementById('usernameError');
+        if (errEl) errEl.classList.remove('show');
+
+        // Automatically focus password field so user can immediately type/paste credentials
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+          setTimeout(() => {
+            passwordInput.focus();
+          }, 150);
+        }
+      }
+    }
+  } catch (_) {}
+}
+window.initAuthUrlParams = initAuthUrlParams;
+
+function initAuthAll() {
   initAuthErrorListeners();
+  initAuthUrlParams();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAuthAll);
+} else {
+  initAuthAll();
 }

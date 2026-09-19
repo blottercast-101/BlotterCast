@@ -1670,10 +1670,29 @@
     }
   })();
 
-  // URL Parameter Detection (e.g., ?status=password-updated)
+  // URL Parameter Detection (e.g., ?username=..., ?status=password-updated)
   (function checkAuthUrlParams() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const usernameParam = urlParams.get('username') || urlParams.get('user') || urlParams.get('u');
+      if (usernameParam) {
+        const usernameInput = document.getElementById('username');
+        if (usernameInput) {
+          usernameInput.value = usernameParam.trim();
+          usernameInput.classList.remove('error');
+          const errEl = document.getElementById('usernameError');
+          if (errEl) errEl.classList.remove('show');
+
+          // Automatically focus password field so user can immediately type/paste temporary password
+          const passwordInput = document.getElementById('password');
+          if (passwordInput) {
+            setTimeout(() => {
+              passwordInput.focus();
+            }, 150);
+          }
+        }
+      }
+
       const status = (urlParams.get('status') || '').toLowerCase();
       if (status === 'password-updated' || status === 'password_updated' || status === 'password-reset' || status === 'password_reset') {
         showAuthSuccessModal({
@@ -1688,7 +1707,9 @@
             modal.classList.add('hidden');
           }
           if (typeof history !== 'undefined' && history.replaceState) {
-            history.replaceState(null, '', window.location.pathname);
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('status');
+            history.replaceState(null, '', cleanUrl.toString());
           }
         }, 2200);
       }

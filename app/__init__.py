@@ -211,6 +211,10 @@ def create_app(config_class=Config):
     def root():
         return send_from_directory(FRONTEND_DIR, "index.html")
 
+    @app.route("/login")
+    def login_route():
+        return send_from_directory(FRONTEND_DIR, "login.html")
+
     @app.errorhandler(400)
     def handle_400(e):
         from flask import request, jsonify

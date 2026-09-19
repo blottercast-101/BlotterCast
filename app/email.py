@@ -235,11 +235,28 @@ def render_otp_email_html(full_name: str, otp_code: str, expire_minutes: int = 5
 </html>"""
 
 
-def render_credential_email_html(full_name: str, username: str, role: str, temp_password: str) -> str:
-    """Generate email-client-compatible HTML for new account credentials and first-login password change notice."""
+def render_credential_email_html(full_name: str, username: str, role: str, temp_password: str, login_url: str = "") -> str:
+    """Generate email-client-compatible HTML for new account credentials with direct login CTA and mandatory password change notice."""
+    import urllib.parse
+    from flask import has_request_context, request
+
     name_display = full_name.strip() if full_name and full_name.strip() else "User"
     role_display = role.strip() if role and role.strip() else "Staff"
     timestamp_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    if not login_url:
+        base_url = ""
+        if has_request_context():
+            try:
+                base_url = request.host_url.rstrip("/")
+            except Exception:
+                base_url = ""
+        if not base_url:
+            try:
+                base_url = (current_app.config.get("APP_URL") or current_app.config.get("BASE_URL") or os.environ.get("APP_URL") or os.environ.get("BASE_URL") or "http://localhost:5000").rstrip("/")
+            except Exception:
+                base_url = "http://localhost:5000"
+        login_url = f"{base_url}/login.html?username={urllib.parse.quote(username)}"
 
     return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -249,6 +266,9 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
   <meta name="color-scheme" content="light dark" />
   <meta name="supported-color-schemes" content="light dark" />
   <title>BlotterCast Account Credentials</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style type="text/css">
     :root {{
       color-scheme: light dark;
@@ -262,7 +282,7 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
       margin: 0 !important;
       padding: 0 !important;
       background-color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       color: #0f172a;
     }}
     @media (prefers-color-scheme: dark) {{
@@ -294,6 +314,14 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
         background-color: #0d2818 !important;
         border-color: #22c55e !important;
       }}
+      .cred-label {{
+        color: #86efac !important;
+        -webkit-text-fill-color: #86efac !important;
+      }}
+      .cred-username {{
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }}
       .cred-code {{
         color: #4ade80 !important;
         -webkit-text-fill-color: #4ade80 !important;
@@ -307,16 +335,36 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
         color: #4ade80 !important;
         -webkit-text-fill-color: #4ade80 !important;
       }}
+      .cta-btn {{
+        background-color: #1e6b43 !important;
+        color: #ffffff !important;
+      }}
     }}
+    /* Outlook.com / Web App Dark Mode Overrides */
+    [data-ogsc] .email-bg {{ background-color: #0f172a !important; }}
+    [data-ogsc] .email-card {{ background-color: #1a2332 !important; border-color: #334155 !important; }}
+    [data-ogsc] .email-text, [data-ogsc] .dynamic-text {{ color: #ffffff !important; }}
+    [data-ogsc] .email-subtext {{ color: #cbd5e1 !important; }}
+    [data-ogsc] .email-muted {{ color: #94a3b8 !important; }}
+    [data-ogsc] .cred-code {{ color: #4ade80 !important; }}
+    [data-ogsc] .brand-title {{ color: #4ade80 !important; }}
+    [data-ogsc] .cta-btn {{ background-color: #1e6b43 !important; color: #ffffff !important; }}
+    [data-ogsb] .email-card {{ background-color: #1a2332 !important; }}
+    [data-ogsb] .cred-box {{ background-color: #0d2818 !important; }}
   </style>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, p, span, a, strong {{ font-family: Arial, Helvetica, sans-serif !important; }}
+  </style>
+  <![endif]-->
 </head>
-<body class="email-body" bgcolor="#f1f5f9" style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #0f172a;">
+<body class="email-body" bgcolor="#f1f5f9" style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color: #0f172a;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-bg" bgcolor="#f1f5f9" style="background-color: #f1f5f9; table-layout: fixed; width: 100%;">
     <tr>
       <td align="center" style="padding: 32px 12px 40px 12px;">
         
         <!-- Main Card Container -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" bgcolor="#ffffff" style="max-width: 500px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); overflow: hidden;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" bgcolor="#ffffff" style="max-width: 520px; width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); overflow: hidden;">
           <tr>
             <td style="padding: 32px 26px 28px 26px;">
               
@@ -324,14 +372,14 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding-bottom: 4px;">
-                    <span class="brand-title" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #16a34a; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
+                    <span class="brand-title" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; color: #1e6b43; letter-spacing: -0.02em; line-height: 1.1; display: inline-block;">
                       BlotterCast
                     </span>
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 24px;">
-                    <span class="email-muted" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.4; display: inline-block;">
+                  <td align="center" style="padding-bottom: 22px;">
+                    <span class="email-muted" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.4; display: inline-block;">
                       PAMAHALAANG BARANGAY NG MAPULANG LUPA
                     </span>
                   </td>
@@ -341,35 +389,35 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
               <!-- Greeting & Body Text -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td class="email-text" style="padding-bottom: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15.5px; color: #0f172a; line-height: 1.5;">
+                  <td class="email-text" style="padding-bottom: 8px; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.5;">
                     Hello <strong class="dynamic-text" style="font-weight: 700; color: inherit;">{name_display}</strong>,
                   </td>
                 </tr>
                 <tr>
-                  <td class="email-subtext" style="padding-bottom: 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #334155; line-height: 1.6;">
-                    Your user account for the BlotterCast Barangay System has been successfully created with the role of <strong class="dynamic-text" style="color: #16a34a; font-weight: 700;">{role_display}</strong>.
+                  <td class="email-subtext" style="padding-bottom: 20px; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #4b5563; line-height: 1.55;">
+                    An official user account for the <strong>BlotterCast Barangay System</strong> has been successfully set up for you with the role of <strong class="dynamic-text" style="color: #1e6b43; font-weight: 700;">{role_display}</strong>. Please use the temporary credentials below for your initial system access.
                   </td>
                 </tr>
               </table>
 
               <!-- Credentials Box -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="cred-box" bgcolor="#f0fdf4" style="margin: 0 0 18px 0; border: 1.5px solid #86efac; background-color: #f0fdf4; border-radius: 12px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="cred-box" bgcolor="#f0f9f4" style="margin: 0 0 22px 0; border: 1.5px solid #d1fae5; background-color: #f0f9f4; border-radius: 12px;">
                 <tr>
-                  <td style="padding: 16px 18px;">
+                  <td style="padding: 16px 20px;">
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                       <tr>
-                        <td style="padding-bottom: 8px; font-size: 13px; color: #1e3a29; font-weight: 600;">
+                        <td class="cred-label" style="padding-bottom: 10px; font-size: 13px; color: #374151; font-weight: 600;">
                           Username:
                         </td>
-                        <td align="right" style="padding-bottom: 8px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 14px; font-weight: 700; color: #0f172a;">
+                        <td align="right" class="cred-username" style="padding-bottom: 10px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 14px; font-weight: 700; color: #111827;">
                           {username}
                         </td>
                       </tr>
                       <tr>
-                        <td style="font-size: 13px; color: #1e3a29; font-weight: 600;">
+                        <td class="cred-label" style="font-size: 13px; color: #374151; font-weight: 600;">
                           Temporary Password:
                         </td>
-                        <td align="right" class="cred-code" style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 15px; font-weight: 800; color: #16a34a; letter-spacing: 0.05em;">
+                        <td align="right" class="cred-code" style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 15px; font-weight: 800; color: #1e6b43; letter-spacing: 0.04em;">
                           {temp_password}
                         </td>
                       </tr>
@@ -378,25 +426,52 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
                 </tr>
               </table>
 
-              <!-- Mandatory First-Login Notice -->
+              <!-- Direct Login Call-to-Action (CTA) Button -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 22px 0;">
+                <tr>
+                  <td align="center" style="padding: 4px 0 6px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{login_url}" style="height:44px;v-text-anchor:middle;width:200px;" arcsize="25%" fillcolor="#1e6b43" stroke="f">
+                      <w:anchorlock/>
+                      <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">Log In Now &rarr;</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <a href="{login_url}" target="_blank" class="cta-btn" style="display: inline-block; background-color: #1e6b43; color: #ffffff !important; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 700; font-size: 14.5px; text-decoration: none; padding: 13px 36px; border-radius: 12px; box-shadow: 0 2px 6px rgba(30, 107, 67, 0.25); text-align: center; mso-hide: all;">
+                      Log In Now &rarr;
+                    </a>
+                    <!--<![endif]-->
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top: 6px;">
+                    <span class="email-muted" style="font-size: 11.5px; color: #94a3b8; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;">
+                      Clicking will open the login page with your username pre-filled.
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Mandatory First-Login Security Notice -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="notice-box" bgcolor="#fffbeb" style="margin: 0 0 22px 0; border-left: 4px solid #f59e0b; background-color: #fffbeb; border-radius: 8px;">
                 <tr>
-                  <td style="padding: 14px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #92400e; line-height: 1.55;">
-                    <strong style="color: #78350f;">IMPORTANT:</strong> This is an auto-generated temporary password. You are required to change your password immediately upon logging in by visiting <strong>Settings &rarr; Change Password</strong>.
+                  <td style="padding: 13px 16px; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12.5px; color: #92400e; line-height: 1.55;">
+                    <strong style="color: #78350f;">Security Notice:</strong> This is an auto-generated temporary password. You are required to update your password immediately upon your initial login by going to <strong>Settings &rarr; Change Password</strong>.
                   </td>
                 </tr>
               </table>
 
               <!-- Subtle Divider -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="email-divider" width="100%" style="border-top: 1px solid #e2e8f0; margin-bottom: 16px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="email-divider" width="100%" style="border-top: 1px solid #e5e7eb; margin-bottom: 16px;">
                 <tr><td></td></tr>
               </table>
 
               <!-- Sub-footer -->
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td align="center" class="email-muted" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #64748b; line-height: 1.4;">
-                    BlotterCast &mdash; Official Barangay Records &amp; Intelligence System
+                  <td align="center" class="email-muted" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #6b7280; line-height: 1.45;">
+                    BlotterCast &mdash; Official Barangay Records &amp; Intelligence System<br />
+                    Pamahalaang Barangay ng Mapulang Lupa, Lungsod ng Valenzuela
                   </td>
                 </tr>
               </table>
@@ -417,19 +492,39 @@ def render_credential_email_html(full_name: str, username: str, role: str, temp_
 </html>"""
 
 
-def send_credential_email(to_email: str, username: str, temp_password: str, full_name: str = "", role: str = "") -> bool:
-    """Send automated credential onboarding email containing the initial temporary password and mandatory change notice."""
-    greeting = f"Hi {full_name}," if full_name else "Hi,"
+def send_credential_email(to_email: str, username: str, temp_password: str, full_name: str = "", role: str = "", login_url: str = "") -> bool:
+    """Send automated credential onboarding email containing the initial temporary password, direct login CTA, and mandatory change notice."""
+    import urllib.parse
+    from flask import has_request_context, request
+
+    if not login_url:
+        base_url = ""
+        if has_request_context():
+            try:
+                base_url = request.host_url.rstrip("/")
+            except Exception:
+                base_url = ""
+        if not base_url:
+            try:
+                base_url = (current_app.config.get("APP_URL") or current_app.config.get("BASE_URL") or os.environ.get("APP_URL") or os.environ.get("BASE_URL") or "http://localhost:5000").rstrip("/")
+            except Exception:
+                base_url = "http://localhost:5000"
+        login_url = f"{base_url}/login.html?username={urllib.parse.quote(username)}"
+
+    greeting = f"Hello {full_name}," if full_name else "Hello,"
     subject = "Your BlotterCast Account Credentials"
     
     body = (
         f"{greeting}\n\n"
-        f"Your user account for the BlotterCast Barangay System has been successfully created with the role of {role or 'Staff'}.\n\n"
-        f"Account Details:\n"
+        f"An official user account for the BlotterCast Barangay System has been successfully set up for you with the role of {role or 'Staff'}.\n\n"
+        f"Please use the temporary credentials below for your initial system access:\n"
         f"  Username: {username}\n"
         f"  Temporary Password: {temp_password}\n\n"
-        f"IMPORTANT: This is an auto-generated temporary password. You are required to change your password immediately upon logging in by visiting Settings -> Change Password.\n\n"
-        f"BlotterCast — Official Barangay Records & Intelligence System"
+        f"Direct Login Link:\n"
+        f"  {login_url}\n\n"
+        f"IMPORTANT: For security compliance, this temporary password must be changed immediately upon your first login by visiting Settings -> Change Password.\n\n"
+        f"BlotterCast — Official Barangay Records & Intelligence System\n"
+        f"Pamahalaang Barangay ng Mapulang Lupa, Lungsod ng Valenzuela"
     )
 
     html_content = render_credential_email_html(
@@ -437,10 +532,11 @@ def send_credential_email(to_email: str, username: str, temp_password: str, full
         username=username,
         role=role,
         temp_password=temp_password,
+        login_url=login_url,
     )
 
-    api_key = current_app.config.get("BREVO_API_KEY")
-    sender_email = current_app.config.get("BREVO_SENDER_EMAIL")
+    api_key = current_app.config.get("BREVO_API_KEY") if current_app else None
+    sender_email = current_app.config.get("BREVO_SENDER_EMAIL") if current_app else None
     if not api_key or not sender_email:
         _write_to_outbox(to_email, subject, body, html_body=html_content)
         return False
@@ -465,7 +561,8 @@ def send_credential_email(to_email: str, username: str, temp_password: str, full
             raise RuntimeError(f"Brevo API {r.status_code}: {r.text[:300]}")
         return True
     except Exception as e:
-        current_app.logger.error(f"Failed to send credential email to {to_email}: {e}")
+        if current_app:
+            current_app.logger.error(f"Failed to send credential email to {to_email}: {e}")
         _write_to_outbox(to_email, subject, body, error=str(e), html_body=html_content)
         return False
 
